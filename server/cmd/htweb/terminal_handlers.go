@@ -393,3 +393,41 @@ func (a *app) handleTerminalDelete(w http.ResponseWriter, r *http.Request) {
 	res.Notified = len(res.Deleted) > 0
 	httpx.OK(w, res)
 }
+
+type replaceReq struct {
+	// SourceID 是被替换的那台终端（选中的那台）。
+	SourceID int64 `json:"sourceId"`
+	// TargetID 是要顶替的那个 id。前端从「终端替换」对话框里手填，
+	// 与 ok112 的 copytask 弹层一致。
+	TargetID int64 `json:"targetId"`
+}
+
+// handleTerminalReplace 终端替换（ok112 的 getterminalid.php）。
+//
+// 换了新硬件后让它接管旧记录的 id，旧 id 上的任务 / 分区 / 快捷键绑定
+// 因此原样生效。业务规则与关联表迁移见 terminal/replace.go。
+func (a *app) handleTerminalReplace(w http.ResponseWriter, r *http.Request) {
+	var in replaceReq
+	if !httpx.DecodeJSON(w, r, &in) {
+		return
+	}
+	if in.SourceID <= 0 {
+		httpx.Fail(w, httpx.CodeBadRequest, "请选择要替换的终端")
+		return
+	}
+	res, err := a.terminals.Replace(r.Context(), auth.From(r.Context()), in.SourceID, in.TargetID)
+	if err != nil {
+		switch {
+		case errors.Is(err, terminal.ErrReplaceSame):
+			httpx.Fail(w, httpx.CodeBadRequest, "目标 ID 与源终端相同")
+		case errors.Is(err, terminal.ErrReplaceTypeMismatch):
+			httpx.Fail(w, httpx.CodeBadRequest, "目标终端与源终端型号不同，不能替换")
+		case errors.Is(err, terminal.ErrReplaceTargetOnline):
+			httpx.Fail(w, httpx.CodeBadRequest, "目标终端在线，不能被替换")
+		default:
+			failTerminal(w, "终端替换", err)
+		}
+		return
+	}
+	httpx.OK(w, res)
+}

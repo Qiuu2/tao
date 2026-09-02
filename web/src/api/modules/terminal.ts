@@ -218,3 +218,145 @@ export const previewDeleteTerminalsApi = (ids: number[]) => {
 export const deleteTerminalsApi = (ids: number[]) => {
   return http.delete<DeleteResult>(PORT1 + `/api/terminals`, {}, { data: { ids, confirmed: true } });
 };
+
+/* ───────────── 快捷键（查看 / 删除）─────────────
+ *
+ * 「在这台终端上按这个键，去寻呼那些终端」。数据在 terminalkey + terminalkeymap。
+ * 与下面的快捷任务不是一套结构，别混。
+ */
+
+export interface ShortcutKeyTarget {
+  terminalId: number;
+  terminalname: string;
+  /** 目标终端已被删除，映射行还留着 */
+  deleted: boolean;
+  groupId: number;
+  area: string;
+}
+
+export interface ShortcutKey {
+  id: number;
+  name: string;
+  /** 这个快捷键属于哪台终端 */
+  ownerId: number;
+  key: number;
+  keyLabel: string;
+  sendmodul: number;
+  emergency: boolean;
+  targets: ShortcutKeyTarget[];
+}
+
+export const getShortcutKeysApi = (terminalId: number) => {
+  return http.get<ShortcutKey[]>(PORT1 + `/api/terminals/${terminalId}/shortcut-keys`);
+};
+
+export interface ShortcutKeyOption {
+  /** 键值本身。快捷任务的 terminalkeymaptask.keyid 存的就是它 */
+  value: number;
+  label: string;
+}
+
+/**
+ * 某台终端可选的键值。可选集按终端型号算（服务端 terminal/keyspec.go）。
+ * emergency 决定用哪一套 —— 急救与普通快捷键的可选集不同，快捷任务用非急救那套。
+ */
+export const getShortcutKeyOptionsApi = (terminalId: number, emergency = false) => {
+  return http.get<ShortcutKeyOption[]>(PORT1 + `/api/terminals/${terminalId}/shortcut-keys/options`, { emergency });
+};
+
+export const deleteShortcutKeysApi = (ids: number[]) => {
+  return http.delete<{ deleted: number }>(PORT1 + `/api/shortcut-keys`, {}, { data: { ids } });
+};
+
+/* ───────────── 快捷任务 ─────────────
+ *
+ * 「在这台终端上按这个键，执行那条任务」。只有 terminalkeymaptask 一张表，
+ * 主键 (keyid, terminalid) —— 一台终端一个键只能绑一条任务，再绑就是覆盖。
+ */
+
+export interface QuickTask {
+  key: number;
+  keyLabel: string;
+  taskId: number;
+  taskName: string;
+  /** 绑定还在，但它指向的任务已经被删了 */
+  taskMissing: boolean;
+}
+
+export interface QuickTaskOption {
+  taskId: number;
+  taskName: string;
+  /** 已经被本终端的哪个键占用；-1 表示没被占用 */
+  usedByKey: number;
+}
+
+export const getQuickTasksApi = (terminalId: number) => {
+  return http.get<QuickTask[]>(PORT1 + `/api/terminals/${terminalId}/quick-tasks`);
+};
+
+export const getQuickTaskOptionsApi = (terminalId: number, keyword = "") => {
+  return http.get<QuickTaskOption[]>(PORT1 + `/api/terminals/${terminalId}/quick-tasks/options`, { keyword });
+};
+
+export const setQuickTaskApi = (terminalId: number, key: number, taskId: number) => {
+  // 用 POST 不用 PUT：PUT /api/terminals/{id}/... 会和 PUT /api/terminals/toggle/{toggle} 撞路由
+  return http.post(PORT1 + `/api/terminals/${terminalId}/quick-tasks`, { key, taskId });
+};
+
+export const deleteQuickTaskApi = (terminalId: number, key: number) => {
+  return http.delete(PORT1 + `/api/terminals/${terminalId}/quick-tasks`, { key });
+};
+
+/* ───────────── 寻呼授权（授权寻呼 / 授权终端）─────────────
+ *
+ * 白名单，且**不配置即全放开**：没建过名单的终端可以寻呼所有在线终端。
+ * 所以清空名单是「放开到默认」，不是「全部禁止」——这一点很容易搞反。
+ *
+ * 「授权寻呼」和「授权终端」是同一份名单的两个入口，区别只在挑终端的界面。
+ */
+
+export interface CallGroupMember {
+  id: number;
+  name: string;
+  typeId: number;
+  ip: string;
+  online: boolean;
+  groupId: number;
+  /** 名单里还留着，但终端已经被删了 */
+  missing: boolean;
+}
+
+export interface CallGroupInfo {
+  terminalId: number;
+  terminalName: string;
+  /** false = 没建过名单，按默认可寻呼所有在线终端 */
+  configured: boolean;
+  name: string;
+  members: CallGroupMember[];
+}
+
+export const getCallGroupApi = (terminalId: number) => {
+  return http.get<CallGroupInfo>(PORT1 + `/api/terminals/${terminalId}/call-group`);
+};
+
+export const setCallGroupApi = (terminalId: number, name: string, terminalIds: number[]) => {
+  return http.post(PORT1 + `/api/terminals/${terminalId}/call-group`, { name, terminalIds });
+};
+
+/* ───────────── 终端替换 ───────────── */
+
+export interface ReplaceResult {
+  sourceId: number;
+  targetId: number;
+  /** renumber = 目标 ID 空闲，只是改号；takeover = 顶替掉已有记录 */
+  mode: "renumber" | "takeover";
+  /** 改号时迁移的关联行数；接管时是清掉的源终端关联行数 */
+  affected: number;
+  /** 被顶替掉的那条记录的名字，takeover 时才有 */
+  targetName?: string;
+}
+
+export const replaceTerminalApi = (sourceId: number, targetId: number) => {
+  // 路径用字面量：/api/terminals/{id}/replace 会和 toggle/{toggle} 撞路由
+  return http.put<ReplaceResult>(PORT1 + `/api/terminals/replace`, { sourceId, targetId });
+};

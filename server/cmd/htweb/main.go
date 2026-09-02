@@ -262,6 +262,30 @@ func (a *app) routes() http.Handler {
 	mux.HandleFunc("PUT /api/shortcut-keys/{keyId}", trm(a.handleShortcutKeyUpdate))
 	mux.HandleFunc("DELETE /api/shortcut-keys", trm(a.handleShortcutKeyDelete))
 
+	// 快捷任务（ok112 的 view_quickplay / setquickplay）。
+	// 与上面的快捷键寻呼**不是一套结构**：只有 terminalkeymaptask 一张表，
+	// 主键 (keyid, terminalid)，keyid 存的是键值本身。详见 terminal/quicktask.go。
+	// 读权限与快捷键一致；写要 terminalpriv。
+	// 终端替换：换了新硬件后让它接管旧记录的 id。要 terminalpriv。
+	// ⚠ 路径用字面量而不是 /terminals/{id}/replace —— 后者会与
+	//   PUT /api/terminals/toggle/{toggle} 冲突（两者都能匹配
+	//   /api/terminals/toggle/replace，且互不更具体，ServeMux 会 panic）。
+	//   与 volume / password / sync-time 这些批量动作保持同一种写法。
+	mux.HandleFunc("PUT /api/terminals/replace", trm(a.handleTerminalReplace))
+
+	// 寻呼授权（「授权寻呼」与「授权终端」两个入口共用这一套，
+	// 区别只在前端挑终端的方式）。名单为空 = 回到「可寻呼所有在线终端」的默认。
+	// ⚠ 写用 POST 不用 PUT：PUT /api/terminals/{id}/... 会与
+	//   PUT /api/terminals/toggle/{toggle} 冲突。快捷键那边也是同样的原因
+	//   才把更新放到 /api/shortcut-keys/{keyId} 上。
+	mux.HandleFunc("GET /api/terminals/{id}/call-group", req(a.handleCallGroupGet))
+	mux.HandleFunc("POST /api/terminals/{id}/call-group", trm(a.handleCallGroupSet))
+
+	mux.HandleFunc("GET /api/terminals/{id}/quick-tasks", req(a.handleQuickTaskList))
+	mux.HandleFunc("GET /api/terminals/{id}/quick-tasks/options", req(a.handleQuickTaskOptions))
+	mux.HandleFunc("POST /api/terminals/{id}/quick-tasks", trm(a.handleQuickTaskSet))
+	mux.HandleFunc("DELETE /api/terminals/{id}/quick-tasks", trm(a.handleQuickTaskDelete))
+
 	// —— 任务（业务域七，F-32 ~ F-37）——
 	//
 	// 与终端同样的分界：读只要登录（可见范围由 task_user_id 收敛），写要 taskpriv。

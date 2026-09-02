@@ -238,6 +238,180 @@
       </template>
     </el-dialog>
 
+    <!--
+      查看快捷键 / 删除快捷键（ok112 的 view_terminal_shotcut_mapping.php
+      与 do.php?act=cancel_terminal_shotcut）。
+      旧版是两个独立入口跳两个页面；这里合成一个对话框 —— 要删也得先看见删什么。
+    -->
+    <el-dialog v-model="sk.visible" :title="`快捷键 · ${sk.name}`" width="760px" top="8vh">
+      <el-alert type="info" :closable="false" show-icon class="mb12">
+        在这台终端上按下某个键，去寻呼下面列出的目标终端。
+      </el-alert>
+      <el-table :data="sk.rows" size="small" border max-height="46vh" @selection-change="onSkSelect">
+        <el-table-column type="selection" width="44" />
+        <el-table-column prop="keyLabel" label="键" width="70" />
+        <el-table-column prop="name" label="名称" min-width="130" show-overflow-tooltip />
+        <el-table-column label="类型" width="80">
+          <template #default="s">
+            <el-tag :type="s.row.emergency ? 'danger' : 'info'" size="small" effect="plain">
+              {{ s.row.emergency ? "急救" : "寻呼" }}
+            </el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column label="目标终端" min-width="240">
+          <template #default="s">
+            <span v-if="!s.row.targets.length" class="muted">未指定</span>
+            <el-tag
+              v-for="t in s.row.targets"
+              :key="t.terminalId"
+              size="small"
+              class="tag-gap"
+              :type="t.deleted ? 'danger' : 'info'"
+              effect="plain"
+            >
+              {{ t.deleted ? `已删除 #${t.terminalId}` : t.terminalname }}
+            </el-tag>
+          </template>
+        </el-table-column>
+      </el-table>
+      <p v-if="!sk.rows.length" class="dlg-note">这台终端还没有配置快捷键。</p>
+      <template #footer>
+        <el-button @click="sk.visible = false">关闭</el-button>
+        <el-button type="danger" :disabled="!sk.selected.length" :loading="sk.saving" @click="submitDelShortcut">
+          删除选中（{{ sk.selected.length }}）
+        </el-button>
+      </template>
+    </el-dialog>
+
+    <!--
+      快捷任务（ok112 的 view_quickplay / setquickplay）。
+      一台终端上一个键只能绑一条任务，再绑就是覆盖 —— 主键 (keyid, terminalid) 决定的。
+    -->
+    <el-dialog v-model="qt.visible" :title="`快捷任务 · ${qt.name}`" width="720px" top="8vh">
+      <el-alert type="info" :closable="false" show-icon class="mb12">
+        在这台终端上按下某个键，直接执行对应的任务。同一个键再绑一次即为改绑。
+      </el-alert>
+      <el-table :data="qt.rows" size="small" border max-height="40vh">
+        <el-table-column prop="keyLabel" label="键" width="80" />
+        <el-table-column label="绑定的任务" min-width="240">
+          <template #default="s">
+            <span v-if="s.row.taskMissing" class="bad">任务已被删除（ID {{ s.row.taskId }}）</span>
+            <span v-else>{{ s.row.taskName }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="操作" width="90">
+          <template #default="s">
+            <el-button type="danger" link :disabled="!canControl" @click="removeQuickTask(s.row.key)">解绑</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+      <p v-if="!qt.rows.length" class="dlg-note">这台终端还没有绑定快捷任务。</p>
+      <el-divider content-position="left">新增 / 改绑</el-divider>
+      <div class="qt-add">
+        <el-select v-model="qt.key" placeholder="选择键值" style="width: 180px">
+          <el-option v-for="k in qt.keyOptions" :key="k.value" :label="k.label" :value="k.value" />
+        </el-select>
+        <el-select
+          v-model="qt.taskId"
+          filterable
+          remote
+          :remote-method="searchQuickTaskOptions"
+          placeholder="选择任务"
+          style="flex: 1"
+        >
+          <el-option v-for="o in qt.options" :key="o.taskId" :label="o.taskName" :value="o.taskId" />
+        </el-select>
+        <el-button type="primary" :disabled="!qt.key || !qt.taskId" :loading="qt.saving" @click="submitQuickTask">
+          绑定
+        </el-button>
+      </div>
+      <template #footer>
+        <el-button @click="qt.visible = false">关闭</el-button>
+      </template>
+    </el-dialog>
+
+    <!--
+      寻呼授权（ok112 的「授权寻呼」view_terminal_call_group?flag=1
+      与「授权终端」dirstreammanager?flag=2）。
+      两个菜单项是同一份名单，区别只在挑终端的方式，所以共用这一个对话框，
+      标题按入口变。
+    -->
+    <el-dialog v-model="cg.visible" :title="`${cg.title} · ${cg.name}`" width="700px" top="8vh">
+      <el-alert :type="cg.configured ? 'warning' : 'info'" :closable="false" show-icon class="mb12">
+        <template v-if="cg.configured"> 已限定为下列终端。<b>清空并保存即可取消限定</b>，回到「可寻呼所有在线终端」。 </template>
+        <template v-else> 当前未做限定，这台终端可以寻呼<b>所有在线终端</b>。选中若干台后保存即变为白名单。 </template>
+      </el-alert>
+      <el-select
+        v-model="cg.selected"
+        multiple
+        filterable
+        collapse-tags
+        collapse-tags-tooltip
+        placeholder="选择允许被它寻呼的终端"
+        style="width: 100%"
+      >
+        <el-option v-for="t in cg.candidates" :key="t.id" :label="`${t.terminalname}（${t.ip}）`" :value="t.id">
+          <span>{{ t.terminalname }}</span>
+          <span class="opt-ip">{{ t.ip }}</span>
+        </el-option>
+      </el-select>
+      <p v-if="cg.missing.length" class="dlg-note bad">
+        名单里有 {{ cg.missing.length }} 条指向已删除终端的记录，保存后会被清理。
+      </p>
+      <template #footer>
+        <el-button @click="cg.visible = false">取消</el-button>
+        <el-button type="primary" :loading="cg.saving" @click="submitCallGroup">保存</el-button>
+      </template>
+    </el-dialog>
+
+    <!--
+      终端替换（ok112 的 getterminalid.php）。
+      现场换了新硬件，让它接管旧记录的 ID，旧 ID 上的任务 / 分区 / 快捷键绑定就继续生效。
+    -->
+    <el-dialog v-model="rp.visible" title="终端替换" width="560px">
+      <el-alert type="warning" :closable="false" show-icon class="mb12">
+        把 <b>{{ rp.name }} · 当前 ID {{ rp.sourceId }}</b> 的编号改成下面填写的目标 ID。
+        <br />
+        目标 ID 若已被占用，要求两台<b>型号相同</b>且目标<b>处于离线</b>；原记录会被删除，
+        它的任务、分区、快捷键绑定由这台终端接管。
+      </el-alert>
+      <el-input-number v-model="rp.targetId" :min="1" :controls="false" placeholder="目标终端 ID" style="width: 100%" />
+      <template #footer>
+        <el-button @click="rp.visible = false">取消</el-button>
+        <el-button type="primary" :disabled="!rp.targetId" :loading="rp.saving" @click="submitReplace">替换</el-button>
+      </template>
+    </el-dialog>
+
+    <!--
+      增补终端（ok112 的 set_synch_task.php）。
+      把选中的这些终端，补加到选中的那些任务的下发列表里。
+      ⚠ 手册说它是「把一个任务的配置同步到其他任务」，与代码完全不符，以代码为准。
+    -->
+    <el-dialog v-model="st.visible" title="增补终端到任务" width="620px" top="8vh">
+      <el-alert type="info" :closable="false" show-icon class="mb12">
+        把选中的 <b>{{ st.ids.length }}</b> 台终端补加到下列任务的下发列表里。已在列表中的不会重复添加。
+      </el-alert>
+      <el-select
+        v-model="st.taskIds"
+        multiple
+        filterable
+        remote
+        :remote-method="searchSyncTasks"
+        collapse-tags
+        collapse-tags-tooltip
+        placeholder="选择要增补到的任务"
+        style="width: 100%"
+      >
+        <el-option v-for="o in st.options" :key="o.taskId" :label="o.taskName" :value="o.taskId" />
+      </el-select>
+      <template #footer>
+        <el-button @click="st.visible = false">取消</el-button>
+        <el-button type="primary" :disabled="!st.taskIds.length" :loading="st.saving" @click="submitSyncTerminals">
+          增补
+        </el-button>
+      </template>
+    </el-dialog>
+
     <!-- 删除确认 -->
     <el-dialog v-model="del.visible" title="删除终端" width="720px" top="6vh">
       <el-alert type="error" :closable="false" show-icon class="mb12">
@@ -249,9 +423,7 @@
         <el-table-column label="影响面" min-width="380">
           <template #default="{ row }">
             <div class="impact">
-              <el-tag v-if="row.impact?.tasks" type="danger" size="small" class="mr4">
-                关联任务 {{ row.impact?.tasks }}
-              </el-tag>
+              <el-tag v-if="row.impact?.tasks" type="danger" size="small" class="mr4"> 关联任务 {{ row.impact?.tasks }} </el-tag>
               <el-tag v-if="row.impact?.boundUsers" size="small" class="mr4">绑定用户 {{ row.impact?.boundUsers }}</el-tag>
               <el-tag v-if="row.impact?.shortcutKeys" size="small" class="mr4">快捷键 {{ row.impact?.shortcutKeys }}</el-tag>
               <el-tag v-if="row.impact?.alarmAreas" size="small" class="mr4">报警分区 {{ row.impact?.alarmAreas }}</el-tag>
@@ -263,9 +435,7 @@
               <!-- 名字列表最多回 50 条且按名字去重，条数以 impact.tasks 为准 -->
               <div v-if="row.impact?.taskNames.length" class="task-names">
                 任务：{{ row.impact?.taskNames.join("、")
-                }}<template v-if="row.impact?.tasks > row.impact?.taskNames.length">
-                  等 {{ row.impact?.tasks }} 条
-                </template>
+                }}<template v-if="row.impact?.tasks > row.impact?.taskNames.length"> 等 {{ row.impact?.tasks }} 条 </template>
               </div>
             </div>
           </template>
@@ -279,12 +449,7 @@
 
       <template #footer>
         <el-button @click="del.visible = false">取消</el-button>
-        <el-button
-          type="danger"
-          :loading="del.saving"
-          :disabled="!del.preview?.deletable.length"
-          @click="submitDelete"
-        >
+        <el-button type="danger" :loading="del.saving" :disabled="!del.preview?.deletable.length" @click="submitDelete">
           确认删除 {{ del.preview?.deletable.length || 0 }} 台
         </el-button>
       </template>
@@ -297,14 +462,25 @@ import { ArrowDown, EditPen, Folder, Link, Menu } from "@element-plus/icons-vue"
 import { ElMessage, ElMessageBox } from "element-plus";
 import { computed, onMounted, reactive, ref } from "vue";
 
+import { getTaskListApi, syncTaskTerminalsApi } from "@/api/modules/task";
 import {
   checkTerminalCircuitApi,
+  deleteQuickTaskApi,
+  deleteShortcutKeysApi,
   deleteTerminalsApi,
+  getCallGroupApi,
+  getQuickTaskOptionsApi,
+  getQuickTasksApi,
+  getShortcutKeyOptionsApi,
+  getShortcutKeysApi,
   getTerminalApi,
   getTerminalGroupTreeApi,
   getTerminalListApi,
   getTerminalTypesApi,
   previewDeleteTerminalsApi,
+  replaceTerminalApi,
+  setCallGroupApi,
+  setQuickTaskApi,
   setTerminalPasswordApi,
   setTerminalRunningApi,
   setTerminalToggleApi,
@@ -315,6 +491,10 @@ import {
 import type {
   DeletePreview,
   OpResult,
+  QuickTask,
+  ShortcutKeyOption,
+  QuickTaskOption,
+  ShortcutKey,
   TerminalCaps,
   TerminalGroupNode,
   TerminalRow,
@@ -498,28 +678,35 @@ const batchItems: BatchItem[] = [
   { cmd: "speech:1", label: "启用对讲", ready: true, cap: "speech" },
   { cmd: "speech:0", label: "关闭对讲", ready: true, cap: "speech" },
   { cmd: "reregister", label: "重新注册", ready: true },
-  { cmd: "view-shortcut", label: "查看快捷键", single: true, ready: false, cap: "shortcut" },
-  { cmd: "del-shortcut", label: "删除快捷键", single: true, ready: false, cap: "shortcut" },
-  { cmd: "quick-task", label: "快捷任务", single: true, ready: false, cap: "quickTask" },
+  { cmd: "view-shortcut", label: "查看快捷键", single: true, ready: true, cap: "shortcut" },
+  { cmd: "del-shortcut", label: "删除快捷键", single: true, ready: true, cap: "shortcut" },
+  { cmd: "quick-task", label: "快捷任务", single: true, ready: true, cap: "quickTask" },
   { cmd: "password", label: "设置终端密码", single: true, ready: true, cap: "password" },
   { cmd: "instancy:1", label: "设置急救", ready: true, cap: "instancy" },
   { cmd: "instancy:0", label: "取消急救", ready: true, cap: "instancy" },
   { cmd: "record:1", label: "启用录音", ready: true },
   { cmd: "record:0", label: "停用录音", ready: true },
   { cmd: "volume", label: "调整音量", ready: true },
-  { cmd: "auth-paging", label: "授权寻呼", single: true, ready: false, cap: "authPaging" },
-  { cmd: "replace", label: "终端替换", single: true, ready: false },
-  { cmd: "add-terminal", label: "增补终端", single: true, ready: false },
+  { cmd: "auth-paging", label: "授权寻呼", single: true, ready: true, cap: "authPaging" },
+  { cmd: "replace", label: "终端替换", single: true, ready: true },
+  // ⚠ 增补终端在 ok112 里是**多选**（set_synchtask 用的是 getCheckboxItem，
+  //   拿的是整串勾选 id），不是单选。菜单原先标了 single，是照 :80 的字段抄的，
+  //   与 ok112 实际行为不符 —— 以 ok112 为准。
+  { cmd: "add-terminal", label: "增补终端", ready: true },
   // ⚠ 发言与对讲判据不同：对讲要 isdecode 与 isencode **都**为 1，
   //   发言只要不是两个都为 0。所以这里是 sponsor 不是 speech。
   { cmd: "sponsor:1", label: "启用发言", ready: true, cap: "sponsor" },
   { cmd: "sponsor:0", label: "停用发言", ready: true, cap: "sponsor" },
-  { cmd: "autocheck", label: "自动寻检", ready: false, cap: "autoCheck" },
+  // ⚠ 「自动寻检」和原先单列的「线路检测」是**同一个功能**：
+  //   ok112 的 check_state() 走 do.php?act=check_circuit_state，
+  //   最终发的是 send_socket_circuit("terminal", 27, ids)；
+  //   我们的 PUT /api/terminals/circuit-check 发的也是 notify.TermCircuit = 27。
+  //   caps 里 AutoCheck 与 Circuit 的判据同样都是 anyCodec。
+  //   原来把它们当成两项，于是菜单里一项能用、一项永远置灰。
+  //   这里合并成 ok112 的叫法「自动寻检」，多出来的那条已删除。
+  { cmd: "autocheck", label: "自动寻检", ready: true, cap: "autoCheck" },
   { cmd: "synctime", label: "同步时间", ready: true },
-  { cmd: "auth-terminal", label: "授权终端", single: true, ready: false, cap: "authPaging" },
-  // 线路检测是 ok112 有、:80 菜单里没有的一项。它在我们这边一直能用，
-  // 放在最后，不打乱上面与 :80 对齐的顺序。
-  { cmd: "circuit", label: "线路检测", ready: true, cap: "circuit" }
+  { cmd: "auth-terminal", label: "授权终端", single: true, ready: true, cap: "authPaging" }
 ];
 
 /** 选中的那几台终端（从当前页数据里取，不额外发请求） */
@@ -579,12 +766,254 @@ const onMoreCmd = async (cmd: string, raw: (string | number)[]) => {
     pwd.visible = true;
     return;
   }
-  if (cmd === "circuit") {
+  // 「自动寻检」就是 ok112 的 check_state()，下发的是线路检测报文（state 27）
+  if (cmd === "autocheck") {
     const { data } = await checkTerminalCircuitApi(ids);
-    return reportOp(data, "线路检测指令下发");
+    return reportOp(data, "自动寻检指令下发");
   }
+  if (cmd === "view-shortcut" || cmd === "del-shortcut") return openShortcut(ids[0]);
+  if (cmd === "quick-task") return openQuickTask(ids[0]);
+  if (cmd === "auth-paging") return openCallGroup(ids[0], "授权寻呼");
+  if (cmd === "auth-terminal") return openCallGroup(ids[0], "授权终端");
+  if (cmd === "replace") return openReplace(ids[0]);
+  if (cmd === "add-terminal") return openSyncTerminals(ids);
   const { data } = await syncTerminalTimeApi(ids);
   reportOp(data, "时间同步指令下发");
+};
+
+/* ─────────────── 快捷键：查看 + 删除 ───────────────
+ *
+ * ok112 是两个入口（view_terminal_shotcut_mapping.php 与
+ * do.php?act=cancel_terminal_shotcut）跳两个页面。这里合成一个对话框：
+ * 「删除快捷键」也先把清单列出来再勾选，而不是像旧版那样一按就把整台终端的
+ * 快捷键全清掉 —— 旧版那个行为没有任何确认粒度，误操作无法挽回。
+ */
+const sk = reactive({
+  visible: false,
+  saving: false,
+  id: 0,
+  name: "",
+  rows: [] as ShortcutKey[],
+  selected: [] as number[]
+});
+
+const openShortcut = async (id: number) => {
+  const row = selectedRows([id])[0];
+  sk.id = id;
+  sk.name = row?.terminalname ?? `#${id}`;
+  sk.selected = [];
+  const { data } = await getShortcutKeysApi(id);
+  sk.rows = data;
+  sk.visible = true;
+};
+
+const onSkSelect = (rows: ShortcutKey[]) => {
+  sk.selected = rows.map(r => r.id);
+};
+
+const submitDelShortcut = async () => {
+  if (!sk.selected.length) return;
+  await ElMessageBox.confirm(`确定删除选中的 ${sk.selected.length} 个快捷键？`, "删除快捷键", { type: "warning" });
+  sk.saving = true;
+  try {
+    const { data } = await deleteShortcutKeysApi(sk.selected);
+    ElMessage.success(`已删除 ${data.deleted} 个快捷键`);
+    const res = await getShortcutKeysApi(sk.id);
+    sk.rows = res.data;
+    sk.selected = [];
+    proTableRef.value?.getTableList();
+  } finally {
+    sk.saving = false;
+  }
+};
+
+/* ─────────────── 快捷任务 ─────────────── */
+const qt = reactive({
+  visible: false,
+  saving: false,
+  id: 0,
+  name: "",
+  rows: [] as QuickTask[],
+  options: [] as QuickTaskOption[],
+  keyOptions: [] as ShortcutKeyOption[],
+  key: undefined as number | undefined,
+  taskId: undefined as number | undefined
+});
+
+const openQuickTask = async (id: number) => {
+  const row = selectedRows([id])[0];
+  qt.id = id;
+  qt.name = row?.terminalname ?? `#${id}`;
+  qt.key = undefined;
+  qt.taskId = undefined;
+  const [list, opts, keys] = await Promise.all([getQuickTasksApi(id), getQuickTaskOptionsApi(id), getShortcutKeyOptionsApi(id)]);
+  qt.rows = list.data;
+  qt.options = opts.data;
+  qt.keyOptions = keys.data;
+  qt.visible = true;
+};
+
+const searchQuickTaskOptions = async (keyword: string) => {
+  const { data } = await getQuickTaskOptionsApi(qt.id, keyword);
+  qt.options = data;
+};
+
+const refreshQuickTasks = async () => {
+  const { data } = await getQuickTasksApi(qt.id);
+  qt.rows = data;
+};
+
+const submitQuickTask = async () => {
+  if (!qt.key || !qt.taskId) return;
+  qt.saving = true;
+  try {
+    await setQuickTaskApi(qt.id, qt.key, qt.taskId);
+    ElMessage.success("已绑定");
+    qt.key = undefined;
+    qt.taskId = undefined;
+    await refreshQuickTasks();
+  } finally {
+    qt.saving = false;
+  }
+};
+
+const removeQuickTask = async (key: number) => {
+  await ElMessageBox.confirm(`确定解除键 ${key} 上的绑定？`, "解绑快捷任务", { type: "warning" });
+  await deleteQuickTaskApi(qt.id, key);
+  ElMessage.success("已解绑");
+  await refreshQuickTasks();
+};
+
+/* ─────────────── 寻呼授权（授权寻呼 / 授权终端）───────────────
+ *
+ * ⚠ 空名单 = 取消限定 = 可寻呼所有在线终端，**不是**「谁都不能呼」。
+ *   对话框里的提示文案专门写清楚了这一点，别改成「清空即禁止」。
+ */
+const cg = reactive({
+  visible: false,
+  saving: false,
+  id: 0,
+  name: "",
+  title: "授权寻呼",
+  configured: false,
+  groupName: "",
+  selected: [] as number[],
+  missing: [] as number[],
+  candidates: [] as TerminalRow[]
+});
+
+const openCallGroup = async (id: number, title: string) => {
+  const row = selectedRows([id])[0];
+  cg.id = id;
+  cg.title = title;
+  cg.name = row?.terminalname ?? `#${id}`;
+  const [info, all] = await Promise.all([
+    getCallGroupApi(id),
+    // 候选集取全量终端；自己会被服务端剔掉，这里也先滤一遍，免得列表里出现自己
+    getTerminalListApi({ pageNum: 1, pageSize: 500 })
+  ]);
+  cg.configured = info.data.configured;
+  cg.groupName = info.data.name;
+  cg.selected = info.data.members.filter(m => !m.missing).map(m => m.id);
+  cg.missing = info.data.members.filter(m => m.missing).map(m => m.id);
+  cg.candidates = (all.data.list as TerminalRow[]).filter(t => t.id !== id);
+  cg.visible = true;
+};
+
+const submitCallGroup = async () => {
+  cg.saving = true;
+  try {
+    await setCallGroupApi(cg.id, cg.groupName || `${cg.name} 寻呼授权`, cg.selected);
+    ElMessage.success(cg.selected.length ? `已授权 ${cg.selected.length} 台终端` : "已取消限定，恢复为可寻呼所有在线终端");
+    cg.visible = false;
+    proTableRef.value?.getTableList();
+  } finally {
+    cg.saving = false;
+  }
+};
+
+/* ─────────────── 终端替换 ─────────────── */
+const rp = reactive({
+  visible: false,
+  saving: false,
+  sourceId: 0,
+  name: "",
+  targetId: undefined as number | undefined
+});
+
+const openReplace = (id: number) => {
+  const row = selectedRows([id])[0];
+  rp.sourceId = id;
+  rp.name = row?.terminalname ?? `#${id}`;
+  rp.targetId = undefined;
+  rp.visible = true;
+};
+
+const submitReplace = async () => {
+  if (!rp.targetId) return;
+  await ElMessageBox.confirm(
+    `确定把「${rp.name}」的 ID 从 ${rp.sourceId} 改为 ${rp.targetId}？若目标 ID 已被占用，原记录将被删除。`,
+    "终端替换",
+    { type: "warning" }
+  );
+  rp.saving = true;
+  try {
+    const { data } = await replaceTerminalApi(rp.sourceId, rp.targetId);
+    ElMessage.success(
+      data.mode === "takeover"
+        ? `已顶替「${data.targetName}」，接管其绑定；清理源终端关联 ${data.affected} 条`
+        : `已改号为 ${data.targetId}，迁移关联 ${data.affected} 条`
+    );
+    rp.visible = false;
+    proTableRef.value?.getTableList();
+  } finally {
+    rp.saving = false;
+  }
+};
+
+/* ─────────────── 增补终端到任务 ─────────────── */
+const st = reactive({
+  visible: false,
+  saving: false,
+  ids: [] as number[],
+  taskIds: [] as number[],
+  options: [] as { taskId: number; taskName: string }[]
+});
+
+const loadSyncTaskOptions = async (keyword = "") => {
+  // 用任务列表而不是快捷任务的可选集：后者是按**这台终端**收敛过的，
+  // 而增补终端要挑的是全量可见任务，两者范围不同。
+  const { data } = await getTaskListApi({ pageNum: 1, pageSize: 200, searchKey: "taskname", keyword });
+  st.options = (data.list as { taskid: number; taskname: string }[]).map(t => ({
+    taskId: t.taskid,
+    taskName: t.taskname
+  }));
+};
+
+const openSyncTerminals = async (ids: number[]) => {
+  st.ids = [...ids];
+  st.taskIds = [];
+  await loadSyncTaskOptions();
+  st.visible = true;
+};
+
+const searchSyncTasks = (keyword: string) => loadSyncTaskOptions(keyword);
+
+const submitSyncTerminals = async () => {
+  if (!st.taskIds.length) return;
+  st.saving = true;
+  try {
+    const { data } = await syncTaskTerminalsApi(st.taskIds, st.ids);
+    const blocked = data.blocked ?? [];
+    if (blocked.length) {
+      ElMessage.warning(`增补 ${data.added} 条关联；${blocked.length} 个任务被跳过：${blocked[0].detail}`);
+    } else {
+      ElMessage.success(`已增补 ${data.added} 条终端关联`);
+    }
+    st.visible = false;
+  } finally {
+    st.saving = false;
+  }
 };
 
 // ---- 编辑 ----
@@ -695,7 +1124,10 @@ const openReRegister = async (raw: (string | number)[]) => {
       "离线设备删掉就没有了。\n\n" +
       (offline.length
         ? `选中的终端里有 ${offline.length} 台当前离线，会直接丢失：\n` +
-          offline.slice(0, 10).map(r => "  · " + (r.terminalname || `终端 ${r.id}`)).join("\n") +
+          offline
+            .slice(0, 10)
+            .map(r => "  · " + (r.terminalname || `终端 ${r.id}`))
+            .join("\n") +
           (offline.length > 10 ? `\n  · …另有 ${offline.length - 10} 台` : "") +
           "\n\n"
         : "选中的终端当前全部在线。\n\n") +
