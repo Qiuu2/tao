@@ -59,7 +59,7 @@
 import { CircleClose, PictureFilled, UserFilled } from "@element-plus/icons-vue";
 import type { ElForm } from "element-plus";
 import { ElNotification } from "element-plus";
-import { onBeforeUnmount, onMounted, reactive, ref } from "vue";
+import { computed, onBeforeUnmount, onMounted, reactive, ref } from "vue";
 import { useRouter } from "vue-router";
 
 import { Login } from "@/api/interface";
@@ -77,15 +77,18 @@ const keepAliveStore = useKeepAliveStore();
 
 type FormInstance = InstanceType<typeof ElForm>;
 const loginFormRef = ref<FormInstance>();
-const loginRules = reactive({
+const loading = ref(false);
+// 是否需要验证码，由 /api/captcha 的 enabled 字段（即服务端 auth.captcha_enabled）决定。
+// 初值 true：拿到响应前先按「需要」渲染，避免关闭态一闪而过。
+const captchaRequired = ref(true);
+
+// 必填校验跟着 captchaRequired 走。el-form-item 上的 v-if 卸载时本就会从表单注销，
+// 这里再撤掉规则是第二道保险 —— 避免哪天 v-if 改成 v-show 就变成永远校验不过。
+const loginRules = computed(() => ({
   username: [{ required: true, message: "请输入用户名", trigger: "blur" }],
   password: [{ required: true, message: "请输入密码", trigger: "blur" }],
-  captcha: [{ required: true, message: "请输入验证码", trigger: "blur" }]
-});
-
-const loading = ref(false);
-// 服务端可通过 auth.captcha_enabled 关闭验证码；取不到图时自动隐藏该输入框
-const captchaRequired = ref(true);
+  captcha: captchaRequired.value ? [{ required: true, message: "请输入验证码", trigger: "blur" }] : []
+}));
 const captchaImage = ref("");
 
 const loginForm = reactive<Login.ReqLoginForm>({
@@ -98,10 +101,17 @@ const loginForm = reactive<Login.ReqLoginForm>({
 const refreshCaptcha = async () => {
   try {
     const { data } = await getCaptchaApi();
-    captchaImage.value = data.image;
-    loginForm.captchaId = data.captchaId;
+    // enabled 由服务端的 auth.captcha_enabled 决定，是唯一权威来源
+    captchaRequired.value = data.enabled;
+    if (!data.enabled) {
+      captchaImage.value = "";
+      loginForm.captchaId = "";
+      loginForm.captcha = "";
+      return;
+    }
+    captchaImage.value = data.image ?? "";
+    loginForm.captchaId = data.captchaId ?? "";
     loginForm.captcha = "";
-    captchaRequired.value = true;
   } catch {
     // 验证码接口不可用时降级为不显示，由服务端决定是否拒绝登录
     captchaRequired.value = false;

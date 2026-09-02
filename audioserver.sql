@@ -1098,7 +1098,7 @@ CREATE TABLE `soundtask` (
   `taskid` int(11) NOT NULL COMMENT '关联task表taskid',
   `devid` int(11) unsigned NOT NULL COMMENT '关联sounddevice表id',
   `volume` tinyint(3) unsigned NOT NULL COMMENT '任务音量',
-  `dbvalue` float DEFAULT NULL COMMENT '音量DB值',
+  `dbvalue` float DEFAULT NULL COMMENT '音量DB值'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 /*Data for the table `soundtask` */
@@ -1450,13 +1450,6 @@ CREATE TABLE `terminaltype` (
 
 insert  into `terminaltype`(`id`,`name`,`info`,`isdecode`,`isencode`,`shortkeycount`,`switchcount`,`isLCD`,`isWeb`,`isheart`,`isspeech`) values (0, '服务器', '', 0, 1, 4, 1, 0, 1, 0, 0),(1, '网络终端', '', 1, 0, 0, 1, 0, 1, 1, 0),(2, '网络话筒', '', 1, 1, 9, 1, 1, 1, 1, 1),(3, '双向寻呼终端', '', 1, 1, 9, 1, 1, 1, 1, 1),(4, '网络前置', '', 1, 1, 9, 8, 1, 1, 1, 0),(5, '网络功放', '', 1, 1, 9, 8, 1, 1, 1, 0),(6, '电源管理器', '', 0, 0, 0, 10, 0, 0, 1, 0),(7, '报警主机', '', 0, 0, 0, 16, 0, 0, 1, 0),(8, '采样终端', '', 0, 1, 9, 4, 1, 1, 1, 0),(9, '电脑', '', 0, 0, 0, 0, 0, 0, 0, 0),(10, 'MP3', '', 0, 0, 0, 0, 0, 1, 1, 0),(11, '一体化音箱', '', 1, 0, 0, 0, 0, 1, 1, 0),(12, '分控软件', '', 1, 1, 0, 0, 0, 0, 1, 1),(13, '一键寻呼终端', '', 1, 1, 0, 0, 0, 1, 1, 1),(14, '分控前置', '', 1, 1, 9, 8, 1, 1, 1, 1),(15, '背景音乐', '', 1, 1, 0, 0, 1, 1, 1, 0),(16, '实话接口', '', 0, 1, 0, 0, 0, 1, 1, 0),(17, '手机终端', '', 1, 1, 200, 0, 0, 1, 1, 1),(18, '分控工作站', '', 0, 0, 0, 0, 0, 1, 1, 0),(19, '透传终端', '', 1, 1, 0, 0, 0, 1, 1, 0),(20, '网络终端', '', 1, 0, 0, 1, 0, 1, 1, 0),(21, '监控主机', '', 1, 1, 0, 0, 0, 1, 1, 1),(22, 'TTS主机', '', 0, 1, 0, 0, 0, 1, 1, 0),(23, '离线终端', '', 1, 1, 0, 0, 0, 1, 1, 0),(24, '网络音柱/功放', '', 1, 1, 0, 0, 0, 1, 1, 0),(25, '编码器', '', 0, 1, 10, 4, 0, 1, 1, 0),(26, '网络调音台', '', 1, 1, 9, 0, 1, 1, 1, 0),(27, '线阵音柱', '', 1, 0, 0, 0, 0, 1, 1, 0),(28, '寻呼话筒', '', 1, 1, 9, 1, 1, 1, 1, 1),(29, '遥控终端', '', 0, 0, 0, 0, 0, 1, 1, 0),(30, '网络调音台', '', 1, 1, 9, 0, 1, 1, 1, 0),(31, '网络音频采集器', '', 0, 1, 10, 4, 0, 1, 1, 0),(32, 'TTS主机', '', 0, 1, 0, 0, 0, 1, 1, 0),(33, '一键寻呼终端', '', 1, 1, 0, 0, 0, 1, 1, 1),(34, '网络前置', '', 1, 1, 9, 6, 1, 1, 1, 0),(35, '双向寻呼终端', '', 1, 1, 9, 1, 1, 1, 1, 1),(36, '网络分区前置', '', 1, 1, 9, 8, 1, 1, 1, 0),(37, '网络功放', '', 1, 1, 9, 6, 1, 1, 1, 0),(38, '一体化音箱', '', 1, 1, 0, 0, 0, 1, 1, 0),(39, '网络前置', '', 1, 1, 0, 0, 0, 1, 1, 0),(40, '寻呼终端', '', 1, 1, 0, 0, 0, 1, 1, 1),(41, '应急终端', '', 1, 1, 200, 0, 0, 1, 1, 1),(42, 'LED设备', '', 1, 1, 9, 8, 0, 1, 1, 1),(43, '小区广播主机', '', 0, 0, 0, 0, 0, 1, 1, 0),(44, '防爆终端', '', 1, 1, 9, 0, 0, 1, 1, 1),(45, '网络话筒', '', 1, 1, 9, 1, 0, 1, 1, 1),(46, '一键寻呼终端', '', 1, 1, 0, 0, 0, 1, 1, 1),(47, '网络前置', '', 1, 1, 0, 0, 0, 1, 1, 0);
 
-DROP TABLE IF EXISTS `terminaltypekey`;
-CREATE TABLE `terminaltypekey` (
-  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
-  `name` varchar(45) NOT NULL DEFAULT '' COMMENT '终端键名称根据terminaltype表shortkeycount确定',
-  `terminaltype` int(10) NOT NULL COMMENT '终端类型与terminaltype表中id确定',
-  PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci CHECKSUM=1 DELAY_KEY_WRITE=1 ROW_FORMAT=DYNAMIC;
 /*Table structure for table `ttssentence` */
 
 DROP TABLE IF EXISTS `ttssentence`;

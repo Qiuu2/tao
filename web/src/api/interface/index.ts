@@ -41,9 +41,14 @@ export namespace Login {
     captchaId?: string;
   }
   export interface ResCaptcha {
-    captchaId: string;
+    /**
+     * 服务端是否要求验证码，对应 config.yaml 的 auth.captcha_enabled。
+     * 为 false 时 captchaId / image 不下发，前端应隐藏输入框并撤掉必填校验。
+     */
+    enabled: boolean;
+    captchaId?: string;
     /** PNG 的 data URI，可直接作为 img src */
-    image: string;
+    image?: string;
   }
   /** 用户组的 13 项功能权限位，取值 0/1 */
   export interface Rights {

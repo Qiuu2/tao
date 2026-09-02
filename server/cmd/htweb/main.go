@@ -616,13 +616,23 @@ func (a *app) handleLogin(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// handleCaptcha 下发图形验证码。
+//
+// 响应里的 enabled 是「是否需要验证码」的唯一权威来源：auth.captcha_enabled
+// 只在服务端配置一次，前端照着 enabled 决定要不要显示输入框、加不加必填校验，
+// 不再自行猜测。关闭时不生成图片 —— 省掉一次无意义的绘图，也避免前端拿到
+// 一张根本不会被校验的图。
 func (a *app) handleCaptcha(w http.ResponseWriter, r *http.Request) {
+	if !a.cfg.Auth.CaptchaEnabled {
+		httpx.OK(w, map[string]any{"enabled": false})
+		return
+	}
 	id, uri, err := a.cap.Generate()
 	if err != nil {
 		httpx.Internal(w, "生成验证码", err)
 		return
 	}
-	httpx.OK(w, map[string]string{"captchaId": id, "image": uri})
+	httpx.OK(w, map[string]any{"enabled": true, "captchaId": id, "image": uri})
 }
 
 func (a *app) handleLogout(w http.ResponseWriter, r *http.Request) {
