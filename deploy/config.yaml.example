@@ -1,0 +1,71 @@
+# htweb 运行配置样例
+#
+# deploy/install.sh 只在目标机器上**还没有** config.yaml 时才拷这个文件过去，
+# 已经存在就绝不覆盖 —— 里面有数据库密码和 JWT 密钥。
+#
+# 首次安装后必须改的两处已用 ⚠ 标出。
+
+server:
+  # 避开旧系统已占用的 80/81/99/8000/8090
+  listen: ":8080"
+  # 前端 dist 目录（放在 Apache 的 DocumentRoot 下，Apache 也能顺带托管）
+  static_dir: "/opt/apps/a9000/html/htweb"
+
+database:
+  # 3306 是 Docker 发布到宿主的端口；容器内的主机名 mysql 在宿主上解析不到
+  host: "127.0.0.1"
+  port: 3306
+  # ⚠ 改成这台机器上的专用账号。
+  #   只给 SELECT/INSERT/UPDATE/DELETE，**不要给任何 DDL 权限** ——
+  #   零 DDL 是这套系统与旧库共存的前提（R1 红线）。建账号语句：
+  #
+  #     CREATE USER 'htweb'@'%' IDENTIFIED BY '<换成强口令>';
+  #     GRANT SELECT, INSERT, UPDATE, DELETE ON `audioserver`.* TO 'htweb'@'%';
+  #
+  user: "htweb"
+  pass: "CHANGE-ME"
+  name: "audioserver"
+  max_open: 8
+  max_idle: 8
+
+media:
+  # 宿主真实路径 = root + media.filename
+  # 这一项同时也是「版本设置」页找版本包和 update_audioserver.sh 的依据
+  root: "/opt/apps/a9000"
+  max_upload_mb: 300
+  ffmpeg: "/opt/apps/a9000/bin/ffmpeg"
+
+notify:
+  host: "127.0.0.1"
+  # 0 = 运行时从 serverbaseparam.webport 读取，不硬编码
+  port: 0
+  enabled: true
+
+auth:
+  # ⚠ 换成一串随机值，别沿用样例。生成一个：
+  #     head -c 32 /dev/urandom | base64 | tr -d '=+/'
+  secret: "CHANGE-ME"
+  ttl: 8h
+  captcha_enabled: true
+
+logs:
+  # 任务日志目录：后台 C 服务每天写一个 logYYYY-MM-DD.html（不在数据库里，BR-251）
+  # 留空则禁用任务日志功能
+  task_dir: "/opt/apps/a9000/html/ok112/datelog"
+
+backup:
+  dir: "/opt/apps/a9000/htweb/backups"
+  # 媒体物理目录；留空则取 media.root + /backup/mediadata
+  media_dir: "/opt/apps/a9000/backup/mediadata"
+
+# legacy 一节可以整段省掉 —— 不写就用下面这两个默认值，现网正是如此。
+# 只在旧系统装在别的路径时才需要显式写出来。
+#
+# 这两个文件是「服务器基本信息」页上 web端口 / sdk端口 的来源：
+# 它们不在数据库里，而在 Apache 配置和旧版 swagger 文档里。
+# ⚠ 只读解析，绝不回写 —— 旧版改这两处用的是按行号 sed（D-209），
+#   行数一变就会写坏 httpd.conf，整个站点起不来。
+#
+# legacy:
+#   apache_conf: "/opt/apps/a9000/home/apache/httpd.conf"
+#   swagger_file: "/opt/apps/a9000/html/ok112/swagger-ui/dist/swagger1.json"

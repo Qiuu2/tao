@@ -1,0 +1,54 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>www.ok112.com</title>
+<link href="css.css" rel="stylesheet" type="text/css" />
+<script type="text/javascript">
+function checkform(){
+	if(document.formtmadd.terminalname.value.length==0){
+		document.getElementById('terminalname_s').innerHTML="<font class='prompt'><b>请填写终端名称!</b></font>";
+		document.formtmadd.terminalname.focus();
+		return false;
+	}else{
+		document.getElementById('terminalname_s').innerHTML="";
+	}
+	
+	if(document.formtmadd.ip.value.length==0)
+	{
+		document.getElementById('ip_s').innerHTML="<font class='prompt'><b>请填写终端IP地址!</b></font>";
+		document.formtmadd.ip.focus();
+		return false;
+	}
+	else
+	{
+		document.getElementById('ip_s').innerHTML="";
+	}
+	
+	if(document.formtmadd.postion.value.length==0){
+		document.getElementById('postion_s').innerHTML="<font class='prompt'><b>请填写终端名称!</b></font>";
+		document.formtmadd.postion.focus();
+		return false;
+	}
+	else
+	{
+		document.getElementById('postion_s').innerHTML="";
+	}
+	
+	if(document.formtmadd.volume.value.length==0){
+		document.getElementById('volume_s').innerHTML="<font class='prompt'><b>请填写缺省的终端音量!</b></font>";
+		document.formtmadd.volume.focus();
+		return false;
+	}else{
+		document.getElementById('volume_s').innerHTML="";
+	}
+	return true;
+}
+</script>
+</head>
+
+<body>
+<{include file="terminaledit_form.html"}> 
+<{include file="footer.html"}> 
+</body>
+</html>

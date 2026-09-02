@@ -1,0 +1,480 @@
+
+
+
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+  <head>
+    
+    
+    <title></title>
+	<meta http-equiv="pragma" content="no-cache">
+	<meta http-equiv="cache-control" content="no-cache">
+	<meta http-equiv="expires" content="0">    
+	<meta http-equiv="keywords" content="keyword1,keyword2,keyword3">
+	<meta http-equiv="description" content="This is my page">
+	<script language="javascript" type="text/javascript" src="skin/js/frame/jquery-1.10.2.js"></script>
+	<script language="javascript" type="text/javascript" src="ztree/jquery.ztree.all-3.5.js"></script> 
+	<script language="javascript" type="text/javascript" src="ztree/jquery.ztree.core-3.5.js"></script> 
+	<script language="javascript" type="text/javascript" src="ztree/jquery.ztree.excheck-3.5.js"></script> 
+	<link rel="stylesheet" type="text/css" href="skin/css/styles.css">
+	<link rel="stylesheet" type="text/css" href="ztree/css/zTreeStyle.css">
+	<link rel="stylesheet" type="text/css" href="ztree/css/demo1.css">
+	<style type="text/css">
+        div,td,input
+        {
+        	font-size:12px;
+        }
+        .ptzBtn
+        {
+        	width:32px;
+        }
+        #Select1
+        {
+            width: 67px;
+        }
+        #SelectWnd
+        {
+            width: 70px;
+        }
+    </style>
+    
+    <SCRIPT>
+    /*****实时预览******/
+    function StartPlayView()
+    {
+        var OCXobj = document.getElementById("PlayViewOCX");
+		var previewXml = document.getElementById("config").value;
+		var ret = OCXobj.StartTask_Preview_InWnd(previewXml,0);
+    }
+    /*****指定窗口实时预览******/
+    function StartPlayView_InWnd()
+    {
+       var OCXobj = document.getElementById("PlayViewOCX");
+	   var previewXml = document.getElementById("config").value;
+	   var wndNum = document.getElementById("SelectWnd").value;
+	   OCXobj.SelWindow(parseInt(wndNum))
+	   var ret = OCXobj.StartTask_Preview_InWnd(previewXml,0);
+    }
+    /*****空闲窗口实时预览******/
+    function StartPlayView_Free()
+    {
+        var OCXobj = document.getElementById("PlayViewOCX");
+        var previewXml = document.getElementById("config").value;
+        OCXobj.StartTask_Preview_FreeWnd(previewXml);
+    }
+    /*****停止所有预览******/
+    function StopPlayView()
+    {
+        var OCXobj = document.getElementById("PlayViewOCX");
+        OCXobj.StopAllPreview();
+    }
+    /*****设置抓图格式为JPG******/
+    function CatchPicJPG()
+    {
+        var OCXobj = document.getElementById("PlayViewOCX");
+        OCXobj.SetCapturParam("C:\\pic",0);
+    }
+    /*****设置抓图格式为BMP******/
+    function CatchPicBMP()
+    {
+        var OCXobj = document.getElementById("PlayViewOCX");
+        OCXobj.SetCapturParam("C:\\pic",1);
+    }
+    /*****云台：左上******/
+    function PTZLeftUp()
+    {
+        var OCXobj = document.getElementById("PlayViewOCX");
+        OCXobj.StartTask_PTZ(25,3);
+    }
+    /*****云台：上******/
+    function PTZUp()
+    {
+        var OCXobj = document.getElementById("PlayViewOCX");
+        OCXobj.StartTask_PTZ(21,3);
+    }
+    /*****云台：右上******/
+    function PTZRightUp()
+    {
+        var OCXobj = document.getElementById("PlayViewOCX");
+        OCXobj.StartTask_PTZ(26,3);
+    }
+    /*****云台：左******/
+    function PTZLeft()
+    {
+        var OCXobj = document.getElementById("PlayViewOCX");
+        OCXobj.StartTask_PTZ(23,3);
+    }
+    /*****云台：自转******/
+    function PTZAuto()
+    {
+        var OCXobj = document.getElementById("PlayViewOCX");
+        OCXobj.StartTask_PTZ(29,3);
+    }
+    /*****云台：右******/
+    function PTZRight()
+    {
+        var OCXobj = document.getElementById("PlayViewOCX");
+        OCXobj.StartTask_PTZ(24,3);
+    }
+    /*****云台：左下******/
+    function PTZLeftDown()
+    {
+        var OCXobj = document.getElementById("PlayViewOCX");
+        OCXobj.StartTask_PTZ(27,3);
+    }
+    /*****云台：下******/
+    function PTZDown()
+    {
+        var OCXobj = document.getElementById("PlayViewOCX");
+        OCXobj.StartTask_PTZ(22,3);
+    }
+    /*****云台：右下******/
+    function PTZRightDown()
+    {
+        var OCXobj = document.getElementById("PlayViewOCX");
+        OCXobj.StartTask_PTZ(28,3);
+    }
+    /*****云台：停止******/
+    function PTZStop()
+    {
+        var OCXobj = document.getElementById("PlayViewOCX");
+        OCXobj.StartTask_PTZ(-21,3);
+    }
+    /*****云台：焦距+******/
+    function PTZAddTimes()
+    {
+        var OCXobj = document.getElementById("PlayViewOCX");
+        OCXobj.StartTask_PTZ(11,3);
+    }
+    /*****云台：焦距-******/
+    function PTZMinusTimes()
+    {
+        var OCXobj = document.getElementById("PlayViewOCX");
+        OCXobj.StartTask_PTZ(12,3);
+    }
+    /*****云台：焦点+******/
+    function PTZFarFocus()
+    {
+        var OCXobj = document.getElementById("PlayViewOCX");
+        OCXobj.StartTask_PTZ(13,3);
+    }
+    /*****云台：焦点-******/
+    function PTZNearFocus()
+    {
+        var OCXobj = document.getElementById("PlayViewOCX");
+        OCXobj.StartTask_PTZ(14,3);
+    }
+    /*****云台：光圈+******/
+    function PTZLargeAperture()
+    {
+        var OCXobj = document.getElementById("PlayViewOCX");
+        OCXobj.StartTask_PTZ(15,3);
+    }
+    /*****云台：光圈-******/
+    function PTZSmallAperture()
+    {
+        var OCXobj = document.getElementById("PlayViewOCX");
+        OCXobj.StartTask_PTZ(16,3);
+    }
+    /*****云台：调用预置点******/
+    function GetPt()
+    {
+        var OCXobj = document.getElementById("PlayViewOCX");
+        ptNum = document.getElementById("SelectGetpt").value;
+        var ret = OCXobj.PTZCtrlGotoPreset(ptNum); 
+             
+    }
+    /*****云台：设置预置点******/
+    function SetPt()
+    {
+        var OCXobj = document.getElementById("PlayViewOCX");
+        ptNum = document.getElementById("SelectSetpt").value;
+       
+        var ret = OCXobj.PTZCtrlSetPreset(parseInt(ptNum));
+            
+    }
+
+    function init(){
+	var OCXobj = document.getElementById("PlayViewOCX");
+	OCXobj.SetOcxMode(0);
+    }    
+    </SCRIPT>
+    
+	<!-- 以下是事件触发函数接口 -->  
+	<script language="javascript" for="PlayViewOCX" event="FireWindowsNumber(iSel)">   
+		szMsg = "窗口分割消息,窗口数" + iSel;  
+	</script>
+	
+	<script language="javascript" for="PlayViewOCX" event="FireSelectWindow(iSel)"> 
+		szMsg = "窗口选择消息,窗口" + iSel;  
+		
+	</script>
+	
+	<script language="javascript" for="PlayViewOCX" event="FireStartRealPlay(iSel)">
+		szMsg = "开始预览消息" + iSel;  
+	
+	</script>
+	
+	<script language="javascript" for="PlayViewOCX" event="FireStopRealPlay(iSel)">   
+		szMsg = "停止预览消息" + iSel ;  
+	
+	</script>
+	
+	<script language="javascript" for="PlayViewOCX" event="FireStopPreviewAll()">   
+		szMsg = "停止所有预览消息" ;  
+	
+	</script>
+	
+	<script language="javascript" for="PlayViewOCX" event="FireOpenSound(iSel)">   
+		szMsg = "打开声音消息" ;  
+	
+	</script>
+	
+	<script language="javascript" for="PlayViewOCX" event="FireCloseSound(iSel)">   
+		szMsg = "关闭声音消息" ;  
+	
+	</script>
+	
+	<script language="javascript" for="PlayViewOCX" event="FireChangeWindow(iFrom,iTo)">   
+		szMsg = "互换窗口消息"+ "从" +iFrom+"到"+iTo;  
+	
+	</script>
+	
+	<script language="javascript" for="PlayViewOCX" event="FirePTZCtrl(iWindowID,iCtrlID,iSpeed)">   
+		szMsg = "云台控制消息:"+ "窗口:" +iWindowID+"控制:"+iCtrlID+"速度:"+ iSpeed;  
+		
+	</script>
+	
+	<script language="javascript" for="PlayViewOCX" event="FireStartRecord(iWindowID)">   
+		szMsg = "开始录像"+ iWindowID;  
+	
+	</script>
+	
+	<script language="javascript" for="PlayViewOCX" event="FireStopRecord(iWindowID)">   
+		szMsg = "停止录像"+ iWindowID;  
+	
+	</script>
+	
+	<script language="javascript" for="PlayViewOCX" event="FireCatchPic(szPath,iWindowID)">   
+		szMsg = "抓图"+ "路径" +szPath+"窗口"+iWindowID;  
+	
+	</script>
+	
+	<script language="javascript" for="PlayViewOCX" event="FireStartPlayBack(lWindowID)">  
+	
+	</script>
+	
+	<script language="javascript" for="PlayViewOCX" event="FireStopPlayBack(lWindowID)">  
+	
+	</script>
+	
+	
+  </head>
+
+  <body onLoad="init();">
+  <div class="show">
+  <div class="left">	
+	<ul id="tree-panel" class="ztree"></ul>
+	<div style="text-align:left;background-color: #C0C0C0">预览控制</div>
+	<div style="width:250px;overflow:hidden">
+            <table width="100%" style="border: thin solid #C0C0C0" >
+                <tr>
+                    <td width="50%" align="center"><input type="button" value="开始预览" onClick="StartPlayView()" /></td>
+                    <td width="50%" align="center"><input type="button" value="空闲预览" onClick="StartPlayView_Free()" /></td>
+                </tr>
+                <tr>
+                    <td align="center"><input type="button" value="指定预览" onClick="StartPlayView_InWnd()" /></td>
+                    <td align="center">
+                        <select id="SelectWnd" name="D2">
+                            <option value = "0">0</option>
+                            <option value = "1">1</option>
+                            <option value = "2">2</option>
+                            <option value = "3">3</option>
+                        </select></td>
+                </tr>
+                <tr>
+                    <td align="center"><input type="button" value="停止预览" onclick = "StopPlayView()" /></td>
+                    <td align="center">&nbsp;</td>
+                </tr>
+                <tr>
+                    <td align="center">设置抓图格式：</td>
+                    <td align="center">&nbsp;</td>
+                </tr>
+                <tr>
+                    <td align="center"><input type="button" value="BMP格式"onclick = "CatchPicBMP()" /></td>
+                    <td align="center"><input type="button" value="JPG格式" onclick = "CatchPicJPG()" /></td>
+                </tr>
+            </table>
+
+            <div style="text-align:left;background-color: #C0C0C0">云台控制</div>
+			请选中需要控制的窗口
+            <br />
+            <table width="100%" style="border: thin solid #C0C0C0">
+                <tr>
+                    <td width="40%">
+                        <table width="100%" >
+                            <tr>
+                                <td width="33%" align="center"><input type="button" class="ptzBtn" value="左上" onClick="PTZLeftUp()" /></td>
+                                <td width="33%" align="center"><input type="button" class="ptzBtn" value="上" onClick="PTZUp()" /></td>
+                                <td width="34%" align="center"><input type="button" class="ptzBtn" value="右上" onClick="PTZRightUp()" /></td>
+                            </tr>
+                            <tr>
+                                <td align="center"><input type="button" class="ptzBtn" value="左" onClick="PTZLeft()" /></td>
+                                <td align="center"><input type="button" class="ptzBtn" value="自转" onClick="PTZAuto()" /></td>
+                                <td align="center"><input type="button" class="ptzBtn" value="右" onClick="PTZRightUp()" /></td>
+                            </tr>
+                            <tr>
+                                <td align="center"><input type="button" class="ptzBtn" value="左下" onClick="PTZRightDown()" /></td>
+                                <td align="center"><input type="button" class="ptzBtn" value="下" onClick="PTZDown()" /></td>
+                                <td align="center"><input type="button" class="ptzBtn" value="右下" onClick="PTZRightDown()"/></td>
+                            </tr>
+                        </table>
+                    </td>
+                    <td width="20%"><input type="button" class="ptzBtn" value="停止" onClick="PTZStop()" /></td>
+                    <td width="40%">
+                        <table width="100%" >
+                            <tr>
+                                <td width="33%" align="center"><input type="button" value="+" onClick="PTZAddTimes()" /></td>
+                                <td width="33%" align="center">焦距</td>
+                                <td width="34%" align="center"><input type="button" value="-" onClick="PTZMinusTimes()" /></td>
+                            </tr>
+                            <tr>
+                                <td align="center"><input type="button" value="+" onClick="PTZFarFocus()" /></td>
+                                <td align="center">焦点</td>
+                                <td align="center"><input type="button" value="-" onClick="PTZNearFocus()" /></td>
+                            </tr>
+                            <tr>
+                                <td align="center"><input type="button" value="+" onClick="PTZLargeAperture()" /></td>
+                                <td align="center">光圈</td>
+                                <td align="center"><input type="button" value="-" onClick="PTZSmallAperture()" /></td>
+                            </tr>
+                        </table>
+                    </td>
+                </tr>
+            </table>
+            <table width="100%" style="border: thin solid #C0C0C0">
+            <tr>
+            <td width="40%"><input type="button" value="调用预置点" onClick="GetPt()" /></td>
+            <td width="60%"><select style="width:130px" id="SelectGetpt">
+                <option value = "0">0</option>
+                <option value = "1">1</option>
+                <option value = "2">2</option>
+                <option value = "3">3</option>
+                <option value = "4">4</option>
+                <option value = "5">5</option>
+                <option value = "6">6</option>
+                <option value = "7">7</option>
+                <option value = "8">8</option>
+                <option value = "9">9</option>
+                <option value = "10">10</option>
+                <option value = "11">11</option>
+                <option value = "12">12</option>
+                <option value = "13">13</option>
+                <option value = "14">14</option>
+                <option value = "15">15</option>
+            </select></td>
+            </tr>
+            <tr>
+            <td width="40%"><input type="button" value="设置预置点" onClick="SetPt()" /></td>
+            <td width="60%"><select style="width:130px" id="SelectSetpt">
+                <option value = "0">0</option>
+                <option value = "1">1</option>
+                <option value = "2">2</option>
+                <option value = "3">3</option>
+                <option value = "4">4</option>
+                <option value = "5">5</option>
+                <option value = "6">6</option>
+                <option value = "7">7</option>
+                <option value = "8">8</option>
+                <option value = "9">9</option>
+                <option value = "10">10</option>
+                <option value = "11">11</option>
+                <option value = "12">12</option>
+                <option value = "13">13</option>
+                <option value = "14">14</option>
+                <option value = "15">15</option>
+            </select></td>
+            </tr>
+            </table>
+        </div>
+  </div>
+  <div class="right" >
+  	<div style="text-align:left;font-size:14px">HIKVISION V3.1.0 系列 (8200对外接口demo)</div>
+    <div style="text-align:left;background-color: #C0C0C0;width:1644px">视频预览</div>
+    <div style="width:1644px">
+
+    <input type="hidden" name="config" id="config" value="">
+    <div style="width:1644px">
+        <input id="Hidden1" type="hidden" />
+     
+        <div style="width:1644px;float:left;overflow:hidden">
+            <!-- 添加预览控件（需要先在windows下注册） -->
+          <object classid="clsid:04DE0049-8359-486e-9BE7-1144BA270F6A" id="PlayViewOCX"  width="1644" height="847" name="ocx" >
+            </object>
+        </div>
+    </div>
+  </div>
+  </div>
+   </div>
+	<script type="text/javascript">
+
+		// -----资源树
+		function getPreviewTreeSetting() {
+			var previewTreeSetting = {
+				async : {
+					url : "demo_getTree.action",
+					autoParam : [ "indexCode=controlUnitIndexCode" ],
+					enable : true
+				},
+				data : {
+					key : {
+						name : "text",
+						children : "children"
+					}
+				},
+				callback : {
+					onClick: onClick
+				}
+			};
+			return previewTreeSetting;
+		}
+
+		$(function(){ 
+			$.fn.zTree.init($("#tree-panel"), getPreviewTreeSetting());
+			
+		})
+		
+		function onClick(event, treeId, treeNode, clickFlag) {//节点单击事件
+	
+			if (treeNode.nodeType=="camera") {//节点为通道触发
+					 $("#config").val("");//清空参数框的值
+					getPlayViewResultXml(treeNode.indexCode);
+				
+				
+			}
+		}
+		
+		function getPlayViewResultXml(indexCode){//获取预览所需的xml 
+		    var params = {
+		       playView : indexCode
+		    };
+		    
+		    $.ajax({  
+		         type:'post',      
+		         url:'demo_getPlayViewInfo.action',  
+		         data : params,
+		         dataType:'xml',  
+		         success:function(data){
+		    	if(data==null){
+		    		alert("该监控点无法预览");
+		    	}else{
+		    	     $("#config").val(data.xml)
+		    		}
+		         }  
+		    });  
+ 		}
+
+
+	</script>
+  </body>
+</html>

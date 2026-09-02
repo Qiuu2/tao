@@ -1,0 +1,54 @@
+<?
+require_once("inc/config.inc.php");
+/*=======================================================================*\
+	此页面可获取到的参数
+	$_POST['oldNameArr']; //字符串 需要分解成数组
+	$_POST['newNameArr']; //同上
+	以及其他参数
+	$_POST['参数名'];
+\*=======================================================================*/
+
+  $folderid=$_POST['folderid'];
+
+	//注意这里获取到包含所有文件新旧名称的字符串
+	$oldName=$_POST['oldNameArr'];
+	$newName=$_POST['newNameArr'];
+
+	//把字符串拆成数组
+	$oldNameArr=explode(",",$oldName);
+	$newNameArr=explode(",",$newName);
+	$len=count($oldNameArr);
+	$error = 0
+
+	//根据获取到的数组 循环写入数据
+	for($i=0;$i<$len;$i++)
+	{
+		//循环写入数据库  具体根据自己的需要修改
+	  $str=$oldNameArr[$i]."|".$newNameArr[$i]."|".$haha."|".$hehe."\n";
+	  $fp = fopen("name.txt","a");
+	  fwrite($fp,$str);
+	  fclose($fp);
+	  
+		//为了方便测试  我直接以追加的方式写到记事本
+		$str=$oldNameArr[$i]."|".$newNameArr[$i]."|".$haha."|".$hehe."\n";
+		mysql_query("INSERT INTO `media` (`name`,`filename`,`folderid`,`size`) VALUES ('$oldNameArr[$i]','$newNameArr[$i]','$folderid',0)");	        
+		
+		if(mysql_error())
+		{
+			$error=1;
+		  break;
+		}
+	}
+	
+	if($error ==1)
+	{
+		$error=1;
+		$_SESSION['info'] = "添加失败！".mysql_error();
+		$_SESSION['url'] = "./filemanager.php";
+		echo "<script>window.location='error.php'</script>";
+	}else{
+		$_SESSION['info'] = "添加节目成功！".$FILE_PATH.$newfile_name;
+		$_SESSION['url'] = "./filemanager.php";
+		echo "<script>window.location='success.php'</script>";	
+	}
+?>

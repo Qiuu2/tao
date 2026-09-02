@@ -1,0 +1,135 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>FileManager</title>
+<link href="css.css" rel="stylesheet" type="text/css" />
+<link href="../../../skin/css/skinstyle.css" rel="stylesheet" type="text/css" />
+
+<script type="text/javascript">
+function getCheckboxItem()
+{
+	var allSel="";
+	if(document.form2.id.checked)
+	{
+	 	allSel=document.form2.id.value;
+		if(allSel==undefined)
+		{
+			allSel="";
+		}
+	 }
+	for(i=0;i<document.form2.id.length;i++)
+	{
+		if(document.form2.id[i].checked)
+		{
+			if(allSel=="")
+				allSel=document.form2.id[i].value;
+			else
+				allSel=allSel+","+document.form2.id[i].value;
+		}
+	}
+	return allSel;
+}
+
+function selAll(aid)
+{
+	if(aid==0)
+	{
+		document.form2.id.checked=true;
+	}
+	for(i=0;i<document.form2.id.length;i++)
+	{
+		if(!document.form2.id[i].checked)
+		{
+			document.form2.id[i].checked=true;
+		}
+	}
+}
+function noSelAll(aid)
+{
+	if(aid==0)
+	{
+		document.form2.id.checked=false;
+	}
+	for(i=0;i<document.form2.id.length;i++)
+	{
+		if(document.form2.id[i].checked)
+		{
+			document.form2.id[i].checked=false;
+		}
+	}
+}
+function delfile()
+{
+	var getItem=getCheckboxItem();
+	
+	//alert(getItem);
+		
+	if(getItem==""||getItem==null)
+	{
+		alert("<{$Filemanager.Please_select_the_option}>");
+		return void(0);
+	}
+	else
+	{
+		if(window.confirm("<{$Filemanager.OK_to_delete}>"))
+		{
+			window.location="do.php?act=delfiletask_msg&id="+getItem+"";
+		}
+		else
+		{
+			return void(0);
+		}
+	}
+
+}
+function showhide(str)
+{
+	<{section name=folderid loop=$folderid}> 
+	var tempobj = document.getElementById("<{$folderid[folderid].folderid}>");
+	tempobj.style.display = 'none';
+	tempobj.previousSibling.innerHTML = "<{$folderid[folderid].foldername}>+<{$Filemanager.folder}>+";
+	<{/section}>
+	var obj = document.getElementById(str);
+	
+	if(obj.style.display == 'block' || obj.style.display =='')
+	{
+		obj.style.display = 'none';
+	}
+	else
+	{
+		obj.style.display = '';
+		obj.previousSibling.innerHTML = obj.previousSibling.innerHTML + "-";
+	}
+}
+</script>
+<style type="text/css">
+<!--
+.setdiv 
+{
+	font-family: Arial, Helvetica, sans-serif, "宋体";
+	font-size: 13px;
+	font-weight: bold;
+	color: #0066CC;
+	padding: 0px;
+	cursor: hand;
+	width: 98%;
+	float: none;
+	border-top-style: none;
+	border-right-style: none;
+	border-bottom-style: none;
+	border-left-style: none;
+	background-color: #FFFFFF;
+	margin-top: 10px;
+	margin-right: auto;
+	margin-bottom: 0px;
+	margin-left: auto;
+}
+-->
+</style>
+</head>
+<body>
+<{include file="FileManager/filemanager_form.html}>
+<{include file="language/`$language`_foot.php"}> 
+</body>
+</html>

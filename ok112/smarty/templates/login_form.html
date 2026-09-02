@@ -1,0 +1,54 @@
+<form name="form1" method="post" action="" onSubmit="return checkform();" class="terminal_form_to_body">
+  <table width="500" border="0" align="center" cellpadding="0" cellspacing="0" class="terminal_table_border">
+	<tr>       
+	  <td>
+		<img src="<{$user_login.user_login_image}>"/>
+      </td>
+    </tr>
+	<tr>
+		<td>
+		
+			<table width="100%" border="0" cellpadding="10" cellspacing="0"> 
+				<tr>
+				  <td width="197" align="right"><{$user_login.Username|capitalize}></td>
+				  <td width="297">
+				  	<input type="text" name="username" id="username"  maxlength="18" style="width:120px">
+				  	<span id="username_s">*</span>
+				  </td>
+				</tr>
+			  
+				<tr>
+					<td align="right"><{$user_login.Password|capitalize}></td>
+					<td>
+						<input type="password" name="userpwd" id="userpwd" maxlength="16"  style="width:120px"/>
+						<span id="userpwd_s">*</span><img id="imagoc" onmousedown="eyeopenorclose()" onmouseup="eyeopenorclose()" src="<{$user_login.eyeclose}>"/>
+					</td>
+				</tr>
+				<tr>
+				  <td align="right"><{$user_login.Code|capitalize}></td>
+				  <td>
+					<input name="checknum" type="text" id="checknum" size="7" maxlength="7"> 
+					<img src="verify.php" id="verify" name="verify"  align="absmiddle"/>
+					
+					<a href="javascript:void(0)" onclick="refreshcode('verify.php');">
+						<{$user_login.Refresh|capitalize}>
+					</a>
+					
+					<span id="num_s">*</span>
+				  </td>
+				</tr>
+				<tr>
+					<td align="center">
+					</td>
+					<td align="left">
+						<input type="submit" name="button" id="button" value="<{$user_login.Sumbit|capitalize}>" onclick="actionform()" class="regist_button">
+						<!--
+						&nbsp;&nbsp;&nbsp;&nbsp;
+						<input type="button" name="regist" id="regist" onclick="regist_server()" value="<{$user_login.Cancel|capitalize}>" class="regist_button">-->
+					</td>
+				</tr>
+		  </table>
+  		</td>
+  	</tr>
+  </table>
+</form>

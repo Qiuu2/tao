@@ -1,0 +1,210 @@
+﻿<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<title>UserGroupModify</title>
+
+<link href="skin/css/main_page_style.css" rel="stylesheet" type="text/css" />
+
+<!--修改脚本2010/5/6-->
+<script language="javascript">
+function isNull( str )
+{
+	if ( str == "" || str==null) 
+	return true;
+	var regu = "^[ ]+$";
+	var re = new RegExp(regu);
+	return re.test(str);
+}
+ 
+function isChinaOrNumbOrLett(s)
+{ 
+	var regu = "^[0-9a-zA-Z\u4e00-\u9fa5]+$"; 
+	var re = new RegExp(regu); 
+	if (re.test(s)) 
+	{ 
+		return true; 
+	}
+	else
+	{ 
+		return false; 
+	} 
+} 
+//验证表单
+function checkform()
+{
+	if(isNull(document.addUserForm.usergroupname.value))
+	{
+		document.getElementById('usergroupname_s').innerHTML="<font class='terminal_star'><{$user_group_modify.enter_usergroup_name|capitalize}></font>";
+		document.addUserForm.usergroupname.focus();
+		return false;
+	}
+	else
+	{
+		if(!isChinaOrNumbOrLett(document.addUserForm.usergroupname.value))
+		{
+			document.getElementById('usergroupname_s').innerHTML="<font class='terminal_star'><{$user_group_modify.enter_usergroup_name|capitalize}></font>";
+			document.addUserForm.usergroupname.focus();
+			return false;
+		}
+	}
+	document.getElementById('usergroupname_s').innerHTML="<font class='terminal_star'></font>";
+	return true;
+}
+</script>
+</head>
+<body>
+<form name="addUserForm" method="post" action="do.php?act=usergroupmodify_msg&id=<{$id}>" onSubmit="return checkform();" class="terminal_form_to_body">
+<table width="600" border="0" align="center" cellpadding="0" cellspacing="0" class="terminal_table_border">
+	<tr>
+		<td>
+			<table  width="100%" border="0" align="center" cellpadding="0" cellspacing="0">
+				<tr>
+					<td>
+						<img src="<{$user_group_modify.group_modify_image}>"/>
+					</td>
+				</tr>
+			</table>
+		</td>
+	</tr> 
+	
+	<tr>
+		<td>
+			<table  width="100%" border="0" align="center" cellpadding="5" cellspacing="0" style="font-size:12px;">
+				<tr>
+					<td width="20%" align="right"><{$user_group_modify.Group_Name|capitalize}></td>
+					<td width="60%">
+						<input title="<{$user_group_modify.User_Nametask|capitalize}>" name="usergroupname" type="text" class="terminal_input_font" id="usergroupname" value="<{$group_info.name}>"/>
+						<span class="terminal_star" id="usergroupname_s">*</span>
+					</td>
+				</tr> 
+				
+				<tr>
+					<td width="20%" align="right"><{$user_group_modify.Description|capitalize}></td>
+					<td width="60%">
+						<input title="<{$user_group_modify.Descriptiontask|capitalize}>" type="text" class="terminal_input_font" name="UserDes" id="UserDes" maxlength="30" value="<{$group_info.info}>"/>
+						<{$user_group_modify.Max_character|capitalize}>
+					</td>
+				</tr>
+			
+				<tr>
+					<td width="20%" align="right"><{$user_group_modify.Level|capitalize}></td>
+					<td width="60%">
+						<select title="<{$user_group_modify.Prioritytask|capitalize}>" id="level" name="level" class="terminal_select_style">
+							
+						 <script>
+							var levels=0;
+							for(levels=10;levels<=109;levels++)
+							{
+								document.write("<option value='"+levels+"'>"+levels+"</option>");
+							}
+						  </script>
+						</select>
+						<script>
+							var obj_level = document.getElementById('level');
+							for(var i=0; i<obj_level.options.length; i++)
+							{
+								if(obj_level.options[i].value == <{$group_info.level}>)
+								{
+									obj_level.options[i].selected = true;
+									break;
+								}
+							}
+						</script>
+					</td>
+				</tr> 
+			
+				<tr>
+					<td width="20%" align="right" valign="top"><{$user_group_modify.Authority|capitalize}></td>
+					<td align="left" valign="top" width="60%">
+					<div class="usergroup_right">
+					<input name="taskpriv" type="checkbox" id="taskpriv" value=1  /><{$user_group_modify.Task_Management|capitalize}> 
+					<input name="terminalpriv" type="checkbox" id="terminalpriv" value=1  /><{$user_group_modify.Terminal_Management|capitalize}>
+					<input name="mediapriv" type="checkbox" id="mediapriv" value=1  /><{$user_group_modify.Media_Management|capitalize}>
+					<input name="userpriv" type="checkbox" id="userpriv" value=1  /><{$user_group_modify.User_Management|capitalize}>
+					<p>
+					<input name="serverpriv" type="checkbox" id="serverpriv" value=1  /><{$user_group_modify.Server_Management|capitalize}>
+					<input name="folderpriv" type="checkbox" id="folderpriv" value=1  /><{$user_group_modify.Folder_Management|capitalize}>
+					<input name="terminalgrouppriv" type="checkbox" id="terminalgrouppriv" value=1  /><{$user_group_modify.Zone_Management|capitalize}>
+					<input name="alarmgrouppriv" type="checkbox" id="alarmgrouppriv" value=1  /><{$user_group_modify.Alarm_Management|capitalize}>
+					<p>
+					<input name="bellpriv" type="checkbox" id="bellpriv" value=1  /><{$user_group_modify.Bell_Management|capitalize}>
+					<input name="admpriv" type="checkbox" id="admpriv" value=1  /><{$user_group_modify.Collection_Management|capitalize}>
+					<input name="telephonepriv" type="checkbox" id="telephonepriv" value=1  /><{$user_group_modify.Phone_Management|capitalize}>
+					<input name="powerplay" type="checkbox" id="powerplay" value=1  /><{$user_group_modify.Power_Management|capitalize}>
+					<p>
+					<input name="ttspriv" type="checkbox" id="ttspriv" value=1  /><{$user_group_modify.tts_Management|capitalize}>
+					
+					<script>
+					if(<{$group_info.taskpriv}> == 1)
+					{
+						document.getElementById('taskpriv').checked = true;
+					}
+					if(<{$group_info.terminalpriv}> == 1)
+					{
+						document.getElementById('terminalpriv').checked = true;
+					}
+					if(<{$group_info.mediapriv}> == 1)
+					{
+						document.getElementById('mediapriv').checked = true;
+					}
+					if(<{$group_info.userpriv}> == 1)
+					{
+						document.getElementById('userpriv').checked = true;
+					}
+					if(<{$group_info.serverpriv}> == 1)
+					{
+						document.getElementById('serverpriv').checked = true;
+					}
+					if(<{$group_info.folderpriv}> == 1)
+					{
+						document.getElementById('folderpriv').checked = true;
+					}
+					if(<{$group_info.terminalgrouppriv}> == 1)
+					{
+						document.getElementById('terminalgrouppriv').checked = true;
+					}
+					if(<{$group_info.alarmgrouppriv}> == 1)
+					{
+						document.getElementById('alarmgrouppriv').checked = true;
+					}
+					if(<{$group_info.bellpriv}> == 1)
+					{
+						document.getElementById('bellpriv').checked = true;
+					}
+					if(<{$group_info.admpriv}> == 1)
+					{
+						document.getElementById('admpriv').checked = true;
+					}
+					if(<{$group_info.telephonepriv}> == 1)
+					{
+						document.getElementById('telephonepriv').checked = true;
+					}
+					if(<{$group_info.powerplay}> == 1)
+					{
+						document.getElementById('powerplay').checked = true;
+					}
+						if(<{$group_info.ttspriv}> == 1)
+					{
+						document.getElementById('ttspriv').checked = true;
+					}
+					</script>
+					</div>
+					</td> 
+				</tr>
+				
+				<tr>
+					<td></td>
+					<td>
+					<input title="<{$user_group_modify.Sumbittask|capitalize}>" type="submit" name="button" id="button" value="<{$user_group_modify.Submit|capitalize}>" class="terminal_button">
+						&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+					<input title="<{$user_group_modify.Canceltask|capitalize}>" name="reset" type="reset" class="terminal_button" id="reset" value="<{$user_group_modify.Cancel|capitalize}>" />
+					</td>
+				</tr> 
+			</table>
+		</td>
+	</tr>
+</table>
+</form>
+<{include file="language/`$language`_foot.php"}>
+</body>
+</html>

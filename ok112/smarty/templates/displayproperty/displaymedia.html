@@ -1,0 +1,404 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>DisplayMedia</title>
+
+<link href="skin/css/main_page_style.css" rel="stylesheet" type="text/css" />
+<script src="skin/js/frame/jzdd.js" type="text/javascript"></script>
+<style>
+ 
+	/* 奇数行样式 */
+	tr:nth-child(odd) {
+		background-color: #ffffff;
+	}
+	
+	/* 偶数行样式 */
+	tr:nth-child(even) {
+		background-color: #c1cfe0;
+	}
+</style>
+<script  language="javascript">
+var xmlhttp = null;
+function createxmlhttp()
+{ 
+	if(window.ActiveXObject)
+	{ 
+		xmlhttp = new ActiveXObject("microsoft.XMLHTTP"); 
+	} 
+	else if(window.XMLHttpRequest)
+	{ 
+		xmlhttp = new XMLHttpRequest(); 
+	}
+	else
+	{
+		alert("NOT Support AJAX");
+	}
+}
+function getCheckboxItem()
+{
+	var allSel="";
+	for(i=0;i<document.getElementsByName('id').length;i++)
+	{
+		if(document.getElementsByName('id')[i].checked)
+		{
+			if(allSel=="")
+			{
+				allSel=document.getElementsByName('id')[i].value;
+			}
+			else
+			{
+				allSel=allSel+","+document.getElementsByName('id')[i].value;
+			}	
+		}
+	}
+
+	return allSel;
+}
+//向上移动
+function moveup()
+{
+	isornotselected();
+	createxmlhttp();
+	var taskid = getCheckboxItem();
+	xmlhttp.open("get","sortupmedia.php?taskid="+taskid, false);
+	xmlhttp.onreadystatechange = function()
+	{
+	  if( xmlhttp.readyState == 4 )
+	  {
+		 if( xmlhttp.status == 200 )
+		 {
+			if(xmlhttp.responseText == 1)
+			{
+				moveuprow();
+			}
+		 }
+	  }
+	}
+	xmlhttp.setRequestHeader( "If-Modified-Since", "0");
+	xmlhttp.send(null);
+}
+//向下移动
+function movedown()
+{
+	isornotselected();
+	createxmlhttp();
+	var taskid = getCheckboxItem();
+	xmlhttp.open("get","sortdownmedia.php?taskid="+taskid, false);
+	xmlhttp.onreadystatechange = function()
+	{
+	  if( xmlhttp.readyState == 4 )
+	  {
+		 if( xmlhttp.status == 200 )
+		 {
+			if(xmlhttp.responseText == 1)
+			{
+				movedownrow();
+			}
+		 }
+	  }
+	}
+	xmlhttp.setRequestHeader( "If-Modified-Since", "0");
+	xmlhttp.send(null);
+}
+
+function movetop()
+{
+	isornotselected();
+	createxmlhttp();
+	var taskid = getCheckboxItem();
+	xmlhttp.open("get","sorttopmedia.php?taskid="+taskid, false);
+	xmlhttp.onreadystatechange = function()
+	{
+	  if( xmlhttp.readyState == 4 )
+	  {
+		 if( xmlhttp.status == 200 )
+		 {
+			if(xmlhttp.responseText == 1)
+			{
+				movetoprow();//移到最上层
+			}
+			alert(xmlhttp.responseText);
+		 }
+	  }
+	}
+	xmlhttp.setRequestHeader( "If-Modified-Since", "0");
+	xmlhttp.send(null);
+}
+function movetoprow()
+{
+	var obj = document.getElementsByName('id');
+	var rowindex = -1;
+	for(var i=0; i<obj.length; i++)
+	{
+		if(obj[i].checked == true)
+		{
+			rowindex = i + 1;//获取当前行数（偷懒）
+			break;
+		}
+	}
+	var gettable = document.getElementById('sorttable');
+	var getcells = gettable.rows[rowindex].cells;
+	var getfirstcells = gettable.rows[1].cells;
+	for(var i=0;i<getcells.length;i++)
+	{
+		var temp = getcells[i].innerHTML;
+		getcells[i].innerHTML = getfirstcells[i].innerHTML;
+		getfirstcells[i].innerHTML = temp;
+	}	
+}
+
+function moveend()
+{
+	isornotselected();
+	createxmlhttp();
+	var taskid = getCheckboxItem();
+	xmlhttp.open("get","sortendmedia.php?taskid="+taskid, false);
+	xmlhttp.onreadystatechange = function()
+	{
+	  if( xmlhttp.readyState == 4 )
+	  {
+		 if( xmlhttp.status == 200 )
+		 {
+			if(xmlhttp.responseText == 1)
+			{
+				moveendrow();//移到最下层
+			}
+			alert(xmlhttp.responseText);
+		 }
+	  }
+	}
+	xmlhttp.setRequestHeader( "If-Modified-Since", "0");
+	xmlhttp.send(null);
+}
+
+function moveendrow()
+{
+	var obj = document.getElementsByName('id');
+	var rowindex = -1;
+	for(var i=0; i<obj.length; i++)
+	{
+		if(obj[i].checked == true)
+		{
+			rowindex = i + 1;//获取当前行数（偷懒）
+			break;
+		}
+	}
+	var gettable = document.getElementById('sorttable');
+	var rowlength = gettable.rows.length;
+	var getcells = gettable.rows[rowindex].cells;
+	var getlastcells = gettable.rows[rowlength-2].cells;
+	for(var i=0;i<getcells.length;i++)
+	{
+		var temp = getcells[i].innerHTML;
+		getcells[i].innerHTML = getlastcells[i].innerHTML;
+		getlastcells[i].innerHTML = temp;
+	}	
+}
+//向上移动
+function moveuprow()
+{
+	var obj = document.getElementsByName('id');
+	var rowindex = -1;
+	for(var i=0; i<obj.length; i++)
+	{
+		if(obj[i].checked == true)
+		{
+			rowindex = i + 1;//获取当前行数（偷懒）
+			break;
+		}
+	}
+	var gettable = document.getElementById('sorttable');
+	var getcells = gettable.rows[rowindex].cells;
+	var getprecells = gettable.rows[rowindex-1].cells;
+	for(var i=0;i<getcells.length;i++)
+	{
+		var temp = getcells[i].innerHTML;
+		getcells[i].innerHTML = getprecells[i].innerHTML;
+		getprecells[i].innerHTML = temp;
+	}
+}
+
+
+function movedownrow()
+{
+	var obj = document.getElementsByName('id');
+	var rowindex = -1;
+	for(var i=0; i<obj.length; i++)
+	{
+		if(obj[i].checked == true)
+		{
+			rowindex = i + 1;
+			break;
+		}
+	}
+	var gettable = document.getElementById('sorttable');
+	var getcells = gettable.rows[rowindex].cells;
+	var getnextcells = gettable.rows[rowindex+1].cells;
+	for(var i=0;i<getcells.length;i++)
+	{
+		var temp = getcells[i].innerHTML;
+		getcells[i].innerHTML = getnextcells[i].innerHTML;
+		getnextcells[i].innerHTML = temp;
+	}
+}
+//判断是否选择
+function isornotselected()
+{
+	var obj = document.getElementsByName('id');
+	var flag = 0;
+	for(var i=0;i<obj.length;i++)
+	{
+		if(obj[i].checked == true)
+		{
+			flag =1;
+		}
+	}
+	if(flag == 0)
+	{
+		alert('<{$displaymedia.selectmedia}>');
+		return void(0);
+	}
+}
+
+function chinese_big5_english(curr_language,txt_msg)
+{
+    if(curr_language == "big5")
+    {
+        switch(txt_msg)
+        {
+            case "共享媒体库":
+            txt_msg= "共享媒體庫";
+            break;
+            case "铃声媒体库":
+            txt_msg= "鈴聲媒體庫";
+            break;
+            case "点播媒体库":
+            txt_msg= "點播媒體庫";
+            break;
+            case "报警媒体库":
+            txt_msg= "報警媒體庫";
+            break;
+            case "录音媒体库":
+            txt_msg= "錄音媒體庫";
+            break;
+        }
+    }
+    else if(curr_language == "chinese") 
+    {
+        //不做处理
+    }
+    else if(curr_language == "english")
+    {
+        switch(txt_msg)
+        {
+            case "共享媒体库":
+            txt_msg= "Sharing Media";
+            break;
+            case "铃声媒体库":
+            txt_msg= "Ring Music";
+            break;
+            case "点播媒体库":
+            txt_msg= "AOD Media";
+            break;
+            case "报警媒体库":
+            txt_msg= "Alarm Media";
+            break;
+            case "录音媒体库":
+            txt_msg= "Recording Media";
+            break;
+			case "语音合成媒体库":
+            $txt_msg= "tts media";
+            break;
+        }
+    }
+return txt_msg;
+}
+function selAll(aid)
+{
+	
+	if(aid==0)
+	{
+		document.form2.id.checked=true;
+	}
+	for(i=0;i<document.form2.id.length;i++)
+	{
+		if(!document.form2.id[i].checked)
+		{
+			document.form2.id[i].checked=true;
+		}
+	}
+
+}
+function noSelAll(aid)
+{
+	if(aid==0)
+	{
+		document.form2.id.checked=false;
+	}
+	for(i=0;i<document.form2.id.length;i++)
+	{
+		if(document.form2.id[i].checked)
+		{
+			document.form2.id[i].checked=false;
+		}
+	}
+}
+
+function getCheckboxItem()
+{
+	var allSel="";
+	
+	if(document.form2.id.checked)
+	{
+		allSel=document.form2.id.value;
+	
+		if(allSel==undefined)
+	
+		allSel="";
+	}
+	for(i=0;i<document.form2.id.length;i++)
+	{
+		if(document.form2.id[i].checked)
+		{
+			if(allSel=="")
+			
+				allSel=document.form2.id[i].value;
+				
+			else
+			
+				allSel=allSel+","+document.form2.id[i].value;
+		}
+	}
+	return allSel;
+}
+
+function delTerminalmusic(flag)
+{
+	var qstr=getCheckboxItem();
+	var terminalid=<{$terminalid}>;
+	
+	if(qstr==null||qstr=="")
+	{
+		alert("<{$displaymedia.selectmusic|capitalize}>");
+		return void(0);	
+	}
+	else
+	{
+			if(window.confirm('<{$displaymedia.offline_remoremedia|capitalize}>'))
+			{
+				location="do.php?act=del_terminal_music&id="+qstr+"&terminal_id="+terminalid+"&flag="+flag+"";
+					djdd();
+			}
+			
+	}
+}
+
+
+</script>
+</head>
+<body>	
+<{include file="displayproperty/displaymedia_form.html"}> 
+<{include file="language/`$language`_foot.php"}>
+</body>
+</html>

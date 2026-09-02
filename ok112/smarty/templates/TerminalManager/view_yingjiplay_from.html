@@ -1,0 +1,110 @@
+<form name="form2" class="terminal_form_to_body">
+<tbody>
+<div id="divTest" style="width:100%;overflow-x:scroll;overflow-y:scroll">
+<table width="98%" border="0" cellpadding="2" cellspacing="1"  align="center" id="tableSort">
+<thead>
+	<tr align='center' class="terminal_table_row_bg">   
+		<th width="7%" nowrap="nowrap" onclick="sortTable('tableSort', 1,'1')"><{$Termianl_manager_Options}></th>                 	
+		<th width="18%" nowrap="nowrap" onclick="sortTable('tableSort', 2,'1')"><{$Quickplay_task_name}></th>    
+		<th width="13%" nowrap="nowrap" onclick="sortTable('tableSort', 3,'1')"><{$Quickplay_task_volume}></th>      
+		<th width="13%" nowrap="nowrap" onclick="sortTable('tableSort', 4,'1')"><{$Termianl_manager_type}></th>  
+		<th width="12%" nowrap="nowrap" onclick="sortTable('tableSort', 5,'1')"><{$Termianl_manager_Terminal_name}></th>  
+		<th width="18%" nowrap="nowrap" onclick="sortTable('tableSort', 6,'1')"><{$Quickplay_task_id}></th>   
+	</tr> 
+	</thead>
+	<{if $terminal_info|@count neq 0}>        
+		<{section name=loop loop=$terminal_info}>    
+		  <tr align='center' class="terminal_per_row" onmouseover="this.style.backgroundColor = '#EEEEFF'" onmouseout="this.style.backgroundColor = '#F1F4F5'">             	
+			<td nowrap="nowrap">
+				<input name="id" type="checkbox" id="id" value="<{$terminal_info[loop].id}>">
+			</td>	
+			<td nowrap="nowrap"><{$terminal_info[loop].taskname}></td>	
+		
+			 <td nowrap="nowrap"><{$terminal_info[loop].defaultvolume}></td>	
+			 <td nowrap="nowrap"><{$terminal_info[loop].key}></td> 		 
+			 <td nowrap="nowrap"><{$terminal_info[loop].terminalname}></td> 
+			  <td nowrap="nowrap"><{$terminal_info[loop].taskid}></td> 		
+		  </tr>         
+		<{/section}>
+	<{else}>
+	
+	<tr class="tablestyle"  onmouseover="this.style.backgroundColor = '#EEEEFF'" onmouseout="this.style.backgroundColor = '#FFFFFF'">
+		<td colspan="6" style="text-align:center"><strong><{$Revise.No_data}></strong></td>
+	</tr>
+	<{/if}>
+	</table>
+	</div>
+	</tbody> 
+	<table cellpadding="0" cellspacing="0">
+<tr class="tablestyle">
+	<td colspan="6" style="text-align:left">
+		<a  href="javascript:selAll(0)" name="select_all_yes" id="select_all_yes">
+			<{$terminal_manager.Select_All|capitalize}>
+		</a>&nbsp;				
+		<a  href="javascript:noSelAll(0)" name="select_all_no" id="select_all_no">
+			<{$terminal_manager.Cancel|capitalize}>
+		</a>&nbsp;
+		<a href="javascript:setshotcut(1)">
+		<{$terminal_manager.Set_yingji_Key|capitalize}>
+		</a>&nbsp;
+		<a href="javascript:setshotcut(2)">
+		<{$terminal_manager.modify_yingji_Key|capitalize}>
+		</a>&nbsp;
+		<a href="javascript:del_terminal_shotcut()">
+		<{$terminal_manager.del_yingji_Key|capitalize}>
+		</a>&nbsp;
+	</td>
+</tr>
+</table>
+<script language="javascript">
+var obj =document.getElementById( "divTest").offsetHeight; 
+ if(obj>=600)
+ {
+ 	document.getElementById("divTest").style.height=600+"px"; 
+ }
+ else
+ {
+  	document.getElementById("divTest").style.height=document.getElementById( "divTest").offsetHeight;
+ }
+ var objwidth = document.getElementById( "divTest").offsetWidth;
+if(objwidth<=1200)
+ {
+ document.getElementById("divTest").style.width=1200+"px"; 
+
+ }
+ else
+ {
+  document.getElementById("divTest").style.width=document.getElementById( "divTest").offsetWidth;
+ }
+</script>
+</form>
+		<script src="smarty/templates/UserAccessControl/CheckUserRights.js" type="text/javascript" language="javascript"></script>			
+		<script>rights_control(<{$is_right}>,"<{$is_admin}>","link_view");</script>
+
+
+<table align="center"><tr><td><div class="link_style" align="center"><{$pagestr}></div></td></tr></table>
+
+<{if $user_rights ==1}>
+<!--什么也不做-->
+<{elseif $user_rights ==2}>
+<script>
+	var input_objs = document.getElementsByName('id');
+	for(var i=0; i< input_objs.length; i++)
+	{
+		input_objs[i].disabled = true;
+	}
+	for(var i=0; i< input_objs.length; i++)
+	{
+		<{section name=ter_id loop=$user_terminal}>
+		if(input_objs[i].value == "<{$user_terminal[ter_id]}>")
+		{
+			input_objs[i].disabled = false;
+		}
+		<{/section}>
+	}
+	document.getElementById('select_all_yes').style.display = 'none';
+	document.getElementById('select_all_no').style.display = 'none';
+</script>
+<{elseif $user_rights ==0}>
+<!--什么也不做-->
+<{/if}>

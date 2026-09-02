@@ -1,0 +1,499 @@
+<div class="server_div">
+<table width="800px" border="0" align="center" cellpadding="0" cellspacing="0">
+  <tr>
+    <td>
+		<img src="<{$server_manager.server_image}>" />
+	</td>
+  </tr>
+  <tr>
+  	<td class="table_horizontal_line">	
+	</td>
+  </tr>
+  <tr>
+    <td align="center" valign="top">
+		<div class="server_subdiv1">
+			<table class="server_table" border="0">
+				<tr>
+					<td colspan="6" class="server_table_row1">
+						<{$server_manager.Server_information|capitalize}>
+					</td>
+				</tr>
+				<tr>
+					<td nowrap="nowrap" style="text-align:center; width:15%">
+						<{$server_manager.Server_status|capitalize}>
+					</td>
+					<td style="text-align:center; width:15%"></td>
+					
+					<td nowrap="nowrap" style="text-align:center; width:15%">
+						<{if $workstate == 0}>
+							<img src="../../skin/images/frame/stop.gif" width="20" height="20" alt="&lt;{$server_manager.Server_Termination}&gt;" align="absbottom"/>
+						<{elseif $workstate == 1}>
+							<img src="../../skin/images/frame/start.gif" width="20" height="20" alt="&lt;{$server_manager.Server_running}&gt;" align="absbottom"/>
+						<{/if}>					</td>
+					<td style="text-align:center; width:15%"></td>
+
+					<td nowrap="nowrap" style="text-align:center; width:15%">
+						<input type="button" value="<{$server_manager.Restart_server|capitalize}>" name="restart_server" id="restart_server" onclick="restart_server()" class="server_restart_button"/>
+						<{if $workstate == 0}>
+							<script>
+								document.getElementById('restart_server').disabled = false;
+							</script>	
+						<{elseif $workstate == 1}>
+							<script>
+								//document.getElementById('restart_server').disabled = true;
+							</script>	
+						<{/if}>				  
+					</td>
+					
+					<td style="text-align:center; width:15%"></td>
+				</tr>
+				
+				<tr><td colspan="6" height="10px"></td></tr>
+				
+				<tr>
+					<td style="text-align:center; width:15%"><{$server_manager.linking_number|capitalize}>:<{$currectconnectcount}></td>
+		
+					<td style="text-align:center; width:15%"><{$server_manager.Running_tasks|capitalize}>:<{$taskcount}></td>
+					
+					<td style="text-align:center; width:15%"><{$server_manager.Current_Bandwidth|capitalize}>:<{$currentbandwidth}>KB/s</td>
+					
+					<td style="text-align:center; width:15%"><{$server_manager.version|capitalize}>:</td>
+					
+					<td style="text-align:left;  width:30%" align="left">
+					<{$version}>
+					</td>
+				</tr>
+			</table>
+		</div>
+	</td>
+  </tr>
+  <tr>
+  	<td align="center" valign="top">
+	<form name="serverform" method="post" action="do.php?act=serveredit_msg&id=<{$id}>" onsubmit="return checkform();">
+		<div class="server_subdiv1">
+			<table class="server_table">
+				<tr>
+					<td colspan="4" class="server_table_row1">
+						<{$server_manager.Server_configuration|capitalize}>
+					</td>
+				</tr>
+				<tr>
+					<td width="10%" nowrap="nowrap" class="server_table_col1">
+						<{$server_manager.Server_IP|capitalize}>				
+					</td>
+					<td width="30%" nowrap="nowrap" class="server_table_col2">
+						<input title="<{$server_manager.inputServer_IP|capitalize}>" class="server_input" name="ip" type="text" id="ip" value="<{$ip}>" />
+						<span id="ip_s"><font class="server_star" size="-1">*</font></span>				  
+					</td>
+					<td width="10%" nowrap="nowrap" class="server_table_col1">
+						<{$server_manager.HTTP_Interface|capitalize}>					
+					</td>
+					<td width="30%" nowrap="nowrap" class="server_table_col2">
+						<input title="<{$server_manager.inputHTTP_Interface|capitalize}>" class="server_input" name="port" type="text"  maxlength="4" id="port" readonly="readonly" value="<{$port}>"/>
+						<span id="port_s"><font class="server_star" size="-1">*</font></span>				
+					</td>
+				</tr>
+				<tr>
+					<td width="10%" nowrap="nowrap" class="server_table_col1">
+						<{$server_manager.subnetmask|capitalize}>
+					</td>
+					<td width="30%" nowrap="nowrap" class="server_table_col2">
+					<input title="<{$server_manager.mastersubnetmask|capitalize}>" class="server_input" type="text" id="mastersubnetmask"  name="mastersubnetmask" value="<{$heartnetmaskip}>" />
+				   <span id="mastersubnetmasks"><font class="server_star" size="-1">*</font></span>	
+						
+					</td>
+					<td width="10%" nowrap="nowrap" class="server_table_col1">
+						<{$server_manager.RTSP_interface|capitalize}>				
+					</td>
+					<td width="30%" nowrap="nowrap" class="server_table_col2">
+						<input title="<{$server_manager.inputRTSP_interface|capitalize}>" class="server_input" maxlength="4" name="udpport" type="text" id="udpport" readonly="readonly" value="<{$udpport}>"/>                      
+					<span id="rtspport_s"><font class="server_star" size="-1">*</font></span>				  
+					</td>
+				</tr>		
+				<tr>	
+					<td width="10%" nowrap="nowrap" class="server_table_col1">
+						<{$server_manager.gateway|capitalize}>						
+					</td>
+					
+					<td width="30%" nowrap="nowrap" class="server_table_col2">
+			
+						<input  class="server_input" name="gateway" type="text" id="gateway" value="<{$gateway}>" />
+						<span id="gateway_s"><font class="server_star" size="-1">*</font></span>
+					</td>
+						<td width="10%" nowrap="nowrap" class="server_table_col1">
+					<{$server_manager.date_port|capitalize}>			
+					</td>
+					<td width="30%" nowrap="nowrap" class="server_table_col2">
+						<input title="<{$server_manager.dateport|capitalize}>" class="server_input" type="text" id="dateport"  name="dateport" readonly="readonly" value="<{$dateport}>" />
+							<span id="dateport_s"><font class="server_star" size="-1">*</font></span>				
+				<!--
+				 <span id="saveserverip"><font class="server_star" size="-1">*</font></span>
+				 -->	
+					</td>
+				</tr>
+				<tr id="max_bandwidth">
+				<td width="10%" nowrap="nowrap" class="server_table_col1">
+					<{$server_manager.Maximum_bandwidth|capitalize}>					
+					</td>
+					<td width="30%" nowrap="nowrap" class="server_table_col2">
+				<input title="<{$server_manager.inputMaximum_bandwidth|capitalize}>" class="server_input" name="maxbandwidth" maxlength="10"  type="text" id="maxbandwidth" value="<{$maxbandwidth}>"/>
+						<span id="maxbandwidth_s"><font class="server_star" size="-1">*(<{$server_manager.Units}>：KB/s)</font></span>			 
+					</td>
+	
+				<td  width="10%" nowrap="nowrap" class="server_table_col1">
+					<{$server_manager.Maximum_Connections|capitalize}>	
+				
+				</td>
+				<td width="30%" nowrap="nowrap" class="server_table_col2" >
+				<input title="<{$server_manager.inputMaximum_Connections|capitalize}>" class="server_input" name="maxhttpconnections" maxlength="4" type="text" id="maxhttpconnections" value="<{$maxhttpconnections}>" />
+						<span id="maxhttpconnections_s"><font class="server_star" size="-1">*</font></span>				   
+				</td>
+				</tr>
+				<tr>
+			
+				<td  width="10%" nowrap="nowrap" class="server_table_col1">
+				<{$server_manager.webport|capitalize}>		
+				
+				</td>
+				<td width="30%" nowrap="nowrap" class="server_table_col2" >
+				 <input title="<{$server_manager.webportdemo|capitalize}>" class="server_input" type="text" id="webport"  name="webport" readonly="readonly" value="<{$listenport}>" />
+				<script language="javascript">
+				if(<{$listenport}>==1)
+				{
+					document.getElementById('webport').disabled="enable";
+				}
+				</script>
+				 <span id="webport_s"><font class="server_star" size="-1">*</font></span>
+				</td>
+					<td width="10%" nowrap="nowrap" class="server_table_col1">
+						<{$server_manager.offline_port|capitalize}>				
+					</td>
+					<td width="30%" nowrap="nowrap" class="server_table_col2">
+					<input  class="server_input" maxlength="4" name="offlineport" type="text" id="offlineport" readonly="readonly" value="<{$offlineport}>"/>                      
+					<span id="offlinepport_s"><font class="server_star" size="-1">*</font></span>				  
+					</td>
+				</tr>
+			
+				<tr>
+				<!--<td  width="10%" nowrap="nowrap" class="server_table_col1">
+				<{$server_manager.sdkaddr|capitalize}>		
+				</td>
+				<td width="30%" nowrap="nowrap" class="server_table_col2" >
+				 <input title="<{$server_manager.sdkaddrdemo|capitalize}>" class="server_input" type="text" id="sdkaddr"  name="sdkaddr" value="<{$sdkaddr}>"/>
+				<span id="sdkaddr_s"><font class="server_star" size="-1">*</font></span>	
+				</td>-->
+					<td width="10%" nowrap="nowrap" class="server_table_col1"><{$server_manager.sdkport|capitalize}>					</td>
+					<td width="30%" nowrap="nowrap" class="server_table_col2"><input title="<{$server_manager.sdkportdemo|capitalize}>" class="server_input" type="text" id="sdkport"  name="sdkport" readonly="readonly" value="<{$sdkport}>" />
+                      <span id="sdkport_s"><font class="server_star" size="-1">*</font></span>					</td>
+				</tr>
+			
+				<input type="hidden"  id="setwebport" name="setwebport" readonly="readonly" value=""/>
+				<tr id='server_modes'>
+					<!--<td width="10%" nowrap="nowrap" class="server_table_col1">
+						<{$server_manager.doublebackup|capitalize}>	
+					</td>
+					<td width="30%" nowrap="nowrap" class="server_table_col2" align="center">
+					<{$server_manager.enablebackup|capitalize}>	
+					<input name="servermodes" id="servermodes" type="radio" value=1  />	
+					<{$server_manager.disablebackup|capitalize}>	
+					<input  name="servermodes"  type="radio" value=0 checked="checked"/>
+					<script language="javascript" defer="true">
+					if(<{$servermodes}> == 1)
+					{
+					  document.getElementsByName('servermodes')[0].checked = true;
+					}
+					else
+					{
+					   document.getElementsByName('servermodes')[1].checked = true;
+					}
+					</script>
+					</td>
+			
+					<td width="10%" nowrap="nowrap" class="server_table_col1">
+						<{$server_manager.Server_mode1s|capitalize}>	
+					</td>
+					<td width="30%" nowrap="nowrap" class="server_table_col2" align="center">
+					<{$server_manager.Server_mode1|capitalize}>	
+					<input name="servermodes" id="servermodes" type="radio" value=1  />	
+					<{$server_manager.Server_mode2|capitalize}>	
+					<input  name="servermodes"  type="radio" value=0 checked="checked"/>
+					<script language="javascript" defer="true">
+					if(<{$servermodes}> == 1)
+					{
+						 document.getElementsByName('servermodes')[0].checked = true;
+					 }
+					 else
+					 {
+					  document.getElementsByName('servermodes')[1].checked = true;
+					 }
+					</script>
+					</td>
+					-->
+				</tr>
+			</table>
+		</div>
+		<div class="server_subdiv1">
+		<table class="server_table"  id="server_tables">
+			<tr>
+				<td colspan="4" class="server_table_row1">
+				
+				<{if $registerflag == 1||$registerflag == 2}>
+					<{$server_manager.machine_backup|capitalize}>
+				<{else}>
+					<{$server_manager.server_set|capitalize}>
+				<{/if}>
+				</td>
+			</tr>
+				<tr>
+					<td width="10%" nowrap="nowrap" id="mastip" class="server_table_col1">
+						<{$server_manager.Master_IP|capitalize}>				
+					</td>
+					
+					<td width="30%" nowrap="nowrap"  id="mast_ip" class="server_table_col2">
+						<input  class="server_input" name="master_ip" type="text" id="master_ip" value="<{$masterip}>"/>
+						<span id="master_s"><font class="server_star" size="-1">*</font></span>				  
+					</td>
+					
+					<td width="10%" nowrap="nowrap" id="slaveip" class="server_table_col1">
+						<{$server_manager.Slave_IP|capitalize}>				
+					</td>
+					
+					<td width="30%" nowrap="nowrap" id="slave_ip" class="server_table_col2">
+						<input  class="server_input" name="Slave_IP" type="text" id="Slave_IP" value="<{$slaveip}>" />
+						<span id="slave_s"><font class="server_star" size="-1">*</font></span>				  
+					</td>
+				</tr>
+
+				<tr>
+					<td width="10%" nowrap="nowrap" class="server_table_col1">
+					<{$server_manager.subnetmask|capitalize}>
+					</td>
+					
+					<td width="30%" nowrap="nowrap" class="server_table_col2">
+						<input  class="server_input" name="subnetmaskip" type="text" id="subnetmaskip" value="<{$subnetmask}>"/>
+						<span id="mastersubnetmask_s"><font class="server_star" size="-1">*</font></span>				  
+					</td>
+					
+					<td width="10%" nowrap="nowrap" class="server_table_col1">
+							
+					</td>
+					
+					<td width="30%" nowrap="nowrap"  class="server_table_col2">
+								  
+					</td>
+				</tr>
+				<tr>
+					<td width="10%" nowrap="nowrap" id="mname" class="server_table_col1">
+						<{$server_manager.master_name|capitalize}>				
+					</td>
+					
+					<td width="30%" nowrap="nowrap" id="m_name"  class="server_table_col2">
+						<input title="<{$server_manager.enter_server_name|capitalize}>" class="server_input" name="name" type="text" id="name" value="<{$name}>"/>
+						<span id="name_s"><font class="server_star" size="-1">*</font></span>				  
+					</td>
+					<td width="10%" nowrap="nowrap" id="sname" class="server_table_col1">
+						<{$server_manager.slave_name|capitalize}>				
+					</td>
+					
+					<td width="30%" nowrap="nowrap" id="s_name" class="server_table_col2">
+						<input title="<{$server_manager.enter_server_name|capitalize}>" class="server_input" name="slavename" type="text" id="slavename" value="<{$slavename}>"/>
+						<span id="slavename_s"><font class="server_star" size="-1">*</font></span>				  
+					</td>
+					
+				</tr>
+				<tr id="display_mode">
+				
+						<td width="10%" nowrap="nowrap" class="server_table_col1">
+							<{$server_manager.Server_mode1s|capitalize}>				
+						</td>
+						<td width="30%" nowrap="nowrap" class="server_table_col2" align="center">
+							<{$server_manager.Master_server|capitalize}>	
+								<input name="servermodel" id="servermodel" type="radio" value=1 checked="checked" onClick="showdomodel(1);"/>	
+							<{$server_manager.Slave_server|capitalize}>	
+								<input  name="servermodel"  type="radio" value=2 onClick="showdomodel(2);"/>
+							<script language="javascript" defer="true">
+							function showdomodel(flag)
+							{
+								if(flag==1)
+								{
+									document.getElementById('slave_s').innerHTML="<font class='server_star'></font>";
+									document.getElementById('slaveip').style.color ="black";
+									document.getElementById('sname').style.color ="black";
+									document.getElementById('mastip').style.color ="red";
+									document.getElementById('mname').style.color ="red";
+						
+									
+									if(document.getElementById('master_ip').value=="<{$slaveip}>")
+									{
+										document.getElementById('master_ip').value="<{$masterip}>";
+										document.getElementById('name').value="<{$name}>";
+										alert('1');
+									}
+								else
+									{
+								//	document.getElementById('master_ip').value="<{$slaveip}>";
+								//	document.getElementById('name').value="<{$slavename}>";
+									alert('2');
+									}
+								
+									if(document.getElementById('Slave_IP').value=="<{$masterip}>")
+									{
+										document.getElementById('Slave_IP').value="<{$slaveip}>";
+										document.getElementById('slavename').value="<{$slavename}>";
+										alert('3');
+									}
+									else
+									{
+								//	document.getElementById('Slave_IP').value="<{$masterip}>";
+								//	document.getElementById('slavename').value="<{$name}>";
+									alert('4');
+									}
+								
+								}
+								else
+								{
+									document.getElementById('master_s').innerHTML="<font class='server_star'></font>";
+									document.getElementById('slaveip').style.color ="red";
+									document.getElementById('sname').style.color ="red";
+									document.getElementById('mastip').style.color ="black";
+									document.getElementById('mname').style.color ="black";
+									if(document.getElementById('master_ip').value=="<{$slaveip}>")
+									{
+										document.getElementById('master_ip').value="<{$masterip}>";
+										document.getElementById('name').value="<{$name}>";	
+										alert('5');
+									}
+								else
+									{
+									document.getElementById('master_ip').value="<{$slaveip}>";
+									document.getElementById('name').value="<{$slavename}>";
+									alert('6');
+									}
+									
+									if(document.getElementById('Slave_IP').value=="<{$masterip}>")
+									{
+									document.getElementById('Slave_IP').value="<{$slaveip}>";
+									document.getElementById('slavename').value="<{$slavename}>";
+									alert('7');
+									}
+								else
+									{
+									document.getElementById('Slave_IP').value="<{$masterip}>";
+									document.getElementById('slavename').value="<{$name}>";
+									alert('8');
+									}
+										
+								}
+							}
+							if(<{$model}> == 1)
+							{
+							 	document.getElementsByName('servermodel')[0].checked = true;
+								document.getElementById('mastip').style.color ="red";
+								document.getElementById('mname').style.color ="red";
+								document.getElementsByTagName('initdate').disabled=true;
+							//	document.getElementById('master_s').innerHTML="<font class='server_star'><{$server_manager.address_do_net|capitalize}></font>";
+							}
+							else
+							{
+							 	document.getElementsByName('servermodel')[1].checked = true;
+								document.getElementById('slaveip').style.color ="red";
+								document.getElementById('sname').style.color ="red";
+								document.getElementsByTagName('initdate').disabled=false;
+								//document.getElementById('slave_s').innerHTML="<font class='server_star'><{$server_manager.address_do_net|capitalize}></font>";
+							}
+								
+						</script>
+						</td>			  
+				
+				</tr>
+		</table>
+		<table class="server_table">
+				<tr>
+					<td colspan="4" style="text-align:center;padding:5px;">
+						<input  type="submit" name="submit" value="<{$server_manager.Sumbit|capitalize}>" class="server_button"/>
+							&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+						<input type="reset" name="reset" value="<{$server_manager.Cancel|capitalize}>" class="server_button"/>
+						
+						<input type="button" name="initdate" value="<{$server_manager.default_set|capitalize}>" name="default_setting" id="default_setting" onclick="init_date()" class="server_restart_button"/>
+					</td>
+				</tr>
+		</table>
+		</div>		
+	</form>
+	</td>
+  </tr>
+</table>
+</div>
+<{if $admin_id == "administrator"}>
+	<script>
+		var Version_Item = "<{$masterip}>";	
+		var input_array = document.getElementsByTagName("input");
+		
+		for(var i=0; i<input_array.length; i++)
+		{
+			if(Version_Item==1)
+			{
+				
+			}
+			else
+			{	
+				if(input_array[i].name=="restart_server"||input_array[i].name=="ip"||input_array[i].name=="subnetmaskip"||input_array[i].name=="gateway"
+				||input_array[i].name=="master_ip"||input_array[i].name=="Slave_IP"||input_array[i].name=="name"||input_array[i].name=="slavename"
+				||input_array[i].name=="servermodel"||input_array[i].name=="submit"||input_array[i].name=="reset"||input_array[i].name=="initdate")
+				{
+
+				}
+				else
+				{
+				//	input_array[i].disabled = true;
+				}
+			}
+		}
+	</script>
+<{else}>
+	<script>
+		
+	//	var input_array = document.all.tags("input");
+	var input_array = document.getElementsByTagName("input");
+		for(var i=0; i<input_array.length; i++)
+		{
+			input_array[i].disabled = true;
+		}
+	</script>
+<{/if}>
+
+<script language="javascript">
+
+if(document.getElementsByName('servermodel')[0].checked==checked)
+{
+	document.getElementsByTagName('initdate').disabled=true;
+}
+else
+{
+	document.getElementsByTagName('initdate').disabled=false;
+}
+
+var registerflag="<{$registerflag}>";
+if(registerflag==1||registerflag==2)
+{
+
+}
+else
+{
+
+document.getElementById("max_bandwidth").style.display="none";	
+document.getElementById("server_modes").style.display="none";	
+//document.getElementById("server_tables").style.display="none";	
+document.getElementById("default_setting").style.display="none";
+	
+document.getElementById("slaveip").style.display="none";	
+document.getElementById("slave_ip").style.display="none";	
+document.getElementById("display_mode").style.display="none";
+document.getElementById("sname").style.display="none";
+document.getElementById("s_name").style.display="none";
+document.getElementById("mastip").style.align="left";
+document.getElementById("mast_ip").style.align="left";
+document.getElementById("mname").style.align="left"	
+document.getElementById("m_name").style.align="left"	
+}
+</script>

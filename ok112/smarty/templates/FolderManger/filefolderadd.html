@@ -1,0 +1,69 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>AddFolder</title>
+
+<link href="skin/css/main_page_style.css" rel="stylesheet" type="text/css" />
+
+<script language="javascript"> 
+function isNull( str )
+{
+	if ( str == "" || str==null) 
+	return true;
+	var regu = "^[ ]+$";
+	var re = new RegExp(regu);
+	return re.test(str);
+}
+
+function isChinaOrNumbOrLett(s)
+{ 
+	var regu = "^[0-9a-zA-Z\u4e00-\u9fa5]+$"; 
+	var re = new RegExp(regu); 
+	if (re.test(s)) 
+	{ 
+		return true; 
+	}
+	else
+	{ 
+		return false; 
+	} 
+} 
+//验证文件夹名称
+function checkform()
+{
+	if(isNull(document.fileForm.folderName.value))
+	{
+		document.getElementById('folderName_s').innerHTML="<font class='terminal_star'><{$create_folder.enter_name|capitalize}></font>";
+		document.fileForm.folderName.focus();
+		return false;
+	}
+	else
+	{
+		if(!isChinaOrNumbOrLett(document.fileForm.folderName.value))
+		{
+			document.getElementById('folderName_s').innerHTML="<font class='terminal_star'><{$create_folder.letter_number_Chinese|capitalize}></font>";
+			document.fileForm.folderName.focus();
+			return false;
+		}
+	}
+	/*
+	if(document.getElementById('isOrNoShare').checked)
+	{
+		document.getElementById('isOrNoShare').value=1;
+	}
+	else
+	{
+		document.getElementById('isOrNoShare').value=0;
+	}
+	document.getElementById('folderName_s').innerHTML="<font class='terminal_star'></font>";
+	*/
+	return true;
+}
+</script>
+</head>
+<body>
+<{include file="FolderManger/createFloder_from.html"}>
+<{include file="language/`$language`_foot.php"}> 
+</body>
+</html>

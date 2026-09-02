@@ -1,0 +1,118 @@
+<form name="form2" class="terminal_form_to_body">
+<table width="98%" border="0" cellpadding="2" cellspacing="1" class="bgcolors1"align="center" id="tablefolder">
+	<thead>
+	<tr align='center' class="terminal_table_row_bg" height="22" >   
+		<th width="10%"><{$file_folder_manager.Option|capitalize}></th>     		             	
+		
+		<th width="20%" nowrap="nowrap" onclick="sortTable('tablefolder', 1)" class="sort_data_table_sequence">
+			<{$file_folder_manager.Folder_name|capitalize}></th>    
+		
+		<th width="10%" nowrap="nowrap" onclick="sortTable('tablefolder', 2)" class="sort_data_table_sequence">
+			<{$file_folder_manager.Share|capitalize}></th>          
+		
+		<th width="15%"><{$file_folder_manager.Create_time|capitalize}></th>       
+	</tr>
+  </thead>
+	<tbody>
+<{if $info|@count neq 0}>   
+<{section name=loop loop=$info}>   
+	<tr align='center' onmouseover="this.style.backgroundColor='#EEEEEE'" onmouseout="this.style.backgroundColor='#ffffff'" >               	
+		<td>
+			<{if $is_right == 1 || $admin_id == "administrator"}>
+				<input name="id" type="checkbox" id="id" value="<{$info[loop].id}>" class="np">
+			<{else}>
+				<{$smarty.section.loop.index+1+$start}>
+			<{/if}>
+		</td>
+		<td>
+		
+			<script language="javascript">
+				document.write(chinese_big5_english("<{$chinese_big5_english}>","<{$info[loop].foldername}>"));
+			</script>
+			
+		</td>
+		
+		<{if $info[loop].priority == 0}>              
+			<td><{$file_folder_manager.Unshared|capitalize}></td>
+		<{elseif $info[loop].priority == 1}>
+			<td><{$file_folder_manager.Shared|capitalize}></td>
+		<{/if}> 
+		<td><{$info[loop].createtime}></td> 
+	</tr>   
+<{/section}>
+<{else}>
+	<tr align='center' onmouseover="this.style.backgroundColor='#EEEEEE'" onmouseout="this.style.backgroundColor='#ffffff'" > 
+		<td colspan="4"><strong><{$Revise.No_data|capitalize}></strong></td>
+	</tr>
+<{/if}>
+	</tbody> 
+	<tr>
+	<script src="smarty/templates/UserAccessControl/CheckUserRights.js" type="text/javascript" language="javascript"></script>
+		<td colspan="4" class="tablestyle">
+			<a href="javascript:selAll(0)" >
+				<{$file_folder_manager.Select_all|capitalize}>
+			</a>&nbsp;&nbsp;&nbsp;
+			
+			<a href="javascript:noSelAll(0)" >
+				<{$file_folder_manager.Cancel|capitalize}>
+			</a>&nbsp;&nbsp;&nbsp;
+			
+			<a href='javascript:addfolder()' target='main' >
+				<{$file_folder_manager.Create_folder|capitalize}>
+			</a>&nbsp;&nbsp;&nbsp;
+			
+			<a href='javascript:modifyfolder()' target='main' >
+				<{$file_folder_manager.Revise_folder|capitalize}>
+			</a>&nbsp;&nbsp;&nbsp;
+			
+			<a href="javascript:delfolder()" >
+				<{$file_folder_manager.Delete_folder|capitalize}>
+			</a>&nbsp;&nbsp;&nbsp;
+		</td>
+	</tr>
+	<script>
+		rights_control(<{$is_right}>,"<{$admin_id}>");
+	</script>
+</table>
+	</td>
+	</tr>  
+  <tr>
+    <td><div class="link_style" align="center"><{$pagestr}></div></td>
+  </tr>
+  
+  <!--  搜索表单  -->
+<form name='form3' action='filefoldermanager.php' method='get'>
+<input type='hidden' name='dopost' value='' />
+<table width='98%'  border='0' cellpadding='1' cellspacing='1' class="middle" align="center" style="margin-top:8px">
+  <tr>
+    <td background='skin/images/wbg.gif' align='center'>
+      <table border='0' cellpadding='0' cellspacing='0'>
+        <tr>
+          <td width='90' align='center'><{$Searchform.Search_conditions}></td>
+          <td width='160'>
+          <select class="colors" name="searchkey" id="searchkey" style="width:150px;">
+          	<option value=""><{$Searchform.Select_type}></option>
+          	<option value="name"><{$Searchform.Folder_Name}></option>
+          </select>
+        </td>
+        <td width='70'>
+          <{$Searchform.Keyword}>
+        </td>
+        <td width='160'>
+          	<input class="colors" type='text' name='searchvalue' id="searchvalue" value='' style='width:150px' />
+        </td>
+        <td width='110'>
+    		<select class="colors" name='orderby' id="orderby" style='width:80px'>
+    		  <option><{$Searchform.Sort}></option>
+    		  <option value="createtime"><{$Searchform.Created_Time}></option>
+      	    </select>
+        </td>
+        <td>
+          <input name="imageField" type="image" src="<{$file_folder_manager.search_image}>" width="45" height="20" border="0" class="np" />
+        </td>
+       </tr>
+      </table>
+    </td>
+  </tr>
+</table>
+</form>

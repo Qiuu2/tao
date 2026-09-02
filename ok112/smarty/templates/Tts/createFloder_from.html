@@ -1,0 +1,37 @@
+<form action="do.php?act=taskfolderadd_msg&folder_id=<{$id}>" method="post" name="fileForm" onSubmit="return checkform();" class="terminal_form_to_body">
+	   <table width="500" border="0" align="center" cellpadding="0" cellspacing="0" class="terminal_table_border">	
+		  <tr>
+			<td>
+			 <table border="0" align="center" cellpadding="0" cellspacing="0">
+			 	<tr>
+					<td>
+						<img src="<{$create_folder.create_foloder_image}>"/>
+					</td>
+				</tr>
+			 </table>
+			</td>
+		  </tr>
+		  <tr>
+		  	<td>
+			  <table border="0" align="center" cellpadding="5" cellspacing="0" style="margin-top:10px;"> 
+				  <tr class="bgcolors1">
+					<td width="25%" height="" align="right"><{$create_folder.Folder_name}></td>
+					<td width="51%" height="" align="left" valign="middle">
+						<input class="terminal_input_font" name="folderName" type="text" id="folderName">		
+						<span id="folderName_s" class="terminal_star">*</span>				
+					</td>			 
+				  </tr>	 
+	
+				  <tr>
+					<td align="center" colspan="2">
+						<input name="Submit" type="submit" class="terminal_button" value="<{$create_folder.Create}>"/>
+							&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+						<input name="reset" type="reset" class="terminal_button" id="reset" value="<{$create_folder.Cancel}>" />
+					</td>
+				  </tr>
+			 </table>
+			</td>
+		 </tr>
+   	  </table>
+
+</form>

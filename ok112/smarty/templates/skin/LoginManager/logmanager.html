@@ -1,0 +1,146 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>www.ok112.com留言板</title>
+<link href="css.css" rel="stylesheet" type="text/css" />
+<script type="text/javascript">
+function checkform(){
+if(document.form1.filename.value.length==0){
+	document.getElementById('filename_s').innerHTML="<font color='#ff0000'><b>请填写文件名!</b></font>";
+	document.form1.filename.focus();
+	return false;
+}else{
+	document.getElementById('filename_s').innerHTML="";
+}
+
+if(document.form1.newfile.value.length==0){
+	document.getElementById('newfile_s').innerHTML="<font color='#ff0000'><b>请选择文件 !</b></font>";
+	document.form1.newfile.focus();
+	return false;
+}else{
+	document.getElementById('newfile_s').innerHTML="";
+}
+
+if(FCKeditorAPI.GetInstance("description").GetXHTML(true)==""){
+document.getElementById('content_s').innerHTML="<font color='#ff0000'><b>请填写注释!</b></font>";
+FCKeditorAPI.GetInstance("description").Focus();   
+return false; 
+}else{
+	document.getElementById('content_s').innerHTML="";
+} 
+
+return true;
+}
+
+function viewArc(aid){
+	if(aid==0) aid = getOneItem();
+	window.open("archives.asp?aid="+aid+"&action=viewArchives");
+}
+function editArc(aid){
+	if(aid==0) aid = getOneItem();
+	location="archives.asp?aid="+aid+"&action=editArchives";
+}
+function updateArc(aid){
+	var qstr=getCheckboxItem();
+	if(aid==0) aid = getOneItem();
+	location="archives.asp?aid="+aid+"&action=makeArchives&qstr="+qstr+"";
+}
+function checkArc(aid){
+	var qstr=getCheckboxItem();
+	if(aid==0) aid = getOneItem();
+	location="archives.asp?aid="+aid+"&action=checkArchives&qstr="+qstr+"";
+}
+function moveArc(aid){
+	var qstr=getCheckboxItem();
+	if(aid==0) aid = getOneItem();
+	location="archives.asp?aid="+aid+"&action=moveArchives&qstr="+qstr+"";
+}
+function adArc(aid){
+	var qstr=getCheckboxItem();
+	if(aid==0) aid = getOneItem();
+	location="archives.asp?aid="+aid+"&action=commendArchives&qstr="+qstr+"";
+}
+
+function delterminal()
+{
+	var qstr=getCheckboxItem();
+	if(qstr==null||qstr=="")
+	{
+		alert("请选择选项!");
+		return	void(0);
+	}
+else
+	{
+		if(!window.confirm("确认删除!"))
+		{
+			return	void(0);
+		}
+	else
+		{
+			location="do.php?act=streamdel_msg&id="+qstr;	
+		}	
+	}
+
+}
+
+//获得选中文件的文件名
+function getCheckboxItem()
+{
+	var allSel="";
+	if(document.form2.id.value) return document.form2.id.value;
+	for(i=0;i<document.form2.id.length;i++)
+	{
+		if(document.form2.id[i].checked)
+		{
+			if(allSel=="")
+				allSel=document.form2.id[i].value;
+			else
+				allSel=allSel+","+document.form2.id[i].value;
+		}
+	}
+	return allSel;
+}
+
+//获得选中其中一个的id
+function getOneItem()
+{
+	var allSel="";
+	if(document.form2.id.value) return document.form2.id.value;
+	for(i=0;i<document.form2.id.length;i++)
+	{
+		if(document.form2.id[i].checked)
+		{
+				allSel = document.form2.id[i].value;
+				break;
+		}
+	}
+	return allSel;
+}
+function selAll()
+{
+	for(i=0;i<document.form2.id.length;i++)
+	{
+		if(!document.form2.id[i].checked)
+		{
+			document.form2.id[i].checked=true;
+		}
+	}
+}
+function noSelAll()
+{
+	for(i=0;i<document.form2.id.length;i++)
+	{
+		if(document.form2.id[i].checked)
+		{
+			document.form2.id[i].checked=false;
+		}
+	}
+}
+</script>
+</head>
+
+<body>
+<{include file="LoginManager/logmanager_form.html"}>
+</body>
+</html>

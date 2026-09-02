@@ -1,0 +1,41 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>FileAdd</title>
+
+<link rel="stylesheet" type="text/css" href="skin/css/main_page_style.css" />
+<style> 
+.div-relative{position:relative;} 
+.div-a{ position:absolute; left:3px; top:-25px;} 
+/* css注释说明： 背景为红色 */ 
+.div-b{ position:absolute; left:350px; top:10px; width:100px; height:30px} 
+
+
+.box1
+{
+	border:2px solid #E8E8E8;
+	width:500px;
+	height:20px;
+	font-size:12px;
+	background-color:#E8E8E8;
+	padding:0px;
+	font-family:Arial,Helvetica,sans-serif,"";
+	margin-top: 5px;
+	margin-right: auto;
+	margin-bottom: auto;
+	margin-left: auto;
+}
+
+
+
+/* DIV背景颜色为蓝色 */ 
+</style> 
+<script type="text/javascript" src="js/plupload.full.min.js"></script>
+
+</head>
+<body>
+<{include file="FileManager/fileadd_form.html"}>
+<{include file="language/`$language`_foot.php"}> 
+</body>
+</html>

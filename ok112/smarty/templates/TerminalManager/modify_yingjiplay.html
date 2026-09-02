@@ -1,0 +1,878 @@
+<html>
+<head>
+<META http-equiv=Content-Type content="text/html; charset=utf-8">
+<title>AddFileTask</title>
+
+<link href="skin/css/main_page_style.css" rel="stylesheet" type="text/css" />
+
+<!--添加文件列表开始-->
+<style>
+/*想要改输入日历控件的样子就改下面的CSS样式就可以了*/
+/*Date*/
+.header {
+	font-weight: bold;
+	font-weight: bold;
+	color: #000000;
+	background:#C2DEED;
+	height: 25px;
+	padding-left: 10px;
+	font-family: Arial, Tahoma;
+	font-size: 12px;
+}
+.header td
+{
+   padding-left: 10px;
+}
+.header a
+{
+   color: #154BA0;
+}
+.header input
+{
+   background:none;
+   vertical-align: middle;
+   height: 16px;
+}
+.category
+{
+   font: 12px Arial, Tahoma;
+   font: 11px Arial, Tahoma;
+   color: #92A05A;
+   height:20px;
+   background-color: #FFFFD9;
+}
+.category td
+{
+   border-bottom: 1px solid #DEDEB8;
+}
+.expire, .expire a:link, .expire a:visited
+{
+   color: #999999;
+}
+.default, .default a:link, .default a:visited
+{
+   color: #000000;
+}
+.checked, .checked a:link, .checked a:visited
+{
+   color: #FF0000;
+}
+.today, .today a:link, .today a:visited
+{
+   color: #00BB00;
+}
+#calendar_year
+{
+   display: none;
+   line-height: 130%;
+   background: #FFFFFF;
+   position: absolute;
+   z-index: 10;
+}
+#calendar_year .col
+{
+   float: left;
+   background: #FFFFFF;
+   margin-left: 1px;
+   border: 1px solid #86B9D6;
+   padding: 4px;
+}
+#calendar_month
+{
+   display: none;
+   background: #FFFFFF;
+   line-height: 130%;
+   border: 1px solid #86B9D6;
+   padding: 4px;
+   position: absolute;
+   z-index: 11;
+}
+.tableborder
+{
+   background: white;
+   border: 1px solid #86B9D6;
+}
+#year, #month
+{
+   padding-right:10px;
+   background:url(onbottom.gif) no-repeat center right;
+}/*图片路径可以改成自己的*/
+/*Date*/
+</style>
+<script language="javascript" defer="defer">
+	//这段脚本如果你的页面里有，就可以去掉它们了
+	var ie=true;
+	//var ie =navigator.appName=="Microsoft Internet Explorer"?true:false;
+ if (navigator.appName.indexOf("Microsoft")!= -1)
+  {   
+	  ie=true;
+   } 
+  else 
+  {   
+	 ie=false;
+    }
+
+	function $(objID)
+	{
+		return document.getElementById(objID);
+	}
+</script>
+	<link href="smarty/templates/BellManager/codebase/dhtmlxtree.css" rel="stylesheet" type="text/css">
+	<script language="JavaScript" src="smarty/templates/BellManager/codebase/dhtmlxtree.js" type"text/JavaScript"></script>	
+	<script language="JavaScript" src="smarty/templates/BellManager/codebase/dhtmlxcommon.js" type"text/JavaScript"></script>
+
+	
+	<script src="skin/js/frame/analysis_tree_terminal_group_string.js"></script>
+	<script  src="smarty/templates/ajax/get_terminaltype.js" ></script>
+
+<!--添加文件列表结束-->
+<!--修改脚本2010/5/6-->
+<script>
+//获取当前日期
+function getNowFormatDate()
+{
+   var day = new Date();
+   var Year = 0;
+   var Month = 0;
+   var Day = 0;
+   var CurrentDate = "";
+   //初始化时间
+   Year= day.getFullYear();
+   Month= day.getMonth()+1;
+   Day = day.getDate();
+   CurrentDate += Year + "-";
+   if (Month >= 10 )
+   {
+	  CurrentDate += Month + "-";
+   }
+   else
+   {
+	  CurrentDate += "0" + Month + "-";
+   }
+   if (Day >= 10 )
+   {
+	  CurrentDate += Day ;
+   }
+   else
+   {
+	  CurrentDate += "0" + Day ;
+   }
+   return CurrentDate;
+}
+</script>
+
+<SCRIPT language="javascript" defer="true">
+
+function isNull( str )
+{
+	if ( str == "" || str==null) 
+	return true;
+	var regu = "^[ ]+$";
+	var re = new RegExp(regu);
+	return re.test(str);
+}
+
+function isChinaOrNumbOrLett(s)
+{
+	var regu = "^[0-9a-zA-Z\u4e00-\u9fa5]+$"; 
+	var re = new RegExp(regu); 
+	if (re.test(s)) 
+	{ 
+		return true; 
+	}
+	else
+	{ 
+		return false; 
+	} 
+} 
+
+function isNumber( s )
+{ 
+	var regu = "^[0-9]+$"; 
+	var re = new RegExp(regu); 
+	if (s.search(re) != -1) 
+	{ 
+		return true; 
+	}
+	else 
+	{ 
+		return false; 
+	} 
+} 
+function trim(str)
+{
+   str=str.replace(/(^\s*)|(\s*$)/g,""); 
+   return str;
+}
+function lenReg(str){
+　　return str.replace(/[^x00-xFF]/g,'***').length;
+};
+
+function isChinaOrLett( s )
+{
+	var regu = "^[0-9a-zA-Z]+$"; 
+	var re = new RegExp(regu); 
+	if (re.test(s)) 
+	{ 
+		return true; 
+	}
+	else
+	{
+		return false; 
+	} 
+}
+
+//验证表单 
+function checkform()
+{
+	//获取音量
+	document.getElementById('task_default_volume').value = trim(document.getElementById('volume_value').value);
+	
+	var str=trim(tree3.getAllChecked());
+
+	analysis_tree_terminal_group_string(str);
+	//var strarray=str.split(",");
+	document.getElementById('analysis_tree_group_string').value = trim(analysis_tree_group_string.toString()); 
+	//alert(document.getElementById('analysis_tree_group_string').value );
+	analysis_tree_group_string = new Array();
+	document.getElementById('terminallistvalue').value = trim(analysis_tree_terminal_string.toString());
+	analysis_tree_terminal_string = new Array();
+
+	if(isNull(document.getElementById('terminallistvalue').value))
+	{
+		alert("<{$media_task_add.select_terminals_tasks|capitalize}>");
+		return false;
+	}
+	
+	
+		var str = trim(sel_item_seq.toString());
+		//alert(str);
+		var strarray=str.split(",");
+		var temp=0;
+		var storearray=new Array();
+		for(var i=0;i<strarray.length;i++)
+		{
+			if(isNumber(strarray[i]))
+			{
+				storearray[temp]=strarray[i];
+				temp++;
+			}
+			continue;
+		}
+		document.getElementById('listvalue').value=trim(storearray.toString());
+		if(isNull(document.getElementById('listvalue').value))
+		{
+			alert("<{$media_task_add.select_media_files|capitalize}>");
+			return false;
+		}
+
+
+	
+return true;
+}
+</script>
+
+</head>
+<body>
+<form name="frmSearch2" method="post" action="do.php?act=modify_yingjiplay&terminal_id=<{$terminal_id}>&userid=<{$userid}>&taskid=<{$taskinfo.taskid}>" onSubmit="return checkform();" class="terminal_form_to_body">
+  <table width="780" align="center" border="0" cellpadding="0" cellspacing="0"  class="terminal_table_border">
+    <tr>
+      <td colspan="2">
+	  	<img src="<{$media_task_add.modify_quick_task}>"/>
+	  </td>
+    </tr>
+	<tr>
+       <td colspan="2" class="fileadm_table_title"><{$media_task_add.Task_attribute|capitalize}></td>
+    </tr>
+    <tr>
+      <td rowspan="2"  width="390" align="left" valign="top" class="fileadm_frame_border" >
+	  <{$media_task_add.yingjitype|capitalize}>
+	  <br/>
+	
+	  <select  class="terminal_select_style" name="yingji_type" id="yingji_type" style="width:153px;" disabled="true">
+                <option value="1000"><{$media_task_add.yingjitype1}></option>
+                <option value="1001"><{$media_task_add.yingjitype2}></option>
+				<option value="1002"><{$media_task_add.yingjitype3}></option>
+				<option value="1003"><{$media_task_add.yingjitype4}></option>
+              </select>
+			  
+			   <script language="javascript" defer="true">
+				var obj = document.getElementById('yingji_type');
+				for(var i=0;i<obj.options.length;i++)
+				{
+					if(obj.options[i].value == <{$taskinfo.keyid}>)
+					{
+						obj.options[i].selected = true;
+					}
+				}
+			 </script>	
+			  
+	  </td>
+      <td width="390" align="left" valign="top" class="fileadm_frame_border">
+	
+		      <script type="text/javascript" src="skin/js/frame/slider.js"></script>
+		 <{$media_task_add.Volume|capitalize}>
+			<input type="hidden" name="task_default_volume" id="task_default_volume" value="<{$taskinfo.defaultvolume}>"/>
+			
+			<script language="JavaScript">
+				var getvolume = "<{$taskinfo.defaultvolume}>";
+						var A_TPL6h = {
+							'b_vertical' : false,
+							'b_watch': true,
+							'n_controlWidth': 149,
+							'n_controlHeight': 17,
+							'n_sliderWidth': 9,
+							'n_sliderHeight': 17,
+							'n_pathLeft' : 1,
+							'n_pathTop' : 0,
+							'n_pathLength' : 138,
+							's_imgControl': 'skin/images/frame/sldr5h_bg.gif',
+							's_imgSlider': 'skin/images/frame/sldr5h_sl.gif',
+							'n_zIndex': 1
+						}
+						var A_INIT6h = {
+							's_form' : 0,
+							's_name': 'volume_value',
+							'n_minValue' : 1,
+							'n_maxValue' : 100,
+							'n_value' : getvolume,
+							'n_step' : 1
+						}
+					
+						new slider(A_INIT6h, A_TPL6h);
+					</script>
+					<input title="<{$media_task_add.task_Volumetask|capitalize}>" name="volume_value" id="volume_value" align="absmiddle" value="80" readonly="true" type="Text" size="3" onChange="A_SLIDERS[5].f_setValue(this.value)">
+
+	  </td>
+    </tr>
+	</table>
+	
+	<table  width="800" align="center" border="0" cellpadding="0" cellspacing="0"  class="terminal_table_border">
+    <tr >
+      <td height="" colspan="2" align="left" valign="top">
+	  <table width="100%" border="0" cellspacing="0" cellpadding="0" >
+          <tr>
+            <td ><div class="fileadm_left_div"><{$media_task_add.Media_File_List|capitalize}></div></td>
+            <td ><div class="fileadm_right_div"><{$media_task_add.Terminal_list|capitalize}></div></td>
+          </tr>
+          <tr>
+            <td width="390">
+			<div id="treeofbox" name="treeofbox"  style="width:100%; height:200px; "></div>
+                <input type="hidden"  id="listvalue" name="listvalue" value=""/>
+				<script language="javascript" src="skin/js/frame/select_item_sequence.js"></script>
+				<script language="javascript" defer="true">
+		
+					var getmediafileid="";
+					function tonclick(id) {
+					
+					if(id.substring(0,4)=="dir_")
+					{
+						getmediafileid=id.replace("dir_","");
+					}
+					
+					};
+					var treedata = "<{$filelist}>";
+					tree2=new dhtmlXTreeObject("treeofbox","100%","100%",0);
+					tree2.setSkin('dhx_skyblue');
+					tree2.setImagePath("smarty/templates/BellManager/codebase/csh_bluebooks/");
+					tree2.enableCheckBoxes(1);
+					tree2.enableThreeStateCheckboxes(true);
+					//tree2.enableDragAndDrop(true);
+					tree2.setOnClickHandler(tonclick);
+					tree2.setOnCheckHandler(get_select_item_check);
+					tree2.loadXMLString(treedata);
+					
+					<{section name=fileid loop=$fileidlist}>
+					tree2.setCheck("<{$fileidlist[fileid].fileid}>",true);
+					sel_item_seq.push(<{$fileidlist[fileid].fileid}>);
+					<{/section}>
+					
+					get_all_item_id = tree2.getAllChildless();
+					get_all_item_id = get_all_item_id.split(",");
+					for(var x=0; x<get_all_item_id.length; x++)
+					{
+						get_all_item_txt.push(tree2.getItemText(get_all_item_id[x]));
+					}
+					for(var x in sel_item_seq)
+					{
+					   tree2.setItemText(sel_item_seq[x],"<font color='red'><b>"+(parseInt(x)+parseInt(1))+"</b>-|</font>"+tree2.getItemText(sel_item_seq[x]),"");        
+					}
+				</script>
+            </td>
+            <td width="390" align="left">
+			<div id="terminallist" name="terminallist" style="width:100%; height:200px;"></div>
+                <input type="hidden"  id="terminallistvalue" name="terminallistvalue" value=""/>
+				<input type="hidden"  id="get_terst" name="get_terst" value=""/>
+				<input type="hidden"  id="get_position" name="get_position" value=""/>
+				<input type="hidden"  id="get_inid" name="get_inid" value=""/>
+
+				<input type="hidden"  id="get_terminal" name="get_terminal" value=""/>
+				<input type="hidden" id="analysis_tree_group_string" name="analysis_tree_group_string" value=""/>
+			
+                <!--在此保存媒体列表的值-->
+                <script language="javascript" defer="true">
+					var te = 0;	
+					var states = 0;
+					var get_terst ="";
+					var get_inid ="";
+					var get_id ="";
+					var x=600;
+					var y=320;
+					var get_position ="";
+					var get_position2 ="";
+					var treeItemText = "";
+					var get_text2=trim("<{$media_task_add.amplifier|capitalize}>");
+					var get_text3 = new RegExp(get_text2);
+					var get_amplifier = trim("<{$media_task_add.lead|capitalize}>");
+					var get_amplifier2 = new RegExp(get_amplifier);
+					var terminal = trim("<{$media_task_add.terminal|capitalize}>");
+					var terminal2 = new RegExp(terminal);
+					 function mouseMove(ev) 
+						{ 
+							ev= ev || window.event; 
+							var mousePos = mouseCoords(ev); 
+							x=mousePos.x;
+							y=mousePos.y;
+						} 
+						
+						function mouseCoords(ev) 
+						{ 
+							if(ev.pageX || ev.pageY){ 
+							return {x:ev.pageX, y:ev.pageY}; 
+							} 
+						}
+						
+					function toncheck(id, state) 
+					{
+					te = id;
+				     var get_ids="";
+                    //  var get_position4="";
+					 // var get_text2 = "IP功放";  
+					  treeItemText = tree3.getItemText(id);
+					 // var get_amplifier = "IP前置";
+					if(id.length==8||id.length==9||id.length==10)
+					{
+					
+					}
+					else
+					{
+
+					 if(state ==1)
+					 {
+					    document.getElementById('lead').style.display = "none";
+						get_inid+=te+'|';
+						var position =new Array;
+						var position2 =new Array;
+						var position3 =new Array;
+						for(z=0;z<get_inid.length;z++)
+						{
+						//alert(z);
+						if(get_inid.substring(z,z+2)=="::")
+						{
+							position=z+2;
+						}
+						if(get_inid.substring(z,z+1)=="|")
+						{
+						position2=z;
+						if(position2-position==1)
+						{
+					     position3+=0;
+						 }
+						 else
+						 {
+							position3+=position2-position;
+						}
+						}
+						
+						}
+						get_position =position3;
+					 }
+					 else if(state==0)
+					 {
+						var get_te="";
+	
+					 document.getElementById('lead').style.display = "none";	
+					
+					 for(i=0;i<get_position.length;)
+						{
+						get_te =te.substring(10).length;
+					 //   alert(get_te);
+						if(get_te ==1)
+						{
+						get_te =0;
+						}
+                       
+						if(get_position.substring(i,i+1)==get_te)
+						{
+						var get_ids =  get_position.substring(i,i+1);	
+						get_position = get_position.replace(get_ids,"");
+						
+						}
+						  i+=1;  
+					}
+				
+						 get_inid = get_inid.replace(te+'|',"");
+					
+					 }
+					  }
+					document.getElementById('get_inid').value = trim(get_inid.toString()); 
+					document.getElementById('get_position').value = trim(get_position.toString());
+				  var str_text=new Array();
+				  str_text=id.split("::");
+				 var strs_text ="";
+				for (var i=1;i<2 ;i++ )   
+    			{   
+      			 strs_text=str_text[i]; 
+			
+				var url = "get_terminaltype.php?id="+strs_text+"";
+   				}
+				getchannelvalue(url);
+          
+				if(state == 1)
+				 {
+				   if(channelnum%2==0 &&channelnum!=0)
+				  {
+						 display();
+						if(navigator.appName.indexOf("Explorer") > -1)   
+						{
+							var mouse_obj_xy = get_mouse_coordinates();
+							get_div_obj('lead').style.left = mouse_obj_xy.x+120+'px';
+							get_div_obj('lead').style.top = mouse_obj_xy.y-20+'px';
+							get_div_obj('lead').style.display = "block";
+						}
+					else
+						{
+							document.onclick = mouseMove;
+							get_div_obj('lead').style.left = x+120+'px';
+							get_div_obj('lead').style.top = y-20+'px';
+							get_div_obj('lead').style.display = "block";
+						}
+					}
+					     states = state ;
+						get_terst+=te+'|';
+				 }
+				 else if(state==0)
+				 {
+			       get_terst = get_inid.replace(te+'|',"");
+			     
+				// alert(get_terminal);
+				   if(document.getElementById('lead').style.display == "block")
+					{
+						document.getElementById('lead').style.display = "none";
+					}
+				 
+				  states = state ;
+				 // alert(get_terminal);
+				  var bit_position =new Array;
+				  var bit_position2 =new Array;
+				  var bit_position3 =new Array;
+				 for(z=0;z<get_terminal.length;z++)
+				 {
+				   if(get_terminal.substring(z,z+2)=="::")
+						{
+						bit_position=z+2;
+						}
+					if(get_terminal.substring(z,z+1)=="|")
+					{
+						bit_position2=z;
+						bit_position3+=bit_position2-bit_position;
+					}
+					
+				
+				 }
+			     var te_len="";
+				 var get_te="";
+				 var te_len2="";
+			
+				get_te="["+te+"|";
+					  
+				for(l=0;l<get_terminal.length;)
+				{	
+		
+						for(i=0;i<bit_position3.length;)
+						{
+							
+					
+						 	te_len = bit_position3.substring(i,i+1);
+				
+							te_len2 =get_terminal.substring(l,l+12+parseInt(te_len));
+						
+							if(get_terminal.substring(l,l+12+parseInt(te_len))==get_te)
+							{
+							var get_terminals =  get_terminal.substring(l,l+12+parseInt(te_len)+12);
+								
+								get_terminal = get_terminal.replace(get_terminals,"");
+								 document.getElementById('get_terminal').value = trim(get_terminal.toString());
+								l = get_terminal.length;
+								break;
+							}
+							i+=1;
+						}
+						for(j =0;j<get_terminal.length-l;j++)
+						{
+							//alert(get_terminal.substring(l+j,l+j+1));
+					    	if(get_terminal.substring(l+j,l+j+1)==']')
+							{
+								l+=j+1;
+								break;
+							}
+						}
+						if(j>=get_terminal.length-l)
+							break;
+				}
+
+
+				 } 
+				
+			  
+			
+
+			};
+					
+
+			var get_terminal="";
+			function set_task_volume_prepose()
+			{
+            
+			   var get_prepose ="";
+				 if(checkform())
+					{
+	                var getItem=te;
+				
+					if(getItem==null||getItem=="")
+					{
+						//alert(states);
+						alert("<{$media_task_add.select_broadcast_task|capitalize}>");
+						return void(0);
+					}
+					else
+					{
+						
+							
+							for(i=0;i<document.getElementsByName('lead2').length;i++)
+							{
+							   if(document.getElementsByName('lead2')[i].checked)
+							   {
+								  if(get_prepose=="")
+									{
+										get_prepose+=1;
+									}
+									else
+									{
+										get_prepose+=","+1;
+									}
+									
+
+							   }
+							   else
+							   {
+							   if(get_prepose=="")
+									{
+										get_prepose+=0;
+									}
+									else
+									{
+										get_prepose+=","+0;
+									}
+							   }
+						}	   
+						if(16-document.getElementsByName('lead2').length>0)
+						{
+							for(i=0;i<16-document.getElementsByName('lead2').length;i++)
+							{
+								get_prepose+=","+0;
+							}
+						}
+						var get_ter = [[getItem]+'|'+[get_prepose]];
+								 
+						 get_terminal = get_terminal +'['+ [[getItem]+'|'+[get_prepose]] +']';
+			
+                          document.getElementById('get_terminal').value = trim(get_terminal.toString());
+		
+						   document.getElementById('lead').style.display = "none";
+		
+					}
+					}
+			
+			
+             };
+		
+				
+			 function disappear_volume_div_prepose()
+				{
+					if(document.getElementById('lead').style.display == "block")
+					{
+						document.getElementById('lead').style.display = "none";
+					}
+				
+				};
+			
+				 var area1 ="";
+				 
+					var tree3data = "<{$terminalist}>";
+					tree3=new dhtmlXTreeObject("terminallist","100%","100%",0);
+					tree3.setSkin('dhx_skyblue');
+					//tree3.enableDragAndDrop(1);//是否允许拖放
+					tree3.setImagePath("smarty/templates/BellManager/codebase/csh_bluebooks/");
+					tree3.enableCheckBoxes(1);
+					tree3.enableThreeStateCheckboxes(true);
+					//tree3.enableDragAndDrop(true);
+				   // tree3.setOnCheckHandler(get_select_item_check3);
+	                
+				    tree3.setOnCheckHandler(toncheck);
+					tree3.loadXMLString(tree3data);
+					<{section name=terminalid loop=$terminalidlist}>
+					tree3.setCheck(merge_tree_terminal_group_string('<{$terminalidlist[terminalid].group_id}>','<{$terminalidlist[terminalid].terminal_id}>'),true);
+				<{/section}>			
+				
+					//alert(area1);
+				</script>
+				
+	
+            </td>
+          </tr>
+      </table></td>
+    </tr>
+
+    <tr>
+      <td height="28" colspan="2" align="center" valign="middle">
+	  <input type="hidden" name="taskType" value="fileplaytask"/>
+          <input title="<{$media_task_add.submit_task|capitalize}>" name="Submit" type="submit" class="terminal_button" value="<{$media_task_add.Submit|capitalize}>"/>
+        	&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+      <!--    <input title="<{$media_task_add.cannel_task|capitalize}>" name="reset" type="reset" class="terminal_button" id="reset" value="<{$media_task_add.Cancel|capitalize}>" />
+	  -->
+	  <p><{include file="language/`$language`_foot.php"}>
+</p>
+	  </td>
+    </tr>
+  </table>
+ <script language="javascript">
+
+ var row3=0;
+function display()
+{
+   
+	var get_tables = document.getElementById("get_areas");
+    
+	for(var get_num = get_tables.rows.length-1;get_num>=0;get_num--)
+	{
+	
+	   get_tables.deleteRow(get_num);
+	   
+	}  
+	
+	var get_newRow;
+	var get_newcell;
+	var getcell="";
+    var row;
+	var i=0;
+		get_newRow = get_tables.insertRow(row);
+		get_newRow.style.textAlign = "left";
+		for( i=0;i<channelnum;i++)
+		{
+			switch(i)
+			{
+				case 0:
+				getcell+="<input type=\"checkbox\" value=\"1\" id=\"lead2\" name=\"lead2\"/><{$media_task_add.zone_1|capitalize}>";
+				break;
+				case 1:
+				getcell+="&nbsp;&nbsp;&nbsp;&nbsp;<input type=\"checkbox\" value=\"1\" id=\"lead2\" name=\"lead2\"/><{$media_task_add.zone_2|capitalize}>";
+				break;
+				case 2:
+				getcell+="<input type=\"checkbox\" value=\"1\" id=\"lead2\" name=\"lead2\"/><{$media_task_add.zone_3|capitalize}>";
+				break;
+				case 3:
+				getcell+="&nbsp;&nbsp;&nbsp;&nbsp;<input type=\"checkbox\" value=\"1\" id=\"lead2\" name=\"lead2\"/><{$media_task_add.zone_4|capitalize}>";
+				break;
+				case 4:
+				getcell+="<input type=\"checkbox\" value=\"1\" id=\"lead2\" name=\"lead2\"/><{$media_task_add.zone_5|capitalize}>";
+				break;
+				case 5:
+				getcell+="&nbsp;&nbsp;&nbsp;&nbsp;<input type=\"checkbox\" value=\"1\" id=\"lead2\" name=\"lead2\"/><{$media_task_add.zone_6|capitalize}>";
+				break;
+				case 6:
+				getcell+="<input type=\"checkbox\" value=\"1\" id=\"lead2\" name=\"lead2\"/><{$media_task_add.zone_7|capitalize}>";
+				break;
+				case 7:
+				getcell+="&nbsp;&nbsp;&nbsp;&nbsp;<input type=\"checkbox\" value=\"1\" id=\"lead2\" name=\"lead2\"/><{$media_task_add.zone_8|capitalize}>";
+				break;
+				case 8:
+				getcell+="<input type=\"checkbox\" value=\"1\" id=\"lead2\" name=\"lead2\"/><{$media_task_add.zone_9|capitalize}>";
+				break;
+				case 9:
+				getcell+="&nbsp;&nbsp;&nbsp;&nbsp;<input type=\"checkbox\" value=\"1\" id=\"lead2\" name=\"lead2\"/><{$media_task_add.zone_10|capitalize}>";
+				break;
+				case 10:
+				getcell+="<input type=\"checkbox\" value=\"1\" id=\"lead2\" name=\"lead2\"/><{$media_task_add.zone_11|capitalize}>";
+				break;
+				case 11:
+				getcell+="<input type=\"checkbox\" value=\"1\" id=\"lead2\" name=\"lead2\"/><{$media_task_add.zone_12|capitalize}>";
+				break;
+				case 12:
+				getcell+="<input type=\"checkbox\" value=\"1\" id=\"lead2\" name=\"lead2\"/><{$media_task_add.zone_13|capitalize}>";
+				break;
+				case 13:
+				getcell+="<input type=\"checkbox\" value=\"1\" id=\"lead2\" name=\"lead2\"/><{$media_task_add.zone_14|capitalize}>";
+				break;
+				case 14:
+				getcell+="<input type=\"checkbox\" value=\"1\" id=\"lead2\" name=\"lead2\"/><{$media_task_add.zone_15|capitalize}>";
+				break;
+				case 15:
+				getcell+="<input type=\"checkbox\" value=\"1\" id=\"lead2\" name=\"lead2\"/><{$media_task_add.zone_16|capitalize}>";
+				break;
+			
+			}
+			if(i%2!=0)
+				getcell+="\n";
+		}
+		if(i==channelnum)
+		getcell+="&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<input type=\"button\" value=\"<{$media_task_add.Sumbit|capitalize}>\"  onclick=\"set_task_volume_prepose();\"class=\"bell_button_style\"><input type=\"button\" value=\"<{$media_task_add.Cancel|capitalize}>\"  onclick=\"disappear_volume_div_prepose();\"class=\"bell_button_style\">";
+		get_newRow.insertCell(0).innerHTML=getcell;
+
+}
+  </script>
+ <div id="lead" class="r-displayVolume">
+	<table border="0" cellpadding="0" cellspacing="0" width="170" height="10" style="background-color:#EEFFEE"  id="get_areas">
+	
+	</table>
+</div>
+
+</form>
+<p>
+  <script language="javascript">
+function get_mouse_coordinates()
+{
+  // var eve = event ;
+  	if(navigator.appName.indexOf("Explorer") > -1)   
+	{
+	 var eve = event||window.event;
+	 return {
+                x:eve.clientX+document.body.scrollLeft - document.body.clientLeft,
+                y:eve.clientY+document.body.scrollTop - document.body.clientTop
+            };
+	
+	}
+else
+	{
+
+		 return {
+                x:document.getElementById( "terminallist").offsetWidth+200,
+                y:document.getElementById( "terminallist").offsetHeight+120
+            };
+	}
+ 
+}
+function get_div_obj(str_id)
+{
+ 	return document.getElementById(str_id);   
+}
+</script>
+  <script type="text/javascript" src="calendar.js" defer="true"></script>
+</p>
+
+</body>
+</html>
+
+
+
+

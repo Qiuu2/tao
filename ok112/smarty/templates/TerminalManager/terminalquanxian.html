@@ -1,0 +1,661 @@
+<html>
+<head>
+<META http-equiv=Content-Type content="text/html; charset=utf-8">
+<title>SetTerminalMapping</title>
+<style type="text/css">
+
+.button{BORDER-RIGHT: #000000 1px solid; BORDER-TOP: #000000 1px solid; COLOR: #ffffff; FONT-SIZE: 9px; BACKGROUND: #1E97D2 url(images/input.gif); BORDER-LEFT: #000000 1px solid; BORDER-BOTTOM: #000000 1px solid; FONT-FAMILY: "Verdana", "TAHOMA", "MS Shell Dlg", "sans-serif", "宋体"
+}
+.bjys{
+	color: #F4F4F4;
+	background-color: #F4F4F4;
+}
+.scrolltable { border:1px solid #cbcbcb; overflow:auto; height:99%; width: 99%; align:center ;margin-bottom:2px ;}
+
+</style>
+
+<script language="javascript">
+var get_i=0;
+function isNumber( s )
+{
+    var regu = "^[0-9]+$";
+    var re = new RegExp(regu);
+    if (s.search(re) != -1) 
+    {
+        return true;
+    }
+    else 
+    {
+        return false;
+    }
+}
+function trim(str)
+{   
+    return str.replace(/(^\s*)|(\s*$)/ig, "");   
+}
+function isChinaOrNumbOrLett( s )
+{
+	var regu = "^[0-9a-zA-Z\u4e00-\u9fa5]+$"; 
+	var re = new RegExp(regu); 
+	if (re.test(s)) 
+	{ 
+		return true; 
+	}
+	else
+	{
+		return false; 
+	} 
+}
+function isNull( str )
+{ 
+ if ( str == "" )
+ return true; 
+ var regu = "^[ ]+$"; 
+ var re = new RegExp(regu); 
+ return re.test(str); 
+} 
+//验证表单 
+function checkform()
+{
+	
+	return true;
+}
+
+
+</script>
+</head>
+<body>
+
+<table width="1010px" align="center" border="0" cellpadding="0px" cellspacing="0"  class="terminal_table_border">
+	<tr>
+		<td>
+			<table align="center" border="0" cellpadding="0px" cellspacing="0">
+				<tr>
+					<td>
+					
+					</td>
+				</tr>
+			</table>
+		</td>
+	</tr>
+	<tr>
+		<td>
+			<table align="center" border="0" cellpadding="5px" cellspacing="0" style="font-size:12px;font-family:Georgia, 'Times New Roman', Times, serif, '宋体'">
+				<!--<tr height="30px">
+					<td width="180" align="right" ><{$set_shotcut.enable|capitalize}>:</td>
+					<td width="420" align="left">
+					<input  name="macenable" type="checkbox" id="macenable" value="1" checked="true"/>
+				  </td>
+				</tr>-->
+				<tr height="30px">
+					<td width="180" align="right" ><{$set_shotcut.addmac|capitalize}>:</td>
+					<td width="420" align="left">
+					<input class="terminal_input_font" name="macaddr" type="text" id="macaddr"/>	<input type="button" id="macbutton" value="<{$set_shotcut.add|capitalize}>" on class="terminal_button" style="width:80;"   onClick="addterminal_mac();"/>(**:**:**:**:**:**)
+				  </td>
+				</tr>
+				
+		  </table>
+	  </td>
+	</tr>
+</table>
+	<TABLE border=1 cellpadding="0" cellspacing="0" bordercolorlight="#cccccc" align="center" bordercolordark="#ffffff" width="1010px" height=70%>
+				<tr>
+					<td valign="top" width="48%" height="90%">
+						<div class="scrolltable" >
+							<!--所有字段列表-->
+							<TABLE id=leftTable border=1 cellpadding="0" cellspacing="0" style="font-size:13px" bordercolorlight="#cccccc" bordercolordark="#ffffff" width="100%" onClick="clickRow();">
+								<tr>
+									<td width=8%>
+									<{$set_shotcut.idnumber|capitalize}>
+									</td>
+									<td width=22%>
+										<{$set_shotcut.addmac|capitalize}>
+									</td>
+									<td width=22%>
+										<{$set_shotcut.enable|capitalize}>/<{$set_shotcut.disable|capitalize}>
+									</td>
+								</tr>
+									<{section name=sourceid loop=$terminalinfo}>
+										<tr>
+										<td><{$terminalinfo[sourceid].id}></td>
+										<td><{$terminalinfo[sourceid].sn}></td>
+										<td>
+										 <{if $terminalinfo[sourceid].enable == 0}>
+											<{$set_shotcut.disable|capitalize}>
+										 <{elseif $terminalinfo[sourceid].enable == 1}>
+											<{$set_shotcut.enable|capitalize}>
+										 <{/if}>
+										</td>
+									</tr>
+									<{/section}>	
+								
+							</TABLE>
+						</div>   
+					</td>
+
+					<td style="text-align: left;" width="4%">
+						<table>
+							<tr>
+								<td>
+								<input type="button" class="button" width="80px" value="<{$set_shotcut.del|capitalize}>" name="l2r" onClick="l2r_onclick()"/>
+								</td>
+							</tr>
+							<tr>
+								<td>
+								<input type="button" class="button" width="80px" value="<{$set_shotcut.delall|capitalize}>" name="delall" onClick="delall_onclick()"/>
+								</td>
+							</tr>
+							<!--
+							<tr>
+								<td>
+								<input type="button" class="button" width="80px" value="<{$set_shotcut.enable|capitalize}>" name="enmac" onClick="enable_onclick()"/>
+								</td>
+							</tr>
+							<tr>
+								<td>
+								<input type="button" class="button" width="80px" value="	<{$set_shotcut.disable|capitalize}>" name="dismac" onClick="disable_onclick()"/>
+								</td>
+							</tr>
+							-->
+							<tr>
+								<td>
+								<input type="button" class="button" width="80px" value="<{$set_shotcut.allenable|capitalize}>" name="allenmac" onClick="allenable_onclick()"/>
+								</td>
+							</tr>
+							<tr>
+								<td>
+								<input type="button" class="button" width="80px" value="<{$set_shotcut.alldisable|capitalize}>" name="alldismac" onClick="alldisable_onclick()"/>
+								</td>
+							</tr>
+						
+						</table>
+					</td>
+				</tr>
+			</table>
+
+<script language="javascript">  
+
+
+var xmlhttp=null; 
+function createXMLHttpRequests()
+{ 
+	if(window.ActiveXObject)
+	{ 
+		xmlhttp = new ActiveXObject("microsoft.XMLHTTP"); 
+	} 
+	else if(window.XMLHttpRequest)
+	{ 
+		xmlhttp = new XMLHttpRequest(); 
+	}
+	else
+	{
+		alert('<{$alarm_setting.Not_support_AJAX|capitalize}>');
+	}
+} 
+function getterminalprogress(url)
+{
+   createXMLHttpRequests();
+   var getresult="";
+   xmlhttp.open( "get",url, false);
+   xmlhttp.onreadystatechange = function()
+   {
+   	  	
+      if( xmlhttp.readyState == 4 )
+      {
+
+         if( xmlhttp.status == 200 )
+         {
+			getresult= trim(xmlhttp.responseText); 
+			
+         }
+      }
+   }
+    xmlhttp.setRequestHeader( "If-Modified-Since", "0");
+	xmlhttp.send(null);
+	return getresult;
+}
+
+function white_mac_FormCheck(mac)
+    {   
+        var temp = /[A-Fa-f0-9]{2}:[A-Fa-f0-9]{2}:[A-Fa-f0-9]{2}:[A-Fa-f0-9]{2}:[A-Fa-f0-9]{2}:[A-Fa-f0-9]{2}/;
+        if (!temp.test(mac))
+        {
+             return false;
+        }
+        return true;
+    }    
+	
+function addterminal_mac()
+{
+	var enablemac=0;
+//	if(document.getElementById('macenable').checked==true)
+	//enablemac=1;
+	//else
+//	enablemac=0;
+	var mac_addr=document.getElementById('macaddr').value;
+	if(false==white_mac_FormCheck(mac_addr))
+	{
+		alert('<{$set_shotcut.macerror|capitalize}>');
+		return false;
+	}
+	url ="upload_mediaget.php?flag=1&enablemac="+enablemac+"&mac_addr="+mac_addr;	
+	var gettext=getterminalprogress(url);
+	if(gettext==1)
+	{
+	location.reload();
+	}
+	
+	return true;	
+}	
+  function l2r_onclick()
+  {
+      if (document.all.leftTable.rows.length==0)
+         return;
+	
+	 	 rowObj = cloneRow('leftTable',lCurRow);
+		var mac_addr= getRowtext('leftTable',lCurRow);
+		
+		url ="upload_mediaget.php?flag=2&mac_addr="+mac_addr;	
+	
+		var gettext=getterminalprogress(url);
+		
+		if(gettext==1)
+		{
+		delRow('leftTable',lCurRow);
+		location.reload();
+		}
+	  
+	
+  }
+  
+  function delall_onclick()
+  {
+      if (document.all.leftTable.rows.length==0)
+         return;
+	
+	  rowObj = cloneRow('leftTable',lCurRow);
+		url ="upload_mediaget.php?flag=3";	
+	
+		var gettext=getterminalprogress(url);
+		if(gettext==1)
+		{
+		location.reload();
+		}
+
+  }
+    function allenable_onclick()
+  {
+     
+		url ="upload_mediaget.php?flag=5";	
+	
+		var gettext=getterminalprogress(url);
+		if(gettext==1)
+		{
+		location.reload();
+		}
+
+  }
+    function alldisable_onclick()
+  {
+    
+		url ="upload_mediaget.php?flag=6";	
+	
+		var gettext=getterminalprogress(url);
+		if(gettext==1)
+		{
+		location.reload();
+		}
+
+  }
+  
+  
+    function enable_onclick()
+  {
+ 	 var enables=1;
+      if (document.all.leftTable.rows.length==0)
+         return;
+
+	  	rowObj = cloneRow('leftTable',lCurRow);
+		var mac_addr= getRowtext('leftTable',lCurRow);
+	  	url ="upload_mediaget.php?flag=4&enables="+enables+"&mac_addr="+mac_addr;	
+	
+		var gettext=getterminalprogress(url);
+		if(gettext==1)
+		{
+		location.reload();
+		}
+	  
+	
+  }
+    function disable_onclick()
+  {
+  	 var enables=0;
+      if (document.all.leftTable.rows.length==0)
+         return;
+	
+	  rowObj = cloneRow('leftTable',lCurRow);
+	  var mac_addr= getRowtext('leftTable',lCurRow);
+	  	url ="upload_mediaget.php?flag=4&enables="+enables+"&mac_addr="+mac_addr;	
+	
+		var gettext=getterminalprogress(url);
+		if(gettext==1)
+		{
+		location.reload();
+		}
+	 
+
+  }
+ 	
+///////////////////////////////////////////////
+</script>
+<!-- ##################################### -->
+<SCRIPT LANGUAGE="JavaScript">
+<!--
+lCurRow = -1;//左表当前行
+rCurRow = -1;//右表当前行
+curTable = 'rightTable';
+
+var dataArray=new Array(4);
+dataArray[0]="1";
+dataArray[1]="1";
+dataArray[2]="1";
+dataArray[3]="1";
+
+//
+function window_onload(){
+  initPara();
+
+}
+
+
+//初始化
+function initPara(){
+  chgCurRow('leftTable',-1,'init');
+  chgCurRow('rightTable',-1,'init');
+  curTable = 'rightTable';
+
+}
+//点击一行，即选中表选中行且变色
+function clickRow(){
+  var srcObj = window.event.srcElement;
+  curTable = srcObj.parentElement.parentElement.parentElement.id;
+  var curRow = -1;
+  if(srcObj.parentElement.tagName=="TR") {
+    chgRow = srcObj.parentElement.rowIndex;
+    chgCurRow(curTable,chgRow,'clk')
+  }
+}
+
+
+//从一个表取一个行插到另外一个表中
+function single2(fromTableID,toTableID,fromIndex,toIndex){
+  var rowObj ;
+  var j;
+
+  if(fromIndex <= 0) return;
+
+  rowObj = cloneRow(fromTableID,fromIndex);
+  addRow(toTableID,rowObj,toIndex);
+
+ delRow(fromTableID,fromIndex);
+
+}
+//从一个表取所有行插到另外一个表中
+function all2(fromTableID,toTableID){
+  try{
+    while(getTableLength(fromTableID)>1){
+      single2(fromTableID,toTableID,1,-1);//其中参数-1表示插入到最后
+    }
+  }catch(exceptionObj){
+    raiseException(exceptionObj)
+  }
+    // - Please note: you MUST include the tbody references for this to work!!
+}
+//得到tableID的当前行数
+function getCurRowIndex(tableID){
+  var curRowIndex = -1;
+  if(tableID=='leftTable')
+    curRowIndex = lCurRow;
+  else if(tableID=='rightTable')
+    curRowIndex = rCurRow;
+  else
+    curRowIndex = 0;
+  return curRowIndex;
+}
+//设置tableID的当前行数
+function setCurRowIndex(tableID,rowIndex){
+  if(tableID=='leftTable')
+    lCurRow = rowIndex;
+  else if(tableID=='rightTable')
+    rCurRow = rowIndex;
+  else
+    alert("没有这个表")
+}
+/************************当前行的变化***********************************/
+/*有几种情况当前行会发生变化
+  1、删除当前行
+  2、新增在当前行上插入行
+  3、在当前行上删除行
+  4、点击不是当前行的某一行
+  5、在表内将交换两列
+  6、初始化
+  7、在表内移动行
+*/
+function chgCurRow(tableID,chgRow,chgType){
+  var oldCurRow = getCurRowIndex(tableID);
+  var curRow = 0;
+  switch(chgType){
+  case 'del':{
+    if(getTableLength(tableID)>0){
+      if(chgRow==oldCurRow){//删除当前行
+        if(chgRow > getTableLength(tableID)-1)//如果当前行是最后一行
+          curRow = getTableLength(tableID)-1;
+        else////如果当前行不是最后一行
+          curRow = oldCurRow;
+      }else if(chgRow<oldCurRow){//在当前行上删除行
+        curRow = oldCurRow-1;
+      }else{//在当前行下删除行
+        ;
+      }
+    }else{
+      curRow = -1;
+    }
+    break;
+  }case 'add':{
+    if(chgRow<=oldCurRow)//在当前行上插入行
+      oldCurRow = oldCurRow+1;
+    break;
+  }case 'init':{
+    curRow = (getTableLength(tableID)>0)? 0 : -1;
+    break;
+  }case 'swap':{
+    curRow = chgRow;
+    break;
+  }case 'move':{
+    curRow = chgRow;
+    break;
+  }default :{//表示点击某行
+    curRow = chgRow;
+  }
+  }
+  if(getTableLength(tableID)>0){
+    document.getElementById(tableID).rows[curRow].bgColor="#FFE99D";
+    for(i=0;i<getTableLength(tableID);i++)
+      if(i!=curRow)
+        document.getElementById(tableID).rows[i].bgColor="";
+    setCurRowIndex(tableID,curRow);
+  }
+  //else{ //如果某个表变空了，则切换当前表
+  //	if(curTable==tableID)
+  //		chgCurTable(tableID);
+  //}
+}
+//得到tableID的总行数
+function getTableLength(tableID){
+  return document.getElementById(tableID).rows.length;
+}
+ //Moves a table row to a new position.
+function moveRows(tableID,iSource,iTarget){
+  if(iSource == 0) return;
+
+  if(iTarget==0){//在最上一条向上移
+    iTarget = getTableLength(tableID)-1;
+  }
+  if(iTarget == getTableLength(tableID)){//在最下一条向下移
+    iTarget = 1;
+  }
+
+  document.getElementById(tableID).getElementsByTagName('tbody')[0].moveRow(iSource, iTarget);
+  chgCurRow(tableID,iTarget,'move');
+}
+//从tableID中删除第rowIndex行
+function delRow(tableID,rowIndex){
+  if(checkRowIndex(tableID,rowIndex)){
+    document.getElementById(tableID).getElementsByTagName('tbody')[0].deleteRow(rowIndex);
+    chgCurRow(tableID,rowIndex,'del');
+  }
+  else
+    triggerException(1,'行越界');
+}
+//加入rowObj到tableID的rowIndex行
+function addRow(tableID,rowObj,rowIndex){
+  if(rowIndex==-1){
+    document.getElementById(tableID).getElementsByTagName('tbody')[0].appendChild(rowObj);
+  }else{/*请注意现在的版本还没有用到addRow方法中的rowIndex!=-1的情况*/
+    var refRow = document.getElementById(tableID).getElementsByTagName('tbody')[0].getElementsByTagName('tr')[rowIndex];
+    document.getElementById(tableID).getElementsByTagName('tbody')[0].insertBefore(rowObj,refRow);
+  }
+  chgCurRow(tableID,rowIndex,'add');
+}
+
+//交换表内的两行
+function swapRow(tableID,fromIndex,toIndex){
+  var rowObj;
+  //先克隆
+  rowObj = cloneRow(tableID,fromIndex);
+  //再删除
+  document.getElementById(tableID).getElementsByTagName('tbody')[0].deleteRow(fromIndex);
+  //最后插入
+  if(toIndex==-1){//在最上一条向上移
+    document.getElementById(tableID).getElementsByTagName('tbody')[0].appendChild(rowObj);
+    toIndex = getTableLength(tableID)-1;
+  }else if(toIndex == getTableLength(tableID)+1){//在最下一条向下移
+    document.getElementById(tableID).getElementsByTagName('tbody')[0].appendChild(rowObj);
+    toIndex = 0;
+  }else if(toIndex == getTableLength(tableID)){//从倒数第二条向下移
+    document.getElementById(tableID).getElementsByTagName('tbody')[0].appendChild(rowObj);
+    toIndex = getTableLength(tableID)-1;
+  }else{
+    var refRow = document.getElementById(tableID).getElementsByTagName('tbody')[0].getElementsByTagName('tr')[toIndex];
+    document.getElementById(tableID).getElementsByTagName('tbody')[0].insertBefore(rowObj,refRow);
+  }
+  chgCurRow(tableID,toIndex,'swap');
+}
+//得到tableID的总行数
+function getTableLength(tableID){
+  return document.getElementById(tableID).rows.length;
+}
+//克隆tableID的第rowIndex行
+function cloneRow(tableID,rowIndex){
+  if(checkRowIndex(tableID,rowIndex)){
+    //在克隆前恢复背景颜色
+    document.getElementById(tableID).getElementsByTagName('tbody')[0].getElementsByTagName('tr')[rowIndex].bgColor="";
+    return document.getElementById(tableID).getElementsByTagName('tbody')[0].getElementsByTagName('tr')[rowIndex].cloneNode(true);
+  }else{
+    triggerException(1,'行越界');
+  }
+}
+//得到tableID的第rowIndex行
+function getRow(tableID,rowIndex){
+  if(checkRowIndex(tableID,rowIndex)){
+ var tb=document.getElementById(tableID);
+  var rows=tb.rows;
+  return rows[rowIndex].cells[0].innerHTML;
+//  return document.getElementById(tableID).getElementsByTagName('tbody')[0].getElementsByTagName('tr')[rowIndex];
+  }else{
+    triggerException(1,'行越界');
+  }
+}
+
+//设置tableID的第rowIndex行内容
+function setRowtext(tableID,rowIndex,progress){
+  if(checkRowIndex(tableID,rowIndex)){
+ var tb=document.getElementById(tableID);
+  var rows=tb.rows;
+  rows[rowIndex].cells[4].innerHTML=progress+"%";
+  return rows[rowIndex].cells[0].innerHTML;
+//  return document.getElementById(tableID).getElementsByTagName('tbody')[0].getElementsByTagName('tr')[rowIndex];
+  }else{
+    triggerException(1,'行越界');
+  }
+}
+
+//获得tableID的第rowIndex行内容
+function getRowtext(tableID,rowIndex){
+  if(checkRowIndex(tableID,rowIndex)){
+ var tb=document.getElementById(tableID);
+  var rows=tb.rows;
+  var valueTd=rows[rowIndex].cells[1].innerHTML;
+  return  valueTd;
+//  return document.getElementById(tableID).getElementsByTagName('tbody')[0].getElementsByTagName('tr')[rowIndex];
+  }else{
+    triggerException(1,'行越界');
+  }
+}
+
+//检查rowIndex是否越界
+function checkRowIndex(tableID,rowIndex){
+  var chkResult = true;
+  //alert(rowIndex)
+  if(getTableLength(tableID)>0 && rowIndex>=0 && getTableLength(tableID)>rowIndex )
+  //if(getTableLength(tableID)>0 && rowIndex>=0  )
+    chkResult = true;
+  else
+    chkResult = false;
+  return chkResult;
+}
+/**********************异常处理************************/
+//创建异常
+function createException(msgNum, msgText) {
+  this.messageNumber = msgNum;
+  this.messageText = msgText;
+}
+//触发异常
+function triggerException(messageNum, messageTxt) {
+  exceptionObj = new createException(messageNum, messageTxt);
+  throw exceptionObj;
+}
+//异常到上层
+function raiseException(exceptionObj) {
+   if (exceptionObj instanceof createException)
+     ;//alert("Problem is: " + exceptionObj.messageText)
+   else
+  throw exceptionObj;
+ }
+ 
+ 
+ 	var get_user_right = "<{$is_right}>";
+
+	if(get_user_right == 1)
+	{
+		//什么也不做
+	}
+	else
+	{
+		var get_a_objects = document.getElementsByTagName("input");
+		for(var i=0; i<get_a_objects.length; i++)
+		{
+			get_a_objects[i].href = "javascript:void(0);";
+			get_a_objects[i].onclick = null;
+			get_a_objects[i].style.color="#787878";
+			get_a_objects[i].disabled = true;
+		}
+	}
+ 
+ 
+
+</SCRIPT>
+
+<{include file="language/`$language`_foot.php"}>
+</body>
+</html>

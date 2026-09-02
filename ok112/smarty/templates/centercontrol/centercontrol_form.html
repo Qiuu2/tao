@@ -1,0 +1,459 @@
+<html>
+<head>
+
+<META http-equiv=Content-Type content="text/html; charset=utf-8">
+
+<title>AddBellTask</title>
+<link rel="stylesheet" href="smarty/templates/centercontrol/css/style.css">
+<!--添加文件列表开始-->
+<link href="smarty/templates/BellManager/codebase/dhtmlxtree.css" rel="stylesheet" type="text/css">
+<script language="JavaScript" src="smarty/templates/BellManager/codebase/dhtmlxtree.js" type"text/JavaScript"></script>	
+<script language="JavaScript" src="smarty/templates/BellManager/codebase/dhtmlxcommon.js" type"text/JavaScript"></script>
+<script type="text/javascript" src="skin/js/frame/jquery.min.js"></script>
+<style>
+#wrap{
+    display: flex;
+    flex-wrap: wrap;	
+}
+
+.r-div
+{
+    float:left;
+	width:306px;
+	height:200px;
+    border:3px solid #808080;
+	background-color:#a9a9a9;
+	text-align:center;
+	margin: 5px 5px 5px 5px;
+	padding: 0px;	
+}
+
+.head-div
+{
+	float:none;
+	width:306px;
+	height:34px;
+ 	text-align:center;
+	margin: -3px;
+	padding: 0px;	
+    border:3px solid #808080;
+}
+
+.left-div
+{
+ 	float:left;
+	width:56px;
+	height:35px;
+ 	text-align:left;
+	margin: 5px 0px 5px 10px;
+	padding: 5px 0px 0px 0px;	
+}
+
+.left-one
+{
+  position: relative;
+  left: 0px;
+  top: -160px;
+}
+
+.left-two
+{
+  position: relative;
+  left: 0px;
+  top: -160px;
+}
+.left-three
+{
+position: relative;
+ left: -132px;
+ top: -110px;
+}
+
+.left-four
+{
+position: relative;
+ left: -132px;
+ top: -110px;
+}
+
+
+
+.leftmid-div
+{
+ 	float:right;
+	width:112px;
+	height:112px;
+ 	text-align:left;
+	margin: -7px 30px 10px 10px;
+	padding: 5px 0px 0px 0px;	
+	display: flex;   
+	flex-wrap: wrap;
+	z-index:5;
+	border-radius: 50%;
+	border:3px solid #808080;
+}
+
+.mid-div
+{
+	position: relative;
+  	float:right;
+	width:112px;
+	height:112px;
+ 	text-align:left;
+	z-index:50;
+}
+
+.button{
+  position: relative;
+  width: 50px;
+  height: 37px;
+  z-index:99;
+  background-color:transparent;
+  border:0px;
+outline::none;
+}
+
+.button1{  
+  left: 158px;
+  top: -63px;
+}
+.button1:active{
+color:#ff9900;
+}
+.button1:focus{
+outline::none;
+}
+
+.button2{  
+  left: 146px;
+  top: -10px;
+}
+.button2:active{
+  color:#ff9900;
+}
+.button2:focus{
+outline::none;
+}
+.button3{  
+  left: 156px;
+  top: -25px;
+}
+.button3:active{
+  color:#ff9900;
+}
+.button4{  
+  left: 65px;
+  top: -56px;
+}
+.button4:active{
+  color:#ff9900;
+}
+
+.zeromusic-div
+{
+	position: relative;
+ 	float:right;
+	left: 90px;
+  	top: 30px;
+	width:37px;
+	height:37px;
+ 	text-align:left;
+	z-index:60;
+	padding: 5px 0px 0px 0px;	
+	border-radius: 50%;
+	border:3px solid #808080;
+}
+
+
+
+
+
+</style>
+<!--添加弹出时  transform:rotate(10deg);间-->
+<script>
+
+function isNull( str )
+{
+	if ( str == "" || str==null) 
+	return true;
+	var regu = "^[ ]+$";
+	var re = new RegExp(regu);
+	return re.test(str);
+}
+function trim(str)
+{
+   str=str.replace(/(^\s*)|(\s*$)/g,""); 
+   return str;
+}
+
+var xmlhttp=null; 
+function createXMLHttpRequests()
+{ 
+	if(window.ActiveXObject)
+	{ 
+		xmlhttp = new ActiveXObject("microsoft.XMLHTTP"); 
+	} 
+	else if(window.XMLHttpRequest)
+	{ 
+		xmlhttp = new XMLHttpRequest(); 
+	}
+	else
+	{
+		alert('<{$alarm_setting.Not_support_AJAX|capitalize}>');
+	}
+} 
+function getcentercontrolvalue(url)
+{
+   createXMLHttpRequests();
+   var getresult="";
+   xmlhttp.open( "get",url, false);
+   xmlhttp.onreadystatechange = function()
+   {
+      if( xmlhttp.readyState == 4 )
+      {
+         if( xmlhttp.status == 200 )
+         {
+			getresult= trim(xmlhttp.responseText); 
+         }
+      }
+   }
+    xmlhttp.setRequestHeader( "If-Modified-Since", "0");
+	xmlhttp.send(null);
+	return getresult;
+}
+
+
+function postcentercontrolvalue(url)
+{
+   createXMLHttpRequests();
+   var getresult="";
+   xmlhttp.open( "get",url, false);
+   xmlhttp.onreadystatechange = function()
+   {
+      if( xmlhttp.readyState == 4 )
+      {
+         if( xmlhttp.status == 200 )
+         {
+			getresult= trim(xmlhttp.responseText); 
+         }
+      }
+   }
+    xmlhttp.setRequestHeader( "If-Modified-Since", "0");
+	xmlhttp.send(null);
+	return getresult;
+}
+
+
+function setdevstate(obj)
+{
+	var url,getid;
+	var strs= new Array(); //定义一数组
+	getid=obj.id; 
+	strs=getid.split(","); //字符分割 	
+	url ="centercontrolpost.php?device="+strs[1]+"&id="+strs[2];	
+	postcentercontrolvalue(url);
+	return gettext;
+
+}
+
+function centercontroldiv(id,terminalname)
+{
+	var text;
+	var controlflag='1';
+	text='<div id="centerone'+id+'" class="r-div">'+'<div class="head-div" id="centerone-0-'+id+'"><label>'+terminalname+'</label>'+'</div>';
+	text+='<div class="left-div toggle--push-sh toggle--push--glow" id="centerone1-'+id+'">'+'<input type="checkbox" id="centerone-one-'+id+'" class="toggle--checkbox" onChange="setdevstate(this);">'+'<label class="toggle--btn" for="centerone-one-'+id+'" data-label-on="on"  data-label-off="off">电脑1</label>'+'</div>';
+	text+='<div class="left-div toggle--push-sh toggle--push--glow" id="centerone2-'+id+'">'+'<input type="checkbox" id="centerone-two-'+id+'" class="toggle--checkbox" onChange="setdevstate(this);">'+'<label class="toggle--btn" for="centerone-two-'+id+'" data-label-on="on"  data-label-off="off">电脑2</label>'+'</div>';
+text+='<div class="left-div toggle toggle--switch" id="centerone3-'+id+'">'+'<input type="checkbox" id="centerone-three-'+id+'" class="toggle--checkbox" onChange="setdevstate(this);">'+'<label class="toggle--btn" for="centerone-three-'+id+'" data-label-on="投影开"  data-label-off="投影关"></label>'+'</div>';
+	text+='<div class="left-div toggle--push toggle--push--glow" id="centerone4-'+id+'">'+'<input type="checkbox" id="centerone-four-'+id+'" class="toggle--checkbox" onChange="setdevstate(this);">'+'<label class="toggle--btn" for="centerone-four-'+id+'" data-label-on="on"  data-label-off="off">设备一</label>'+'</div>';
+	text+='<div class="leftmid-div"></div>';
+	text+='<div class="zeromusic-div toggle--push-th toggle--push--glow" id="centerone5-'+id+'">'+'<input type="checkbox" id="centerone-five-'+id+'" class="toggle--checkbox" onChange="setdevstate(this);">'+'<label class="toggle--btn" for="centerone-five-'+id+'" data-label-on="on"  data-label-off="off">静音</label>'+'</div>';	
+	
+	text+='	<div class="mid-div" id="centerone6-'+id+'"><button class="button button1" id="centerone-six-'+id+'" onClick="setdevstate(this);">投影幕升</button><button class="button button2" id="centerone-serven-'+id+'" onClick="setdevstate(this);">音量+</button><button class="button button3" id="centerone-eight-'+id+'" onClick="setdevstate(this);">投影幕降</button><button class="button button4" id="centerone-night-'+id+'" onClick="setdevstate(this);">音量-</button>  </div>';
+	
+	
+	text+='<div class="left-div left-one toggle--push-sh toggle--push--glow" id="centerone7-'+id+'">'+'<input type="checkbox" id="centerone-ten-'+id+'" class="toggle--checkbox" onChange="setdevstate(this);">'+'<label class="toggle--btn" for="centerone-ten-'+id+'" data-label-on="on"  data-label-off="off">设备二</label>'+'</div>';
+	text+='<div class="left-div left-two toggle--push-sh toggle--push--glow" id="centerone8-'+id+'">'+'<input type="checkbox" id="centerone-ele-'+id+'" class="toggle--checkbox" onChange="setdevstate(this);">'+'<label class="toggle--btn" for="centerone-ele-'+id+'" data-label-on="on"  data-label-off="off">设备三</label>'+'</div>';	
+
+
+	text+='<div class="left-div left-three toggle--push-sh toggle--push--glow" id="centerone9-'+id+'">'+'<input type="checkbox" id="centerone-twort-'+id+'" class="toggle--checkbox" onChange="setdevstate(this);">'+'<label class="toggle--btn" for="centerone-twort-'+id+'" data-label-on="on"  data-label-off="off">设备五</label>'+'</div>';	
+	text+='<div class="left-div left-four toggle--push-sh toggle--push--glow" id="centerone10-'+id+'">'+'<input type="checkbox" id="centerone-thirt-'+id+'" class="toggle--checkbox" onChange="setdevstate(this);">'+'<label class="toggle--btn" for="centerone-thirt-'+id+'" data-label-on="on"  data-label-off="off">设备六</label>'+'</div>';	
+	
+
+	text+='</div>';
+	return text;
+
+}
+
+function  divcontrolupdatestate(id,dev1,dev2,dev3,dev4,dev5,dev6,dev7,dev8,dev9,flag)
+{
+	var divid;
+	var inputs,dev;
+	var i=1,m=0;
+	if(flag==0)
+	{
+		for(i=1;i<=13;i++)
+		{
+			if(i<5)
+			{
+				divid="centerone"+i+"-"+id;
+				if(i==1)dev=dev1;else if(i==2)dev=dev2;else if(i==3)dev=dev3;else if(i==4)dev=dev4;
+			}
+			else if(i>=5&&i<9)
+			  {
+			  	continue;
+			  }
+			else
+			{
+				divid="centerone"+i+"-"+id;
+				if(i==9)dev=dev5;else if(i==10)dev=dev6;else if(i==11)dev=dev7;else if(i==12)dev=dev8;else if(i==13)dev=dev8;
+			}
+			inputs=document.getElementById(divid).getElementsByTagName("input");
+			for(var k = 0; k < inputs.length; k++) { 
+					if (inputs[k].type == 'checkbox') { 
+					
+					if(dev==1)
+						inputs[k].checked=true;
+					else
+						inputs[k].checked=false;
+					} 
+				} 
+		}	
+		
+	}
+}
+
+function  divcontrolset(settext,num)
+{
+	var text;
+	var divid,inputdiv;
+	var i=0,j=0,k=0;
+	var list =  JSON.parse(settext);//转换为json对象
+
+	if(num==1)
+		inputdiv=document.getElementById('wrap').getElementsByTagName('div');
+	
+	for(i=0;i<list.length;i++)
+	{
+		if(num==0)
+		{	
+			alert(list[i].terminalname);
+			text=centercontroldiv(list[i].id,list[i].terminalname);	
+			
+			$('#wrap').append(text);
+			
+			divcontrolupdatestate(list[i].id,list[i].skdevtype,list[i].devicestate,list[i].volume,list[i].shortcircuit,list[i].lopencircuit,list[i].ropencircuit,list[i].issponsor,list[i].isrecord,list[i].isspeech,num);				
+		}
+		else if(num==1)
+		{
+			
+			j=0;
+			for( k = 0; k < inputdiv.length; k++) { 
+					divid="centerone"+list[i].id;
+					if(inputdiv[k].id==divid)
+					{
+						j=1;
+						divcontrolupdatestate(list[i].id,list[i].skdevtype,list[i].devicestate,list[i].volume,list[i].shortcircuit,list[i].lopencircuit,list[i].ropencircuit,list[i].issponsor,list[i].isrecord,list[i].isspeech,0);
+						break;
+					}	
+			}
+			if(j==0)
+			{
+				text=centercontroldiv(list[i].id,list[i].terminalname);	
+				$('#wrap').append(text);
+				divcontrolupdatestate(list[i].id,list[i].skdevtype,list[i].devicestate,list[i].volume,list[i].shortcircuit,list[i].lopencircuit,list[i].ropencircuit,list[i].issponsor,list[i].isrecord,list[i].isspeech,num);
+			}
+		}  
+	}
+	if(num==1)
+	{
+		for( k = 0; k < inputdiv.length; k++) 
+		{ 
+			if(inputdiv[k].className=="r-div")
+			{
+				j=0;
+				for(i=0;i<list.length;i++)
+				{
+					divid="centerone"+list[i].id;
+					if(inputdiv[k].id==divid)
+					{
+						j=1;
+						break;
+					}
+				}
+				if(j==0)
+				{
+					temp="div#"+inputdiv[k].id;
+					$(temp).remove();
+				}	
+			}	
+		}
+	}
+}
+
+function getcontroltext(num,flag)
+{
+ 	var url;	
+	url ="centercontrolget.php?flag="+flag;	
+	var gettext=getcentercontrolvalue(url);
+	divcontrolset(gettext,num);
+	return gettext;
+}
+
+window.onload=function(){
+
+ 	getcontroltext(0,0);  
+	self.setInterval("getcontroltext(1,0)",10000);//N毫秒刷新一次，1000毫秒＝1秒
+}
+
+</script>
+</head>
+<body>
+<div id="wrap">
+	<!--	<div class="r-div"> 
+			<div class="head-div">顶部（header）</div>
+			<div class="left-div toggle--push-sh toggle--push--glow">
+			<input type="checkbox" id="toggle--push--glow1"  class="toggle--checkbox">
+			<label class="toggle--btn" for="toggle--push--glow1" data-label-on="on"  data-label-off="off">系统</label>
+			</div>  
+			<div class="left-div toggle--push-sh toggle--push--glow">
+			<input type="checkbox" id="toggle--push--glow2" class="toggle--checkbox">
+			<label class="toggle--btn" for="toggle--push--glow2" data-label-on="on"  data-label-off="off">设备二</label>
+			</div>  
+			<div class="left-div toggle toggle--switch">
+			<input type="checkbox" id="toggle--switch" class="toggle--checkbox">
+			<label class="toggle--btn" for="toggle--switch"><span class="toggle--feature" data-label-on="投影开"  data-label-off="投影关"></span></label>
+			</div>
+			<div class="left-div toggle--push toggle--push--glow">
+			<input type="checkbox" id="toggle--push--glow3"  class="toggle--checkbox" onChange="setdevstate(this);">
+			<label class="toggle--btn" for="toggle--push--glow3" data-label-on="on"  data-label-off="off">电脑</label>
+			</div> 
+				<div class="leftmid-div"></div>
+			
+			<div class="zeromusic-div toggle--push-th toggle--push--glow">
+			<input type="checkbox" id="toggle--push--glow9" class="toggle--checkbox">
+			<label class="toggle--btn" for="toggle--push--glow9" data-label-on="on"  data-label-off="off">静音</label>
+			</div>  
+			<div class="mid-div"><button class="button button1" >投影幕升</button><button class="button button2" onClick="setdevstate(this);">音量+</button><button class="button button3">投影幕降</button><button class="button button4">音量-</button>  </div>
+			
+			<div class="left-div left-one toggle--push-sh toggle--push--glow">
+			<input type="checkbox" id="toggle--push--glow4" class="toggle--checkbox">
+			<label class="toggle--btn" for="toggle--push--glow4" data-label-on="on"  data-label-off="off">设备三</label>
+			</div>  
+			<div class="left-div left-two toggle--push-sh toggle--push--glow">
+			<input type="checkbox" id="toggle--push--glow5" class="toggle--checkbox">
+			<label class="toggle--btn" for="toggle--push--glow5" data-label-on="on"  data-label-off="off">设备四</label>
+			</div>  
+		
+			<div class="left-div left-three toggle--push-sh toggle--push--glow">
+			<input type="checkbox" id="toggle--push--glow6"  class="toggle--checkbox">
+			<label class="toggle--btn" for="toggle--push--glow6" data-label-on="on"  data-label-off="off">设备五</label>
+			</div>  
+			<div class="left-div left-four toggle--push-sh toggle--push--glow">
+			<input type="checkbox" id="toggle--push--glow7" class="toggle--checkbox">
+			<label class="toggle--btn" for="toggle--push--glow7" data-label-on="on"  data-label-off="off">设备六</label>
+			</div>  
+		</div>	-->
+
+</div>
+</body>
+

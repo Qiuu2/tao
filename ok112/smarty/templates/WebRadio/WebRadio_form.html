@@ -1,0 +1,442 @@
+<form name="WebradioForm" class="terminal_form_to_body">
+<tbody>
+<div id="divTest" style="width:100%;overflow-x:hidden;overflow-y:scroll">
+<table width="98%" border="0" cellpadding="2" cellspacing="1"  align="center" id="tabletask">
+	<thead>
+    <tr align='center' class="terminal_table_row_bg">
+	
+		<th width="8%" nowrap="nowrap" class="change_thead_style">
+			<{$collect_manager.Select|capitalize}>
+		</th>
+		
+    <th width="10%" nowrap="nowrap" onclick="sortTable('tabletask', 1,'1')" class="sort_data_table_sequence">
+			<{$collect_manager.Webradio_Task|capitalize}>↑↓
+		</th>
+		
+   	<th width="10%" nowrap="nowrap" onclick="sortTable('tabletask', 2,'1')" class="sort_data_table_sequence">
+			<{$collect_manager.Play_Cycle|capitalize}>↑↓
+		</th>
+		
+		<th width="10%" nowrap="nowrap" onclick="sortTable('tabletask', 3,'1')" class="sort_data_table_sequence">
+			<{$collect_manager.Web_toff|capitalize}>↑↓
+		</th>
+		
+		<th width="10%" nowrap="nowrap" onclick="sortTable('tabletask', 4,'1')" class="sort_data_table_sequence">
+			<{$collect_manager.Start_Date|capitalize}>↑↓
+		</th>
+		
+		<th width="7%" nowrap="nowrap" onclick="sortTable('tabletask', 5,'1')" class="sort_data_table_sequence">
+			<{$collect_manager.End_Date|capitalize}>↑↓
+		</th>
+
+		<th width="5%" nowrap="nowrap" onclick="sortTable('tabletask', 6,'1')" class="sort_data_table_sequence">
+			<{$collect_manager.Run_Time|capitalize}>↑↓
+		</th>
+		
+		<th width="5%" nowrap="nowrap" onclick="sortTable('tabletask', 7,'1')" class="sort_data_table_sequence">
+			<{$collect_manager.Status|capitalize}>↑↓
+		</th>
+
+		<th width="20%" nowrap="nowrap" onclick="sortTable('tabletask', 8,'1')" class="sort_data_table_sequence">
+			<{$collect_manager.radio_address|capitalize}>↑↓
+		</th>
+		
+		
+		<th width="5%" nowrap="nowrap" onclick="sortTable('tabletask', 9,'1')" class="sort_data_table_sequence">
+			<{$collect_manager.Task_level|capitalize}>↑↓
+		</th>
+		
+		
+		<th width="5%" nowrap="nowrap" onclick="sortTable('tabletask', 10,'1')" class="sort_data_table_sequence">
+			<{$collect_manager.Volume|capitalize}>↑↓
+		</th>
+		<th width="5%" nowrap="nowrap" onclick="sortTable('tabletask', 11,'1')" class="sort_data_table_sequence">
+			<{$collect_manager.belonguser|capitalize}>↑↓
+		</th>
+		
+		<th width="8%" nowrap="nowrap">
+			<{$collect_manager.Terminal_Attribute|capitalize}>
+		</th>
+    </tr>
+	</thead>
+	<tbody>    
+	<{if $info|@count neq 0}>
+	  <{section name=loop loop=$info}>            
+	   <tr align='center' >
+			<td nowrap="nowrap">
+				<{if $is_right == 1 || $admin_id == "administrator"}>
+					<input name="id" type="checkbox" id="id" value="<{$info[loop].taskid}>">
+				<{else}>
+					<{$smarty.section.loop.index+1+$start}>
+				<{/if}>
+			</td>
+			
+			<td nowrap="nowrap">
+				<label title="<{$info[loop].taskname}>">
+					<{$info[loop].taskname|truncate:24:"..."}>
+				</label> 
+			</td>  
+			
+			<td nowrap="nowrap">
+				<{if $info[loop].exemodel eq "0000000"}>
+					<{$collect_manager.Manual|capitalize}>
+				<{elseif $info[loop].exemodel neq "0000000"}>
+					<script language="javascript">document.write(getdayofweek("<{$info[loop].exemodel}>"))</script>
+				<{/if}>
+			</td> 
+			
+			<td nowrap="nowrap">
+				<{if $info[loop].timelengthtype == 1}>            	
+				
+					<script language="javascript">
+						var gethour;
+						var getmin;
+						var getsen;
+						var gettime=<{$info[loop].timelength}>;
+						gethour=parseInt(gettime/3600);
+						getmin=parseInt((gettime-gethour*3600)/60);
+						getsen=gettime-gethour*3600-getmin*60;
+						if(gethour>0)
+							document.write(gethour,'<{$collect_manager.hour}>');
+						if(getmin>0)
+							document.write(getmin,'<{$collect_manager.min}>');
+						if(getsen>0)
+							document.write(getsen,'<{$collect_manager.sec}>');
+				</script>
+				<{else}>      
+					<{$info[loop].timelength}><{$collect_manager.Times|capitalize}> 
+				<{/if}>  
+			</td> 
+
+			<td nowrap="nowrap"><{$info[loop].startdate}> </td> 	
+			
+			<td nowrap="nowrap"><{$info[loop].enddate}> </td> 
+			
+			<td nowrap="nowrap"><{$info[loop].playtime}> </td>
+			
+			<td nowrap="nowrap">
+			
+			<{if $info[loop].state == 1}>
+			<span style="color:#0f6b24;">
+				<{$collect_manager.Run|capitalize}> </span>
+			<{elseif $info[loop].state == 0}>
+			<span style="color:#ff0000;">    
+				<{$collect_manager.Ready|capitalize}>● </span>  
+			<{elseif $info[loop].state == 2}>
+			<span style="color:#0f6b24;">    	
+				<{$collect_manager.Ready|capitalize}> </span>
+			<{elseif $info[loop].state == 3}>
+			<span style="color:#0f6b24;"> 
+				<{$collect_manager.Run|capitalize}> </span>
+			<{/if}>
+			
+			</td> 
+
+			  
+			 <td nowrap="nowrap">
+				 <{$info[loop].cmdargs}>
+			 </td> 
+			 
+
+			  <td nowrap="nowrap">
+			 	<{$info[loop].priority}>
+			 </td>
+			 
+			 <td nowrap="nowrap">
+			 	<{$info[loop].defaultvolume}>
+			 </td>
+			 	 <td nowrap="nowrap">
+			 	<{$info[loop].username}>
+			 </td>
+			<td nowrap="nowrap">
+			<{if $IE==1}>
+			    <a href="#" onclick="window.open('try_listenningradio.php?id=<{$info[loop].taskid}>  ','_blank','height=65,width=300,status=no,toolbar=no,location=no')">
+		        <{$collect_manager.file_listen}>
+		        </a>
+			<{/if}>
+				<a name="link_view" id="link_view" href="displayterminal.php?term_id=<{$info[loop].taskid}>">
+					<{$collect_manager.Terminal|capitalize}>
+				</a>	
+			</td>   
+	</tr>   
+<{/section}>
+<{else}>
+<tr align='center'>
+	<td colspan="14">
+		<strong><{$collect_manager.No_Record|capitalize}></strong>
+	</td>
+</tr>
+<{/if}> 
+</table>
+</div>
+</tbody>
+<table cellpadding="0" cellspacing="0">
+	<tr>
+	<td colspan="12" nowrap="nowrap">	
+<table border="0">
+<script src="smarty/templates/UserAccessControl/CheckUserRights.js" type="text/javascript" language="javascript"></script>
+<tr>
+	<td align="left" nowrap="nowrap">
+		<a title="<{$collect_manager.Select_All_task|capitalize}>" href="javascript:selAll(0)" >
+			<{$collect_manager.Select_All|capitalize}>
+		</a> &nbsp;
+		
+		<a title="<{$collect_manager.Cancel_all_task|capitalize}>" href="javascript:noSelAll(0)" >
+			<{$collect_manager.Cancel|capitalize}>
+		</a>&nbsp;
+		
+		<a title="<{$collect_manager.Run_task|capitalize}>" href="javascript:startradioTask()" >
+			<{$collect_manager.Run|capitalize}>
+		</a>&nbsp;
+			
+		<a title="<{$collect_manager.Pause_task|capitalize}>" href="javascript:stopradioTask()" >
+			<{$collect_manager.Pause|capitalize}>
+		</a>&nbsp;
+		
+		<a title="<{$collect_manager.Add_task|capitalize}>"  href="addwebradio.php" target='main' >
+			<{$collect_manager.Add|capitalize}>
+		</a>&nbsp;
+		
+		<a title="<{$collect_manager.Update_task|capitalize}>" href="javascript:modifyradioTask()" >
+			<{$collect_manager.Update|capitalize}>
+		</a>&nbsp;
+		
+		<a title="<{$collect_manager.Delete_task|capitalize}>" href="javascript:delTask()" >
+			<{$collect_manager.Delete|capitalize}>
+		</a>&nbsp;
+		
+		<a title="<{$collect_manager.Volume_task|capitalize}>" href="javascript:void(0)" id="volume_handle" onclick="mouse_click_position(event)">
+			<{$collect_manager.Volume|capitalize}>
+		</a>
+	</td>
+</tr>
+<script>
+	rights_control(<{$is_right}>,"<{$is_admin}>","link_view");
+</script>
+</table>
+	</td>
+</tr>
+</table>
+<script language="javascript">
+var   obj   =   document.getElementById( "divTest").offsetHeight; 
+ if(obj>=600)
+ {
+ 	document.getElementById("divTest").style.height=600+"px"; 
+ }
+ else
+ {
+  document.getElementById("divTest").style.height=document.getElementById( "divTest").offsetHeight;
+ }
+ var objwidth = document.getElementById( "divTest").offsetWidth;
+  if(objwidth<=1000)
+ {
+ 	document.getElementById("divTest").style.width=1000+"px"; 
+ }
+ else
+ {
+  document.getElementById("divTest").style.width=document.getElementById( "divTest").offsetWidth;
+ }
+</script>
+</form>
+ <table align="center">
+ 	<tr>
+		<td>
+ 			<div class="link_style" align="center"><{$pagestr}></div>
+		</td>
+	</tr>
+ </table>
+ <!--  搜索表单  -->
+<form name='form3' action='WebRadio.php' method='get'>
+<input type='hidden' name='dopost' value='' />
+<table class="middle" width='98%'  border='0' cellpadding='0' cellspacing='0' align="center">
+  <tr>
+    <td background='skin/images/wbg.gif' align='center'>
+      <table border='0' cellpadding='0' cellspacing='0'>
+        <tr>
+          <td width='90' align='center'><{$Searchform.Search_conditions}></td>
+          <td width='160'>
+          <select class="colors" name='searchkey' id="searchkey">
+            <option value=""><{$Searchform.Select_type}></option>
+            <option value="taskname"><{$Searchform.Task_name}></option>
+            <option value="playtime"><{$Searchform.Execution_time}></option>
+          </select>
+        </td>
+        <td width='70'>
+          <{$Searchform.Keyword}>
+        </td>
+        <td width='160'>
+          	<input class="colors" name='searchvalue' type='text' id="searchvalue" style='width:150px' value='' />
+        </td>
+        <td width='110'>
+    		<select class="colors" name='orderby' id="orderby">
+    		  <option value=""><{$Searchform.Sort}></option>
+    		  <option value="playtime"><{$Searchform.Time}></option>
+      	    </select>
+        </td>
+        <td>
+          <input name="imageField" type="image" src="<{$collect_manager.search_image}>" style="width:45px; height:20px; border-bottom-width:0px;"/>
+        </td>
+       </tr>
+      </table>
+    </td>
+  </tr>
+</table>
+</form>
+<!--修改声音-->
+  <script type="text/javascript" src="skin/js/frame/jquery.min.js"></script>
+ <script type="text/javascript" src="skin/js/frame/rating.min.js"></script>
+<div id="change_volume" class="r-displayVolume">
+ <iframe style="position:absolute; width:145;height:105px;left:0px; top:0px;filter:alpha(opacity=0);-moz-opacity:0; border:0;z-index:-1"></iframe>
+<div style="position:absolute;border:0;width:150; left:0px; top:0px; height:110px;z-index:100">
+
+	<table border="0" cellpadding="10" cellspacing="0" width="150" style="background-color:#EEFFEE">
+		
+		<tr>
+			<td nowrap="nowrap" align="center">
+			<div id="s1"></div>
+			<div id="d1"></div>
+			</td>
+			</tr>
+		<tr>
+			<td nowrap="nowrap" align="center">
+				<a href="javascript:void(0)" onclick="set_task_volume()">
+					<{$collect_manager.Sumbit|capitalize}>
+				</a>
+				&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+				
+				<a href="javascript:void(0)" onclick="disappear_volume_div()">
+					<{$collect_manager.Cancel}>
+				</a>
+			</td>
+		</tr>
+		
+	</table>
+</div>
+</div>
+<script language="javascript">
+var hidden_display = true;//默认隐藏
+var xmlhttp=null; 
+
+function createXMLHttpRequest()
+{ 
+	if(window.ActiveXObject)
+	{ 
+		xmlhttp = new ActiveXObject("microsoft.XMLHTTP"); 
+	} 
+	else if(window.XMLHttpRequest)
+	{ 
+		xmlhttp = new XMLHttpRequest(); 
+	}
+	else
+	{
+		alert('不支持');
+	}
+} 
+
+function ajax_set_task_volume(set_volume_server,volume_value,task_id)
+{
+   createXMLHttpRequest();
+   
+   if(task_id == "")
+   {
+   
+       if("<{$language}>"=="english")
+			alert("<{$collect_manager.select_webradio_task}>");
+		else
+		alert('请选择任务'); 
+	
+		return void(0);
+   }
+  
+   xmlhttp.open( "get","set_task_volume_server.php?tasktype="+set_volume_server+"&volume="+volume_value+"&task_id="+task_id+"",true );
+   
+   
+   xmlhttp.onreadystatechange = function()
+   {
+      if( xmlhttp.readyState == 4 )
+      {
+         if( xmlhttp.status == 200 )
+         {
+            if( xmlhttp.responseText == 0)
+            {
+			 	if("<{$language}>"=="english")
+				alert("fail");
+			else
+				alert('失败');
+            }
+			else if(xmlhttp.responseText == 1)
+			{
+				if("<{$language}>"=="english")
+					alert("success");
+				else
+					alert('成功');
+				
+				get_div_obj('change_volume').style.display = "none";
+				
+				self.location.reload();
+			}
+         }
+		 else
+		 {
+		  	if("<{$language}>"=="english")
+				alert("fail");
+			else
+			alert('访问失败');	 
+		 }
+      }
+   }
+    xmlhttp.setRequestHeader( "If-Modified-Since", "0");
+	xmlhttp.send(null);
+}
+
+function get_mouse_coordinates(event)
+{
+   var eve = event||window.event;
+   if(eve.pageX)
+   {
+
+    return {x:eve.pageX,y:eve.pageY};
+   }
+   else
+   {
+
+    return {
+                x:eve.clientX+document.body.scrollLeft - document.body.clientLeft,
+                y:eve.clientY+document.body.scrollTop - document.body.clientTop
+            };
+   }
+}
+function get_div_obj(str_id)
+{
+ 	return document.getElementById(str_id);   
+}
+function mouse_click_position(event)
+{
+    if(document.all)
+    {
+        window.event.cancelBubble = true;   
+    }
+    else
+    {
+        event.stopPropagation();
+    }
+    var mouse_obj_xy = get_mouse_coordinates(event);
+    get_div_obj('change_volume').style.left = mouse_obj_xy.x+20+'px';
+    get_div_obj('change_volume').style.top = mouse_obj_xy.y+'px';
+	get_div_obj('change_volume').style.display = "block";
+}
+ $(document).ready(function () {
+          $('#s1').slidy({
+            maxval: 100, 
+            interval: 1,
+            defaultValue: 50,
+           
+            moveCallback: function (value) {
+              $('#d1').html('<strong>' + value + '</strong>');
+            }
+          });
+
+        })
+</script>
+</body>
+</html>

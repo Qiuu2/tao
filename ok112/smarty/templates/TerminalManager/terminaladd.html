@@ -1,0 +1,163 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>终端管理</title>
+<link href="css.css" rel="stylesheet" type="text/css" />
+<!--
+改写脚本
+-->
+<script type="text/javascript">
+/**//* 
+ 用途：检查输入字符串是否为空或者全部都是空格 
+ 输入：str 
+ 返回： 
+ 如果全是空返回true,否则返回false 
+ */ 
+function isNull( str )
+{
+	if ( str == "" || str==null) 
+	return true;
+	var regu = "^[ ]+$";
+	var re = new RegExp(regu);
+	return re.test(str);
+}
+
+/* 
+  用途：校验ip地址的格式 
+  输入：strIP：ip地址 
+  返回：如果通过验证返回true,否则返回false
+*/ 
+function isIP(strIP) 
+{ 
+	if (isNull(strIP)) 
+	return false; 
+	var re=/^(\d+)\.(\d+)\.(\d+)\.(\d+)$/g; //匹配IP地址的正则表达式 
+	if(re.test(strIP)) 
+	{ 
+		if(RegExp.$1 <256 & RegExp.$2<256 && RegExp.$3<256 && RegExp.$4<256)
+		return true; 
+	} 
+return false; 
+} 
+/**//* 
+用途：检查输入字符串是否只由汉字、字母、数字组成 
+输入： 
+value：字符串 
+返回： 
+如果通过验证返回true,否则返回false 
+*/ 
+function isChinaOrNumbOrLett(s)
+{//判断是否是汉字、字母、数字组成 
+var regu = "^[0-9a-zA-Z\u4e00-\u9fa5]+$"; 
+var re = new RegExp(regu); 
+	if (re.test(s)) 
+	{ 
+		return true; 
+	}
+	else
+	{ 
+		return false; 
+	} 
+} 
+
+/**//* 
+用途：检查输入字符串是否符合正整数格式 
+输入： 
+：字符串 
+返回： 
+如果通过验证返回true,否则返回false 
+*/ 
+function isNumber(s)
+{ 
+	var regu = "^[0-9]+$"; 
+	var re=new RegExp(regu);
+	if(re.test(s))
+	{
+		return true;
+	}
+	else
+	{
+		return false;
+	}
+} 
+function checkform()
+{
+	///////////////////////////验证终端名称
+	if(isNull(document.formtmadd.terminalname.value))
+	{
+		document.getElementById('terminalname_s').innerHTML="<font class='prompt'><b>请填写终端名称!</b></font>";
+		document.formtmadd.terminalname.focus();
+		return false;
+	}
+	else
+	{
+		if(!isChinaOrNumbOrLett(document.formtmadd.terminalname.value))
+		{
+		document.getElementById('terminalname_s').innerHTML="<font class='prompt'><b>终端名称只由汉字 字母 数字组成</b></font>";
+		document.formtmadd.terminalname.focus();
+		return false;
+		}
+	}
+	document.getElementById('terminalname_s').innerHTML="<font class='prompt'><b></b></font>";
+	///////////////////////////验证IP地址
+	if(isNull(document.formtmadd.ip.value))
+	{
+		document.getElementById('ip_s').innerHTML="<font class='prompt'><b>请填写终端IP地址!</b></font>";
+		document.formtmadd.ip.focus();
+		return false;
+	}
+	else
+	{
+		if(!isIP(document.formtmadd.ip.value))
+		{
+			document.getElementById('ip_s').innerHTML="<font class='prompt'><b>请填写正确的IP地址!</b></font>";
+			document.formtmadd.ip.focus();
+			return false;
+		}
+	}
+	document.getElementById('ip_s').innerHTML="<font class='prompt'><b></b></font>";
+	///////////////////////////验证终端位置
+	if(isNull(document.formtmadd.postion.value))
+	{
+		document.getElementById('postion_s').innerHTML="<font class='prompt'><b>请填写终端名称!</b></font>";
+		document.formtmadd.postion.focus();
+		return false;
+	}
+	else
+	{
+		if(!isChinaOrNumbOrLett(document.formtmadd.postion.value))
+		{
+			document.getElementById('postion_s').innerHTML="<font class='prompt'><b>终端名称只由汉字 字母 数字组成</b></font>";
+			document.formtmadd.postion.focus();
+			return false;
+		}
+	}
+	document.getElementById('postion_s').innerHTML="<font class='prompt'><b></b></font>";
+	///////////////////////////验证声音
+	if(isNull(document.formtmadd.volume.value))
+	{
+		document.getElementById('volume_s').innerHTML="<font class='prompt'><b>请填写缺省的终端音量!</b></font>";
+		document.formtmadd.volume.focus();
+		return false;
+	}
+	else
+	{
+		if(!isNumber(document.formtmadd.volume.value))
+		{
+			document.getElementById('volume_s').innerHTML="<font class='prompt'><b>声音只能为数字</b></font>";
+			document.formtmadd.volume.focus();
+			return false;
+		}
+	}
+	document.getElementById('volume_s').innerHTML="<font class='prompt'><b></b></font>";
+	return true;
+}
+</script>
+</head>
+
+<body>
+<{include file="TerminalManager/terminaladd_form.html"}> 
+<{include file="footer.html"}> 
+</body>
+</html>

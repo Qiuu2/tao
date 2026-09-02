@@ -1,0 +1,94 @@
+	<table width="500" border="0" align="center" cellpadding="0" cellspacing="0" class="file_upload">
+		<tr>
+			<td>
+				<table width="100%" border="1" align="center" cellpadding="0" cellspacing="0">
+					<tr>
+						<td height="50px" width="500px">
+						<img width="100%" src="<{$file_upload_add.file_upload_image}>" />
+					
+						</td>
+					</tr>
+				</table>
+			</td>
+		</tr>
+		
+		<tr>
+			<td>
+				<table border="0" align="center" cellpadding="5" cellspacing="0">
+				  <tr valign="top">
+					<td height="200" width="500" nowrap="nowrap">
+					<div id="filelist"></div>
+					<div id="container">
+   					
+					</div>
+					<pre id="console"></pre>
+					</td>
+					<input type="hidden" name="folderid" id="folderid" value="<{$folder_id}>">
+				  </tr>
+				  <tr>
+					<td height="20" width="500" align="center" nowrap="nowrap">
+   					 <a id="pickfiles" href="javascript:;"><{$file_upload_add.select_file}></a> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+  					  <a title="<{$file_upload_add.uploadsize}>"  id="uploadfiles" href="javascript:;"><{$file_upload_add.plupload}></a>
+					</td>
+				  </tr>
+				</table>
+			</td>
+		</tr>
+    </table>
+	<script type="text/javascript">
+// Custom example logic
+
+var folderids=<{$folder_id}>;
+var uploader = new plupload.Uploader({
+	runtimes : 'html5,flash,silverlight,html4',
+	browse_button : 'pickfiles', // you can pass an id...
+	container: document.getElementById('container'), // ... or DOM Element itself
+	url : 'uploadfile.php?folderid='+folderids,
+	flash_swf_url : 'js/Moxie.swf',
+	silverlight_xap_url : 'js/Moxie.xap',
+	
+	filters : {
+		max_file_size : '300mb',
+		mime_types: [
+			{title : "mp3 files", extensions : "mp3,wav"},
+		]
+	},
+
+	init: {
+		PostInit: function() {
+			document.getElementById('filelist').innerHTML = '';
+
+			document.getElementById('uploadfiles').onclick = function() {
+				uploader.start();
+				return false;
+			};
+		},
+
+		FilesAdded: function(up, files) {
+			plupload.each(files, function(file) {
+				document.getElementById('filelist').innerHTML += '<div class="box1" id="' + file.id + '">' + file.name + ' (' + plupload.formatSize(file.size) + ') <b></b><a  onclick="test(this,'+"'"+file.id+"'"+')">&nbsp;&nbsp;&nbsp;×&nbsp;</a></div>';
+			});
+		},
+		FilesRemoved: function(up, files) {
+			
+		},
+		UploadProgress: function(up, file) {
+			document.getElementById(file.id).getElementsByTagName('b')[0].innerHTML = '<span>' + file.percent + "%</span>";
+		},
+
+		Error: function(up, err) {
+			document.getElementById('console').appendChild(document.createTextNode("\nError #" + err.code + ": " + err.message));
+		}
+	}
+});
+
+function test(test,files){
+test.parentNode.parentNode.removeChild(test.parentNode);
+ uploader.removeFile(files);
+//test.parentNode.remove();
+}
+
+uploader.init();
+
+</script>
+

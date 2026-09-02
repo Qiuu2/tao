@@ -1,0 +1,559 @@
+<html>
+<head>
+
+<META http-equiv=Content-Type content="text/html; charset=utf-8">
+
+<title>AddBellTask</title>
+
+<link href="skin/css/main_page_style.css" rel="stylesheet" type="text/css" />
+
+<!--添加文件列表开始-->
+<link href="smarty/templates/BellManager/codebase/dhtmlxtree.css" rel="stylesheet" type="text/css">
+<script language="JavaScript" src="smarty/templates/BellManager/codebase/dhtmlxtree.js" type"text/JavaScript"></script>	
+<script language="JavaScript" src="smarty/templates/BellManager/codebase/dhtmlxcommon.js" type"text/JavaScript"></script>
+<script  src="smarty/templates/ajax/get_terminaltype.js"></script>
+<script src="skin/js/frame/analysis_tree_terminal_group_string.js"></script>
+
+<style>
+/*想要改输入日历控件的样子就改下面的CSS样式就可以了*/
+.header
+{
+	font-weight: bold;
+	font-weight: bold;
+	color: #000000;
+	background:#C2DEED;
+	height: 25px;
+	padding-left: 10px;
+	font-family: Arial, Tahoma;
+	font-size: 12px;
+}
+.header td
+{
+   padding-left: 10px;
+}
+.header a
+{
+   color: #154BA0;
+}
+.header input
+{
+   background:none;
+   vertical-align: middle;
+   height: 16px;
+}
+.category
+{
+   font: 12px Arial, Tahoma;
+   font: 11px Arial, Tahoma;
+   color: #92A05A;
+   height:20px;
+   background-color: #FFFFD9;
+}
+.category td
+{
+   border-bottom: 1px solid #DEDEB8;
+}
+.expire, .expire a:link, .expire a:visited
+{
+   color: #999999;
+}
+.default, .default a:link, .default a:visited
+{
+   color: #000000;
+}
+.checked, .checked a:link, .checked a:visited
+{
+   color: #FF0000;
+}
+.today, .today a:link, .today a:visited
+{
+   color: #00BB00;
+}
+#calendar_year
+{
+   display: none;
+   line-height: 130%;
+   background: #FFFFFF;
+   position: absolute;
+   z-index: 10;
+}
+#calendar_year .col
+{
+   float: left;
+   background: #FFFFFF;
+   margin-left: 1px;
+   border: 1px solid #86B9D6;
+   padding: 4px;
+}
+#calendar_month
+{
+   display: none;
+   background: #FFFFFF;
+   line-height: 130%;
+   border: 1px solid #86B9D6;
+   padding: 4px;
+   position: absolute;
+   z-index: 11;
+}
+.tableborder
+{
+   background: white;
+   border: 1px solid #86B9D6;
+}
+#year, #month
+{
+   padding-right:10px;
+   background:url(onbottom.gif) no-repeat center right;
+}/*图片路径可以改成自己的*/
+/*Date*/
+</style>
+
+<script>
+//这段脚本如果你的页面里有，就可以去掉它们了
+var ie =navigator.appName=="Microsoft Internet Explorer"?true:false;
+function $(objID)
+{
+	return document.getElementById(objID);
+}
+function isNull( str )
+{
+	if ( str == "" || str==null) 
+	return true;
+	var regu = "^[ ]+$";
+	var re = new RegExp(regu);
+	return re.test(str);
+}
+function isNumber( s )
+{ 
+	var regu = "^[0-9]+$"; 
+	var re = new RegExp(regu); 
+	if (s.search(re) != -1) 
+	{ 
+		return true; 
+	}
+	else 
+	{ 
+		return false; 
+	} 
+} 
+function isChinaOrNumbOrLett(s)
+{
+	var regu = "^[0-9a-zA-Z\u4e00-\u9fa5]+$"; 
+	var re = new RegExp(regu); 
+	if (re.test(s)) 
+	{ 
+		return true; 
+	}
+	else
+	{ 
+		return false; 
+	} 
+}
+function trim(str)
+{
+   str=str.replace(/(^\s*)|(\s*$)/g,""); 
+   return str;
+}
+
+</script>
+<!--时间代码结束-->
+<script src="smarty/templates/ajax/putintobellinfo.js" type="text/javascript"></script>
+<!--动态添加表格-->
+<script language="javascript">
+
+function gettaskname(obj)
+{
+	var getname=document.getElementById('taskname').value;
+	var url = "get_task_name_length.php?getname=" + getname;
+	var getflag=gettasknames(url);
+	if(getflag==1)
+	document.getElementById('taskname').focus();
+}
+
+var row=1;
+var sign=0;//判断是单击
+ var arr = new Array();//取数组
+ 
+function insertRowInTable(gettable,gettemp)
+{
+//	var objgetmediainfo = document.getElementById('getmediainfo');
+	var table = document.getElementById(gettable);
+	var newRow = table.insertRow(row);
+	newRow.style.textAlign = "left";
+	newRow.insertCell(0).innerHTML = row;
+
+	if(gettemp == 2)
+	{
+		//newRow.insertCell(1).innerHTML = "<input  type=\"text\" name=\"coursename\" style=\"width:90%;\" id=\"coursename\" value=\"<{$add_bell_scheme.Please_Input|capitalize}>\"/><span class=\"terminal_star\" id=\"coursename_text\" name=\"coursename_text\">*</span>";
+		newRow.insertCell(1).innerHTML = "<textarea rows=\"3\" cols=\"90\" id=\"coursename\" name=\"coursename\" onBlur=\"textCounter(this,500);\"></textarea><span class=\"terminal_star\" id=\"coursename_text\" name=\"coursename_text\">*</span>";
+	}
+	else if(gettemp == 1)
+	{
+		newRow.insertCell(1).innerHTML = "<select  name=\"coursename\" id=\"coursename\" style=\"width:300\"><{section name=medialist loop=$medialist}><option value=\"<{$medialist[medialist].seq}>\"><{$medialist[medialist].name}></option><{/section}></select>";
+	}
+	else
+	{
+		newRow.insertCell(1).innerHTML = "<select name=\"coursename\" id=\"coursename\" style=\"width:300\"><{section name=medianame loop=$medianame}><option value=\"<{$medianame[medianame].id}>\"><{$medianame[medianame].name}></option><{/section}></select>";
+	}
+	
+	newRow.insertCell(2).innerHTML = "<input  type=\"hidden\" name=\"rows\" width=\"20px\" id=\"rows\" value=\""+gettemp+"\"/>";
+	newRow.insertCell(-1).innerHTML = "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<input title=\"<{$add_bell_scheme.add_singletask|capitalize}>\" type=\"button\" value=\"<{$add_bell_scheme.Add|capitalize}>\" name=\"add\" id=\"add\" onclick=\"getcurrentrowindex(this);getresultvalue == 1?this.disabled =true : this.disabled = false;isgetalonesubmitdata(this);getresultvalue = 0;\" class=\"bell_button_style\">&nbsp;<input title=\"<{$add_bell_scheme.del_singletask|capitalize}>\" type=\"button\" value=\"<{$add_bell_scheme.Delete|capitalize}>\" id=\"delrow\" name=\"delrow\" onclick=\"deleteRow(this);\" class=\"bell_button_style\">";
+	
+	row++;
+	sign++;
+//get_last_row_select_value(gettable);
+}
+function textCounter(obj,temp)
+{
+	var settrainname="";
+	var getmediademo = "";
+	var totalrownum = obj.parentNode.parentNode.parentNode.rows.length-1;
+	var getcurrentrownum = obj.parentNode.parentNode.rowIndex;
+	
+	if(totalrownum == 1)
+	{
+	
+		settrainname = document.getElementById('coursename').value.length;
+		
+		getmediademo =  document.getElementById('coursename').value;
+		if(settrainname>temp)
+		{
+		alert("<{$add_bell_scheme.offlimit|capitalize}>");
+		document.getElementById('coursename').value=getmediademo.substring(0,temp);	
+		}
+	}
+	else if(totalrownum >1)
+	{
+		settrainname = document.getElementsByName('coursename')[getcurrentrownum-1].value.length;
+		getmediademo =  document.getElementsByName('coursename')[getcurrentrownum-1].value;
+		if(settrainname>temp)
+		{
+		alert("<{$add_bell_scheme.offlimit|capitalize}>");
+		document.getElementsByName('coursename')[getcurrentrownum-1].value=getmediademo.substring(0,temp);
+		}
+
+	}
+}
+
+function deleteRow(r)
+{
+	var i=r.parentNode.parentNode.rowIndex;
+	document.getElementById('coursetable').deleteRow(i);
+	row--;
+	sign--;
+}
+function getcurrentrowindex(obj)
+{
+
+	var taskname = document.getElementById('taskname').value;
+	
+	if(isNull(taskname))
+	{
+		document.getElementById('taskname_text').innerHTML="<font class='terminal_star'><{$add_bell_scheme.enter_scheme_name|capitalize}></font>";
+		document.getElementById('taskname').focus();
+		
+		return void(0);
+	}
+	else if(!isChinaOrNumbOrLett(taskname))
+	{
+		document.getElementById('taskname_text').innerHTML="<font class='terminal_star'><{$add_bell_scheme.letter_number_Chinese|capitalize}></font>";
+		document.getElementById('taskname').focus();
+		
+		return void(0);
+	}
+	
+	document.getElementById('taskname_text').innerHTML="<font class='terminal_star'></font>";
+	//获取声音
+//	var type = document.getElementById('getmediainfo').value;
+
+	var settrainname="";
+	var getmediarows = "";
+	var totalrownum = obj.parentNode.parentNode.parentNode.rows.length-1;
+	var getcurrentrownum = obj.parentNode.parentNode.rowIndex;
+	
+	if(totalrownum == 1)
+	{
+	
+		settrainname = document.getElementById('coursename').value;
+		getmediarows=document.getElementById('rows').value;
+		
+	}
+	else if(totalrownum >1)
+	{
+		settrainname = document.getElementsByName('coursename')[getcurrentrownum-1].value;
+	
+		getmediarows=document.getElementsByName('rows')[getcurrentrownum-1].value;
+		//getonetimelength = getonetimelengthtemp[0]*60*60 + getonetimelengthtemp[1]*60 + getonetimelengthtemp[2]*1;	
+	}
+	var getspeed=document.getElementById('speed_value').value;
+	var getvolume=document.getElementById('volume_value').value;
+	var seturldata ="addonemedia.php?taskname="+taskname+"&type="+getmediarows+"&settrainname="+settrainname.replace(/\r\n/ig,"")+"&totalrownum="+getcurrentrownum+"&getspeed="+getspeed+"&getvolume="+getvolume+"";	
+
+		// var geturl=encodeURI(encodeURI(seturldata));
+		senddata(seturldata,"<{$language}>");
+		isgetalonesubmitdata(obj);
+}
+function isgetalonesubmitdata(obj)
+{
+	var totalrownum = obj.parentNode.parentNode.parentNode.rows.length-1;
+	
+	var getcurrentrownum = obj.parentNode.parentNode.rowIndex;
+	if(totalrownum == 1)
+	{
+		if(document.getElementById('add').disabled == true)
+		{
+			document.getElementById('delrow').disabled = true;
+			document.getElementById('add').value = "<{$add_bell_scheme.ok|capitalize}>";
+		}
+	}
+	else if(totalrownum > 1)
+	{
+		for(var i=0;i<document.getElementsByName('add').length;i++)
+		{
+			if(document.getElementsByName('add')[i].disabled == true)
+			{
+				document.getElementsByName('delrow')[i].disabled = true;
+				document.getElementsByName('add')[i].value = "<{$add_bell_scheme.ok|capitalize}>";
+			}
+		}
+	}
+}
+function checkform()
+{
+	var taskname = document.getElementById('taskname').value;
+	
+	if(isNull(taskname))
+	{
+		document.getElementById('taskname_text').innerHTML="<font class='terminal_star'><{$add_bell_scheme.enter_scheme_name|capitalize}></font>";
+		document.getElementById('taskname').focus();
+		
+		return false;
+	}
+	else if(!isChinaOrNumbOrLett(taskname))
+	{
+		document.getElementById('taskname_text').innerHTML="<font class='terminal_star'><{$add_bell_scheme.letter_number_Chinese|capitalize}></font>";
+		document.getElementById('taskname').focus();
+		
+		return false;
+	}
+	
+	document.getElementById('taskname_text').innerHTML="<font class='terminal_star'></font>";
+	var totalrownum = row-1;
+	if(totalrownum<1)
+	{
+		alert("<{$add_bell_scheme.addtask|capitalize}>");
+		return false;
+	}
+	var getdemo="";
+	var gettype="";
+	var aa=0;
+
+		if(totalrownum == 1)
+		{
+			getdemo=document.getElementById('coursename').value;
+			gettype=document.getElementById('rows').value;
+		}
+		else if(totalrownum > 1)
+		{
+	
+			for(var i=0;i<totalrownum;i++)
+			{
+				
+				if(i==0)
+				{
+				getdemo=document.getElementsByName('coursename')[i].value;
+				
+				gettype=document.getElementsByName('rows')[i].value;
+			
+			//	gettype=arr[i+1];
+				}
+				else
+				{
+				
+				getdemo=getdemo+"##@"+document.getElementsByName('coursename')[i].value;
+				gettype=gettype+","+document.getElementsByName('rows')[i].value;
+			
+				}
+			}	
+		}
+
+	
+	document.getElementById('getdemos').value=getdemo.replace(/\r\n/ig,"");
+
+	document.getElementById('hiddentasktype').value=gettype;
+
+	document.getElementById('hiddenallnum').value=totalrownum;
+}
+</script>
+<!--
+	添加日期
+-->
+
+
+</head>
+<body>
+
+<form name="bellform" method="post" action="do.php?act=taskaddtrainmedia" onSubmit="return checkform();" class="terminal_form_to_body">
+<table width="780" align="center" cellpadding="0" cellspacing="0" class="terminal_table_border">
+	<tr>
+	  <td colspan="2">
+		  <input type="hidden"  id="getdemos" name="getdemos" value=""/>
+		<input type="hidden"  id="hiddentasktype"       name="hiddentasktype" value=""/>
+		<input type="hidden"  id="hiddenallnum"       name="hiddenallnum" value=""/>
+		<img style="width:100%" src="<{$add_bell_scheme.add_media_image}>"/>
+	  </td>
+	</tr>
+	
+	<tr>
+		<td colspan="2" class="bell_basic_param">
+			<{$add_bell_scheme.Task_configuration|capitalize}>
+		</td>
+	</tr>
+
+		<tr>
+		<td colspan="2">
+		<table align="left">
+		<tr align="left">
+			<td style="text-align:left; font-size:12px">
+					<{$add_bell_scheme.media_name|capitalize}>
+				</td>
+				<td >
+					<input class="terminal_input_font" name="taskname" type="text" maxlength="30" id="taskname" onBlur="gettaskname(this);"/><span class="terminal_star" id="taskname_text">*</span>		
+				</td>
+		</tr>
+		   <script type="text/javascript" src="skin/js/frame/slider.js"></script>
+			  <tr>
+				<td style="text-align:left; font-size:12px"><{$add_bell_scheme.Volumes|capitalize}></td>
+				<input type="hidden" name="task_default_volume" id="task_default_volume" value="0"/>
+					<td  style="text-align:left; font-size:12px">
+					<script language="JavaScript">
+						var A_TPL6h = {
+							'b_vertical' : false,
+							'b_watch': true,
+							'n_controlWidth': 149,
+							'n_controlHeight': 17,
+							'n_sliderWidth': 9,
+							'n_sliderHeight': 17,
+							'n_pathLeft' : 1,
+							'n_pathTop' : 0,
+							'n_pathLength' : 138,
+							's_imgControl': 'skin/images/frame/sldr5h_bg.gif',
+							's_imgSlider': 'skin/images/frame/sldr5h_sl.gif',
+							'n_zIndex': 1
+						}
+						var A_INIT6h = {
+							's_form' : 0,
+							's_name': 'volume_value',
+							'n_minValue' : -100,
+							'n_maxValue' : 100,
+							'n_value' : 0,
+							'n_step' : 1
+						}
+					
+						new slider(A_INIT6h, A_TPL6h);
+					</script>
+					<td style="text-align:left; font-size:12px">
+					<input  name="volume_value" id="volume_value" value="0" type="Text" size="3" readonly="true" onChange="A_SLIDERS[5].f_setValue(this.value)">
+					
+					</td>
+				</td>
+					<td style="text-align:left; font-size:12px"><{$add_bell_scheme.speed|capitalize}></td>
+				<input type="hidden" name="task_default_speed" id="task_default_speed" value="0"/>
+					<td  style="text-align:left; font-size:12px">
+					<script language="JavaScript">
+						var A_TPL6h = {
+							'b_vertical' : false,
+							'b_watch': true,
+							'n_controlWidth': 149,
+							'n_controlHeight': 17,
+							'n_sliderWidth': 9,
+							'n_sliderHeight': 17,
+							'n_pathLeft' : 1,
+							'n_pathTop' : 0,
+							'n_pathLength' : 138,
+							's_imgControl': 'skin/images/frame/sldr5h_bg.gif',
+							's_imgSlider': 'skin/images/frame/sldr5h_sl.gif',
+							'n_zIndex': 1
+						}
+						var A_INIT6h = {
+							's_form' : 0,
+							's_name': 'speed_value',
+							'n_minValue' : -50,
+							'n_maxValue' : 100,
+							'n_value' : 0,
+							'n_step' : 1
+						}
+					
+						new slider(A_INIT6h, A_TPL6h);
+					</script>
+					<td style="text-align:left; font-size:12px">
+					<input  name="speed_value" id="speed_value" value="0" type="Text" size="3" readonly="true" onChange="A_SLIDERS[5].f_setValue(this.value)">
+					
+					</td>
+				</td>
+				
+				
+			  </tr>
+		 <tr>
+					<td style="text-align:left; font-size:12px">
+						<{$add_bell_scheme.media_task|capitalize}>
+						&nbsp;&nbsp;
+					</td>
+					<td style="text-align:left; font-size:12px">
+					<!--
+						<select class="terminal_select_style" name="getmediainfo" id="getmediainfo" >
+						<option value="0"><{$add_bell_scheme.exist_media|capitalize}></option>
+					
+						<option value="1"><{$add_bell_scheme.select_media|capitalize}></option>
+					
+						<option value="2"><{$add_bell_scheme.customer_media|capitalize}></option>
+						</select>
+					
+					<span class="terminal_star" id="exeModel_text"><font size="-1">*</font></span>	
+						-->
+					<input  type="button" class="bell_button_style " onClick="insertRowInTable('coursetable',0)" id="addrow" name="addrow" value="<{$add_bell_scheme.exist_media|capitalize}>"/>
+				
+					</td>
+					<td style="text-align:left; font-size:12px">
+						<input  type="button" class="bell_button_style " onClick="insertRowInTable('coursetable',2)" id="addrow2" name="addrow2" value="<{$add_bell_scheme.customer_media|capitalize}>"/>
+					</td>
+				</tr>
+	 </table>
+		</td>
+		</tr>
+	<tr>
+	<td colspan="2">
+	
+	<table id="coursetable" name="coursetable" class="bell_sub_table">
+		<tr class="bell_sub_table_row">
+			<td width="5%" nowrap="nowrap"><{$add_bell_scheme.No|capitalize}></td>
+			<td width="70%" nowrap="nowrap"><{$add_bell_scheme.train_demos|capitalize}></td>
+			<td width="5%" nowrap="nowrap"></td>
+			<td width="20%" nowrap="nowrap"><{$add_bell_scheme.Compile|capitalize}></td>
+		</tr>
+	</table>
+	</td>
+
+	</tr>
+
+	
+	<!--
+	&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+	<input name="reset" type="reset" class="terminal_button" id="reset" value="<{$add_bell_scheme.Cancel|capitalize}>"/>
+	-->
+
+<tr style="text-align:center; font-size:12px">
+	<td style="text-align:center; font-size:12px">
+	<input  id="Submit" name="Submit" type="submit" class="terminal_button" value="<{$add_bell_scheme.Submit|capitalize}>"/>
+	</td>
+	</tr>
+</table>
+
+	
+
+</form>
+
+
+<{include file="language/`$language`_foot.php"}> 
+</body>
+</html>

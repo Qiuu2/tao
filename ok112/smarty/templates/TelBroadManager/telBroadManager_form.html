@@ -1,0 +1,439 @@
+<form name="fileAdvForm" class="terminal_form_to_body">
+<table width="98%" border="0" cellpadding="2" cellspacing="1" align="center">
+    <tr align="center" class="terminal_table_row_bg">
+		<td width="8%" nowrap="nowrap">
+			<{$phone_collect.Select|capitalize}>
+		</td>
+		
+		<td width="10%" nowrap="nowrap">
+			<{$phone_collect.Phone_Collection|capitalize}>
+		</td>
+
+		<td width="15%" nowrap="nowrap">
+			<{$phone_collect.Play_Cycle|capitalize}>
+		</td>
+		
+		<td width="5%" nowrap="nowrap">
+			<{$phone_collect.Duration|capitalize}>
+		</td>
+		
+		<td width="8%" nowrap="nowrap">
+			<{$phone_collect.Start_Date|capitalize}>
+		</td>
+		
+		<td width="8%" nowrap="nowrap">
+			<{$phone_collect.End_Date|capitalize}>
+		</td>
+		
+		<td width="5%" nowrap="nowrap">
+			<{$phone_collect.Run_Time|capitalize}>
+		</td>
+		
+		<td width="5%" nowrap="nowrap">
+			<{$phone_collect.Status|capitalize}>
+		</td>
+
+		<td width="5%" nowrap="nowrap">
+			<{$phone_collect.Play_Mode|capitalize}>
+		</td>
+		
+		<td width="5%" nowrap="nowrap">
+			<{$phone_collect.Audio_Source|capitalize}>
+		</td>
+		
+		<td width="5%" nowrap="nowrap">
+			<{$phone_collect.Audio_Mode|capitalize}>
+		</td>
+		
+		<td width="5%" nowrap="nowrap">
+			<{$phone_collect.Task_level|capitalize}>
+		</td>
+			
+		<td width="5%" nowrap="nowrap">
+			<{$phone_collect.Volume|capitalize}>
+		</td>
+		 	<td width="8%" nowrap="nowrap">
+			<{$phone_collect.belonguser|capitalize}>
+		</td>   
+		<td width="8%" nowrap="nowrap">
+			<{$phone_collect.Terminal_Attribute|capitalize}>
+		</td>
+		
+    </tr>
+<{if $info|@count neq 0}>
+<{section name=loop loop=$info}>            
+	<tr class="tablestyle" align='center' onmouseover="this.style.backgroundColor = '#EEEEFF'" onmouseout="this.style.backgroundColor = '#FFFFFF'">
+	
+		<td nowrap="nowrap">
+		<{if $is_right == 1 || $admin_id == "administrator"}>
+			<input name="id" type="checkbox" id="id" value="<{$info[loop].taskid}>">
+		<{else}>
+			<{$smarty.section.loop.index+1+$start}>
+		<{/if}>
+		</td>
+		
+		<td nowrap="nowrap">
+			<label title="<{$info[loop].taskname}>">
+				<{$info[loop].taskname|truncate:12}>
+			</label>
+		</td>  
+		
+		<td nowrap="nowrap">
+			<{if $info[loop].exemodel eq "0000000"}>
+				<{$phone_collect.Manual|capitalize}>
+			<{elseif $info[loop].exemodel neq "0000000"}>
+				<script language="javascript">document.write(getdayofweek("<{$info[loop].exemodel}>"))</script>
+			<{/if}>
+		</td> 
+			
+		<{if $info[loop].timelengthtype == 1}>            	
+			<td nowrap="nowrap">
+				<script language="javascript">
+				var gethour;
+				var getmin;
+				var getsen;
+				var gettime=<{$info[loop].timelength}>;
+				gethour=parseInt(gettime/3600);
+				getmin=parseInt((gettime-gethour*3600)/60);
+				getsen=gettime-gethour*3600-getmin*60;
+				if(gethour>0)
+					document.write(gethour,'<{$phone_collect.hour}>');
+				if(getmin>0)
+					document.write(getmin,'<{$phone_collect.min}>');
+				if(getsen>0)
+					document.write(getsen,'<{$phone_collect.sec}>');
+				</script>
+				
+			</td>  
+		<{else}>      
+			<td nowrap="nowrap">
+				<{$info[loop].timelength}><{$phone_collect.Times|capitalize}> 
+			</td>  
+		<{/if}>  
+		
+		<td nowrap="nowrap"><{$info[loop].startdate}> </td>
+		 
+		<td nowrap="nowrap"><{$info[loop].enddate}> </td> 
+		
+		<td nowrap="nowrap"><{$info[loop].playtime}> </td> 
+		<td nowrap="nowrap">
+		
+			<{if $info[loop].state == 5}>
+				<{$phone_collect.Run|capitalize}> 
+			<{elseif $info[loop].state == 0}>      
+				<{$phone_collect.Ready|capitalize}> 
+			<{elseif $info[loop].state == 2}>
+				<{$phone_collect.Pause|capitalize}> 
+			<{elseif $info[loop].state == 1}>
+				<{$phone_collect.Ready_play|capitalize}> 
+			<{/if}>
+			</td>
+		     
+		
+			
+		<{if $info[loop].playmodel == 1}>            	
+			<td nowrap="nowrap">
+				<{$phone_collect.Sequential_Play|capitalize}> 
+			</td>
+		<{else}>      
+			<td nowrap="nowrap">
+				<{$phone_collect.Random_Play|capitalize}> 
+			</td>   
+		<{/if}>  
+		
+		<td nowrap="nowrap">
+			<{if $info[loop].cmdargs == 1}>
+				VCD
+			<{elseif $info[loop].cmdargs == 2}>
+				DVR
+			<{elseif $info[loop].cmdargs == 3}>
+				<{$phone_collect.Broadcast|capitalize}>
+			<{elseif $info[loop].cmdargs == 4}>
+				<{$phone_collect.Microphone|capitalize}>
+			<{else}>
+				....
+			<{/if}>
+		</td>  
+		
+		<td nowrap="nowrap">
+			<{if $info[loop].channel == 1}>
+				3D
+			<{elseif $info[loop].channel == 2}>
+				2D
+			<{else}>
+				....
+			<{/if}>
+		</td>  
+		
+		<td nowrap="nowrap"><{$info[loop].priority}></td>
+		
+		<td nowrap="nowrap"><{$info[loop].defaultvolume}></td>
+		<td nowrap="nowrap"><{$info[loop].username}></td>
+		<td nowrap="nowrap">
+			<a name="link_view" id="link_view" href="displayterminal.php?term_id=<{$info[loop].taskid}>">
+				<{$phone_collect.Terminal|capitalize}>
+			</a>					
+		</td> 
+		
+	</tr>   
+<{/section}> 
+<{else}>
+<tr align='center' onmouseover="this.style.backgroundColor = '#EEEEFF'" onmouseout="this.style.backgroundColor = '#FFFFFF'">
+	<td colspan="13">
+		<strong><{$phone_collect.No_Record|capitalize}></strong>
+	</td>
+</tr>
+<{/if}>
+	<tr>
+	<td colspan="12" nowrap="nowrap">	
+	  
+	  <table border="0">
+	    <tr>
+		<script src="smarty/templates/UserAccessControl/CheckUserRights.js" type="text/javascript" language="javascript"></script>
+			<td align="left" nowrap="nowrap">
+				<a title="<{$phone_collect.Select_All_task|capitalize}>" href="javascript:selAll(0)" >
+					<{$phone_collect.Select_All|capitalize}>
+				</a> &nbsp;
+				
+				<a title="<{$phone_collect.Cancel_task|capitalize}>" href="javascript:noSelAll(0)" >
+					<{$phone_collect.Cancel|capitalize}>
+				</a>&nbsp;
+				
+				<a title="<{$phone_collect.Run_task|capitalize}>" href="javascript:startTask()" >
+					<{$phone_collect.Run|capitalize}>
+				</a>&nbsp;
+					
+				<a title="<{$phone_collect.Pause_task|capitalize}>" href="javascript:stopTask()" >
+					<{$phone_collect.Pause|capitalize}>
+				</a>&nbsp;
+				
+				<a title="<{$phone_collect.Add_task|capitalize}>" href="telBroadManagerAdd.php" target='main'>
+					<{$phone_collect.Add|capitalize}>
+				</a>&nbsp;
+				
+				<a title="<{$phone_collect.Update_task|capitalize}>" href="javascript:modifyTelTask()" >
+					<{$phone_collect.Update|capitalize}>
+				</a>&nbsp;
+				
+				<a title="<{$phone_collect.Delete_task|capitalize}>" href="javascript:delTask()" >
+					<{$phone_collect.Delete|capitalize}>
+				</a>&nbsp;
+				
+				<a title="<{$phone_collect.Volume_task|capitalize}>" href="javascript:void(0)" id="volume_handle" onclick="mouse_click_position(event)">
+					<{$phone_collect.Volume|capitalize}>
+				</a>
+			</td>
+			
+		</tr>
+		<script>
+			rights_control(<{$is_right}>,"<{$is_admin}>","link_view");
+		</script>
+		</table>
+		</td>
+	</tr>
+</table>
+</form>
+
+<table align="center" border="0" width="100%">
+	<tr>
+		<td width="50%"></td>
+		<td nowrap="nowrap">
+			<div class="link_style"><{$pagestr}></div>
+		</td>
+		<td width="50%"></td>
+	</tr>
+</table>
+
+ <!--  搜索表单  -->
+<form name="form1" action='telBroadManager.php' method="get">
+<input type='hidden' name='dopost' value='' /><!--保留隐藏表单-->
+<table class="middle" width='98%'  border='0' cellpadding='1' cellspacing='1' align="center" style="margin-top:8px">
+  <tr>
+    <td background='skin/images/wbg.gif' align='center'>
+      <table border='0' cellpadding='0' cellspacing='0'>
+        <tr>
+          <td width='90' align='center'><{$Searchform.Search_conditions}></td>
+          <td width='160'>
+          <select class="colors" name='searchkey' id="searchkey">
+            <option value=""><{$Searchform.Select_type}></option>
+            <option value="taskname"><{$Searchform.Task_name}></option>
+            <option value="playtime"><{$Searchform.Execution_time}></option>
+          </select>
+        </td>
+        <td width='70'>
+          <{$Searchform.Keyword}>
+        </td>
+        <td width='160'>
+          	<input class="colors" name='searchvalue' type='text' id="searchvalue" style='width:150px' value='' />
+        </td>
+        <td width='110'>
+    		<select class="colors" name='searchsequence' id="searchsequence">
+    		  <option value=""><{$Searchform.Sort}></option>
+    		  <option value="playtime"><{$Searchform.Time}></option>
+      	        </select>
+        </td>
+        <td>
+          <input name="imageField" type="image" src="<{$phone_collect.search_image}>" style="width:45px; height:20px; border-bottom-width:0px;"/>
+        </td>
+       </tr>
+      </table>
+    </td>
+  </tr>
+</table>
+</form>
+<!--修改声音-->
+  <script type="text/javascript" src="skin/js/frame/jquery.min.js"></script>
+ <script type="text/javascript" src="skin/js/frame/rating.min.js"></script>
+<div id="change_volume" class="r-displayVolume">
+ <iframe style="position:absolute; width:145;height:105px;left:0px; top:0px;filter:alpha(opacity=0);-moz-opacity:0; border:0;z-index:-1"></iframe>
+<div style="position:absolute;border:0;width:150; left:0px; top:0px; height:110px;z-index:100">
+
+	<table border="0" cellpadding="10" cellspacing="0" width="150" style="background-color:#EEFFEE">
+		
+		<tr>
+			<td nowrap="nowrap" align="center">
+			<div id="s1"></div>
+			<div id="d1"></div>
+			</td>
+			</tr>
+		<tr>
+			<td nowrap="nowrap" align="center">
+				<a href="javascript:void(0)" onclick="set_task_volume()"> 
+					<{$phone_collect.Sumbit|capitalize}>
+				</a>
+				&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+				<a href="javascript:void(0)" onclick="disappear_volume_div()">
+					<{$phone_collect.Cancel|capitalize}>
+				</a>
+			</td>
+		</tr>
+		
+	</table>
+</div>
+</div>
+<script language="javascript">
+
+var hidden_display = true;//默认隐藏
+var xmlhttp=null; 
+
+function createXMLHttpRequest()
+{ 
+	if(window.ActiveXObject)
+	{ 
+		xmlhttp = new ActiveXObject("microsoft.XMLHTTP"); 
+	} 
+	else if(window.XMLHttpRequest)
+	{ 
+		xmlhttp = new XMLHttpRequest(); 
+	}
+	else
+	{
+		alert('Not Support AJAX');
+	}
+} 
+
+function ajax_set_task_volume(set_volume_server,volume_value,task_id)
+{
+   createXMLHttpRequest();
+   
+   if(task_id == "")
+   {
+     if("<{$language}>"=="english")
+			alert("<{$phone_collect.select_task}>");
+		else
+			alert('请选择任务'); 
+	
+		return void(0);
+   }
+  
+   xmlhttp.open( "get","set_task_volume_server.php?tasktype="+set_volume_server+"&volume="+volume_value+"&task_id="+task_id+"",true );
+   
+   
+   xmlhttp.onreadystatechange = function()
+   {
+      if( xmlhttp.readyState == 4 )
+      {
+         if( xmlhttp.status == 200 )
+         {
+            if( xmlhttp.responseText == 0)
+            {
+			 	if("<{$language}>"=="english")
+					alert("fail");
+				else
+					alert('失败');
+            }
+			else if(xmlhttp.responseText == 1)
+			{
+			 	if("<{$language}>"=="english")
+					alert("success");
+				else
+					alert('成功');
+				
+				get_div_obj('change_volume').style.display = "none";
+				
+				self.location.reload();
+			}
+         }
+		 else
+		 {
+		 	if("<{$language}>"=="english")
+				alert("fail");
+			else
+				alert('访问失败');	 
+		 }
+      }
+   }
+    xmlhttp.setRequestHeader( "If-Modified-Since", "0");
+	xmlhttp.send(null);
+}
+
+function get_mouse_coordinates(event)
+{
+   var eve = event||window.event;
+   if(eve.pageX)
+   {
+
+    return {x:eve.pageX,y:eve.pageY};
+   }
+   else
+   {
+
+    return {
+                x:eve.clientX+document.body.scrollLeft - document.body.clientLeft,
+                y:eve.clientY+document.body.scrollTop - document.body.clientTop
+            };
+   }
+}
+function get_div_obj(str_id)
+{
+ 	return document.getElementById(str_id);   
+}
+function mouse_click_position(event)
+{
+    if(document.all)
+    {
+        window.event.cancelBubble = true;   
+    }
+    else
+    {
+        event.stopPropagation();
+    }
+    var mouse_obj_xy = get_mouse_coordinates(event);
+    get_div_obj('change_volume').style.left = mouse_obj_xy.x+20+'px';
+    get_div_obj('change_volume').style.top = mouse_obj_xy.y+'px';
+	get_div_obj('change_volume').style.display = "block";
+}
+ $(document).ready(function () {
+          $('#s1').slidy({
+            maxval: 100, 
+            interval: 1,
+            defaultValue: 50,
+           
+            moveCallback: function (value) {
+              $('#d1').html('<strong>' + value + '</strong>');
+            }
+          });
+
+        })
+</script>
+</html>

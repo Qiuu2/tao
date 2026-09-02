@@ -1,0 +1,109 @@
+<table width="98%" border="0" cellpadding="2" cellspacing="1" align="center" class="terminal_form_to_body">
+<tr align='center' class="terminal_table_row_bg">
+  <td width="10%"  nowrap="nowrap"><{$Bellmanager.No_}></td>
+  <td width="15%"  nowrap="nowrap"><{$Bellmanager.Terminal_Name}></td>
+  <td width="10%"  nowrap="nowrap"><{$Bellmanager.Terminal_Type}></td>
+  <td width="10%"  nowrap="nowrap"><{$Bellmanager.Network_Status}></td>
+  <td width="10%"  nowrap="nowrap"><{$Bellmanager.Device_Status}></td>
+  <td width="10%"  nowrap="nowrap"><{$Bellmanager.Task_Status}></td>
+  <td width="10%"  nowrap="nowrap"><{$Bellmanager.IP_Address}></td>
+  <td width="10%"  nowrap="nowrap"><{$Bellmanager.Volume}></td>
+ 
+  <td width="10%"  nowrap="nowrap"><{$Bellmanager.Zone}></td>
+ 
+</tr>
+<{if $terminal_info|@count neq 0}>
+<{section name=terminal loop=$terminal_info}>        
+<tr align='center' onmouseover="this.style.backgroundColor ='#EEEEFF';" onmouseout="this.style.backgroundColor='#FFFFFF';">
+	<td><{$smarty.section.terminal.index+1}></td>
+	
+	<td nowrap="nowrap"> <{$terminal_info[terminal].terminalname}> </td>
+	
+	<td nowrap="nowrap">
+	
+		<{section name=type loop=$type_info}>
+			<{if $type_info[type].id == $terminal_info[terminal].typeid}>
+				<!--<{$type_info[type].name}>-->	
+				<script language="javascript">
+					document.write(chinese_big5_english("<{$chinese_big5_english}>","<{$type_info[type].name}>"));
+				</script>
+			<{/if}>
+		<{/section}>
+	
+	</td> 
+	
+	<td>
+			<{if $terminal_info[terminal].netstate == 0}>
+					<{$Bellmanager.Disconnected}>
+				<{elseif $terminal_info[terminal].netstate == 1}>
+					<{$Bellmanager.Connected}>
+			<{/if}>
+	</td>
+	<td>
+			<{if $terminal_info[terminal].netstate == 0}>
+				<{$Bellmanager.Interrupted}>
+			<{elseif $terminal_info[terminal].netstate == 1 && $terminal_info[terminal].devicestate == 0}>
+				<{$Bellmanager.Idle}>
+			<{elseif $terminal_info[terminal].netstate == 1 && $terminal_info[terminal].devicestate == 1}>
+				<{$Bellmanager.Run}>
+			<{/if}>
+	</td>
+	<td>
+			<{if $terminal_info[terminal].netstate == 0}>
+				<{$Bellmanager.Interrupted}>
+			<{elseif $terminal_info[terminal].netstate == 1 && $terminal_info[terminal].taskstate == 0}>
+				<{$Bellmanager.Ready}>
+			<{elseif $terminal_info[terminal].netstate == 1 && $terminal_info[terminal].taskstate == 1}>
+				<{$Bellmanager.Timing_Play}>
+			<{elseif $terminal_info[terminal].netstate == 1 && $terminal_info[terminal].taskstate == 2}>
+				<{$Bellmanager.On_Talkback}>
+			<{elseif $terminal_info[terminal].netstate == 1 && $terminal_info[terminal].taskstate == 3}>
+				<{$Bellmanager.AOD}>
+			<{elseif $terminal_info[terminal].netstate == 1 && $terminal_info[terminal].taskstate == 4}>
+				<{$Bellmanager.Selected_Play}>
+			<{elseif $terminal_info[terminal].netstate == 1 && $terminal_info[terminal].taskstate == 5}>
+				<{$Bellmanager.Paging}>
+			<{elseif $terminal_info[terminal].netstate == 1 && $terminal_info[terminal].taskstate == 6}>
+				<{$Bellmanager.Talkback_Ready}>
+			<{elseif $terminal_info[terminal].netstate == 1 && $terminal_info[terminal].taskstate == 7}>
+				<{$Bellmanager.Local_Amplifying}>
+			<{elseif $terminal_info[terminal].netstate == 1 && $terminal_info[terminal].taskstate == 8}>
+				<{$Bellmanager.Play_from_USB}>
+			<{elseif $terminal_info[terminal].netstate == 1 && $terminal_info[terminal].taskstate == 9}>
+				<{$Bellmanager.Request_Talkback}>
+			<{elseif $terminal_info[terminal].netstate == 1 && $terminal_info[terminal].taskstate == 10}>
+				<{$Bellmanager.Requested_Talkback}>
+			<{elseif $terminal_info[terminal].netstate == 1 && $terminal_info[terminal].taskstate == 11}>
+				<{$Bellmanager.Paging_Play}>
+			<{elseif $terminal_info[terminal].netstate == 1 && $terminal_info[terminal].taskstate == 12}>
+				<{$Bellmanager.Timing_Play}>
+			<{/if}>
+		
+	</td> 
+	<td><{$terminal_info[terminal].ip}></td>
+	<td><{$terminal_info[terminal].volume}></td>
+
+	<td nowrap="nowrap">
+		<{if $terminal_info[terminal].groupid neq 0}>
+			<{section name=stream loop=$stream_info}>
+				<{if $stream_info[stream].id == $terminal_info[terminal].groupid}>
+					<{$stream_info[stream].name}>
+				<{/if}>
+			<{/section}>
+		<{elseif $terminal_info[terminal].groupid eq 0}>
+			......
+		<{/if}>
+	</td>
+
+</tr>         
+<{/section}>
+<{else}>
+<tr align='center' onmouseover="this.style.backgroundColor ='#EEEEFF';" onmouseout="this.style.backgroundColor='#FFFFFF';"> 
+ 	<td colspan="9">
+		<strong><{$Bellmanager.No_data}></strong>
+	</td>
+ </tr>
+<{/if}>
+</table>
+
+<div class="link_style" style="float:none; margin-top:5px; text-align:center;"><{$pagestr}></div>

@@ -1,0 +1,53 @@
+<html>
+<head>
+<title>日期输入框演示-queyang.com</title>
+<meta http-equiv="Content-Type" content="text/html; charset=gb2312">
+<style>
+body{font-size:12px;font-family:Verdana,Arial,"宋体";}
+a:link {color:#464646;text-decoration:none;}
+a:visited {color:#464646;text-decoration:none;}
+a:hover{color:#ed145b;text-decoration:underline;}
+a:active{color:#ed145b;text-decoration:underline;}
+td{font-size:12px}
+
+/*想要改输入日历控件的样子就改下面的CSS样式就可以了*/
+/*Date*/
+.header {
+	font-weight: bold;
+	font-weight: bold;
+	color: #000000;
+	background:#C2DEED;
+	height: 25px;
+	padding-left: 10px;
+	font-family: Arial, Tahoma;
+	font-size: 12px;
+}
+.header td {padding-left: 10px;}
+.header a {color: #154BA0;}
+.header input {background:none;vertical-align: middle;height: 16px;}
+.category {font: 12px Arial, Tahoma;font: 11px Arial, Tahoma;color: #92A05A;height:20px;background-color: #FFFFD9;}
+.category td {border-bottom: 1px solid #DEDEB8;}
+.expire, .expire a:link, .expire a:visited {color: #999999;}
+.default, .default a:link, .default a:visited {color: #000000;}
+.checked, .checked a:link, .checked a:visited {color: #FF0000;}
+.today, .today a:link, .today a:visited {color: #00BB00;}
+#calendar_year {display: none;line-height: 130%;background: #FFFFFF;position: absolute;z-index: 10;}
+#calendar_year .col {float: left;background: #FFFFFF;margin-left: 1px;border: 1px solid #86B9D6;padding: 4px;}
+#calendar_month {display: none;background: #FFFFFF;line-height: 130%;border: 1px solid #86B9D6;padding: 4px;position: absolute;z-index: 11;}
+.tableborder {background: white;border: 1px solid #86B9D6;}
+#year,#month{padding-right:10px;background:url(onbottom.gif) no-repeat center right;}/*图片路径可以改成自己的*/
+/*Date*/
+</style>
+<script>
+	//这段脚本如果你的页面里有，就可以去掉它们了
+	var ie =navigator.appName=="Microsoft Internet Explorer"?true:false;
+	function $(objID){
+		return document.getElementById(objID);
+	}
+</script>
+</head>
+<body>
+<script type="text/javascript" src="calendar.js"></script>
+选择日期：<input name="member.birth"  type="text" value="1982-1-1" size="14" readonly="readonly" onClick="showcalendar(event, this);" onFocus="showcalendar(event, this);if(this.value=='0000-00-00')this.value=''" />
+</body>
+</html>

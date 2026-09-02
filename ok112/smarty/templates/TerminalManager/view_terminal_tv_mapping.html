@@ -1,0 +1,216 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>view_terminal_shotcut</title>
+<link href="skin/css/main_page_style.css" rel="stylesheet" type="text/css"/>
+<style>
+ 
+	/* 奇数行样式 */
+	tr:nth-child(odd) {
+		background-color: #ffffff;
+	}
+	
+	/* 偶数行样式 */
+	tr:nth-child(even) {
+		background-color: #c1cfe0;
+	}
+</style>
+<script type="text/javascript">
+function view_terminal(str)
+{
+	window.location.href = "displayterminal.php?key_id="+str+"";
+}
+
+function get_mouse_coordinates(event)
+{
+   var eve = event||window.event;
+   if(eve.pageX)
+   {
+
+    return {x:eve.pageX,y:eve.pageY};
+   }
+   else
+   {
+
+    return {
+                x:eve.clientX+document.body.scrollLeft - document.body.clientLeft,
+                y:eve.clientY+document.body.scrollTop - document.body.clientTop
+            };
+   }
+}
+function disappear_task_div()
+{
+	if(document.getElementById('copytask').style.display == "block")
+	{
+		document.getElementById('copytask').style.display = "none";
+	}
+}
+function isNull( str )
+{
+	if ( str == "" || str==null) 
+	return true;
+	var regu = "^[ ]+$";
+	var re = new RegExp(regu);
+	return re.test(str);
+}
+function isIP(strIP) 
+{ 
+	if (isNull(strIP)) 
+	return false; 
+	var re=/^(\d+)\.(\d+)\.(\d+)\.(\d+)$/g; 
+	if(re.test(strIP)) 
+	{ 
+		if(RegExp.$1 <256 & RegExp.$2<256 && RegExp.$3<256 && RegExp.$4<256)
+		return true; 
+	} 
+return false; 
+} 
+
+var xmlhttp=null; 
+function createXMLHttpRequest()
+{ 
+	if(window.ActiveXObject)
+	{ 
+		xmlhttp = new ActiveXObject("microsoft.XMLHTTP"); 
+	} 
+	else if(window.XMLHttpRequest)
+	{ 
+		xmlhttp = new XMLHttpRequest(); 
+	}
+	else
+	{
+		alert('Not Support AJAX');
+	}
+} 
+var set_or_modify=0;
+function ajax_set_task_copy(id,ip)
+{
+   createXMLHttpRequest();
+   xmlhttp.open( "get","set_tv_terminal.php?id="+id+"&ip="+ip+"&setormodify="+set_or_modify+"",true );
+   xmlhttp.onreadystatechange = function()
+   {
+      if( xmlhttp.readyState == 4 )
+      {
+         if( xmlhttp.status == 200 )
+         {
+				if(xmlhttp.responseText==1)
+				{
+				alert("<{$add_shiping_addr}>");
+				}
+				else 
+				{
+				alert("<{$Termianl_success}>");
+				}
+				get_div_obj('copytask').style.display = "none";
+				self.location.reload();
+			
+		}
+        
+      }
+   }
+    xmlhttp.setRequestHeader( "If-Modified-Since", "0");
+	xmlhttp.send(null);
+}
+
+function set_task_copy()
+{
+	var gettv_addr=document.getElementById('tv_addr').value;
+	
+	if(!isIP(gettv_addr))
+	{
+		document.getElementById('tv_addr_s').innerHTML="<font class='server_star'><{$terminal_manager.address_format_error|capitalize}></font>";
+		document.getElementById('tv_addr').select();
+		document.getElementById('tv_addr').focus();
+		return false;
+	}
+
+	var getterminalid=<{$terminal_id}>;
+	if(isNull(getterminalid))
+	{
+		alert("<{$terminal_manager.terminaliderror|capitalize}>");
+		return false;
+	}
+
+	ajax_set_task_copy(getterminalid,gettv_addr);
+	return true;
+
+}
+
+function get_div_obj(str_id)
+{
+ 	return document.getElementById(str_id);   
+}
+
+function setshotcut(event)
+{
+	var getterminalid = <{$terminal_id}>;
+	set_or_modify=0;
+	if(document.all)
+    {
+        window.event.cancelBubble = true;   
+    }
+    else
+    {
+        event.stopPropagation();
+    }
+    var mouse_obj_xy = get_mouse_coordinates(event);
+    get_div_obj('copytask').style.left = mouse_obj_xy.x+20+'px';
+    get_div_obj('copytask').style.top = mouse_obj_xy.y+'px';
+	get_div_obj('copytask').style.display = "block";
+	
+}
+function modifyshotcut(event)
+{
+	var getterminalid = <{$terminal_id}>;
+	set_or_modify=1;
+	if(document.all)
+    {
+        window.event.cancelBubble = true;   
+    }
+    else
+    {
+        event.stopPropagation();
+    }
+    var mouse_obj_xy = get_mouse_coordinates(event);
+    get_div_obj('copytask').style.left = mouse_obj_xy.x+20+'px';
+    get_div_obj('copytask').style.top = mouse_obj_xy.y+'px';
+	get_div_obj('copytask').style.display = "block";
+	
+}
+
+function delshotcut(event)
+{
+	var getterminalid = <{$terminal_id}>;
+	var getaddr="";
+	set_or_modify=2;
+	if(window.confirm("<{$Termianl_manager_Delete_Map}>"))
+	{
+			ajax_set_task_copy(getterminalid,getaddr);
+	}
+	else
+	{
+		return void(0);
+	}
+  
+	
+}
+
+function del_terminal_shotcut(str)
+{
+	if(window.confirm("<{$Termianl_manager_Delete_Map}>"))
+	{
+		window.location.href = "do.php?act=del_terminal_shotcut&id="+str+"";
+	}
+	else
+	{
+		return void(0);
+	}
+}
+</script>
+</head>
+<body>
+<{include file="TerminalManager/view_terminal_tv_mapping_form.html"}> 
+<{include file="language/`$language`_foot.php"}> 
+</body>
+</html>

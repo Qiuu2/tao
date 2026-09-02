@@ -1,0 +1,286 @@
+<html>
+<head>
+<META http-equiv=Content-Type content="text/html; charset=utf-8">
+<title>SetMapKey</title>
+
+<link href="skin/css/main_page_style.css" rel="stylesheet" type="text/css" />
+<script language="javascript">
+var xmlhttp=null; 
+function createXMLHttpRequest()
+{ 
+	if(window.ActiveXObject)
+	{ 
+		xmlhttp = new ActiveXObject("microsoft.XMLHTTP"); 
+	} 
+	else if(window.XMLHttpRequest)
+	{ 
+		xmlhttp = new XMLHttpRequest(); 
+	}
+	else
+	{
+		alert('<{$alarm_setting.Not_support_AJAX|capitalize}>');
+	}
+} 
+function getchannelvalue(url)
+{
+   createXMLHttpRequest();
+   xmlhttp.open( "get",url, true );
+   xmlhttp.onreadystatechange = function()
+   {
+      if( xmlhttp.readyState == 4 )
+      {
+         if( xmlhttp.status == 200 )
+         {
+            if(!isNull(xmlhttp.responseText))
+            {
+				var channelnum = xmlhttp.responseText;
+				var obj = document.getElementById('channel');
+				
+				if(obj.options.length > 0)
+				{
+					for(var i=obj.options.length-1; i>=0; i--)
+					{
+						obj.options.remove(i);
+					}
+				}
+				if(obj.options.length <= 0)
+				{
+					for(var i=0; i<channelnum; i++)
+					{
+						var oOption = document.createElement("OPTION");
+						obj.options.add(oOption);
+						oOption.innerHTML = "<{$alarm_setting.channel|capitalize}>_"+(i+1);
+						oOption.value =  i+1;  
+						if(oOption.value == <{$alarmgroupmap.alarmchannel}>)
+								oOption.selected = true;
+					}
+				}
+            }
+						
+			if(isNull(xmlhttp.responseText))
+			{
+				var obj = document.getElementById('channel');
+				if(obj.options.length > 0)
+				{
+					for(var i=obj.options.length-1; i>=0; i--)
+					{
+						obj.options.remove(i);
+					}
+				}
+			}
+         }
+      }
+   }
+    xmlhttp.setRequestHeader( "If-Modified-Since", "0");
+	xmlhttp.send(null);
+}
+
+function trim(str)
+{   
+    return str.replace(/(^\s*)|(\s*$)/ig, "");   
+}
+function isChinaOrNumbOrLett( s )
+{
+	var regu = "^[0-9a-zA-Z\u4e00-\u9fa5]+$"; 
+	var re = new RegExp(regu); 
+	if (re.test(s)) 
+	{ 
+		return true; 
+	}
+	else
+	{
+		return false; 
+	} 
+} 
+
+function isNull( str )
+{ 
+ if ( str == "" )
+ return true; 
+ var regu = "^[ ]+$"; 
+ var re = new RegExp(regu); 
+ return re.test(str); 
+} 
+function checkform()
+{	
+	//验证报警主机
+	if(isNull(trim(document.getElementById('alarmhost').value)))
+	{
+		document.getElementById('alarmhost_txt').innerHTML = "<strong><{$alarm_setting.select_alarm_host|capitalize}></strong>";
+		return false;
+	}
+	document.getElementById('alarmhost_txt').innerHTML = "";
+	//验证快捷名称
+	var getvalue= document.getElementById("info").value;
+	if(isNull(trim(getvalue)))
+	{
+		document.getElementById("info_txt").innerHTML="<strong><{$alarm_setting.enter_mapping_name|capitalize}></strong>";
+		document.getElementById("info").focus();
+		return false;
+	}
+	else
+	{
+		if(!isChinaOrNumbOrLett(trim(getvalue)))
+		{
+			document.getElementById("info_txt").innerHTML="<strong><{$alarm_setting.letter_number_Chinese|capitalize}></strong>";
+			document.getElementById("info").focus();
+			return false;
+		}
+	}
+	document.getElementById("info_txt").innerHTML="";
+	//验证通道
+	if(isNull(trim(document.getElementById('channel').value)))
+	{
+		document.getElementById('channel_txt').innerHTML = "<strong><{$alarm_setting.select_channel|capitalize}></stong>";
+		return false;
+	}
+	document.getElementById('channel_txt').innerHTML = "<strong></stong>";
+	
+	if(isNull(trim(document.getElementById('area').value)))
+	{
+		document.getElementById('area_txt').innerHTML = "<strong><{$alarm_setting.select_area|capitalize}></stong>";
+		return false;
+	}
+	document.getElementById('area_txt').innerHTML = "<strong></stong>";
+	return true;
+}
+function changechannel(obj)
+{
+	if(isNull(obj.value))
+	{
+		var url = "changechannel.php?alarmid=''";
+	}
+	else
+	{
+		var url = "changechannel.php?alarmid="+trim(obj.value)+"";
+	}
+	getchannelvalue(url);
+}
+
+function getoneinput(obj)
+{
+ 	
+		if(document.getElementById('info').value=="<{$alarm_setting.Plealse_input|capitalize}>")
+		{
+			document.getElementById('info').value="";
+		}
+
+
+}
+
+</script>
+</head>
+<body>
+<form name="setkeyform" action="do.php?act=modifyalarmmap_msg&id=<{$id}>" method="post" onSubmit="return checkform();" class="terminal_form_to_body">
+  <table width="600px"  align="center" border="0" cellpadding="0" cellspacing="0"  class="terminal_table_border">
+    <tr>
+      <td>
+	  	<table align="center" border="0" cellpadding="0" cellspacing="0">
+			<tr>
+				<td>
+					<img src="<{$alarm_setting.alarm_image}>">
+				</td>
+			</tr>
+		</table>
+	  </td>
+    </tr>
+	<tr>
+		<td>
+			<table align="center" border="0" cellpadding="10" cellspacing="0" style="font-size:12px; font-family:Georgia, 'Times New Roman', Times, serif, '宋体'">
+				<tr>
+					<td width="180" align="right" valign="middle"><{$alarm_setting.Alarm_centre|capitalize}></td>
+					<td width="420" align="left" valign="middle">
+						<select title="<{$alarm_setting.Alarm_settingmachen|capitalize}>" class="terminal_select_style" id="alarmhost" name="alarmhost" style="width:120px" onChange="changechannel(this)">
+							<option value=""><{$alarm_setting.Select_Alarm_centre|capitalize}></option>
+							<{section name=key loop=$alarmterminal}>
+								<option value="<{$alarmterminal[key].alarmid}>"><{$alarmterminal[key].terminalname}></option>
+							<{/section}>	
+						</select>
+						<span id="alarmhost_txt" style="color:#FF0000">*</span>
+						  <script language="javascript" defer="true">
+				 		var obj = document.getElementById('alarmhost');
+					
+						for(var i=0;i<obj.options.length;i++)
+						{
+							if(obj.options[i].value == <{$alarmgroupmap.alarmterminalid}>)
+							{
+								obj.options[i].selected = true;
+								changechannel(document.getElementById('alarmhost'));
+							}
+						}
+						 </script>	
+				  </td>
+				</tr>
+				<tr>
+				  <td width="180" align="right" valign="middle" ><{$alarm_setting.Mapping_name|capitalize}></td>
+				  <td width="420" align="left" valign="middle">
+					  <input title="<{$alarm_setting.Alarm_settingname|capitalize}>" type="text"  id="info" name="info" onMouseDown="getoneinput(this)" value="<{$alarmgroupmap.info}>" class="terminal_input_font"/>
+					  <span id="info_txt" style="color:#FF0000">*</span> 
+				  </td>
+				</tr>
+				<tr>
+				  <td width="180" align="right" valign="middle"><{$alarm_setting.Channel_selection|capitalize}></td>
+				  <td width="420" align="left" valign="middle">
+					<select title="<{$alarm_setting.Alarm_settingchannel|capitalize}>" class="terminal_select_style" id="channel" name="channel" style="width:120px">
+					</select>
+					<span id="channel_txt" style="color:#FF0000">*</span>
+					 
+				  </td>
+				</tr>
+				<tr>
+				  <td width="180" align="right" valign="middle"><{$alarm_setting.Zone|capitalize}></td>
+				  <td width="420" align="left" valign="middle" >
+					<select  title="<{$alarm_setting.Alarm_settingarea|capitalize}>" class="terminal_select_style" name="area" id="area">
+					  <{section name=key loop=$areainfo}>
+					  <option value="<{$areainfo[key].areaid}>"><{$areainfo[key].areaname}></option>
+					  <{/section}>
+					</select>
+					<span id="area_txt" style="color:#FF0000">*</span>
+					  <script language="javascript" defer="true">
+				 		var obj = document.getElementById('area');
+						for(var i=0;i<obj.options.length;i++)
+						{
+							if(obj.options[i].value == <{$alarmgroupmap.firealarmgroupid}>)
+							{
+								obj.options[i].selected = true;
+							}
+						}
+						 </script>	
+				  </td>
+				</tr>
+				<tr>
+				  <td width="180" align="right" valign="middle"><{$alarm_setting.Alarm_ring|capitalize}></td>
+				  <td width="420" align="left" valign="middle"> 
+				  <select title="<{$alarm_setting.Alarm_settingmusic|capitalize}>" class="terminal_select_style" name="media" id="media">
+					  <{section name=key loop=$mediainfo}>
+					  <option value="<{$mediainfo[key].mediaid}>"><{$mediainfo[key].medianame}></option>
+					  <{/section}>
+					</select>
+						  <script language="javascript" defer="true">
+				 		var obj = document.getElementById('media');
+						for(var i=0;i<obj.options.length;i++)
+						{
+							if(obj.options[i].value == <{$alarmgroupmap.mediaid}>)
+							{
+								obj.options[i].selected = true;
+							}
+						}
+						 </script>	
+				  </td>
+				</tr>
+				<tr>
+				<td width="180" align="right" valign="middle"></td>
+					<td width="420" align="left" valign="middle">
+						<input title="<{$alarm_setting.Alarm_submittask|capitalize}>" type="submit" name="submit" value="<{$alarm_setting.Sumbit|capitalize}>" class="terminal_button"/>
+						&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+						<input title="<{$alarm_setting.Alarm_resettask|capitalize}>" type="reset" name="reset" value="<{$alarm_setting.Cancel|capitalize}>" class="terminal_button"/>
+				  </td>
+				</tr>
+		  </table>
+		</td>
+	</tr>
+ </table>
+</form>
+<{include file="language/`$language`_foot.php"}>
+</body>
+</html>

@@ -1,0 +1,62 @@
+@charset "utf-8";
+.topstyel {
+	font-family: Arial, Helvetica, sans-serif, "宋体";
+	font-size: 12px;
+	background-image: url(../images/frame/topbkg1.gif);
+	background-repeat: repeat-x;
+	color: #3366ff;
+	border: 1px solid #2A3A61;
+	margin: 0px;
+	padding: 0px;
+	height: 71px;
+	width: 100%;
+	float: none;
+	overflow:visible;
+}
+.logonstyle {
+	background-repeat: no-repeat;
+	height: 70px;
+	width: 50%;
+	float: left;
+	overflow:inherit;
+}
+.toplinkstyle {
+	font-family: Arial, Helvetica, sans-serif, "宋体";
+	font-size: 12px;
+	color: #3366ff;
+	background-color: #dddddd;
+	text-align: right;
+	height: 15px;
+	width: 100%;
+	padding: 4px;
+	overflow: hidden;
+	float: right;
+	margin: 0px;
+}
+.toplinkstyle a:link {
+	font-family: Arial, Helvetica, sans-serif, "宋体";
+	color: #3366ff;
+	text-decoration: none;
+}
+.toplinkstyle a:visited {
+	font-family: Arial, Helvetica, sans-serif, "宋体";
+	font-size: 12px;
+	color: #3366ff;
+}
+.toplinkstyle a:hover {
+	font-family: Arial, Helvetica, sans-serif, "宋体";
+	font-size: 12px;
+	color: #FF9933;
+	text-decoration: none;
+}
+
+.tophorizontalstyle {
+	background-image: url(../images/frame/horizontal.gif);
+	background-repeat: repeat-x;
+	height: 5px;
+	width: 100%;
+	float: none;
+	overflow: hidden;
+	margin: 0px;
+	padding: 0px;
+}

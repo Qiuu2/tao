@@ -1,0 +1,95 @@
+<form name="form2" class="terminal_form_to_body">
+<table width="98%" border="0" cellpadding="2" cellspacing="1"  align="center">
+	<tr align='center' class="terminal_table_row_bg">   
+		<td width="7%" nowrap="nowrap"><{$Termianl_manager_Options}></td>                 	
+		<td width="45%" nowrap="nowrap"><{$Termianl_manager_Terminal_name}></td>    
+		<td width="45%" nowrap="nowrap"><{$Termianl_tv_addr}></td>          
+	</tr> 
+	<tr></tr>
+	<{if $terminal_info|@count neq 0}>        
+		<{section name=loop loop=$terminal_info}>    
+		  <tr align='center' class="terminal_per_row" >             	
+			<td nowrap="nowrap">
+			<input name="id" type="checkbox" id="id" value="<{$terminal_info[loop].id}>">
+			</td>	
+			<td nowrap="nowrap"><{$terminal_info[loop].terminalname}></td>	
+			 <td nowrap="nowrap"><{$terminal_info[loop].ipaddr}></td> 		 
+		  </tr>         
+		<{/section}>
+	<{else}>
+	
+	<tr class="tablestyle" >
+		<td colspan="6" style="text-align:center"><strong><{$Revise.No_data}></strong></td>
+	</tr>
+	<{/if}>
+<tr style="background-color: #ffffff;">
+	<td colspan="6" style="text-align:left">
+	<a href="javascript:void(0)" onclick="setshotcut(event)">
+		<{$terminal_manager.Set_tv_terminal|capitalize}>
+		</a>&nbsp;
+		<a href="javascript:void(0)" onclick="modifyshotcut(event)">
+		<{$terminal_manager.modify_tv_terminal|capitalize}>
+		</a>&nbsp;
+		<a href="javascript:void(0)" onclick="delshotcut(event)">
+		<{$terminal_manager.del_tv_terminal|capitalize}>
+		</a>&nbsp;
+	</td>
+</tr>
+</table>
+
+<div id="copytask" class="r-displayVolume">
+ <iframe style="position:absolute; width:200;height:110px;left:0px; top:0px;filter:alpha(opacity=0);-moz-opacity:0;border:0;z-index:-1"></iframe>
+<div style="position:absolute;border:0;width:150; left:0px; top:0px; height:110px;z-index:100">
+	<table border="1" cellpadding="10" cellspacing="0" width="150" style="background-color:#EEFFEE">
+		<tr>
+			<td nowrap="nowrap" align="right">
+				<{$terminal_manager.tv_addr|capitalize}>:<input name='tv_addr' type='text' id="tv_addr" style='width:120px' value='' />
+				<span id="tv_addr_s"><font class="server_star" size="-1">*</font></span>		
+			</td>
+		</tr>
+		<tr>
+			<td id="enterbutton" nowrap="nowrap" align="center">
+				<a href="javascript:void(0)" onclick="set_task_copy()"> 
+					<{$terminal_manager.Sumbit|capitalize}>
+				</a>
+				&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+				<a href="javascript:void(0)" onclick="disappear_task_div()"> 
+					<{$terminal_manager.Cancel|capitalize}>
+				</a>
+			</td>
+		</tr>
+		
+	</table>
+</div>
+</div>
+
+		<script src="smarty/templates/UserAccessControl/CheckUserRights.js" type="text/javascript" language="javascript"></script>			
+		<script>rights_control(<{$is_right}>,"<{$is_admin}>","link_view");</script>
+</form>
+
+<table align="center"><tr><td><div class="link_style" align="center"><{$pagestr}></div></td></tr></table>
+
+<{if $user_rights ==1}>
+<!--什么也不做-->
+<{elseif $user_rights ==2}>
+<script>
+	var input_objs = document.getElementsByName('id');
+	for(var i=0; i< input_objs.length; i++)
+	{
+		input_objs[i].disabled = true;
+	}
+	for(var i=0; i< input_objs.length; i++)
+	{
+		<{section name=ter_id loop=$user_terminal}>
+		if(input_objs[i].value == "<{$user_terminal[ter_id]}>")
+		{
+			input_objs[i].disabled = false;
+		}
+		<{/section}>
+	}
+	document.getElementById('select_all_yes').style.display = 'none';
+	document.getElementById('select_all_no').style.display = 'none';
+</script>
+<{elseif $user_rights ==0}>
+<!--什么也不做-->
+<{/if}>

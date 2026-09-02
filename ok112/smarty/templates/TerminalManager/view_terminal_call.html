@@ -1,0 +1,87 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>viewterminal_call</title>
+<link href="skin/css/main_page_style.css" rel="stylesheet" type="text/css" />
+
+<table width="98%" border="0" cellpadding="2" cellspacing="1"  align="center" class="terminal_form_to_body">
+<tr align='center' class="terminal_table_row_bg">
+  <td width="5%" nowrap="nowrap"><{$stream_terminal.No|capitalize}></td>
+  <td width="15%" nowrap="nowrap"><{$stream_terminal.Terminal_Name|capitalize}></td>
+  <td width="10%" nowrap="nowrap"><{$stream_terminal.Terminal_Type|capitalize}></td>
+  <td width="10%" nowrap="nowrap"><{$stream_terminal.Network_Status|capitalize}></td>
+  <td width="10%" nowrap="nowrap"><{$stream_terminal.Device_Status|capitalize}></td>
+  <td width="10%" nowrap="nowrap"><{$stream_terminal.Task_Status|capitalize}></td>
+  <td width="10%" nowrap="nowrap"><{$stream_terminal.IP_Address|capitalize}></td>
+  <td width="10%" nowrap="nowrap"><{$stream_terminal.Volume}></td>
+</tr>
+
+<{if $info|@count neq 0}>
+ <{section name=loop loop=$info}>
+      
+      <tr align='center' class="tablestyle" onmouseover="this.style.backgroundColor = '#EEEEFF'" onmouseout="this.style.backgroundColor = '#FFFFFF'" height="22"> 
+	   	<td><{$smarty.section.loop.index+1+$start}></td>
+      	 <td><{$info[loop].terminalname}></td>  
+		<td><{$info[loop].typename}></td> 
+		<td>
+			<{if $info[loop].netstate==1}>
+				<{$stream_terminal.Connected|capitalize}>
+			<{elseif $info[loop].netstate==0}>
+				<{$stream_terminal.Disconnected|capitalize}>
+			<{/if}>
+		</td>
+		
+		<td>
+			<{if $info[loop].netstate==0}>
+				<{$stream_terminal.Disconnected|capitalize}>
+			<{elseif $info[loop].netstate==1 && $info[loop].devicestate==0}>
+				<{$stream_terminal.Idle|capitalize}>
+			<{elseif $info[loop].netstate==1 && $info[loop].devicestate==1}>
+				<{$stream_terminal.Running|capitalize}>
+			<{/if}>
+		</td>
+
+		<td>
+			<{if $info[loop].netstate==0}>
+				<{$stream_terminal.Disconnected|capitalize}>
+			<{elseif $info[loop].netstate==1 && $info[loop].taskstate == 0}>
+				<{$stream_terminal.Ready|capitalize}>
+			<{elseif $info[loop].netstate==1 && $info[loop].taskstate == 1}>
+				<{$stream_terminal.Timing_Play|capitalize}>
+			<{elseif $info[loop].netstate==1 && $info[loop].taskstate == 2}>
+				<{$stream_terminal.On_Talkback}>
+			<{elseif $info[loop].netstate==1 && $info[loop].taskstate == 3}>
+				<{$stream_terminal.AOD|capitalize}>
+			<{elseif $info[loop].netstate==1 && $info[loop].taskstate == 4}>
+				<{$stream_terminal.Selected_Play|capitalize}>
+			<{elseif $info[loop].netstate==1 && $info[loop].taskstate == 5}>
+				<{$stream_terminal.Paging|capitalize}>
+			<{elseif $info[loop].netstate==1 && $info[loop].taskstate == 6}>
+				<{$stream_terminal.Talkback_Ready}>
+			<{elseif $info[loop].netstate==1 && $info[loop].taskstate == 7}>
+				<{$stream_terminal.Local_Amplifying|capitalize}>
+			<{elseif $info[loop].netstate==1 && $info[loop].taskstate == 8}>
+				<{$stream_terminal.Play_from_USB|capitalize}>
+			<{elseif $info[loop].netstate==1 && $info[loop].taskstate == 9}>
+				<{$stream_terminal.Request_Talkback|capitalize}>
+			<{elseif $info[loop].netstate==1 && $info[loop].taskstate == 10}>
+				<{$stream_terminal.Requested_Talkback|capitalize}>
+			<{elseif $info[loop].netstate==1 && $info[loop].taskstate == 11}>
+				<{$stream_terminal.Paging_Play}>
+			<{elseif $info[loop].netstate==1 && $info[loop].taskstate == 12}>
+				<{$stream_terminal.Timing_Play|capitalize}>
+			<{/if}>
+		</td>	
+		<td><{$info[loop].ip}></td>
+		<td><{$info[loop].volume}></td>
+      </tr>         
+    <{/section}>
+<{else}>
+<tr align='center' onmouseover="this.style.backgroundColor = #EEEEFF" onmouseout="this.style.backgroundColor = #FFFFFF">
+<td colspan="8"><strong><{$stream_terminal.No_Record|capitalize}></strong></td>
+</tr>
+<{/if}>
+</table>
+<div class="link_style" style="float:none; margin-top:5px; text-align:center;"><{$pagestr}></div>
+<{include file="language/`$language`_foot.php"}> 

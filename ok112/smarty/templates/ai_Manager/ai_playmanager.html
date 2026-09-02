@@ -1,0 +1,592 @@
+<html>
+<head>
+<META http-equiv=Content-Type content="text/html; charset=utf-8">
+<title>SetTaskMapping</title>
+<!--导入树-->
+
+<link href="smarty/templates/BellManager/codebase/dhtmlxtree.css" rel="stylesheet" type="text/css">
+<script  src="smarty/templates/BellManager/codebase/dhtmlxcommon.js"></script>
+<script  src="smarty/templates/BellManager/codebase/dhtmlxtree.js"></script>
+<script src="skin/js/frame/analysis_tree_terminal_group_string.js"></script>
+<script  src="smarty/templates/ajax/get_terminaltype.js" ></script>
+<link href="skin/css/main_page_style.css" rel="stylesheet" type="text/css">
+
+<style type="text/css">
+	.input_title
+	{
+		font-size:12px;
+		font-family:Georgia, "Times New Roman", Times, serif, "宋体";
+	}
+</style>
+
+<script language="javascript">
+function isNumber( s )
+{
+    var regu = "^[0-9]+$";
+    var re = new RegExp(regu);
+    if (s.search(re) != -1) 
+    {
+        return true;
+    }
+    else 
+    {
+        return false;
+    }
+}
+function trim(str)
+{   
+    return str.replace(/(^\s*)|(\s*$)/ig, "");   
+}
+function isChinaOrNumbOrLett( s )
+{
+	var regu = "^[0-9a-zA-Z\u4e00-\u9fa5]+$"; 
+
+	var re = new RegExp(regu); 
+	if (re.test(s)) 
+	{ 
+		return true; 
+	}
+	else
+	{
+		return false; 
+	} 
+} 
+
+function isNull( str )
+{ 
+ if ( str == "" )
+
+ return true; 
+
+ var regu = "^[ ]+$"; 
+
+ var re = new RegExp(regu); 
+
+ return re.test(str); 
+}
+ 
+function checkform()
+{	//验证快捷名称
+	if(document.getElementById('enabletts1').checked==true)
+	document.getElementById('enabletts1').value=1;
+	else
+	document.getElementById('enabletts1').value=0;
+
+	if(document.getElementById('enabletts2').checked==true)
+	document.getElementById('enabletts2').value=1;
+	else
+	document.getElementById('enabletts2').value=0;
+
+	if(document.getElementById('enabletts3').checked==true)
+	document.getElementById('enabletts3').value=1;
+	else
+	document.getElementById('enabletts3').value=0;
+
+}
+
+function checkkeyform()
+{
+	//验证终端
+	var getterminalid = trim(tree3.getAllChecked());
+	analysis_tree_terminal_group_string(getterminalid);
+	document.getElementById('analysis_tree_group_string').value = trim(analysis_tree_group_string.toString()); 
+	analysis_tree_group_string = new Array();
+	document.getElementById('target').value = trim(analysis_tree_terminal_string.toString());
+	analysis_tree_terminal_string = new Array();
+}
+
+</script>
+</head>
+<body onLoad="get_load_remote_task_id()">
+
+<form name="setkeyform" action="do.php?act=set_ai_demo_msg" method="post" onSubmit="return checkform();" class="terminal_form_to_body">
+<table width="600px" align="center" border="0" cellpadding="0" cellspacing="0"  class="terminal_table_border">
+	<tr height="50">
+		<td align="center" border="0" cellpadding="0" cellspacing="0">
+			<table>
+				<tr>
+					<td>
+						<img src="<{$stream_manager.aitts_img}>"/>
+					</td>
+				</tr>
+			</table>
+		</td>
+	</tr>
+	
+	<tr>
+		<td>
+			<table align="center" border="0" >
+				<tr>
+					<td width="80" align="right" ><{$stream_manager.aitts_time|capitalize}>1</td>
+					<td width="420" align="left">
+						<{$stream_manager.enabletime|capitalize}>
+						<input name="enabletts1" type="checkbox" id="enabletts1" value="1"/>
+						<select  class="terminal_select_style" name="starthour1" id="starthour1" style="width:40px;">
+							<script>
+									if("<{$aitts[0].enable}>" == 1)
+									{
+										document.getElementById('enabletts1').checked = true;
+									}
+								var time1="<{$aitts[0].time}>";
+								var ttstime=time1.split('-');
+								var ttstime1=ttstime[0].split(':');
+								var ttstime2=ttstime[1].split(':');
+								for(var i=0;i<=23;i++)
+								{
+									var gethours = ttstime1[0];
+									if(i== gethours)
+									{
+										document.write("<option value='"+i+"' selected='selected'>"+i+"</option>");
+									}
+									else
+									{
+										document.write("<option value='"+i+"'>"+i+"</option>");
+									}
+								}
+							</script>
+						</select>
+						<{$stream_manager.Hour|capitalize}>
+						<select class="terminal_select_style" name="startmin1" id="startmin1" style="width:40px;">
+						<script>
+							for(var i=0;i<=59;i++)
+							{
+								var getminutes =  ttstime1[1];
+								if(i == getminutes)
+								{
+									document.write("<option value='"+i+"' selected='selected'>"+i+"</option>");
+								}
+								else
+								{
+									document.write("<option value='"+i+"'>"+i+"</option>");
+								}
+							}
+						</script>
+						</select>
+						<{$stream_manager.Minute|capitalize}>
+						-
+						<select  class="terminal_select_style" name="starthour11" id="starthour11" style="width:40px;">
+							<script>
+								for(var i=0;i<=23;i++)
+								{
+									var gethours = ttstime2[0];
+									if(i== gethours)
+									{
+										document.write("<option value='"+i+"' selected='selected'>"+i+"</option>");
+									}
+									else
+									{
+										document.write("<option value='"+i+"'>"+i+"</option>");
+									}
+								}
+							</script>
+						</select>
+						<{$stream_manager.Hour|capitalize}>
+						<select class="terminal_select_style" name="startmin11" id="startmin11" style="width:40px;">
+						<script>
+							for(var i=0;i<=59;i++)
+							{
+								var getminutes = ttstime2[1];
+								if(i == getminutes)
+								{
+									document.write("<option value='"+i+"' selected='selected'>"+i+"</option>");
+								}
+								else
+								{
+									document.write("<option value='"+i+"'>"+i+"</option>");
+								}
+							}
+						</script>
+						</select>
+						<{$stream_manager.Minute|capitalize}>
+						<input  maxlength="64" style="width:300px;" class="terminal_input_font" name="ttsdemo1" type="text" id="ttsdemo1" value="<{$aitts[0].demo}>"/>
+				  </td>
+				</tr>
+				<tr>
+					<td width="80" align="right" ><{$stream_manager.volume|capitalize}></td>
+					<td width="420" align="left">
+						<select class="terminal_select_style" name="volume1" id="volume1" style="width:80px;">
+							<script>
+								var volumeone="<{$aitts[0].volume}>";
+								for(var i=0;i<=100;i++)
+								{
+								
+									if(i == volumeone)
+									{
+										document.write("<option value='"+i+"' selected='selected'>"+i+"</option>");
+									}
+									else
+									{
+										document.write("<option value='"+i+"'>"+i+"</option>");
+									}
+								}
+							</script>
+							</select>
+					</td>
+				</tr>
+				<tr>
+					<td width="80" align="right" ><{$stream_manager.aitts_time|capitalize}>2</td>
+					<td width="420" align="left">
+						<{$stream_manager.enabletime|capitalize}>
+						<input name="enabletts2" type="checkbox" id="enabletts2" value="1"/>
+						<select  class="terminal_select_style" name="starthour2" id="starthour2" style="width:40px;">
+							<script>
+								if("<{$aitts[1].enable}>" == 1)
+									{
+										document.getElementById('enabletts2').checked = true;
+									}
+								var timetts2="<{$aitts[1].time}>";
+								var ttstimetts=timetts2.split('-');
+								var ttstimetts1=ttstimetts[0].split(':');
+								var ttstimetts2=ttstimetts[1].split(':');
+								for(var i=0;i<=23;i++)
+								{
+									var gethours = ttstimetts1[0];
+									if(i== gethours)
+									{
+										document.write("<option value='"+i+"' selected='selected'>"+i+"</option>");
+									}
+									else
+									{
+										document.write("<option value='"+i+"'>"+i+"</option>");
+									}
+								}
+							</script>
+						</select>
+						<{$stream_manager.Hour|capitalize}>
+						<select class="terminal_select_style" name="startmin2" id="startmin2" style="width:40px;">
+						<script>
+							for(var i=0;i<=59;i++)
+							{
+								var getminutes = ttstimetts1[1];
+								if(i == getminutes)
+								{
+									document.write("<option value='"+i+"' selected='selected'>"+i+"</option>");
+								}
+								else
+								{
+									document.write("<option value='"+i+"'>"+i+"</option>");
+								}
+							}
+						</script>
+						</select>
+						<{$stream_manager.Minute|capitalize}>
+						-
+						<select  class="terminal_select_style" name="starthour22" id="starthour22" style="width:40px;">
+							<script>
+								for(var i=0;i<=23;i++)
+								{
+									var gethours = ttstimetts2[0];
+									if(i== gethours)
+									{
+										document.write("<option value='"+i+"' selected='selected'>"+i+"</option>");
+									}
+									else
+									{
+										document.write("<option value='"+i+"'>"+i+"</option>");
+									}
+								}
+							</script>
+						</select>
+						<{$stream_manager.Hour|capitalize}>
+						<select class="terminal_select_style" name="startmin22" id="startmin22" style="width:40px;">
+						<script>
+							for(var i=0;i<=59;i++)
+							{
+								var getminutes = ttstimetts2[1];
+								if(i == getminutes)
+								{
+									document.write("<option value='"+i+"' selected='selected'>"+i+"</option>");
+								}
+								else
+								{
+									document.write("<option value='"+i+"'>"+i+"</option>");
+								}
+							}
+						</script>
+						</select>
+						<{$stream_manager.Minute|capitalize}>
+						<input  maxlength="64" style="width:300px;" class="terminal_input_font" name="ttsdemo2" type="text" id="ttsdemo2" value="<{$aitts[1].demo}>"/>
+				  </td>
+				</tr>
+				<tr>
+					<td width="80" align="right" ><{$stream_manager.volume|capitalize}></td>
+					<td width="420" align="left">
+						<select class="terminal_select_style" name="volume2" id="volume2" style="width:80px;">
+							<script>
+								var volumetwo="<{$aitts[1].volume}>";
+								for(var i=0;i<=100;i++)
+								{
+								
+									if(i == volumetwo)
+									{
+										document.write("<option value='"+i+"' selected='selected'>"+i+"</option>");
+									}
+									else
+									{
+										document.write("<option value='"+i+"'>"+i+"</option>");
+									}
+								}
+							</script>
+							</select>
+					</td>
+				</tr>
+				<tr>
+					<td width="80" align="right" ><{$stream_manager.aitts_time|capitalize}>3</td>
+					<td width="420" align="left">
+						<{$stream_manager.enabletime|capitalize}>
+						<input name="enabletts3" type="checkbox" id="enabletts3" value="1"/>
+						<select  class="terminal_select_style" name="starthour3" id="starthour3" style="width:40px;">
+							<script>
+									if("<{$aitts[2].enable}>" == 1)
+									{
+										document.getElementById('enabletts3').checked = true;
+									}
+								var timetts3="<{$aitts[2].time}>";
+								var ttstimettss=timetts3.split('-');
+								var ttstimetts3=ttstimettss[0].split(':');
+								var ttstimetts33=ttstimettss[1].split(':');
+								for(var i=0;i<=23;i++)
+								{
+									var gethours = ttstimetts3[0];
+									if(i== gethours)
+									{
+										document.write("<option value='"+i+"' selected='selected'>"+i+"</option>");
+									}
+									else
+									{
+										document.write("<option value='"+i+"'>"+i+"</option>");
+									}
+								}
+							</script>
+						</select>
+						<{$stream_manager.Hour|capitalize}>
+						<select class="terminal_select_style" name="startmin3" id="startmin3" style="width:40px;">
+						<script>
+							for(var i=0;i<=59;i++)
+							{
+								var getminutes = ttstimetts3[1];
+								if(i == getminutes)
+								{
+									document.write("<option value='"+i+"' selected='selected'>"+i+"</option>");
+								}
+								else
+								{
+									document.write("<option value='"+i+"'>"+i+"</option>");
+								}
+							}
+						</script>
+						</select>
+						<{$stream_manager.Minute|capitalize}>
+						-
+						<select  class="terminal_select_style" name="starthour33" id="starthour33" style="width:40px;">
+							<script>
+								for(var i=0;i<=23;i++)
+								{
+									var gethours = ttstimetts33[0];
+									if(i== gethours)
+									{
+										document.write("<option value='"+i+"' selected='selected'>"+i+"</option>");
+									}
+									else
+									{
+										document.write("<option value='"+i+"'>"+i+"</option>");
+									}
+								}
+							</script>
+						</select>
+						<{$stream_manager.Hour|capitalize}>
+						<select class="terminal_select_style" name="startmin33" id="startmin33" style="width:40px;">
+						<script>
+							for(var i=0;i<=59;i++)
+							{
+								var getminutes =ttstimetts33[1];
+								if(i == getminutes)
+								{
+									document.write("<option value='"+i+"' selected='selected'>"+i+"</option>");
+								}
+								else
+								{
+									document.write("<option value='"+i+"'>"+i+"</option>");
+								}
+							}
+						</script>
+						</select>
+						<{$stream_manager.Minute|capitalize}>
+						<input  maxlength="64" style="width:300px;" class="terminal_input_font" name="ttsdemo3" type="text" id="ttsdemo3" value="<{$aitts[2].demo}>"/>
+				  </td>
+				</tr>
+				<tr>
+					<td width="80" align="right" ><{$stream_manager.volume|capitalize}></td>
+					<td width="420" align="left">
+						<select class="terminal_select_style" name="volume3" id="volume3" style="width:80px;">
+							<script>
+								var volumethree="<{$aitts[2].volume}>";
+								for(var i=0;i<=100;i++)
+								{
+								
+									if(i == volumethree)
+									{
+										document.write("<option value='"+i+"' selected='selected'>"+i+"</option>");
+									}
+									else
+									{
+										document.write("<option value='"+i+"'>"+i+"</option>");
+									}
+								}
+							</script>
+							</select>
+					</td>
+				</tr>
+				<tr>
+					<td width="180"></td>
+					<td width="420">
+						<input type="submit" name="submit" value="<{$stream_manager.submit|capitalize}>" class="terminal_button"/>
+						&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+						<input type="reset" name="reset" value="<{$stream_manager.Cancel|capitalize}>" class="terminal_button"/>
+				  </td>
+				</tr>
+		  </table>
+		</td>
+	</tr>
+</table>
+</form>
+<form name="setkeyform" action="do.php?act=ai_tts_setterminal_msg" method="post" onSubmit="return checkkeyform();" class="terminal_form_to_body">
+	<table width="600px" align="center" border="0" cellpadding="0" cellspacing="0"  class="terminal_table_border">
+		<tr>
+			<td>
+				<table align="center" border="0" cellpadding="5" cellspacing="0">
+					<tr>
+						<td width="180" align="right" class="input_title"><{$stream_manager.aideviceip|capitalize}></td>
+						<td width="420">
+							<select id="keyvalue" name="keyvalue" class="terminal_select_style" onChange="get_change_remote_id(this)">
+									<{section name=sourceid loop=$aipeople}>
+									document.write("<option value="<{$aipeople[sourceid].shibiedeviceid}>"><{$aipeople[sourceid].deviceaddr}></option>");	
+									<{/section}>	
+							</select>
+						</td>
+					</tr>
+					<tr>
+						<td width="180" align="right" valign="top" class="input_title"><{$stream_manager.aitts_terminal|capitalize}></td>
+						<td width="420">
+						<input type="hidden"  id="task_map_id" name="task_map_id" value=""/>
+						<input type="hidden"  id="target" name="target" value=""/>
+						<input type="hidden" id="analysis_tree_group_string" name="analysis_tree_group_string" value=""/>
+			       <input type="hidden"  id="terminallistvalue" name="terminallistvalue" value=""/>
+						<div id="treeofbox2" name="treeofbox2" style="width:80%; height:200px;background-color:#f5f5f5;border :1px solid Silver;"/> 
+							<script language="javascript">
+								var treedata = "<{$tree_info}>";
+								
+								tree3 = new dhtmlXTreeObject("treeofbox2","100%","100%",0);
+								tree3.setSkin('dhx_skyblue');
+								tree3.setImagePath("smarty/templates/BellManager/codebase/csh_bluebooks/");
+								tree3.enableCheckBoxes(1);
+								tree3.enableThreeStateCheckboxes(true);
+								tree3.loadXMLString(treedata);
+							</script>
+						</td>
+					</tr>
+				
+					<tr>
+						<td width="180">					</td>
+						<td width="420">
+							<input type="submit" name="submit" value="<{$stream_manager.submit|capitalize}>" class="terminal_button"/>
+							&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+							<input type="reset" name="reset" value="<{$stream_manager.Cancel|capitalize}>" class="terminal_button"/>
+						</td>
+					</tr>
+				</table>
+			</td>
+		</tr>
+	</table>
+	</form>
+<{include file="language/`$language`_foot.php"}>
+</body>
+<script language="javascript">
+
+var xmlhttp=null; 
+
+function createXMLHttpRequest()
+{ 
+	if(window.ActiveXObject)
+	{ 
+		xmlhttp = new ActiveXObject("microsoft.XMLHTTP"); 
+	} 
+	else if(window.XMLHttpRequest)
+	{ 
+		xmlhttp = new XMLHttpRequest(); 
+	}
+	else
+	{
+		alert("NOT Support AJAX");
+	}
+} 
+function get_remote_task_id(url)
+{
+   createXMLHttpRequest();
+
+   xmlhttp.open( "get",url, true );
+
+   xmlhttp.onreadystatechange = function()
+   {
+      if( xmlhttp.readyState == 4 )
+      {
+         if( xmlhttp.status == 200 )
+         {
+           var remote_task_id = trim(xmlhttp.responseText);
+					
+					
+		   refresh_tree_options(remote_task_id);
+         }
+      }
+   }
+	xmlhttp.setRequestHeader( "If-Modified-Since", "0");
+
+	xmlhttp.send(null);
+}
+
+function get_load_remote_task_id()
+{
+	var str_url = "";
+	
+	var get_key_id = document.getElementById('keyvalue').value;
+	
+	str_url = "ai_get_tts.php?device_id="+get_key_id+"";
+	
+	get_remote_task_id(str_url);
+}
+
+function get_change_remote_id(obj)
+{
+	var str_url = "";
+	
+	var get_key_id = obj.value;
+	
+	str_url = "ai_get_tts.php?device_id="+get_key_id+"";
+	
+	get_remote_task_id(str_url);
+}
+
+function refresh_tree_options(task_id)
+{
+
+	var get_key_strid = tree3.getAllChecked();
+
+	var get_key_array = get_key_strid.split(",");
+
+	for(var i=0; i<get_key_array.length; i++)
+	{
+		if(get_key_array[i].indexOf("::")>-1)
+		{
+		
+			tree3.setCheck(get_key_array[i],false);
+		}
+	}
+
+	var get_key_arrays = task_id.split(",");
+	for(var i=0; i<get_key_arrays.length; i++)
+	{
+		tree3.setCheck(get_key_arrays[i],true);
+	}
+}
+</script>
+</html>

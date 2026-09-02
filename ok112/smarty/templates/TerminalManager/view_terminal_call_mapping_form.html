@@ -1,0 +1,112 @@
+<form name="form2" class="terminal_form_to_body">
+<table width="98%" border="0" cellpadding="2" cellspacing="1"  align="center">
+	<tr align='center' class="terminal_table_row_bg">   
+		<td width="12%" nowrap="nowrap"><{$Termianl_manager_Options}></td>                 	
+		<td width="25%" nowrap="nowrap"><{$Termianl_manager_Terminal_name}></td>    
+		<td width="25%" nowrap="nowrap"><{$Termianl_manager_callgroup_Name}></td>          
+		<td width="19%" nowrap="nowrap"><{$Termianl_manager_area}></td>  
+		<td width="19%" nowrap="nowrap"><{$Termianl_manager_Operate}></td>
+	</tr> 
+	<{if $terminal_info|@count neq 0}>        
+		<{section name=loop loop=$terminal_info}>    
+		  <tr align='center' class="terminal_per_row">             	
+			<td nowrap="nowrap">
+				<{$smarty.section.loop.index+1 + $start}>
+			</td>	
+			<td nowrap="nowrap"><{$terminal_info[loop].selectgroupname}></td>	
+			
+			 <td nowrap="nowrap"><{$terminal_info[loop].terminalname}></td> 
+					 
+			 <td nowrap="nowrap"><{$terminal_info[loop].area}></td>
+			 
+			
+			 <td nowrap="nowrap">
+				<a href="javascript:del_terminal_shotcut('<{$terminal_info[loop].id}>&terminal_id=<{$terminal_id}>')"><{$Termianl_manager_Delete_Map}></a>
+			 </td>	
+		  </tr>         
+		<{/section}>
+	<{else}>
+	
+	<tr class="tablestyle" >
+		<td colspan="6" style="text-align:center"><strong><{$Revise.No_data}></strong></td>
+	</tr>
+	<{/if}>
+<tr style="background-color: #FFFFFF;">
+	<td colspan="6" style="text-align:left">
+	<a href="javascript:setshotcut()">
+		<{$terminal_manager.Set_call_Key|capitalize}>
+		</a>&nbsp;
+		<a href="javascript:lookshotcut()">
+		<{$terminal_manager.Look_call_Group|capitalize}>
+		</a>&nbsp;
+	
+	</td>
+</tr>
+</table>
+		<script src="smarty/templates/UserAccessControl/CheckUserRights.js" type="text/javascript" language="javascript"></script>			
+		<script>rights_control(<{$is_right}>,"<{$is_admin}>","link_view");</script>
+</form>
+
+<table align="center"><tr><td><div class="link_style" align="center"><{$pagestr}></div></td></tr></table>
+
+<!--  ��������  -->
+<form name='formsearch' action='terminalmanager.php' method='get' onSubmit="return checksearch();">
+<input type='hidden' name='dopost' value='' />
+<table width='98%'  border='0' cellpadding='1' cellspacing='1' class="middle" align="center" style="margin-top:8px">
+  <tr>
+    <td background='skin/images/wbg.gif' align='center'>
+		<table border='0' cellpadding='0' cellspacing='0'>
+			<tr>
+				<td width='90' align='center'><{$Searchform.Search_conditions}></td>
+				<td width='160'>
+					<select name='searchkey' id="searchkey" style='width:150px'>
+					<option value=""><{$Searchform.Select_type}></option>
+					<option value="terminalname"><{$Searchform.Terminal_name}></option>
+					<option value="ip"><{$Searchform.IP_Address}></option>
+					</select>
+				</td>
+				<td width='70'>
+				<{$Searchform.Keyword}>
+				</td>
+				<td width='160'>
+					<input type='text' name='searchvalue' id="searchvalue" value=''/>        
+				</td>
+				<td width='110'>
+					<select name='searchsequence' id="searchsequence" style='width:80px'>
+					  <option value=""><{$Searchform.Sort}></option>
+					  <option value="id"><{$Searchform.Published}></option>
+					</select>        
+				</td>
+				<td>
+					<input name="imageField" type="image" src="skin/images/frame/search.gif" width="45px" height="20px" border="0px"/>        
+				</td>       
+			</tr>
+		</table>
+    </td>
+  </tr>
+</table>
+</form>
+<{if $user_rights ==1}>
+<!--ʲôҲ����-->
+<{elseif $user_rights ==2}>
+<script>
+	var input_objs = document.getElementsByName('id');
+	for(var i=0; i< input_objs.length; i++)
+	{
+		input_objs[i].disabled = true;
+	}
+	for(var i=0; i< input_objs.length; i++)
+	{
+		<{section name=ter_id loop=$user_terminal}>
+		if(input_objs[i].value == "<{$user_terminal[ter_id]}>")
+		{
+			input_objs[i].disabled = false;
+		}
+		<{/section}>
+	}
+	document.getElementById('select_all_yes').style.display = 'none';
+	document.getElementById('select_all_no').style.display = 'none';
+</script>
+<{elseif $user_rights ==0}>
+<!--ʲôҲ����-->
+<{/if}>

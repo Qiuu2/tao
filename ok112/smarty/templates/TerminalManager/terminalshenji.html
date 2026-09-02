@@ -1,0 +1,678 @@
+<html>
+<head>
+<META http-equiv=Content-Type content="text/html; charset=utf-8">
+<title>SetTerminalMapping</title>
+<style type="text/css">
+
+.button{BORDER-RIGHT: #000000 1px solid; BORDER-TOP: #000000 1px solid; COLOR: #ffffff; FONT-SIZE: 9px; BACKGROUND: #1E97D2 url(images/input.gif); BORDER-LEFT: #000000 1px solid; BORDER-BOTTOM: #000000 1px solid; FONT-FAMILY: "Verdana", "TAHOMA", "MS Shell Dlg", "sans-serif", "宋体"
+}
+.bjys{
+	color: #F4F4F4;
+	background-color: #F4F4F4;
+}
+.scrolltable { border:1px solid #cbcbcb; overflow:auto; height:99%; width: 99%; align:center ;margin-bottom:2px ;}
+
+</style>
+
+<script language="javascript">
+var get_i=0;
+function isNumber( s )
+{
+    var regu = "^[0-9]+$";
+    var re = new RegExp(regu);
+    if (s.search(re) != -1) 
+    {
+        return true;
+    }
+    else 
+    {
+        return false;
+    }
+}
+function trim(str)
+{   
+    return str.replace(/(^\s*)|(\s*$)/ig, "");   
+}
+function isChinaOrNumbOrLett( s )
+{
+	var regu = "^[0-9a-zA-Z\u4e00-\u9fa5]+$"; 
+	var re = new RegExp(regu); 
+	if (re.test(s)) 
+	{ 
+		return true; 
+	}
+	else
+	{
+		return false; 
+	} 
+}
+function isNull( str )
+{ 
+ if ( str == "" )
+ return true; 
+ var regu = "^[ ]+$"; 
+ var re = new RegExp(regu); 
+ return re.test(str); 
+} 
+//验证表单 
+function checkform()
+{
+	
+	return true;
+}
+
+//验证表单 
+function checkform()
+{
+	var getterminalids;
+	var allrows=getTableLength('rightTable');
+	
+	var aa=trim(document.getElementById('file').files[0].name);
+	var bb=trim('hangtian.apk');
+	
+	/*
+	if(aa ==bb)
+	{
+		
+	}
+	else
+	{
+		alert("文件名称必须为hangtian.apk");
+		return false;
+	}
+	*/
+
+	if(allrows<=1)
+	{
+		alert("<{$set_shotcut.rightnoterminal|capitalize}>");
+		return false;
+	}
+
+	for(var rowindex=1;rowindex<allrows;rowindex++)
+	{
+		  if(rowindex==1)
+			{
+			   getterminalids=getRow('rightTable',rowindex);
+		  }
+      else
+			{
+			   getterminalids=getterminalids+","+getRow('rightTable',rowindex);
+			}     
+	}
+	
+ 	document.getElementById('terminalids').value=getterminalids;
+	document.getElementById('terminalnum').value=allrows-1;
+	return true;
+}
+
+
+</script>
+</head>
+<body>
+<form name="setkeyform" action="upload_file.php" method="post" onSubmit="return checkform();" enctype="multipart/form-data" class="terminal_form_to_body">
+<table width="1010px" align="center" border="0" cellpadding="0px" cellspacing="0"  class="terminal_table_border">
+	<tr>
+		<td>
+			<table align="center" border="0" cellpadding="0px" cellspacing="0">
+				<tr>
+					<td>
+						<img src="<{$set_shotcut.terminalupgrade}>"/>
+						<input type="hidden"  id="terminalnum" name="terminalnum" value=""/>
+						<input type="hidden"  id="terminalids" name="terminalids" value=""/>
+					</td>
+				</tr>
+			</table>
+		</td>
+	</tr>
+	<tr>
+		<td>
+			<table align="center" border="0" cellpadding="5px" cellspacing="0" style="font-size:12px;font-family:Georgia, 'Times New Roman', Times, serif, '宋体'">
+				<tr height="70px">
+					<td width="180" align="right" ><{$set_shotcut.upgrade_file|capitalize}>:</td>
+					<td width="420" align="left">
+					<input type="file" name="file" id="file" /><input type="submit" name="<{$set_shotcut.upgrade|capitalize}>" value="<{$set_shotcut.upgrade|capitalize}>" />
+				  </td>
+				</tr>
+				</table>
+				<table align="center" cellpadding="5px" cellspacing="0" style="font-size:12px; border-collapse:collapse;font-family:Georgia, 'Times New Roman', Times, serif, '宋体'">	
+				<tr style="border-bottom:1px solid; border-top:1px solid">
+					<td width="50" align="left" valign="top"></td>
+					<td width="120" align="left" valign="top"></td>
+					<td width="80" align="right" valign="top"><{$set_shotcut.yuan_terminal|capitalize}></td>
+				
+					<td width="180" align="left" valign="top"></td>
+					<td width="50" align="left" valign="top"></td>
+					<td width="50" align="left" valign="top"></td>
+					<td width="50" align="left" valign="top"></td>
+				    <td width="120" align="left" valign="top"></td>
+					<td width="80" align="right" valign="top"><{$set_shotcut.upgrade_terminal|capitalize}></td>
+					
+					<td width="180" align="left" valign="top"></td>
+					<td width="50" align="left" valign="top"></td>
+				</tr>
+			
+			</table>
+		</td>
+	</tr>
+</table>
+	<TABLE border=1 cellpadding="0" cellspacing="0" bordercolorlight="#cccccc" align="center" bordercolordark="#ffffff" width="1010px" height=70%>
+				<tr>
+					<td valign="top" width="48%" height="90%">
+						<div class="scrolltable" >
+							<!--所有字段列表-->
+							<TABLE id=leftTable border=1 cellpadding="0" cellspacing="0" style="font-size:13px" bordercolorlight="#cccccc" bordercolordark="#ffffff" width="100%" onClick="clickRow();">
+								<tr>
+									<td width=8%>
+									<{$set_shotcut.number|capitalize}>
+									</td>
+									<td width=22%>
+										<{$set_shotcut.terminalname|capitalize}>
+									</td>
+									<td width=15%>
+										<{$set_shotcut.terminaltype|capitalize}>
+									</td>
+										<td width=45%>
+										<{$set_shotcut.vertype|capitalize}>
+									</td>
+										<td width=8%>
+										<{$set_shotcut.progress|capitalize}>
+									</td>
+								</tr>
+									<{section name=sourceid loop=$terminalinfo}>
+									 	<{if $terminalinfo[sourceid].flag == 0}>
+										<tr>
+										<td><{$terminalinfo[sourceid].id}></td>
+										<td><{$terminalinfo[sourceid].terminalname}></td>
+										<td><{$terminalinfo[sourceid].typename}></td>
+										<td><{$terminalinfo[sourceid].postion}></td>
+										<td>0</td>
+									</tr>
+									<{/if}>
+									<{/section}>	
+								
+							</TABLE>
+						</div>   
+					</td>
+
+					<td style="text-align: left;" width="4%">
+						<table>
+							<tr>
+								<td>
+								<input type="button" class="button" value="  >  " name="l2r" onClick="l2r_onclick()"/>
+								</td>
+							</tr>
+							<tr>
+								<td>
+								<input type="button" class="button" value=" >> " name="alll2r" onClick="alll2r_onclick()"/>
+								</td>
+							</tr>
+							<tr>
+								<td>
+									<input type="button" class="button" value="  <  " name="r2l" onClick="r2l_onclick()"/>
+								</td>
+							</tr>
+							<tr>
+								<td>
+									<input type="button" class="button" value=" << " name="allr2l" onClick="allr2l_onclick()"/>
+								</td>
+							</tr>
+						</table>
+					</td>
+
+					<td width="48%" valign="top" style="text-align: right;">
+						<div class="scrolltable">
+							<!--字段选择列表-->
+							<TABLE id=rightTable border=1 cellpadding="0" cellspacing="0" style="font-size:13px" bordercolorlight="#cccccc" bordercolordark="#ffffff" width="100%" onClick="clickRow();">
+								<tr>
+									<td width=8%>
+									<{$set_shotcut.number|capitalize}>
+									</td>
+									<td width=22%>
+										<{$set_shotcut.terminalname|capitalize}>
+									</td>
+									<td width=15%>
+										<{$set_shotcut.terminaltype|capitalize}>
+									</td>
+										<td width=45%>
+										<{$set_shotcut.vertype|capitalize}>
+									</td>
+										<td width=8%>
+										<{$set_shotcut.progress|capitalize}>
+									</td>
+								</tr>
+								<{section name=sourceid loop=$terminalinfo}>
+									 	<{if $terminalinfo[sourceid].flag == 1}>
+										<tr>
+										<td><{$terminalinfo[sourceid].id}></td>
+										<td><{$terminalinfo[sourceid].terminalname}></td>
+										<td><{$terminalinfo[sourceid].typename}></td>
+										<td><{$terminalinfo[sourceid].postion}></td>
+										<td>0</td>
+									</tr>
+									<{/if}>
+									<{/section}>	
+							</TABLE>
+						</div>
+					</td>
+				</tr>
+			</table>
+
+<script language="javascript">  
+
+  function l2r_onclick()
+  {
+      if (document.all.leftTable.rows.length==0)
+         return;
+      single2('leftTable','rightTable',lCurRow,-1);
+
+  }
+  function alll2r_onclick()
+  {
+      if (document.all.leftTable.rows.length==0)
+         return;
+
+      all2('leftTable','rightTable');
+     
+  }
+  function r2l_onclick()
+  {
+      if (document.all.rightTable.rows.length==0)
+         return;
+      single2('rightTable','leftTable',rCurRow,-1);
+     
+  }
+  function allr2l_onclick()
+  {
+      if (document.all.rightTable.rows.length==0)
+         return;
+      all2('rightTable','leftTable');
+  }
+  
+  
+  
+		
+var xmlhttp=null; 
+function createXMLHttpRequests()
+{ 
+	if(window.ActiveXObject)
+	{ 
+		xmlhttp = new ActiveXObject("microsoft.XMLHTTP"); 
+	} 
+	else if(window.XMLHttpRequest)
+	{ 
+		xmlhttp = new XMLHttpRequest(); 
+	}
+	else
+	{
+		alert('<{$alarm_setting.Not_support_AJAX|capitalize}>');
+	}
+} 
+function getterminalprogress(url)
+{
+   createXMLHttpRequests();
+   var getresult="";
+   xmlhttp.open( "get",url, false);
+   xmlhttp.onreadystatechange = function()
+   {
+   	  	
+      if( xmlhttp.readyState == 4 )
+      {
+
+         if( xmlhttp.status == 200 )
+         {
+			getresult= trim(xmlhttp.responseText); 
+			
+         }
+      }
+   }
+    xmlhttp.setRequestHeader( "If-Modified-Since", "0");
+	xmlhttp.send(null);
+	return getresult;
+}
+
+
+	
+function getterminal_progress()
+{
+	var ids,id;
+	var allrows=getTableLength('rightTable');
+	var rowindex=1;
+	for(rowindex=1;rowindex<allrows;rowindex++)
+	{
+		    if(rowindex==1)
+			{
+			   ids=getRow('rightTable',rowindex);
+		    }
+           	else
+			{
+			   ids=ids+","+getRow('rightTable',rowindex);
+			}     
+	
+	}
+	url ="upload_mediaget.php?flag=0&ids="+ids;	
+
+	var gettext=getterminalprogress(url);
+	var list =  JSON.parse(gettext);//转换为json对象
+	
+		for(rowindex=1;rowindex<allrows;rowindex++)
+		{
+			id=getRow('rightTable',rowindex);
+			
+			if(id==list[rowindex-1].id)
+			{
+			setRowtext('rightTable',rowindex,list[rowindex-1].progress);
+			
+			}	 
+		}
+	
+	return true;	
+}	
+
+
+self.setInterval("getterminal_progress()",2000);//N毫秒刷新一次，1000毫秒＝1秒
+
+
+
+
+///////////////////////////////////////////////
+</script>
+<!-- ##################################### -->
+<SCRIPT LANGUAGE="JavaScript">
+<!--
+lCurRow = -1;//左表当前行
+rCurRow = -1;//右表当前行
+curTable = 'rightTable';
+
+var dataArray=new Array(4);
+dataArray[0]="1";
+dataArray[1]="1";
+dataArray[2]="1";
+dataArray[3]="1";
+
+//
+function window_onload(){
+  initPara();
+
+}
+
+
+//初始化
+function initPara(){
+  chgCurRow('leftTable',-1,'init');
+  chgCurRow('rightTable',-1,'init');
+  curTable = 'rightTable';
+
+}
+//点击一行，即选中表选中行且变色
+function clickRow(){
+  var srcObj = window.event.srcElement;
+  curTable = srcObj.parentElement.parentElement.parentElement.id;
+  var curRow = -1;
+  if(srcObj.parentElement.tagName=="TR") {
+    chgRow = srcObj.parentElement.rowIndex;
+    chgCurRow(curTable,chgRow,'clk')
+  }
+}
+
+
+//从一个表取一个行插到另外一个表中
+function single2(fromTableID,toTableID,fromIndex,toIndex){
+  var rowObj ;
+  var j;
+
+  if(fromIndex <= 0) return;
+
+  rowObj = cloneRow(fromTableID,fromIndex);
+  addRow(toTableID,rowObj,toIndex);
+
+ delRow(fromTableID,fromIndex);
+
+}
+//从一个表取所有行插到另外一个表中
+function all2(fromTableID,toTableID){
+  try{
+    while(getTableLength(fromTableID)>1){
+      single2(fromTableID,toTableID,1,-1);//其中参数-1表示插入到最后
+    }
+  }catch(exceptionObj){
+    raiseException(exceptionObj)
+  }
+    // - Please note: you MUST include the tbody references for this to work!!
+}
+//得到tableID的当前行数
+function getCurRowIndex(tableID){
+  var curRowIndex = -1;
+  if(tableID=='leftTable')
+    curRowIndex = lCurRow;
+  else if(tableID=='rightTable')
+    curRowIndex = rCurRow;
+  else
+    curRowIndex = 0;
+  return curRowIndex;
+}
+//设置tableID的当前行数
+function setCurRowIndex(tableID,rowIndex){
+  if(tableID=='leftTable')
+    lCurRow = rowIndex;
+  else if(tableID=='rightTable')
+    rCurRow = rowIndex;
+  else
+    alert("没有这个表")
+}
+/************************当前行的变化***********************************/
+/*有几种情况当前行会发生变化
+  1、删除当前行
+  2、新增在当前行上插入行
+  3、在当前行上删除行
+  4、点击不是当前行的某一行
+  5、在表内将交换两列
+  6、初始化
+  7、在表内移动行
+*/
+function chgCurRow(tableID,chgRow,chgType){
+  var oldCurRow = getCurRowIndex(tableID);
+  var curRow = 0;
+  switch(chgType){
+  case 'del':{
+    if(getTableLength(tableID)>0){
+      if(chgRow==oldCurRow){//删除当前行
+        if(chgRow > getTableLength(tableID)-1)//如果当前行是最后一行
+          curRow = getTableLength(tableID)-1;
+        else////如果当前行不是最后一行
+          curRow = oldCurRow;
+      }else if(chgRow<oldCurRow){//在当前行上删除行
+        curRow = oldCurRow-1;
+      }else{//在当前行下删除行
+        ;
+      }
+    }else{
+      curRow = -1;
+    }
+    break;
+  }case 'add':{
+    if(chgRow<=oldCurRow)//在当前行上插入行
+      oldCurRow = oldCurRow+1;
+    break;
+  }case 'init':{
+    curRow = (getTableLength(tableID)>0)? 0 : -1;
+    break;
+  }case 'swap':{
+    curRow = chgRow;
+    break;
+  }case 'move':{
+    curRow = chgRow;
+    break;
+  }default :{//表示点击某行
+    curRow = chgRow;
+  }
+  }
+  if(getTableLength(tableID)>0){
+    document.getElementById(tableID).rows[curRow].bgColor="#FFE99D";
+    for(i=0;i<getTableLength(tableID);i++)
+      if(i!=curRow)
+        document.getElementById(tableID).rows[i].bgColor="";
+    setCurRowIndex(tableID,curRow);
+  }
+  //else{ //如果某个表变空了，则切换当前表
+  //	if(curTable==tableID)
+  //		chgCurTable(tableID);
+  //}
+}
+//得到tableID的总行数
+function getTableLength(tableID){
+  return document.getElementById(tableID).rows.length;
+}
+ //Moves a table row to a new position.
+function moveRows(tableID,iSource,iTarget){
+  if(iSource == 0) return;
+
+  if(iTarget==0){//在最上一条向上移
+    iTarget = getTableLength(tableID)-1;
+  }
+  if(iTarget == getTableLength(tableID)){//在最下一条向下移
+    iTarget = 1;
+  }
+
+  document.getElementById(tableID).getElementsByTagName('tbody')[0].moveRow(iSource, iTarget);
+  chgCurRow(tableID,iTarget,'move');
+}
+//从tableID中删除第rowIndex行
+function delRow(tableID,rowIndex){
+  if(checkRowIndex(tableID,rowIndex)){
+    document.getElementById(tableID).getElementsByTagName('tbody')[0].deleteRow(rowIndex);
+    chgCurRow(tableID,rowIndex,'del');
+  }
+  else
+    triggerException(1,'行越界');
+}
+//加入rowObj到tableID的rowIndex行
+function addRow(tableID,rowObj,rowIndex){
+  if(rowIndex==-1){
+    document.getElementById(tableID).getElementsByTagName('tbody')[0].appendChild(rowObj);
+  }else{/*请注意现在的版本还没有用到addRow方法中的rowIndex!=-1的情况*/
+    var refRow = document.getElementById(tableID).getElementsByTagName('tbody')[0].getElementsByTagName('tr')[rowIndex];
+    document.getElementById(tableID).getElementsByTagName('tbody')[0].insertBefore(rowObj,refRow);
+  }
+  chgCurRow(tableID,rowIndex,'add');
+}
+
+//交换表内的两行
+function swapRow(tableID,fromIndex,toIndex){
+  var rowObj;
+  //先克隆
+  rowObj = cloneRow(tableID,fromIndex);
+  //再删除
+  document.getElementById(tableID).getElementsByTagName('tbody')[0].deleteRow(fromIndex);
+  //最后插入
+  if(toIndex==-1){//在最上一条向上移
+    document.getElementById(tableID).getElementsByTagName('tbody')[0].appendChild(rowObj);
+    toIndex = getTableLength(tableID)-1;
+  }else if(toIndex == getTableLength(tableID)+1){//在最下一条向下移
+    document.getElementById(tableID).getElementsByTagName('tbody')[0].appendChild(rowObj);
+    toIndex = 0;
+  }else if(toIndex == getTableLength(tableID)){//从倒数第二条向下移
+    document.getElementById(tableID).getElementsByTagName('tbody')[0].appendChild(rowObj);
+    toIndex = getTableLength(tableID)-1;
+  }else{
+    var refRow = document.getElementById(tableID).getElementsByTagName('tbody')[0].getElementsByTagName('tr')[toIndex];
+    document.getElementById(tableID).getElementsByTagName('tbody')[0].insertBefore(rowObj,refRow);
+  }
+  chgCurRow(tableID,toIndex,'swap');
+}
+//得到tableID的总行数
+function getTableLength(tableID){
+  return document.getElementById(tableID).rows.length;
+}
+//克隆tableID的第rowIndex行
+function cloneRow(tableID,rowIndex){
+  if(checkRowIndex(tableID,rowIndex)){
+    //在克隆前恢复背景颜色
+    document.getElementById(tableID).getElementsByTagName('tbody')[0].getElementsByTagName('tr')[rowIndex].bgColor="";
+    return document.getElementById(tableID).getElementsByTagName('tbody')[0].getElementsByTagName('tr')[rowIndex].cloneNode(true);
+  }else{
+    triggerException(1,'行越界');
+  }
+}
+//得到tableID的第rowIndex行
+function getRow(tableID,rowIndex){
+  if(checkRowIndex(tableID,rowIndex)){
+ var tb=document.getElementById(tableID);
+  var rows=tb.rows;
+  return rows[rowIndex].cells[0].innerHTML;
+//  return document.getElementById(tableID).getElementsByTagName('tbody')[0].getElementsByTagName('tr')[rowIndex];
+  }else{
+    triggerException(1,'行越界');
+  }
+}
+
+//设置tableID的第rowIndex行内容
+function setRowtext(tableID,rowIndex,progress){
+  if(checkRowIndex(tableID,rowIndex)){
+ var tb=document.getElementById(tableID);
+  var rows=tb.rows;
+  rows[rowIndex].cells[4].innerHTML=progress+"%";
+  return rows[rowIndex].cells[0].innerHTML;
+//  return document.getElementById(tableID).getElementsByTagName('tbody')[0].getElementsByTagName('tr')[rowIndex];
+  }else{
+    triggerException(1,'行越界');
+  }
+}
+
+
+
+//检查rowIndex是否越界
+function checkRowIndex(tableID,rowIndex){
+  var chkResult = true;
+  //alert(rowIndex)
+  if(getTableLength(tableID)>0 && rowIndex>=0 && getTableLength(tableID)>rowIndex )
+  //if(getTableLength(tableID)>0 && rowIndex>=0  )
+    chkResult = true;
+  else
+    chkResult = false;
+  return chkResult;
+}
+/**********************异常处理************************/
+//创建异常
+function createException(msgNum, msgText) {
+  this.messageNumber = msgNum;
+  this.messageText = msgText;
+}
+//触发异常
+function triggerException(messageNum, messageTxt) {
+  exceptionObj = new createException(messageNum, messageTxt);
+  throw exceptionObj;
+}
+//异常到上层
+function raiseException(exceptionObj) {
+   if (exceptionObj instanceof createException)
+     ;//alert("Problem is: " + exceptionObj.messageText)
+   else
+  throw exceptionObj;
+ }
+ 
+ 
+ 	var get_user_right = "<{$is_right}>";
+
+	if(get_user_right == 1)
+	{
+		//什么也不做
+	}
+	else
+	{
+		var get_a_objects = document.getElementsByTagName("input");
+		for(var i=0; i<get_a_objects.length; i++)
+		{
+			get_a_objects[i].href = "javascript:void(0);";
+			get_a_objects[i].onclick = null;
+			get_a_objects[i].style.color="#787878";
+			get_a_objects[i].disabled = true;
+		}
+	}
+ 
+ 
+
+</SCRIPT>
+</form>
+<{include file="language/`$language`_foot.php"}>
+</body>
+</html>

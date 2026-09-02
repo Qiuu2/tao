@@ -1,0 +1,513 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>FileManager</title>
+<link rel="stylesheet" type="text/css" href="skin/css/main_page_style.css" />
+<script src="skin/js/frame/jzdd.js" type="text/javascript"></script>
+<script type="text/javascript">
+function getCheckboxItem()
+{
+	var allSel="";
+	if(document.form2.id.checked)
+	{
+	 	allSel=document.form2.id.value;
+		if(allSel==undefined)
+		{
+			allSel="";
+		}
+	 }
+	for(i=0;i<document.form2.id.length;i++)
+	{
+		if(document.form2.id[i].checked)
+		{
+			if(allSel=="")
+				allSel=document.form2.id[i].value;
+			else
+				allSel=allSel+","+document.form2.id[i].value;
+		}
+	}
+	return allSel;
+}
+
+function getOneItem()
+{
+	var folder_id = "";
+	var obj = document.getElementsByName('id');
+	for(var i= 0; i<obj.length; i++ )
+	{
+		if(obj[i].checked == true)
+		{
+			if(isNull(folder_id))
+			{
+				folder_id = obj[i].value;
+			}
+			else
+			{
+				folder_id +=","+obj[i].value;
+			}
+			
+		}
+	}
+	
+	return folder_id;
+}
+
+function selAll(aid)
+{
+	if(aid==0)
+	{
+		document.form2.id.checked=true;
+	}
+	for(i=0;i<document.form2.id.length;i++)
+	{
+		if(!document.form2.id[i].checked)
+		{
+			document.form2.id[i].checked=true;
+		}
+	}
+}
+function noSelAll(aid)
+{
+	if(aid==0)
+	{
+		document.form2.id.checked=false;
+	}
+	for(i=0;i<document.form2.id.length;i++)
+	{
+		if(document.form2.id[i].checked)
+		{
+			document.form2.id[i].checked=false;
+		}
+	}
+}
+function delfile()
+{
+	var getItem=getCheckboxItem();
+	
+	if(getItem==""||getItem==null)
+	{
+		alert("<{$terminal_manager.select_terminal|capitalize}>");
+		return void(0);
+		/*
+		if(window.confirm("<{$terminal_manager.del_dir|capitalize}>"))
+		{
+			window.location="do.php?act=delallareadir_msg&fordid="+<{$get_folder_id}>+"&terminal_id="+<{$terminal_id}>+"";
+		}
+		else
+		{
+			return void(0);
+		}*/
+	}
+	else
+	{
+		if(window.confirm("<{$terminal_manager.endel_area|capitalize}>"))
+		{
+			window.location="do.php?act=deldirarea_msg&id="+getItem+"&folderid="+<{$get_folder_id}>+"&terminal_id="+<{$terminal_id}>+"";
+		}
+		else
+		{
+			return void(0);
+		}
+	}
+
+}
+
+//鑾峰彇妗嗘灦涓彉閲忕殑鍊?
+ function get_next_frame_var(obj,get_folder_id,terminal_id)
+ {
+	window.location = "dir_area_add.php?folder_id="+get_folder_id+"&terminal_id="+terminal_id+"";
+ } 
+function delfolder(obj,get_folder_id,terminal_id)
+{   
+   if(!window.confirm("<{$terminal_manager.Determine_remove|capitalize}>"))
+	{
+		return void(0);
+	}	
+	else
+	{
+		location="do.php?act=dirareadel_msg&id="+get_folder_id+"&terminal_id="+terminal_id+"";
+	}
+	//window.location ="do.php?act=folderdel_msg&id="+get_folder_id+"";
+}
+
+var hidden_display = true;//默认隐藏
+var xmlhttp=null; 
+
+function createXMLHttpRequest()
+{ 
+	if(window.ActiveXObject)
+	{ 
+		xmlhttp = new ActiveXObject("microsoft.XMLHTTP"); 
+	} 
+	else if(window.XMLHttpRequest)
+	{ 
+		xmlhttp = new XMLHttpRequest(); 
+	}
+	else
+	{
+		alert('Not Supported AJAX');
+	}
+} 
+
+function get_mouse_coordinates(event)
+{
+   var eve = event||window.event;
+   if(eve.pageX)
+   {
+
+    return {x:eve.pageX,y:eve.pageY};
+   }
+   else
+   {
+
+    return {
+                x:eve.clientX+document.body.scrollLeft - document.body.clientLeft,
+                y:eve.clientY+document.body.scrollTop - document.body.clientTop
+            };
+   }
+}
+function get_div_obj(str_id)
+{
+ 	return document.getElementById(str_id);   
+}
+function task_copy_position(event)
+{
+    if(document.all)
+    {
+        window.event.cancelBubble = true;   
+    }
+    else
+    {
+        event.stopPropagation();
+    }
+    var mouse_obj_xy = get_mouse_coordinates(event);
+    get_div_obj('copytask').style.left = mouse_obj_xy.x+20+'px';
+    get_div_obj('copytask').style.top = mouse_obj_xy.y+'px';
+	get_div_obj('copytask').style.display = "block";
+	document.getElementById('enterbutton').disabled=false;
+}
+
+function disappear_task_div()
+{
+	if(document.getElementById('copytask').style.display == "block")
+	{
+		document.getElementById('copytask').style.display = "none";
+	}
+}
+
+function ajax_set_task_copy(folderid,terminal_id,gettoterminalid)
+{
+
+   createXMLHttpRequest();
+
+   xmlhttp.open( "get","dir_copy.php?terminal_id="+terminal_id+"&folderid="+folderid+"&gettoterminalid="+gettoterminalid+"",true );
+   xmlhttp.onreadystatechange = function()
+   {
+    if(xmlhttp.readyState == 4 )
+      {
+         if(xmlhttp.status == 200 )
+         {
+			var result=xmlhttp.responseText.trim();
+
+			if(result==1)
+			{
+				alert('成功');
+				document.getElementById('copytask').style.display = "none";
+			}
+		}
+      }
+   }
+    xmlhttp.setRequestHeader( "If-Modified-Since", "0");
+	xmlhttp.send(null);
+}
+
+function set_task_copy()
+{
+	document.getElementById('enterbutton').disabled=true;
+	var folderid=<{$get_folder_id}>;
+	var terminal_id=<{$terminal_id}>;
+	var gettoterminalid=document.getElementById('gettoterminalid').value;
+	ajax_set_task_copy(folderid,terminal_id,gettoterminalid);
+	
+}
+
+function copyfolder(obj,get_folder_id,terminal_id)
+{   
+   if(!window.confirm("<{$terminal_manager.Determine_remove|capitalize}>"))
+	{
+		return void(0);
+	}	
+	else
+	{
+		location="do.php?act=dirareacopy_msg&id="+get_folder_id+"&terminal_id="+terminal_id+"";
+	}
+	//window.location ="do.php?act=folderdel_msg&id="+get_folder_id+"";
+}
+
+
+function modifyfolder(obj,get_folder_id,terminal_id)
+{
+	window.location.href="dirareamodify.php?id="+get_folder_id+"&terminal_id="+terminal_id+"";
+}
+</script>
+</head>
+<body>
+<form name="form2" id="form2" class="terminal_form_to_body"  style="width:100%">
+<tbody>
+<table width="98%" border="0" cellpadding="2" cellspacing="1"  align="center" style="font-size:12px">
+<thead>
+	 <tr align='center' class="terminal_table_row_bg">
+	
+		<th width="8%"><{$terminal_manager.Select|capitalize}></th>     		             	
+		<th width="15%"><{$terminal_manager.Terminal_Name|capitalize}></th>    
+		<th width="8%"><{$terminal_manager.Terminal_Type|capitalize}>
+	
+		</th>          
+		<th width="8%"><{$terminal_manager.Task_Status|capitalize}></th>
+		<th width="8%"><{$terminal_manager.Network_Status|capitalize}></th>
+		
+		<th width="8%"><{$terminal_manager.IP_Address|capitalize}></th>
+			
+		<th width="8%"><{$terminal_manager.Volume|capitalize}></th>
+	
+	</tr> 
+	  </thead>
+<{if $info|@count neq 0}>	
+	<{section name=loop loop=$info}>
+		<tr align='center' onmouseover="this.style.backgroundColor='#EEEEFF'" onmouseout="this.style.backgroundColor='#FFFFFF' ">
+			<td nowrap="nowrap">
+			<{if $is_right == 1 || $admin_id == "administrator"}>
+				<input name="id" type="checkbox" id="id" value="<{$info[loop].id}>" class="np"/>
+				<{$info[loop].id}>
+			<{else}>
+				<{$smarty.section.loop.index+1+$start}>
+			<{/if}>
+			</td>	
+			<td nowrap="nowrap">	
+				<label title="<{$info[loop].terminalname}>">
+					<{$info[loop].terminalname|truncate:18:"..."}>
+				</label>
+			</td>
+			
+			<td nowrap="nowrap">
+				
+				<{if $info[loop].typeid != -1}>
+					 <{section name=type loop=$type_info}>
+						<{if $info[loop].typeid == $type_info[type].id}>        	 		
+							<{$type_info[type].name}>	
+						<!--	<script language="javascript">
+								document.write(chinese_big5_english("<{$chinese_big5_english}>","<{$type_info[type].name}>"));	
+							</script>	-->		      			  
+						<{/if}>
+					 <{/section}> 
+				 <{else}>
+				 	<{$terminal_manager.Unknown_type|capitalize}>
+				 <{/if}> 	     
+
+			</td>
+					
+			<td nowrap="nowrap">
+				<{if $info[loop].netstate == 0}>
+						<{$terminal_manager.Disconnected|capitalize}>
+					<{elseif $info[loop].netstate == 1 && $info[loop].taskstate == 0}>
+						<{$terminal_manager.Idle|capitalize}>
+					<{elseif $info[loop].netstate == 1 && $info[loop].taskstate == 1}>
+						<{$terminal_manager.Timing_Play|capitalize}>
+					<{elseif $info[loop].netstate == 1 && $info[loop].taskstate == 2}>
+						<{$terminal_manager.On_Talkback|capitalize}>
+					<{elseif $info[loop].netstate == 1 && $info[loop].taskstate == 3}>
+						<{$terminal_manager.AOD|capitalize}>
+					<{elseif $info[loop].netstate == 1 && $info[loop].taskstate == 4}>
+						<{$terminal_manager.Selected_Play|capitalize}>
+					<{elseif $info[loop].netstate == 1 && $info[loop].taskstate == 5}>
+						<{$terminal_manager.Paging|capitalize}>
+					<{elseif $info[loop].netstate == 1 && $info[loop].taskstate == 6}>
+						<{$terminal_manager.Paging|capitalize}>
+					<{elseif $info[loop].netstate == 1 && $info[loop].taskstate == 7}>
+						<{$terminal_manager.Local_Amplifying|capitalize}>
+					<{elseif $info[loop].netstate == 1 && $info[loop].taskstate == 8}>
+						<{$terminal_manager.Play_from_USB|capitalize}>
+					<{elseif $info[loop].netstate == 1 && $info[loop].taskstate == 9}>
+						<{$terminal_manager.Request_Talkback|capitalize}>
+					<{elseif $info[loop].netstate == 1 && $info[loop].taskstate == 10}>
+						<{$terminal_manager.Requested_Talkback|capitalize}>
+					<{elseif $info[loop].netstate == 1 && $info[loop].taskstate == 11}>
+						<{$terminal_manager.Paging_Play|capitalize}>
+					<{elseif $info[loop].netstate == 1 && $info[loop].taskstate == 12}>
+						<{$terminal_manager.Timing_Play|capitalize}>
+					<{elseif $info[loop].netstate == 1 && $info[loop].taskstate == 13}>
+						<{$terminal_manager.livestate|capitalize}>
+					<{elseif $info[loop].netstate == 1 && $info[loop].taskstate == 25}>
+						<{$terminal_manager.ttsmusic|capitalize}>
+					<{elseif $info[loop].netstate == 1 && $info[loop].taskstate == 15}>
+						<{$terminal_manager.live_do|capitalize}>
+					<{elseif $info[loop].netstate == 1 && $info[loop].taskstate == 19}>
+						<{$terminal_manager.jianting|capitalize}>
+					<{elseif $info[loop].netstate == 1 && $info[loop].taskstate == 28}>
+						<{$terminal_manager.quickplay|capitalize}>
+					<{/if}>
+			</td>
+			<td nowrap="nowrap">
+			 <{if $info[loop].netstate == 0}>
+					<{$terminal_manager.Disconnected|capitalize}>
+				 <{elseif $info[loop].netstate == 1}>
+					<{$terminal_manager.Connected|capitalize}>
+				 <{/if}>
+			</td>
+			
+			<td nowrap="nowrap">
+			<{$info[loop].ip}>
+			</td>
+		
+			<td nowrap="nowrap">
+			<{$info[loop].volume}>
+			</td>
+		
+			</tr>
+	<{/section}>
+<{else}>
+	<tr align='center' class="tablestyle" onmouseover="this.style.backgroundColor='#EEEEFF'" onmouseout="this.style.backgroundColor='#FFFFFF' ">
+		<td colspan="6" height="30"><strong><{$file_manager.No_data|capitalize}></strong></td>
+	</tr>
+<{/if}>
+<script src="smarty/templates/UserAccessControl/CheckUserRights.js" type="text/javascript" ></script>
+	<tr>
+	   <td colspan="6">
+			<a title="<{$terminal_manager.select_allterminal|capitalize}>" href="javascript:selAll(0)" name="select_all_yes" id="select_all_yes">
+				<{$terminal_manager.Select_All|capitalize}>
+			</a>&nbsp;
+								
+			<a title="<{$terminal_manager.noselect_allterminal|capitalize}>" href="javascript:noSelAll(0)" name="select_all_no" id="select_all_no">
+				<{$terminal_manager.Cancel|capitalize}>
+			</a>&nbsp;
+			
+			<a href="javascript:get_next_frame_var(this,'<{$get_folder_id}>','<{$terminal_id}>')" target='dirarea' >
+				<{$terminal_manager.add_terminal_to_area|capitalize}>
+			</a>&nbsp;&nbsp;&nbsp;
+			
+			<a title="<{$file_manager.del_selectmedia|capitalize}>" id="delsel" name="delsel" href="javascript:delfile('<{$terminal_id}>')" >
+				<{$terminal_manager.del_area|capitalize}>
+			</a>&nbsp;&nbsp;&nbsp;
+			
+			<a title="<{$terminal_manager.create_dir|capitalize}>" href="javascript:addfolder(this,'<{$get_folder_id}>','<{$terminal_id}>')" class="coolbg" >
+			<{$terminal_manager.create_dir|capitalize}>	
+			</a>&nbsp;&nbsp;&nbsp;
+			
+			<a title="<{$terminal_manager.modify_dir|capitalize}>" href="javascript:modifyfolder(this,'<{$get_folder_id}>','<{$terminal_id}>')" class="coolbg" >
+				<{$terminal_manager.modify_dir|capitalize}>	
+			</a>&nbsp;&nbsp;&nbsp;
+			
+			<a title="<{$terminal_manager.del_dir|capitalize}>" href="javascript:delfolder(this,'<{$get_folder_id}>','<{$terminal_id}>')" class="coolbg" >
+			<{$terminal_manager.del_dir|capitalize}>	
+			</a>&nbsp;&nbsp;&nbsp;
+			
+			<a title="<{$terminal_manager.copy_dir_demo|capitalize}>" href="javascript:void(0)" id="setcopytask" onclick="task_copy_position(event)">
+			<{$terminal_manager.copy_dir|capitalize}>	
+			</a>&nbsp;&nbsp;&nbsp;
+			
+		<!--	<a title="<{$file_manager.Voice_media|capitalize}>" href="trainmedia.php?folderid=<{$get_folder_id}>" class="coolbg" >
+			<{$file_manager.Voice_media}>	
+			</a>&nbsp;&nbsp;&nbsp;	
+		-->	
+		</td>
+	</tr>
+</table>
+<script language="javascript">
+function addfolder(obj,get_folder_id,terminal_id)
+{
+	window.location.href="dirareaadd.php?id="+get_folder_id+"&terminal_id="+terminal_id+"";
+}	
+</script>
+
+<div id="copytask" class="r-displayVolume">
+ <iframe style="position:absolute; width:200;height:110px;left:0px; top:0px;filter:alpha(opacity=0);-moz-opacity:0;border:0;z-index:-1"></iframe>
+<div style="position:absolute;border:0;width:200; left:0px; top:0px; height:110px;z-index:100">
+	<table border="1" cellpadding="10" cellspacing="0" width="200" style="background-color:#EEFFEE">
+		
+		<tr>
+			<td nowrap="nowrap" align="right">
+			<{$terminal_manager.copy_dir_demo|capitalize}>
+			<select class="terminal_select_style" name="gettoterminalid" id="gettoterminalid" style="width:100px">
+					<{section name=sourceid loop=$gettreeid}>
+							<option title="<{$gettreeid[sourceid].terminalname}>" value="<{$gettreeid[sourceid].id}>"><{$gettreeid[sourceid].terminalname|truncate:12:"..."}></option>
+					<{/section}>
+					</select>
+			</td>
+		</tr>
+			<td  id="enterbutton" nowrap="nowrap" align="center">
+				<a href="javascript:void(0)" onclick="set_task_copy()"> 
+					<{$terminal_manager.Sumbit|capitalize}>
+				</a>
+				&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+				<a href="javascript:void(0)" onclick="disappear_task_div()"> 
+					<{$terminal_manager.Cancel|capitalize}>
+				</a>
+			</td>
+		</tr>
+		
+	</table>
+</div>
+</div>
+
+</tbody>
+</form>	
+<div class="link_style"><{$pagestr}></div>
+<!--  �� --> 
+<form name="form3" target="_self" action="dir_terminal_area.php?id=<{$get_folder_id}>" method="post">
+<table width='100%'  border='0' cellpadding='1' cellspacing='1' class="middle" align="center" style="margin-top:8px">
+  <tr>
+    <td background='skin/images/wbg.gif' align='center'>
+      <table border='0' cellpadding='0' cellspacing='0'>
+        <tr>
+          <td width='90' align='center'><{$Searchform.Search_conditions}></td>
+          <td width='160'>
+          <select class="colors" name='searchkey'  id="searchkey" style='width:150'>
+          	<option value=""><{$Searchform.Select_type}></option>
+          	<option value='name'><{$Searchform.Terminal_name}></option>
+			<option value='typeid'><{$Searchform.Terminal_Type}></option>
+          </select>        
+		  </td>
+        <td width='70'>
+          <{$Searchform.Keyword}>        
+		</td>
+        <td width='160'>
+          	<input type='text' name='searchvalue' id="searchvalue" value='' style='width:150px' /> </td>
+        <td width='110'>
+			<select class="colors" name='orderby' id="orderby" style='width:80px'>
+			  <option value=''><{$Searchform.Sort}></option>
+			  <option value="size"><{$Searchform.Terminal_name}></option>
+			</select>
+		</td>
+        <td>
+          <input name="imageField" type="image" src="<{$terminal_manager.search_image}>" width="45" height="20" border="0"/> 
+		</td>
+       </tr>
+      </table>
+    </td>
+  </tr>
+</table>
+</form>
+<script language="javascript">
+	var get_user_right = "<{$is_right}>";
+
+	if(get_user_right == 1)
+	{
+		//什么也不做
+	}
+	else
+	{
+		var get_a_objects = document.getElementsByTagName("a");
+		for(var i=0; i<get_a_objects.length; i++)
+		{
+			get_a_objects[i].href = "javascript:void(0);";
+			get_a_objects[i].onclick = null;
+			get_a_objects[i].style.color="#787878";
+		//	get_a_objects[i].disabled = true;
+		}
+	}
+</script>
+<{include file="language/`$language`_foot.php"}> 
+</body>
+</html>
+

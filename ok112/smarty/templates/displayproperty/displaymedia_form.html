@@ -1,0 +1,124 @@
+<form name="form2"  class="terminal_form_to_body">
+<table width="98%" border="0" cellpadding="2" cellspacing="1"  align="center" name="sorttable" id="sorttable" class="terminal_form_to_body">
+<tr align='center' class="terminal_table_row_bg">
+  <td width="8%"  nowrap="nowrap"><{$displaymedia.Media_serial_number}></td>
+  <td width="20%"  nowrap="nowrap"><{$displaymedia.Media_Name}></td>
+  <td width="10%"  nowrap="nowrap"><{$displaymedia.Media_sizes}></td>
+  <td width="10%"  nowrap="nowrap"><{$displaymedia.Media_Types}></td>
+  <td width="15%"  nowrap="nowrap"><{$displaymedia.state}></td>
+</tr>
+<tr></tr>
+<{if $info|@count neq 0}>
+ <{section name=loop loop=$info}>  
+      <tr align='center' class="tablestyle"> 
+		<td align="center">
+			<input type="checkbox" name="id" id="id" value="<{$info[loop].id}>"/><{$info[loop].id}>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+		<!--	 <{if $info[loop].countid ==1}>-->
+	
+	<!--	<{else}>-->
+	<!--	<{$info[loop].id}>-->
+	<!--		<{/if}>-->
+			<!--<input type="radio" name="id" id="id" value="<{$info[loop].taskid}>,<{$info[loop].id}>"/><{$smarty.section.loop.index+1+$start}>-->
+			
+		</td>
+		<td><{$info[loop].medianame}></td>  
+		<td><{$info[loop].size}>K</td>  
+		<td><{$info[loop].typeid}></td>
+		<td>
+	
+		<{if $info[loop].offlinestate == 1}>
+		<{$displaymedia.free_offline|capitalize}>
+	 	<{elseif $info[loop].offlinestate == 2 }>
+		<{$displaymedia.now_offline|capitalize}>
+		<{elseif $info[loop].offlinestate == 3 }>
+		<{$displaymedia.finlish_offline|capitalize}>
+		<{elseif $info[loop].offlinestate == 4 }>
+		<{$displaymedia.free_delete|capitalize}>
+		<{elseif $info[loop].offlinestate == 5 }>
+		<{$displaymedia.now_delete|capitalize}>
+		<{elseif $info[loop].offlinestate == 6 }>
+		<{$displaymedia.doing_ofline|capitalize}>
+		<{elseif $info[loop].offlinestate == 7 }>
+		<{$displaymedia.doing_ofline2|capitalize}>
+		<{elseif $info[loop].offlinestate == 8 }>
+		<{$displaymedia.delfinlish|capitalize}>
+		<{elseif $info[loop].offlinestate == 9}>
+		<{$displaymedia.pre_free_offline|capitalize}>
+		<{elseif $info[loop].offlinestate == 10 }>
+		<{$displaymedia.pre_doing_offline|capitalize}>
+		<{elseif $info[loop].offlinestate == 11 }>
+		<{$displaymedia.offline_stop|capitalize}>
+		<{elseif $info[loop].offlinestate == 12 }>
+		<{$displaymedia.offline_stoped|capitalize}>
+		<{else}>
+		<{$displaymedia.noofflinetask|capitalize}>
+		<{/if}>
+
+		</td>
+      </tr>         
+    <{/section}>
+<!--
+	<tr>
+		<td colspan="5">
+			<a href="#" onclick="moveup()" class="coolbg">上移</a>&nbsp;
+			<a href="#" onclick="movedown()" class="coolbg">下移</a>&nbsp;
+			有问题结果是更改了原有的数据？？？
+			<a href="#" onclick="movetop()" class="coolbg">置顶</a>&nbsp;
+			<a href="#" onclick="moveend()" class="coolbg">置尾</a>
+
+		</td>
+	</tr>
+-->
+<{else}>
+<tr>
+	<td colspan="5" align="center"> 
+		<strong><{$displaymedia.No_Data}></strong>
+	</td>
+</tr>
+<{/if}>
+</table>
+</form>
+<table width="98%" border="0" cellpadding="2" cellspacing="1"  align="center" >
+<tr align='left' class="bgcolors1">
+<td>
+
+ 
+	<a  href="javascript:selAll(0)" name="select_all_yes"  style="visibility:hidden" id="select_all_yes">
+		<{$displaymedia.Select_All|capitalize}>
+	</a>&nbsp;
+	
+	<a  href="javascript:noSelAll(0)" name="select_all_no"  style="visibility:hidden" id="select_all_no">
+		<{$displaymedia.Cancel|capitalize}>
+	</a>&nbsp;
+	
+	<a  href="javascript:delTerminalmusic(18)" title="<{$displaymedia.offline_remoremedia|capitalize}>" name="immoffline"  style="visibility:hidden" id="immoffline">
+		<{$displaymedia.offline_remore|capitalize}>
+	</a>&nbsp;
+	<!--
+	<a  href="javascript:delTerminalmusic(4)" name="offline"  style="visibility:hidden" id="offline">
+		<{$displaymedia.delofflinemusic|capitalize}>
+	</a>&nbsp;
+	<a  href="javascript:delTerminalmusic(5)" name="immoffline"  style="visibility:hidden" id="immoffline">
+		<{$displaymedia.immediatelydel|capitalize}>
+	</a>&nbsp;
+	<a  href="javascript:delTerminalmusic(11)" name="stopoffline"  style="visibility:hidden" id="stopoffline">
+		<{$displaymedia.offline_stop|capitalize}>
+	</a>&nbsp;
+	-->
+
+<script language="javascript">
+
+ if(<{$set_flag}>==1)
+ {
+	
+		document.getElementById("select_all_yes").style.visibility="visible";  
+		document.getElementById("select_all_no").style.visibility="visible";  
+		document.getElementById("immoffline").style.visibility="visible";  
+ }
+ </script>
+
+</td>
+</tr>
+</table>
+
+<div class="link_style" style="float:none; margin-top:5px; text-align:center;"><{$pagestr}></div>

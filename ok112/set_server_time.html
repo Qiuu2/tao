@@ -1,0 +1,1169 @@
+<?php
+	if (!session_id()) session_start();
+	require_once('inc/smarty.inc.php');
+require_once('inc/config.inc.php');
+require_once('inc/config.php');
+	//验证是否有效
+	require_once("verify_user_sessionin_valid.php");
+	verifysessionvalid();
+	header("content-type:text/html;charset=utf-8");
+	if(empty($_SESSION['admin_id']))
+	{
+		header("location:login.php");
+	}
+	require_once("language/".$_SESSION['language'].".php");
+//获取权限
+
+	require_once("User_Rights_Manage/verify_user_rights_class.php");
+	if(is_admin($con,$_SESSION['username']))
+	{
+	
+		$is_right=1;
+	}
+	else
+	{
+		$is_right=0;
+	}
+	
+
+?>
+<script  src="smarty/templates/ajax/changeselect.js"></script>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title><?php echo $set_server_time['Set_server_time']; ?></title>
+<style type="text/css">
+.input_style
+{
+	width:65px;
+}
+.span_style
+{
+	width:12px;
+	margin-left:-4px;
+}
+.select_style
+{
+	margin-left:-65px;
+	width:65px;
+	color:#000000;
+}
+.td_sel_style
+{
+	width:100px;
+	text-align:right;
+	white-space:nowrap;
+}
+.td_star_style
+{
+	width:80px;
+	text-align:left;
+	white-space:nowrap;
+	color:#FF0000;
+}
+</style>
+
+<link href="skin/css/main_page_style.css" rel="stylesheet" type="text/css"/>
+
+<script language="javascript">
+function trim(str)
+{
+   str=str.replace(/(^\s*)|(\s*$)/g,""); 
+   return str;
+}
+function isNull( str )
+{
+   if ( str == "" ) return true;
+   var regu = "^[ ]+$";
+   var re = new RegExp(regu);
+   return re.test(str);
+}
+function isNumber( s )
+{
+   var regu = "^[0-9]+$";
+   var re = new RegExp(regu);
+   if(s.search(re) != -1)
+   {
+      return true;
+   }
+   else
+   {
+      return false;
+   }
+} 
+
+function lengthNEQFour(str)
+{
+	if(trim(str).length !=4)
+	{
+		return true;
+	}
+	return false;
+}
+
+function lengthbigTwo(str)
+{
+	if(trim(str).length >2)
+	{
+		return true;
+	}
+	return false;
+}
+
+	var year = <?php echo date('Y');?>;
+	var month = <?php echo date('m');?>;
+	var day = <?php echo date('d');?>;
+	var hour = <?php echo date('H');?>;
+	var minute = <?php echo date('i');?>;
+	var second = <?php echo date('s');?>;
+	
+	var ryear = new Array(31,29,31,30,31,30,31,31,30,31,30,31);
+	var pyear = new Array(31,28,31,30,31,30,31,31,30,31,30,31);
+	
+	var month_of_day = 0;
+
+	//选择年份或月份动态显示天数
+	function dy_get_days(sel_year,sel_month)
+	{
+		var is_ryear = null;
+		var year_obj = document.getElementById(sel_year);
+		var month_obj = document.getElementById(sel_month);
+		
+		var year_value = trim(year_obj.value);
+		var month_value = trim(month_obj.value);
+		if(isNull(year_value) || isNull(month_value))
+		{
+			
+		}
+		else if( !isNull(year_value) && !isNull(month_value) )
+		{
+			if(year_value%4 == 0 && !year_value%100 == 0 || year_value%400 == 0)
+			{
+				is_ryear = ryear;
+			}
+			else
+			{
+				is_ryear = pyear;
+			}
+			month_of_day = is_ryear[month_value-1];
+			create_option(month_of_day);
+		}
+	}
+		
+	function create_option(month_of_day)
+	{
+
+		var sel_obj = document.getElementById('sel_day');
+		var input_day =parseFloat(document.getElementById('day').value);
+	
+		if(sel_obj.options.length == 0)
+		{
+			//添加项
+			for(var i=1; i<=month_of_day; i++)
+			{
+				var option_obj = document.createElement("OPTION");
+				sel_obj.options.add(option_obj);
+				option_obj.innerHTML = i;
+				option_obj.value = i;
+			
+				if(option_obj.value ==input_day)
+				{
+				
+					sel_obj.options[i].selected = true;
+				}
+				
+			}
+		}
+		else
+		{
+			//先删除后添加
+			for(var i=sel_obj.options.length; i>=0; i--)
+			{
+				sel_obj.options.remove(i);
+			}
+			
+			for(var i=0; i<=month_of_day; i++)
+			{
+				var option_obj = document.createElement("OPTION");
+				sel_obj.options.add(option_obj);
+				if(i==0)
+				{
+					option_obj.innerHTML = "<?php echo $set_server_time['Select_day']; ?></font>";
+					option_obj.value = i;
+				
+				if(option_obj.value ==input_day)
+				{
+					sel_obj.options[i].selected = true;
+				}
+				}
+			else
+				{
+					option_obj.innerHTML = i;
+					option_obj.value = i;
+				
+				
+				if(option_obj.value ==input_day)
+				{
+				
+					sel_obj.options[i].selected = true;
+				}
+				}
+			
+			}
+		}
+	}
+	function set_value(obj,input_name)
+	{
+		document.getElementById(input_name).value = obj.value;
+	}
+	//验证输入
+	function valid_input_error(obj_str)
+	{
+		var obj = document.getElementById(obj_str);
+		var obj_value = trim(obj.value);
+		
+		if(isNull(obj_value))
+		{
+			document.getElementById(obj_str+'_str').innerHTML = "<font color='#FF0000'><?php echo $set_server_time['Not_empty']; ?></font>";
+		}
+		else
+		{
+			if(!isNumber(obj_value))
+			{
+				document.getElementById(obj_str+'_str').innerHTML = "<font color='#FF0000'><?php $set_server_time['Must_number']; ?></font>";
+			}
+			else if(obj_str == 'year' && lengthNEQFour(obj_value))
+			{
+				document.getElementById(obj_str+'_str').innerHTML = "<font color='#FF0000'><?php echo $set_server_time['Length_four']; ?></font>";
+			}
+			else if(obj_str != 'year' && lengthbigTwo(obj_value))
+			{
+				document.getElementById(obj_str+'_str').innerHTML = "<font color='#FF0000'><?php echo $set_server_time['more_than_two']; ?></font>";
+			}
+			else
+			{
+				document.getElementById(obj_str+'_str').innerHTML = "";
+			}
+		}
+	}
+	//清除提示文字
+	function clear_prompt(span_txt,sel_obj)
+	{
+		var sel_str = sel_obj.value;
+		if(!isNull(sel_str))
+		{
+			document.getElementById(span_txt).innerHTML = "";
+		}
+		else
+		{
+			document.getElementById(span_txt).innerHTML = "<?php echo $set_server_time['Must_number']; ?>";
+		}
+	}
+	//提交验证
+function isIP(strIP) 
+{ 
+	if (isNull(strIP)) 
+	return false; 
+	var re=/^(\d+)\.(\d+)\.(\d+)\.(\d+)$/g; 
+	if(re.test(strIP)) 
+	{ 
+		if(RegExp.$1 <256 & RegExp.$2<256 && RegExp.$3<256 && RegExp.$4<256)
+		return true; 
+	} 
+return false; 
+} 
+	function check_form()
+	{
+
+		var check_year = 	trim(document.getElementById('year').value);
+		var check_month = 	trim(document.getElementById('month').value);
+		var check_day = 	trim(document.getElementById('day').value);
+		var check_hour = 	trim(document.getElementById('hour').value);
+		var check_minute = 	trim(document.getElementById('minute').value);
+		var check_second = 	trim(document.getElementById('second').value);
+		
+		if( !isNumber(check_year) || isNull(check_year) )
+		{
+			document.getElementById('year_str').innerHTML = "<?php echo $set_server_time['Entry_errors']; ?>";
+			return false;
+		}
+		else if(check_year.length != 4)
+		{
+			document.getElementById('year_str').innerHTML = "<?php echo $set_server_time['Length_four']; ?>";
+			return false;
+		}
+		document.getElementById('year_str').innerHTML = "";
+		
+		if( !isNumber(check_month) || isNull(check_month) )
+		{
+			document.getElementById('month_str').innerHTML = "<?php echo $set_server_time['Entry_errors']; ?>";
+			return false;
+		}
+		else if(check_month.length > 2 )
+		{
+			document.getElementById('month_str').innerHTML = "<?php echo $set_server_time['more_than_two']; ?>";
+			return false;
+		}
+		document.getElementById('month_str').innerHTML = "";
+		
+		if( !isNumber(check_day) || isNull(check_day) )
+		{
+			document.getElementById('day_str').innerHTML = "<?php echo $set_server_time['Entry_errors']; ?>";
+			return false;
+		}
+		else if(check_day.length > 2)
+		{
+			document.getElementById('day_str').innerHTML = "<?php echo $set_server_time['more_than_two']; ?>";
+			return false;
+		}
+		document.getElementById('day_str').innerHTML = "";
+		
+		if( !isNumber(check_hour) || isNull(check_hour) )
+		{
+			document.getElementById('hour_str').innerHTML = "<?php echo $set_server_time['Entry_errors']; ?>";
+			return false;
+		}
+		else if(check_hour.length > 2)
+		{
+			document.getElementById('hour_str').innerHTML = "<?php echo $set_server_time['more_than_two']; ?>";
+			return false;
+		}
+		document.getElementById('hour_str').innerHTML = "";
+		
+		if( !isNumber(check_minute) || isNull(check_minute) )
+		{
+			document.getElementById('minute_str').innerHTML = "<?php echo $set_server_time['Entry_errors']; ?>";
+			return false;
+		}
+		else if(check_minute.length > 2)
+		{
+			document.getElementById('minute_str').innerHTML = "<?php echo $set_server_time['more_than_two']; ?>";
+			return false;
+		}
+		document.getElementById('minute_str').innerHTML = "";
+		
+		if( !isNumber(check_second) || isNull(check_second) )
+		{
+			document.getElementById('second_str').innerHTML = "<?php echo $set_server_time['Entry_errors']; ?>";	
+			return false;
+		}
+		else if (check_second.length > 2)
+		{
+			document.getElementById('second_str').innerHTML = "<?php echo $set_server_time['more_than_two']; ?>";	
+			return false;
+		}
+		document.getElementById('second_str').innerHTML = "";	
+	}
+	var xml_http2=null; 
+	var ret2;
+	function createXMLHttpRequestobject2()
+				{ 
+					
+					if(window.ActiveXObject)
+					{ 
+						xml_http2 = new ActiveXObject("microsoft.XMLHTTP"); 
+					} 
+					else if(window.XMLHttpRequest)
+					{ 
+						xml_http2 = new XMLHttpRequest(); 
+					}
+					else
+					{
+						alert('Not Supported AJAX');
+					}
+				}
+
+				function updateterminaldate2(url)
+				{
+
+				   createXMLHttpRequestobject2();
+				 
+				   xml_http2.open("GET",url,false);
+				  
+				   xml_http2.onreadystatechange = function()
+				   { 
+		
+					  if( xml_http2.readyState == 4 )
+					  { 
+
+						 if( xml_http2.status == 200 )
+						 {
+
+							 ret2 = xml_http2.responseText;
+						
+						 }
+						
+						 
+					  }
+				   }
+			
+					xml_http2.setRequestHeader( "If-Modified-Since", "0");
+					xml_http2.send(null);
+				//	alert(ret);
+					return ret2;
+				}
+	//同步当前时间
+	function current_time_sync()
+	{
+		var current_year = "";	
+		var current_month = "";
+		var current_day = "";
+		var current_hour = "";
+		var current_minute = "";
+		var current_second = "";
+		
+		var date_obj = new Date();
+		current_year = date_obj.getYear();
+		
+		current_month = date_obj.getMonth()+1;
+		if(current_month <10 )
+		{
+			current_month = "0"+current_month;
+		}
+		
+		current_day = date_obj.getDate();
+		if(current_day < 10)
+		{
+			current_day = "0"+current_day;
+		}
+		
+		current_hour = date_obj.getHours();
+		if(current_hour < 10)
+		{
+			current_hour = "0"+current_hour;
+		}
+		
+		current_minute = date_obj.getMinutes();
+		if(current_minute < 10)
+		{
+			current_minute = "0"+current_minute;
+		}
+		
+		current_second = date_obj.getSeconds(); 
+		if(current_second < 10)
+		{
+			current_second = "0"+current_second;
+		}
+		
+		document.getElementById('year').value = current_year;
+		document.getElementById('month').value = current_month;
+		document.getElementById('day').value = current_day;
+		document.getElementById('hour').value = current_hour;
+		document.getElementById('minute').value = current_minute;
+		document.getElementById('second').value = current_second;
+		/*
+		var getip=document.getElementById('slave_serverip').value;
+		if(getip!="")
+		{
+			if(!isIP(document.time.slave_serverip.value))
+			{
+				alert("ip error");
+				return false;
+			}
+		}
+		*/
+		document.getElementById("time").submit(); 
+		
+		//document.forms[0].submit();
+	}
+
+
+
+	//
+	function current_time_init()
+	{
+		var current_year = "";	
+		var current_month = "";
+		var current_day = "";
+		var current_hour = "";
+		var current_minute = "";
+		var current_second = "";
+		
+		var date_obj = new Date();
+		current_year = date_obj.getYear();
+		
+		current_month = date_obj.getMonth()+1;
+		if(current_month <10 )
+		{
+			current_month = "0"+current_month;
+		}
+		
+		current_day = date_obj.getDate();
+		if(current_day < 10)
+		{
+			current_day = "0"+current_day;
+		}
+		
+		current_hour = date_obj.getHours();
+		if(current_hour < 10)
+		{
+			current_hour = "0"+current_hour;
+		}
+		
+		current_minute = date_obj.getMinutes();
+		if(current_minute < 10)
+		{
+			current_minute = "0"+current_minute;
+		}
+		
+		current_second = date_obj.getSeconds(); 
+		if(current_second < 10)
+		{
+			current_second = "0"+current_second;
+		}
+		
+		document.getElementById('year').value = current_year;
+		document.getElementById('month').value = current_month;
+		document.getElementById('day').value = current_day;
+		document.getElementById('hour').value = current_hour;
+		document.getElementById('minute').value = current_minute;
+		document.getElementById('second').value = current_second;
+	
+	}
+	//启用gps 
+	function enable_gps()
+	{
+		var gps_selects=document.getElementById("gpsselect").value;
+	
+		if(document.getElementById("enablegps").checked==true)
+		{
+			
+			if(gps_selects=="undefined")
+			{
+				alert("<?php echo $set_server_time['selectterminal']; ?>");
+			 return false;
+			}
+			var get_input = document.getElementsByTagName("INPUT");
+			for (var m=0; m<get_input.length; m++)
+			{
+				if(m==get_input.length-1||m==get_input.length-2)
+					continue;
+				get_input[m].disabled = true;
+			}
+			var get_select = document.getElementsByTagName("select");
+			for (var m=0;m<get_select.length; m++)
+			{
+				if(m==get_select.length-1)
+					continue;
+				get_select[m].disabled = true;
+			
+			}
+		}
+		else
+		{
+			gps_selects=0;
+			var get_input = document.getElementsByTagName("INPUT");
+			for (var m=0; m<get_input.length; m++)
+			{
+				get_input[m].disabled = false;
+			}
+			var get_select = document.getElementsByTagName("select");
+			for (var m=0;m<get_select.length; m++)
+			{
+				get_select[m].disabled = false;
+			}
+		}
+			var sssurls = "setgpsterminal.php?gpsselects="+gps_selects;
+			var ret_gpssws=updateterminaldate2(sssurls);
+			
+			if(ret_gpssws==1)
+			{
+				if(gps_selects==0)
+					alert("<?php echo $set_server_time['disgpsSuccess']; ?>");
+				else
+				{
+					alert("<?php echo $set_server_time['engpsSuccess']; ?>");
+					var urls = "setgpsterminal.php?gpsselects=-1";
+					var ret_gpssws=updateterminaldate2(urls);
+				}
+
+			
+				// $command="cmdhost -c 'sudo reboot'";
+				// system($command);
+			
+			}
+	}
+	
+</script>
+</head> 
+<body>
+
+<form id="time" name="time" action="<?php echo $_SERVER['PHP_SELF'];?>" method="post" style="margin:0px auto" class="set_server_time_form" onSubmit="return check_form();">
+<table width="650" border="0" cellspacing="0" cellpadding="0" style="margin:0px auto" id="sysnc_time" align="center" class="set_server_time">
+
+  <tr >
+    <td class="set_server_time_tile">
+		<table  border="0" cellspacing="0" cellpadding="0" width="100%" align="center">
+			<tr>
+				<td>
+					<img src="<?php echo $set_server_time['set_time_image']; ?>" width="100%" height="50"/>
+				</td>
+			</tr>
+		</table>
+	</td>
+  </tr>
+  <tr>
+  	<td>
+		<table border="0" cellspacing="0" cellpadding="10" width="100%" align="center" style="font-size:12px;border:#E8E8E8 solid 2px;">
+		  <tr >
+			<td nowrap="nowrap" class="td_sel_style">
+			<input type="text" name="year"  id="year" class="input_style" value="<?php echo date('Y');?>" onChange="dy_get_days('year','month');valid_input_error('year');"/>
+			
+			  <span class="span_style">
+				<select name="sel_year" id="sel_year" class="select_style" onChange="set_value(this,'year');dy_get_days('year','month');clear_prompt('year_str',this)"> 
+				<option value=""><?php echo $set_server_time['Select_Year'] ?></option>
+					<script>
+						for(var i=0; i<10; i++)
+						{
+							document.write("<option value="+(i+year)+">"+(i+year)+"</option>");
+						}
+					</script>
+				</select> 
+			  </span>
+				
+				<script language="javascript">
+				var obj_year = document.getElementById('sel_year');
+				var input_year = document.getElementById('year');
+				for(var i=0;i<obj_year.options.length;i++)
+				{
+					if(obj_year.options[i].value == input_year.value)
+					{
+						obj_year.options[i].selected = true;
+					}
+				}
+				</script>	
+			</td>
+			<td nowrap="nowrap">
+				<?php echo $set_server_time['year'] ?>
+				<span id="year_str" class="td_star_style">*</span>
+			</td>
+			
+			<td nowrap="nowrap" class="td_sel_style">
+			<input type="text" name="month" id="month" class="input_style" value="<?php echo date('m');?>" onChange="dy_get_days('year','month');valid_input_error('month')"/>
+			
+			  <span class="span_style">
+				<select name="sel_month" id="sel_month" class="select_style" onChange="set_value(this,'month');dy_get_days('year','month');clear_prompt('month_str',this)"> 
+				<option value=""><?php echo $set_server_time['Select_month'] ?> </option>
+					<script>
+						for(var i=1; i<=12; i++)
+						{
+						if(i<10)
+							document.write("<option value="+0+(i)+">"+("0"+i)+"</option>");
+						else
+							document.write("<option value="+(i)+">"+(i)+"</option>");
+						}
+						
+					</script>
+				</select> 
+			  </span>
+			  	<script language="javascript">
+				
+				var obj_month = document.getElementById('sel_month');
+				var input_month = document.getElementById('month');
+	
+				for(var i=1;i<obj_month.options.length;i++)
+				{
+					
+					if(obj_month.options[i].value == input_month.value)
+					{
+						
+						obj_month.options[i].selected = true;
+					}
+				}
+				</script>	
+			</td>
+			<td nowrap="nowrap">
+				<?php echo $set_server_time['month'] ?>
+				<span id="month_str" class="td_star_style">*</span>
+			</td>
+			<td nowrap class="td_sel_style">
+			<input type="text" name="day" id="day" class="input_style" value="<?php echo date('d');?>" onChange="valid_input_error('day');"/>
+			
+			  <span class="span_style">
+				<select name="sel_day" id="sel_day" class="select_style" onChange="set_value(this,'day');clear_prompt('day_str',this)"> 
+				<option value=""><?php echo $set_server_time['Select_day'] ?></option>
+					<script>
+						for(var i=1; i<= month_of_day; i++)
+						{
+							if(i<10)
+							{
+								document.write("<option value=0"+(i)+">0"+(i)+"</option>");
+							}
+							else
+							{
+								document.write("<option value="+(i)+">"+(i)+"</option>");
+							}
+						}
+					</script>
+				</select> 
+			  </span>
+			    <script language="javascript">
+				var obj_day = document.getElementById('sel_day');
+		
+				var input_day = document.getElementById('day');
+				for(var i=0;i<obj_day.options.length;i++)
+				{
+		
+					if(obj_day.options[i].value == input_day.value)
+					{
+						obj_day.options[i].selected = true;
+					}
+				}
+				</script>	
+			</td>
+			<td nowrap="nowrap">
+				<?php echo $set_server_time['day'] ?>
+				<span id="day_str" class="td_star_style">*</span>
+			</td>
+		  </tr>
+		  <tr>
+			<td class="td_sel_style">
+			<input type="text" name="hour" id="hour" class="input_style" value="<?php echo date('H');?>" onChange="valid_input_error('hour');"/>
+			
+				<span class="span_style">
+				<select name="sel_hour" id="sel_hour" class="select_style" onChange="set_value(this,'hour');clear_prompt('hour_str',this)"> 
+				<option value=""><?php echo $set_server_time['Select_hour']; ?></option>
+					<script>
+						for(var i=0; i<=23; i++)
+						{
+						if(i<10)
+							document.write("<option value="+0+(i)+">"+("0"+i)+"</option>");
+						else
+							document.write("<option value="+(i)+">"+(i)+"</option>");
+						}
+					</script>
+				</select> 
+				</span>
+				<script language="javascript">
+				var obj_hour = document.getElementById('sel_hour');
+				var input_hour = document.getElementById('hour');
+				for(var i=0;i<obj_hour.options.length;i++)
+				{
+					if(obj_hour.options[i].value == input_hour.value)
+					{
+						obj_hour.options[i].selected = true;
+					}
+				}
+				</script>	
+			</td>
+			
+			<td nowrap="nowrap">
+				<?php echo $set_server_time['hour']; ?>
+				<span id="hour_str" class="td_star_style">*</span>
+			</td>
+			
+			<td class="td_sel_style">
+			<input type="text" name="minute" id="minute" class="input_style" value="<?php echo date('i');?>" onChange="valid_input_error('minute');"/>
+			
+				<span class="span_style">
+				<select name="sel_minute" id="sel_minute" class="select_style" onChange="set_value(this,'minute');clear_prompt('minute_str',this)"> 
+				<option value=""><?php echo $set_server_time['Select_minute']; ?></option>
+					<script>
+						for(var i=0; i<60; i++)
+						{
+						if(i<10)
+							document.write("<option value="+0+(i)+">"+("0"+i)+"</option>");
+						else
+							document.write("<option value="+(i)+">"+(i)+"</option>");
+						}
+					</script>
+				</select> 
+				</span>
+				<script language="javascript">
+				var obj_minute = document.getElementById('sel_minute');
+				var input_minute = document.getElementById('minute');
+				for(var i=0;i<obj_minute.options.length;i++)
+				{
+					if(obj_minute.options[i].value == input_minute.value)
+					{
+						obj_minute.options[i].selected = true;
+					}
+				}
+				</script>	
+			</td>
+			<td nowrap="nowrap">
+				<?php echo $set_server_time['minute']; ?>
+				<span id="minute_str" class="td_star_style">*</span>
+			</td>
+			<td class="td_sel_style">
+			<input type="text" name="second" id="second" class="input_style" value="<?php echo date('s');?>" onChange="valid_input_error('second');"/>
+			
+				<span class="span_style">
+					<select name="sel_second" id="sel_second" class="select_style" onChange="set_value(this,'second');clear_prompt('second_str',this)"> 
+					<option value=""><?php echo $set_server_time['Select_second']; ?></option>
+						<script>
+							for(var i=0; i<60; i++)
+							{
+							if(i<10)
+								document.write("<option value="+0+(i)+">"+("0"+i)+"</option>");
+							else
+								document.write("<option value="+(i)+">"+(i)+"</option>");
+							}
+						</script>
+					</select> 
+				</span>
+				<script language="javascript">
+				var obj_second = document.getElementById('sel_second');
+				var input_second = document.getElementById('second');
+				for(var i=0;i<obj_second.options.length;i++)
+				{
+					if(obj_second.options[i].value == input_second.value)
+					{
+						obj_second.options[i].selected = true;
+					}
+				}
+				</script>	
+			</td>
+			<td nowrap="nowrap">
+				<?php echo $set_server_time['second'] ?>
+				<span id="second_str" class="td_star_style">*</span>
+			</td>
+		  </tr>
+
+		  <tr >
+			<td colspan="6" align="center" height="40px">
+				<input type="submit" name="set_time" title="<?php echo $set_server_time['Enter_set_server']; ?>" value="<?php echo $set_server_time['sumbit']; ?>" class="terminal_button" style="width:100px"/>
+<!--
+					&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+<input type="reset" name="clear_time" value="<?php echo $set_server_time['cancel']; ?>" title="<?php echo $set_server_time['Remove_input_initial']; ?>" class="terminal_button"/>
+-->
+			</td>
+		  </tr>
+		 
+	    </table>
+		<table border="0" cellspacing="0" cellpadding="10" width="100%" align="center" style="font-size:12px; border:#E8E8E8 solid 2px;">
+			  <tr style="solid 10px; display:inline-table;">
+		  	<td align="left" >
+			
+				<?php echo $set_server_time['Local_Current_time']; ?>：<span id="get_current_time"></span>
+				
+				<script language="javascript">
+					function get_local_current_time()
+					{
+						var current_year = "";	
+						var current_month = "";
+						var current_day = "";
+						var current_hour = "";
+						var current_minute = "";
+						var current_second = "";
+						
+						var date_obj = new Date();
+						current_year = date_obj.getYear();
+						current_year = (current_year < 1900) ? (1900 + current_year) : current_year;
+					
+						current_month = date_obj.getMonth()+1;
+						if(current_month <10 )
+						{
+							current_month = "0"+current_month;
+						}
+						
+						current_day = date_obj.getDate();
+						if(current_day < 10)
+						{
+							current_day = "0"+current_day;
+						}
+						
+						current_hour = date_obj.getHours();
+						if(current_hour < 10)
+						{
+							current_hour = "0"+current_hour;
+						}
+						
+						current_minute = date_obj.getMinutes();
+						if(current_minute < 10)
+						{
+							current_minute = "0"+current_minute;
+						}
+						
+						current_second = date_obj.getSeconds(); 
+						if(current_second < 10)
+						{
+							current_second = "0"+current_second;
+						}
+						var display_current_time =  " "+current_year+"-"+current_month+"-"+current_day+" " ;
+						display_current_time += " "+current_hour+":"+current_minute+":"+current_second+" ";
+						
+						document.getElementById('get_current_time').innerHTML = display_current_time;
+						
+					}
+					window.setInterval(get_local_current_time,1000);
+					
+				</script>
+		  	</td>
+			<!--
+			<td>
+			<?php echo $set_server_time['timeserver'] ?>
+			<input type="text" id="slave_serverip"  name="slave_serverip" value="<?php echo trim($_SESSION['netserverip']);?>"/> 
+			</td>
+			-->
+			<td align="right">
+<input type="button" value="<?php echo $set_server_time['Sync_Time'];?>"  title="<?php echo $set_server_time['servers_same_local']; ?>" on class="terminal_button" style="width:90px" onClick="current_time_sync()"/>
+
+			</td>
+		  </tr>
+		   <tr >
+			<td colspan="6" align="left" height="40px"><?php echo $set_server_time['gpstime'];?>
+			 <input name="enablegps" type="checkbox" id="enablegps">
+			 <select class="terminal_select_style" name="gpsselect" id="gpsselect" value="0" style="width:115px;" >
+			    <script language="javascript">
+					var urls = "getgpsterminal.php";
+					var retgps=updateterminaldate(urls);
+					var get_gpsflag=0;
+					var strarray3=retgps.split("&&");
+					if(strarray3[1]>0)
+					{
+						document.getElementById('enablegps').value=strarray3[1];
+						document.getElementById('enablegps').checked=true;
+						get_gpsflag=1;
+					}
+					else
+					{
+					
+						document.getElementById('enablegps').checked=false;
+						document.getElementById('enablegps').value=0;
+					}
+					var strarray=strarray3[0].split("%%");
+					for(var i=0;i<strarray.length;i++)
+					{
+						var strarray2=strarray[i].split("@@");
+						document.write("<option value='"+strarray2[1]+"'>"+strarray2[0]+"</option>");
+						if(strarray2[1]==document.getElementById('enablegps').value)
+							document.getElementById('gpsselect').options[i].selected=true;	
+					}
+				</script>
+              </select>
+			  <input type="button" value="<?php echo $set_server_time['gpstime'];?>" on class="terminal_button" style="width:90px" onClick="enable_gps()"/>
+			</td>
+		  </tr>
+		
+		</table>
+	  </td>
+	</tr>
+</table>
+<script language="javascript">
+	//设置初始值
+	dy_get_days('year','month');
+	if(get_gpsflag==1)
+	{
+		var getinput = document.getElementsByTagName("INPUT");
+		for (var m=0; m<getinput.length; m++)
+		{
+			if(m==getinput.length-1||m==getinput.length-2)
+				continue;
+			getinput[m].disabled = true;
+		}
+
+		var getselect = document.getElementsByTagName("select");
+		for (var m=0;m<getselect.length; m++)
+		{
+			if(m==getselect.length-1)
+				continue;
+			getselect[m].disabled = true;
+		}
+	}
+</script>
+</form>
+
+<div id="servertime" class="set_server_time_div"></div>
+
+<?php
+	require_once("language/".$_SESSION['language']."_foot.php");
+?>
+
+<?php
+	require_once("inc/socket_conf.php");
+	require("set_server_time/get_or_set_server_time.php");
+	$year = "";
+	if(isset($_POST['year']))
+	{
+		$year = trim($_POST['year']);
+		$year = ($year < 1900) ? (1900 + $year) : $year;
+	}
+	$month = "";
+	if(isset($_POST['month']))
+	{
+		$month = trim($_POST['month']);
+	}
+	$day = "";
+	if(isset($_POST['day']))
+	{
+		$day = trim($_POST['day']);
+	}
+	$hour = "";
+	if(isset($_POST['hour']))
+	{
+		$hour = trim($_POST['hour']);
+	}
+	$minute = "";
+	if(isset($_POST['minute']))
+	{
+		$minute = trim($_POST['minute']);
+	}
+	$second = "";
+	if(isset($_POST['second']))
+	{
+		$second = trim($_POST['second']);
+	}
+	if(!empty($output_date))
+	{
+	
+		unset($output_date);
+	}
+	if(!empty($output_time))
+	{
+		unset($output_time);
+	}
+	/*
+	$getip = "";
+	if(isset($_POST['slave_serverip']))
+	{
+		$getip = trim($_POST['slave_serverip']);
+	}
+*/
+	if(($year != "") && ($month != "") && ($day != "") && ($hour != "" ) && ($minute != "" ) && ($second != "" ))
+	{
+		$date_value = $year."-".$month."-".$day;
+
+		$time_value = $hour.":".$minute.":".$second;
+
+		$time_error = "";
+
+		//判断操作系统
+		if(strtoupper(substr(PHP_OS,0,3))=='WIN')
+		{
+			@exec("date $date_value",$output_date,$output_date_flags);
+
+			@exec("time $time_value",$output_time,$output_time_flags);
+
+			if($output_date_flags != 0 || $output_time_flags != 0)
+			{
+				echo "<script>alert('".$set_server_time['Entry_errors_not_support']."');</script>";
+				
+				echo "<script>window.location.href= 'set_server_time.html'</script>";
+				
+				exit;
+			}
+			else
+			{
+				require("set_server_time/get_or_set_server_time.php");
+				
+				echo "<script>alert('".$set_server_time['Successful']."');</script>";
+				
+				echo "<script>window.parent.frames[0].location.reload();</script>";
+				
+				echo "<script>window.location.href= 'set_server_time.html'</script>";
+			}
+		}
+		else if(strtoupper(substr(PHP_OS,0,5))=='LINUX')
+		{
+			
+			@exec("setrtc $year $month $day $hour $minute $second",$output_date,$output_date_flags);
+			$socket = new send_message_to_server($port_conf);
+	
+			$strbuff = "rtc?year=$year&month=$month&day=$day&hour=$hour&min=$minute&sec=$second";
+				
+			$socket->send_data("audioserver",$strbuff);
+			
+
+		/*	
+			if($output_date_flags != 0)
+			{
+				echo "<script>alert('".$set_server_time['Entry_errors_not_support']."');</script>";
+				
+				echo "<script>window.location.href= 'set_server_time.html'</script>";
+				
+				exit;
+			}
+			else
+			{
+			*/
+				require("set_server_time/get_or_set_server_time.php");
+			//	mysqli_query($con,"UPDATE serverbaseparam SET ntpserver='$getip'");
+			
+				echo "<script>alert('".$set_server_time['Successfulreboot']."');</script>";
+	
+				echo "<script>window.parent.frames[0].location.reload();</script>";
+				
+				echo "<script>window.location.href= 'set_server_time.html'</script>";
+				$reboott = "server?state=1";
+			  $socket->send_data("audioserver",$reboott);
+		//	}
+		}
+	}
+?>
+</body>
+</html>
+
+<?php 
+	$get_log_username = trim($_SESSION['admin_id']);
+	
+	if($get_log_username == "administrator")
+	{
+?>
+<script language="javascript">
+	if(get_gpsflag==0)
+	{
+		var get_input_objects = document.getElementsByTagName("INPUT");
+		for (var i=0; i<get_input_objects.length; i++)
+		{
+			get_input_objects[i].disabled = false;
+		}
+		var get_select_objects = document.getElementsByTagName("select");
+		
+		for (var i=0; i<get_select_objects.length; i++)
+		{
+			get_select_objects[i].disabled = false;
+		}
+	}
+</script>
+<?php	
+	}
+	else
+	{
+?>
+<script language="javascript">
+	if(get_gpsflag==0)
+	{
+		var get_input_objects = document.getElementsByTagName("INPUT");
+		for (var i=0; i<get_input_objects.length; i++)
+		{
+			get_input_objects[i].disabled = true;
+		}
+		var get_select_objects = document.getElementsByTagName("select");
+		for (var i=0; i<get_select_objects.length; i++)
+		{
+			get_select_objects[i].disabled = true;
+		}
+	}
+</script>
+<?php
+	}
+?>
+
+<?php 
+	if($is_right==1)
+	{
+?>
+
+
+<?php	
+	}
+	else
+	{
+?>
+<script language="javascript">
+	var get_input_objects = document.getElementsByTagName("INPUT");
+		for (var i=0; i<get_input_objects.length; i++)
+		{
+			get_input_objects[i].disabled = true;
+		}
+		var get_select_objects = document.getElementsByTagName("select");
+		for (var i=0; i<get_select_objects.length; i++)
+		{
+			get_select_objects[i].disabled = true;
+		}
+	
+</script>
+<?php
+	}
+?>

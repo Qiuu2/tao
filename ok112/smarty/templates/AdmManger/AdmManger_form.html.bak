@@ -1,0 +1,283 @@
+<form name="fileAdvForm" class="terminal_form_to_body">
+<table width="98%" border="0" cellpadding="2" cellspacing="1"  align="center" id="tabletask">
+	<thead>
+    <tr align='center' class="terminal_table_row_bg">
+	
+		<th width="8%" nowrap="nowrap" class="change_thead_style">
+			<{$collect_manager.Select|capitalize}>
+		</th>
+		
+    <th width="10%" nowrap="nowrap" onclick="sortTable('tabletask', 2)" class="sort_data_table_sequence">
+			<{$collect_manager.Collection_Task|capitalize}>
+		</th>
+		
+   	<th width="15%" nowrap="nowrap" onclick="sortTable('tabletask', 3)" class="sort_data_table_sequence">
+			<{$collect_manager.Play_Cycle|capitalize}>
+		</th>
+		
+		<th width="5%" nowrap="nowrap" onclick="sortTable('tabletask', 3)" class="sort_data_table_sequence">
+			<{$collect_manager.Duration|capitalize}>
+		</th>
+		
+		<th width="5%" nowrap="nowrap">
+			<{$collect_manager.Start_Date|capitalize}>
+		</th>
+		
+		<th width="5%" nowrap="nowrap">
+			<{$collect_manager.End_Date|capitalize}>
+		</th>
+
+		<th width="5%" nowrap="nowrap">
+			<{$collect_manager.Run_Time|capitalize}>
+		</th>
+		
+		<th width="5%" nowrap="nowrap">
+			<{$collect_manager.Status|capitalize}>
+		</th>
+
+		<th width="5%" nowrap="nowrap">
+			<{$collect_manager.Collection_Terminal|capitalize}>
+		</th>
+		
+		<th width="5%" nowrap="nowrap">
+			<{$collect_manager.Collection_Channel|capitalize}>
+		</th>
+		
+		<th width="5%" nowrap="nowrap">
+			<{$collect_manager.Sampling_Rate|capitalize}>
+		</th>
+		
+		<th width="5%" nowrap="nowrap">
+			<{$collect_manager.Bit_Rate|capitalize}>
+		</th>
+		
+		<th width="5%" nowrap="nowrap">
+			<{$collect_manager.Task_level|capitalize}>
+		</th>
+		
+		
+		<th width="5%" nowrap="nowrap">
+			<{$collect_manager.Volume|capitalize}>
+		</th>
+		
+		<th width="8%" nowrap="nowrap">
+			<{$collect_manager.Terminal_Attribute|capitalize}>
+		</th>
+    </tr>
+	</thead>
+	<tbody>    
+	<{if $info|@count neq 0}>
+	  <{section name=loop loop=$info}>            
+	   <tr align='center' onmouseover="this.style.backgroundColor = '#EEEEFF'" onmouseout="this.style.backgroundColor = '#FFFFFF'">
+			<td nowrap="nowrap">
+				<{if $is_right == 1 || $admin_id == "administrator"}>
+					<input name="id" type="checkbox" id="id" value="<{$info[loop].taskid}>">
+				<{else}>
+					<{$smarty.section.loop.index+1+$start}>
+				<{/if}>
+			</td>
+			
+			<td nowrap="nowrap">
+				<label title="<{$info[loop].taskname}>">
+					<{$info[loop].taskname|truncate:24:"..."}>
+				</label> 
+			</td>  
+			
+			<td nowrap="nowrap">
+				<{if $info[loop].exemodel eq "0000000"}>
+					<{$collect_manager.Manual|capitalize}>
+				<{elseif $info[loop].exemodel neq "0000000"}>
+					<script language="javascript">document.write(getdayofweek("<{$info[loop].exemodel}>"))</script>
+				<{/if}>
+			</td> 
+			
+			<td nowrap="nowrap">
+				<{if $info[loop].timelengthtype == 1}>            	
+					<{$info[loop].timelength}><{$collect_manager.Second|capitalize}> 
+				<{else}>      
+					<{$info[loop].timelength}><{$collect_manager.Times|capitalize}> 
+				<{/if}>  
+			</td> 
+
+			<td nowrap="nowrap"><{$info[loop].startdate}> </td> 	
+			
+			<td nowrap="nowrap"><{$info[loop].enddate}> </td> 
+			
+			<td nowrap="nowrap"><{$info[loop].playtime}> </td>
+			
+			<td nowrap="nowrap">
+			
+			<{if $info[loop].state == 3}>
+				<{$collect_manager.Run|capitalize}> 
+			<{elseif $info[loop].state == 0}>      
+				<{$collect_manager.Ready|capitalize}> 
+			<{elseif $info[loop].state == 2}>
+				<{$collect_manager.Pause|capitalize}> 
+			<{elseif $info[loop].state == 1}>
+				<{$collect_manager.Ready_play|capitalize}> 
+			<{/if}>
+			
+			</td> 
+			
+			 <td nowrap="nowrap">
+				 <{section name=terminal_id loop=$terminal_info}>
+				 	<{if $terminal_info[terminal_id].id == $info[loop].cmd }>
+						<label title="<{$terminal_info[terminal_id].terminalname}>">
+							<{$terminal_info[terminal_id].terminalname|truncate:16:"..."}>
+						</label>
+					<{/if}>
+				 <{/section}>
+			 </td>   
+			
+			 <td nowrap="nowrap">
+			 	<{$info[loop].cmdargs}>
+			 </td> 
+			  
+			 <td nowrap="nowrap">
+				 <{$info[loop].samplerate}>Hz
+			 </td> 
+			 
+			 <td nowrap="nowrap">
+			 	<{$info[loop].bandrate}>Kbp/s
+			 </td>
+			 
+			  <td nowrap="nowrap">
+			 	<{$info[loop].priority}>
+			 </td>
+			 
+			 <td nowrap="nowrap">
+			 	<{$info[loop].defaultvolume}>
+			 </td>
+			 
+			<td nowrap="nowrap">
+				<a name="link_view" id="link_view" href="displayterminal.php?term_id=<{$info[loop].taskid}>">
+					<{$collect_manager.Terminal|capitalize}>
+				</a>	
+			</td>   
+	</tr>   
+<{/section}>
+<{else}>
+<tr align='center' onmouseover="this.style.backgroundColor = '#EEEEFF'" onmouseout="this.style.backgroundColor = '#FFFFFF'">
+	<td colspan="14">
+		<strong><{$collect_manager.No_Record|capitalize}></strong>
+	</td>
+</tr>
+<{/if}> 
+	<tr>
+	<td colspan="12" nowrap="nowrap">	
+<table border="0">
+<script src="smarty/templates/UserAccessControl/CheckUserRights.js" type="text/javascript" language="javascript"></script>
+<tr>
+	<td align="left" nowrap="nowrap">
+		<a href="javascript:selAll(0)" >
+			<{$collect_manager.Select_All|capitalize}>
+		</a> &nbsp;
+		
+		<a href="javascript:noSelAll(0)" >
+			<{$collect_manager.Cancel|capitalize}>
+		</a>&nbsp;
+		
+		<a href="javascript:startTask()" >
+			<{$collect_manager.Run|capitalize}>
+		</a>&nbsp;
+			
+		<a href="javascript:stopTask()" >
+			<{$collect_manager.Pause|capitalize}>
+		</a>&nbsp;
+		
+		<a  href="addadmtask.php" target='main' >
+			<{$collect_manager.Add|capitalize}>
+		</a>&nbsp;
+		
+		<a href="javascript:modifyAdmTask()" >
+			<{$collect_manager.Update|capitalize}>
+		</a>&nbsp;
+		
+		<a href="javascript:delTask()" >
+			<{$collect_manager.Delete|capitalize}>
+		</a>&nbsp;
+		
+		<a href="javascript:void(0)" id="volume_handle" onclick="mouse_click_position()">
+			<{$collect_manager.Volume|capitalize}>
+		</a>
+	</td>
+</tr>
+<script>
+	rights_control(<{$is_right}>,"<{$is_admin}>","link_view");
+</script>
+</table>
+	</td>
+</tr>
+</table>
+</form>
+ <table align="center">
+ 	<tr>
+		<td>
+ 			<div class="link_style" align="center"><{$pagestr}></div>
+		</td>
+	</tr>
+ </table>
+ <!--  搜索表单  -->
+<form name='form3' action='admmanager.php' method='get'>
+<input type='hidden' name='dopost' value='' />
+<table class="middle" width='98%'  border='0' cellpadding='0' cellspacing='0' align="center">
+  <tr>
+    <td background='skin/images/wbg.gif' align='center'>
+      <table border='0' cellpadding='0' cellspacing='0'>
+        <tr>
+          <td width='90' align='center'><{$Searchform.Search_conditions}></td>
+          <td width='160'>
+          <select class="colors" name='searchkey' id="searchkey">
+            <option value=""><{$Searchform.Select_type}></option>
+            <option value="taskname"><{$Searchform.Task_name}></option>
+            <option value="playtime"><{$Searchform.Execution_time}></option>
+          </select>
+        </td>
+        <td width='70'>
+          <{$Searchform.Keyword}>
+        </td>
+        <td width='160'>
+          	<input class="colors" name='searchvalue' type='text' id="searchvalue" style='width:150px' value='' />
+        </td>
+        <td width='110'>
+    		<select class="colors" name='orderby' id="orderby">
+    		  <option value=""><{$Searchform.Sort}></option>
+    		  <option value="playtime"><{$Searchform.Time}></option>
+      	    </select>
+        </td>
+        <td>
+          <input name="imageField" type="image" src="<{$collect_manager.search_image}>" style="width:45px; height:20px; border-bottom-width:0px;"/>
+        </td>
+       </tr>
+      </table>
+    </td>
+  </tr>
+</table>
+</form>
+<!--修改声音-->
+<div id="change_volume" class="r-displayVolume">
+	<table border="0" cellpadding="10" cellspacing="0" width="150" style="background-color:#EEFFEE">
+		
+		<tr>
+			<td nowrap="nowrap" align="center">
+			<div id="s1"><img src="skin/images/frame/silde.gif" width="100" height="20"/></div>
+			<div id="d1" class="r-volume">0</div>
+			</td>
+		<tr>
+			<td nowrap="nowrap" align="center">
+				<a href="javascript:void(0)" onclick="set_task_volume()">
+					<{$collect_manager.Sumbit|capitalize}>
+				</a>
+				&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+				<a href="javascript:void(0)" onclick="disappear_volume_div()">
+					<{$collect_manager.Cancel}>
+				</a>
+			</td>
+		</tr>
+		
+	</table>
+</div>
+
+<script src="skin/js/frame/set_volume.js" type="text/javascript" language="javascript"></script>
+</body>
+</html>

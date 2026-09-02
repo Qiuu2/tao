@@ -1,0 +1,59 @@
+<link href="../../../skin/css/skinstyle.css" rel="stylesheet" type="text/css" />
+
+<table width="780" border="0" align="center" cellpadding="0" cellspacing="10">
+  <tr>
+    <td><form name="form1" method="post" action="do.php?act=terminaledit_msg&id=<{$id}>" onSubmit="return checkform();">
+      <table width="100%" border="0" cellpadding="5" cellspacing="1" class="bgcolors1">
+        <tr>
+          <td colspan="3"><img src="images/gif_47_040.gif" width="48" height="48"><img src="images/bjzd.gif" width="100" height="48"><a name="form"></a></td>
+        </tr>
+       <tr>
+          <td width="18%" align="right"><strong>工作组名</strong></td>
+          <td width="68%">
+          	<select name=streamid>
+          	<{section name=streamid loop=$stream}>
+          	<option value="<{$stream[streamid].streamid}>">  <{$stream[streamid].name}> 
+          	<{/section}> 
+				    </select>
+          <span id="title_s"></span></td>
+          <td width="14%">&nbsp;</td>
+        </tr>         
+        <tr>
+          <td width="18%" align="right"><strong>终端名</strong></td>
+          <td width="68%"><input name="terminalname" type="text" id="terminalname" value="<{$terminalname}>">
+          <span id="terminalname_s"></span></td>
+          <td width="14%">&nbsp;</td>
+        </tr>        
+        <tr>
+          <td width="18%" align="right"><strong>终端类型</strong></td>
+          <td width="68%"><select name=typeid>
+        	<{section name=typeid loop=$terminaltype}>
+        	<option value="<{$terminaltype[typeid].id}>">  <{$terminaltype[typeid].name}> 
+        	<{/section}> 
+			    </select>        
+          <td width="14%">&nbsp;</td>
+        </tr>      
+        <tr>
+          <td width="18%" align="right"><strong>ip</strong></td>
+          <td width="68%"><input name="ip" type="text" id="ip" value="<{$ip}>"><span id="ip_s"></span></td>
+          <td width="14%">&nbsp;</td>
+        </tr>      
+        <tr>
+          <td width="18%" align="right"><strong>终端所在位置</strong></td>
+          <td width="68%"><input name="postion" type="text" id="postion" value="<{$postion}>"><span id="postion_s"></span></td>
+          <td width="14%">&nbsp;</td>
+        </tr>      
+        <tr>
+          <td width="18%" align="right"><strong>音量</strong></td>
+          <td width="68%"><input name="volume" type="text" id="volume" value="<{$volume}>"><span id="volume_s"></span></td>
+          <td width="14%">&nbsp;</td>
+        </tr>             
+        <tr>
+          <td>&nbsp;</td>
+          <td><input type="submit" name="button" id="button" value="提交" class="bt"></td>
+          <td>&nbsp;</td>
+        </tr>
+      </table>
+    </form></td>
+  </tr>
+</table>

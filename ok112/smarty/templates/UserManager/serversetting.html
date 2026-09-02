@@ -1,0 +1,538 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title><{$usr_password_modify.user_password_Modify|capitalize}></title>
+
+<link href="skin/css/main_page_style.css" rel="stylesheet" type="text/css" />
+
+<!--修改脚本-->
+<script type="text/javascript"  defer="true">
+
+function isNull( str )
+{
+	if ( str == "" || str==null) 
+	return true;
+	var regu = "^[ ]+$";
+	var re = new RegExp(regu);
+	return re.test(str);
+}
+
+function isNumberOrLetter( s )
+{ 
+    var regu = "^[0-9a-zA-Z]+$"; 
+    var re = new RegExp(regu); 
+    if (re.test(s)) 
+    { 
+        return true; 
+    }
+    else
+    { 
+        return false; 
+    } 
+} 
+
+function trim(str)
+{   
+    return str.replace(/(^\s*)|(\s*$)/ig, "");   
+}
+
+function checkform()
+{
+		if( window.confirm("<{$media_task_add.doorreboot|capitalize}>"))
+			{
+				var aa="<{$fuza_mima}>";
+			
+				var pass_word = document.getElementById('password').value;
+				if(aa!=1)
+				{
+					var pwdRegex = new RegExp('(?=.*[0-9])(?=.*[A-Z])(?=.*[a-z])(?=.*[^a-zA-Z0-9]).{8,30}');	
+				if(document.getElementById("fuzamima").checked)
+				{
+					if (!pwdRegex.test(pass_word)) {
+						alert('密码必须由8-16位大写字母、小写字母，数字和特殊字符组成！');
+						return false;
+					}
+				}
+				}
+			
+				
+			}
+			else
+			{
+				return false;
+			}
+	
+}
+
+function getreboot()
+{
+	if(document.getElementById("enreboot").checked)
+	{
+
+		document.getElementById("enablershutdown").disabled =true;
+		document.getElementById("shutdownhour").disabled=true;
+				document.getElementById("shutdownmin").disabled=true;
+				document.getElementById("shutdownsenc").disabled=true;
+	}
+	else
+	{
+		document.getElementById("enablershutdown").disabled =false;
+		document.getElementById("shutdownhour").disabled=false;
+		document.getElementById("shutdownmin").disabled=false;
+		document.getElementById("shutdownsenc").disabled=false;
+	}
+}
+function get_shutdown()
+{
+	if(document.getElementById("enablershutdown").checked)
+	{
+		document.getElementById("enreboot").disabled =true;
+		document.getElementById("starthour").disabled=true;
+				document.getElementById("startmin").disabled=true;
+				document.getElementById("startsenc").disabled=true;
+		
+	}
+	else
+	{
+		document.getElementById("enreboot").disabled =false;
+		document.getElementById("starthour").disabled=false;
+		document.getElementById("startmin").disabled=false;
+		document.getElementById("startsenc").disabled=false;
+	
+	}
+}
+
+function get_div_obj(str_id)
+{
+ 	return document.getElementById(str_id);   
+}
+
+function get_mouse_coordinates(event)
+{
+   var eve = event||window.event;
+   if(eve.pageX)
+   {
+
+    return {x:eve.pageX,y:eve.pageY};
+   }
+   else
+   {
+    return {
+                x:eve.clientX,
+                y:eve.clientY/3
+            };
+   }
+}
+
+var getx=0;
+var gety=0;
+var setinfos=0;
+var getx_center=0;
+var getsult="";
+var getsult2="";
+var  getclickflag=0;
+
+function fuzamima_select(event)
+{
+
+	if(document.all)
+    {
+        window.event.cancelBubble = true;   
+    }
+    else
+    {
+        event.stopPropagation();
+    }
+    var mouse_obj_xy = get_mouse_coordinates(event);
+	getx_center=mouse_obj_xy.x/2+'px';
+
+	if(document.getElementById("fuzamima").checked)
+	{
+		get_div_obj('change_password').style.left = mouse_obj_xy.x-200+'px';
+    get_div_obj('change_password').style.top = mouse_obj_xy.y-30+'px';
+	getx= mouse_obj_xy.x-200+'px';
+	gety=1+'px';
+
+	get_div_obj('change_password').style.display = "block";
+	}
+	else
+	{
+		document.getElementById('change_password').style.display = "none";
+	}
+}
+
+function disappear_pass_div()
+{
+	if(document.getElementById('change_password').style.display == "block")
+	{
+		document.getElementById("fuzamima").checked=false;
+		document.getElementById('change_password').style.display = "none";
+	}
+	
+}
+var xmlhttp=null; 
+function createXMLHttpRequest()
+{ 
+	if(window.ActiveXObject)
+	{ 
+		xmlhttp = new ActiveXObject("microsoft.XMLHTTP"); 
+	} 
+	else if(window.XMLHttpRequest)
+	{ 
+		xmlhttp = new XMLHttpRequest(); 
+	}
+	else
+	{
+		alert('Not Support AJAX');
+	}
+} 
+
+function ajax_set_password(superpass)
+{
+	
+   createXMLHttpRequest();
+
+   xmlhttp.open( "get","set_super_password.php?flagg=1&superpass="+encodeURIComponent(superpass)+"",true );
+   xmlhttp.onreadystatechange = function()
+   {
+      if( xmlhttp.readyState == 4 )
+      {
+         if( xmlhttp.status == 200 )
+         {
+				
+					 alert('成功');
+			  	get_div_obj('change_password').style.display = "none";
+			 	}
+      }
+   }
+    xmlhttp.setRequestHeader( "If-Modified-Since", "0");
+		xmlhttp.send(null);
+}
+
+
+function set_pass()
+{
+	var pass_word=document.getElementById('password').value;
+	var conf_password=document.getElementById('confpassword').value;
+	if(pass_word!=conf_password)
+	{
+		alert('两次密码不相同');
+		return false;
+	}
+
+	var pwdRegex = new RegExp('(?=.*[0-9])(?=.*[A-Z])(?=.*[a-z])(?=.*[^a-zA-Z0-9]).{8,30}');	
+
+	if (!pwdRegex.test(pass_word)) {
+		alert('密码必须由8-16位大写字母、小写字母，数字和特殊字符组成！');
+			return false;
+	}
+	ajax_set_password(pass_word);
+}
+
+</script>
+</head>
+<body>
+
+
+<form name="modifyform" method="post" action="do.php?act=enablereboot_msg&username=<{$username}>" onSubmit="return checkform();" class="terminal_form_to_body">
+<table width="500" border="0" align="center" cellpadding="0" cellspacing="0" class="terminal_table_border">	  
+	<tr>
+	  <td colspan="2" class="bgcolors1">
+		<img src="<{$server_manager.server_image}>"/>
+	  </td>
+	</tr> 
+	<tr>
+		<td>
+			<table width="500" border="0" align="center" cellpadding="0" cellspacing="0" >
+				<tr>
+					<td width="160" align="right">
+						<{$media_task_add.envolordb|capitalize}>
+					</td>
+					<td width="340">
+						<input name="sounddetect" type="checkbox" id="sounddetect" value="1"/>	
+							<script language="javascript" defer="true">
+					
+							if(<{$sounddetect}> == 1)
+							{
+								document.getElementById('sounddetect').checked = true;
+							}
+						</script>
+					</td>
+				</tr>
+		<!--		<tr>
+					<td width="160" align="right">
+						<{$media_task_add.master_salve|capitalize}>
+					</td>
+					
+					<td width="340">
+						<input name="mastersalve" type="checkbox" id="mastersalve" value="1"/><span id="mastersalve_s" class="terminal_star"><{$user_modify.Max_characters|capitalize}></span>
+							
+							<script language="javascript" defer="true">
+							if(<{$backup}> == 1)
+							{
+								document.getElementById('mastersalve').checked = true;
+							}
+						</script>
+					</td>
+				</tr>-->
+				<tr>
+					<td width="160" align="right">
+						<{$media_task_add.fuzamima|capitalize}>
+					</td>
+					
+					<td width="340">
+						<input name="fuzamima" type="checkbox" id="fuzamima" value="1" onclick="fuzamima_select(event);"/>
+							<script language="javascript" defer="true">
+							if(<{$fuza_mima}> == 1)
+							{
+								document.getElementById('fuzamima').checked = true;
+							}
+						</script>
+					</td>
+				</tr>
+				</table>
+				<table width="500" border="0" align="center" cellpadding="0" cellspacing="0" id="en_reboot" >
+				<tr>
+					<td width="160" align="right">
+						<{$media_task_add.enablereboot|capitalize}>
+					</td>
+					
+					<td width="340">
+						<input name="enreboot" type="checkbox" id="enreboot" value="1" onClick="getreboot();"/>	
+						
+					</td>
+				</tr>
+				<tr>
+					<td width="160" align="right">
+						<{$media_task_add.reboottime|capitalize}>
+					</td>
+					
+					<td width="340">
+						<select title="<{$media_task_add.Start_timetask|capitalize}>" class="terminal_select_style" name="starthour" id="starthour" style="width:55px;">
+				<script>
+					for(var i=0;i<=23;i++)
+					{
+						var obj = new Date();
+						var gethours = obj.getHours();
+						if(i== gethours)
+						{
+							document.write("<option value='"+i+"' selected='selected'>"+i+"</option>");
+						}
+						else
+						{
+							document.write("<option value='"+i+"'>"+i+"</option>");
+						}
+					}
+				</script>
+			</select>
+			<{$media_task_add.Hour|capitalize}>
+			<select title="<{$media_task_add.Start_timetask|capitalize}>" class="terminal_select_style" name="startmin" id="startmin" style="width:55px;">
+			<script>
+				for(var i=0;i<=59;i++)
+				{
+					var obj = new Date();
+					var getminutes = obj.getMinutes();
+					if(i == getminutes)
+					{
+						document.write("<option value='"+i+"' selected='selected'>"+i+"</option>");
+					}
+					else
+					{
+						document.write("<option value='"+i+"'>"+i+"</option>");
+					}
+				}
+			</script>
+			</select>
+			<{$media_task_add.Minute|capitalize}>
+			
+			<select title="<{$media_task_add.Start_timetask|capitalize}>" class="terminal_select_style" name="startsenc" id="startsenc" style="width:55px;">
+			<script>
+			for(var i=0;i<=59;i++)
+			{
+				var obj = new Date();
+				var getsecond = obj.getSeconds();
+				if(i==getsecond)
+				{
+					document.write("<option value='"+i+"' >"+i+"</option>");
+				}
+				else
+				{
+					document.write("<option value='"+i+"'>"+i+"</option>");
+				}	 
+			}
+			</script>
+			</select>
+			<{$media_task_add.Second|capitalize}>
+			
+			<input title="<{$media_task_add.Start_timetask|capitalize}>" name="playtime" type="text" id="playtime" readonly="readonly" value=""  style="display:none;" >
+			<span id="starttime_s" class="terminal_star"></span>
+			<script language="javascript"   defer="true">
+	var getstr = "<{$playtime}>";
+	var gettime = getstr.split(":");
+	document.getElementById("starthour").value = parseInt(gettime[0]);
+	document.getElementById("startmin").value = parseInt(gettime[1]);
+	document.getElementById("startsenc").value = parseInt(gettime[2]);
+</script>
+				</td>
+				</tr>
+			</table>
+			  <table width="500" border="0" align="center" cellpadding="0" cellspacing="0" id="shut_down">
+				<tr >
+					<td width="160" align="right">
+						<{$media_task_add.enablershutdown|capitalize}>
+					</td>
+					<td width="340">
+						<input name="enablershutdown" type="checkbox" id="enablershutdown" value="1" onClick="get_shutdown();"/>	
+						
+					</td>
+				</tr>	
+		
+				<tr>
+					<td width="160" align="right">
+						<{$media_task_add.shutdowntime|capitalize}>
+					</td>
+					
+					<td width="340">
+						<select class="terminal_select_style" name="shutdownhour" id="shutdownhour" style="width:55px;">
+				<script>
+					for(var i=0;i<=23;i++)
+					{
+						var obj = new Date();
+						var gethours = obj.getHours();
+						if(i== gethours)
+						{
+							document.write("<option value='"+i+"' selected='selected'>"+i+"</option>");
+						}
+						else
+						{
+							document.write("<option value='"+i+"'>"+i+"</option>");
+						}
+					}
+				</script>
+			</select>
+			<{$media_task_add.Hour|capitalize}>
+			<select class="terminal_select_style" name="shutdownmin" id="shutdownmin" style="width:55px;">
+			<script>
+				for(var i=0;i<=59;i++)
+				{
+					var obj = new Date();
+					var getminutes = obj.getMinutes();
+					if(i == getminutes)
+					{
+						document.write("<option value='"+i+"' selected='selected'>"+i+"</option>");
+					}
+					else
+					{
+						document.write("<option value='"+i+"'>"+i+"</option>");
+					}
+				}
+			</script>
+			</select>
+			<{$media_task_add.Minute|capitalize}>
+			
+			<select title="<{$media_task_add.Start_timetask|capitalize}>" class="terminal_select_style" name="shutdownsenc" id="shutdownsenc" style="width:55px;">
+			<script>
+			for(var i=0;i<=59;i++)
+			{
+				var obj = new Date();
+				var getsecond = obj.getSeconds();
+				if(i==getsecond)
+				{
+					document.write("<option value='"+i+"' >"+i+"</option>");
+				}
+				else
+				{
+					document.write("<option value='"+i+"'>"+i+"</option>");
+				}	 
+			}
+			</script>
+			</select>
+			<{$media_task_add.Second|capitalize}>
+		
+			<script language="javascript"   defer="true">
+					var getstr = "<{$endtime}>";
+					var gettime = getstr.split(":");
+					document.getElementById("shutdownhour").value = parseInt(gettime[0]);
+					document.getElementById("shutdownmin").value = parseInt(gettime[1]);
+					document.getElementById("shutdownsenc").value = parseInt(gettime[2]);
+				</script>
+					<script language="javascript" defer="true">
+						var project_state="<{$projectstate}>";
+						var cmd_args="<{$cmdargs}>";
+					if(project_state == 0 && (cmd_args=="shutdown"))
+					{
+						document.getElementById('enablershutdown').checked = true;
+						document.getElementById("enreboot").disabled=true;
+						document.getElementById("starthour").disabled=true;
+						document.getElementById("startmin").disabled=true;
+						document.getElementById("startsenc").disabled=true;
+
+					}
+	
+					
+					if(project_state == 0 && ( cmd_args == 0||cmd_args=="reboot"))
+					{				
+
+						document.getElementById('enreboot').checked = true;
+						document.getElementById("enablershutdown").disabled =true;
+	
+						document.getElementById("shutdownhour").disabled=true;
+						document.getElementById("shutdownmin").disabled=true;
+						document.getElementById("shutdownsenc").disabled=true;
+					//	document.getElementById("shut_down").Disabled=false;
+
+					
+					}
+				</script>
+					</td>
+				</tr>	
+			</table>
+			<div id="change_password" class="r-displayVolume" >
+				<iframe style="position:absolute; width:260;height:200px;left:0px; top:0px;z-index:-1"></iframe>
+			 <div >
+				 <table border="0" width="360" height="200" style="background-color:#EEFFEE">
+					 <tr>
+						 <td nowrap="nowrap" align="center">
+							&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<{$server_manager.password|capitalize}>
+						 <input  maxlength="16" style="width:100px" name="password" type="text" id="password"/>
+						 </td>
+						 </tr>
+						 <tr>
+							<td nowrap="nowrap" align="center">
+							<{$server_manager.confpassword|capitalize}>
+							<input  maxlength="16" style="width:100px" name="confpassword" type="text" id="confpassword"/>
+							</td>
+							</tr>
+					 <tr>
+						 <td nowrap="nowrap" align="center">
+							 <a href="javascript:void(0)" onclick="set_pass()"> 
+								 <{$server_manager.Sumbit|capitalize}>
+							 </a>
+							 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+							 <a href="javascript:void(0)" onclick="disappear_pass_div()"> 
+									 <{$server_manager.Cancel|capitalize}>
+							 </a>
+						 </td>
+					 </tr>
+					 
+				 </table>
+			 </div>
+			 </div>
+			<table width="500" border="0" align="center" cellpadding="0" cellspacing="0" >
+				<tr>
+					<td width="160"></td>
+					<td width="340">
+						<input type="submit" name="button" id="button" value="<{$server_manager.Sumbit|capitalize}>" class="terminal_button">
+						&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+						<input name="reset" type="reset" id="reset" value="<{$server_manager.Cancel|capitalize}>" class="terminal_button"/>
+					</td>
+				</tr>  
+			</table>
+	  </td>
+	 </tr> 
+</table>
+</form>
+<{include file="language/`$language`_foot.php"}> 
+</body>
+</html>

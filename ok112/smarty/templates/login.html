@@ -1,0 +1,277 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>LoginManager</title>
+
+<link href="skin/css/main_page_style.css" rel="stylesheet" type="text/css" />
+<script src="skin/js/frame/actiondo.js"></script>
+<style type="text/css">
+span
+{
+	color:#FF0000;
+}
+
+.regist_button
+{
+	border:1px solid #aaaaaa;
+	height:20px; 
+}
+</style>
+
+<script type="text/javascript">
+	
+function trim(str)
+{
+   str=str.replace(/(^\s*)|(\s*$)/g,""); 
+   return str;
+}
+function isNull( str )
+{
+   if ( str == "" ) return true;
+   var regu = "^[ ]+$";
+   var re = new RegExp(regu);
+   return re.test(str);
+}
+function isNumberOr_Letter( s )
+{
+   //判断是否是数字或字母
+   var regu = "^[0-9a-zA-Z\_]+$";
+   var re = new RegExp(regu);
+   if (re.test(s))
+   {
+      return true;
+   }
+   else
+   {
+      return false;
+   }
+}
+
+function str_encde_demo(str)
+{
+	var get_demo="A"+str_encode(str)+"t1";
+	return get_demo;
+
+}
+
+
+function actionform()
+{
+	var getaction,getaction2;
+	var d = new Date();
+	var get_t=d.getTime();
+	var user_name=document.getElementById('username').value;
+	var user_pwd=document.getElementById('userpwd').value;
+	var checknum=document.getElementById('checknum').value;
+
+	if(document.form1.username.value.length>20)
+	{
+		document.getElementById('username_s').innerHTML="<font color='#ff0000'><{$user_login.username_lens_max|capitalize}></font>";
+		document.getElementById('username').value = "";
+		document.form1.username.focus();
+		return false;
+	}
+
+	if(document.form1.userpwd.value.length>20)
+	{
+		document.getElementById('userpwd_s').innerHTML="<font color='#ff0000'><{$user_login.passwd_lens_max|capitalize}></font>";
+		document.getElementById('userpwd').value = "";
+		document.form1.userpwd.focus();
+		return false;
+	}
+	var passflag=<{$FUZA_PASS}>;
+	if(passflag==0)
+	{
+		if( isNull(document.getElementById('userpwd').value) )
+		{
+			document.getElementById('userpwd_s').innerHTML="<font color='#ff0000'><{$user_login.enter_password|capitalize}></font>";
+			
+			document.form1.userpwd.focus();
+			return false;
+		}
+		/*
+		else if(!isNumberOr_Letter(document.getElementById('userpwd').value))
+		{
+			document.getElementById('userpwd_s').innerHTML="<font color='#ff0000'><{$user_login.only_number_letter|capitalize}></font>";
+			alert('密码只能是字母和数字！');
+			document.getElementById('userpwd').select();
+			document.form1.userpwd.focus();
+			return false;	
+		}*/
+		else
+		{
+			document.getElementById('userpwd_s').innerHTML="";
+		}
+			getaction="time="+get_t+"&user_name="+user_name+"&user_pwd="+user_pwd+"&checknum="+checknum+"&timeaa="+get_t;
+			getaction2="do.php?act=aaa&abc=haC"+str_encode(getaction);
+		
+			document.getElementById('username').value=str_encde_demo(user_name);
+			document.getElementById('userpwd').value=str_encde_demo(user_pwd);
+			document.getElementById('checknum').value=str_encde_demo(checknum);
+			document.form1.action = getaction2;
+			document.form1.submit();
+	}
+	else
+	{
+		var pwdRegex = new RegExp('(?=.*[0-9])(?=.*[A-Z])(?=.*[a-z])(?=.*[^a-zA-Z0-9]).{8,30}');	
+		if (!pwdRegex.test(document.getElementById('userpwd').value)) {
+			//document.getElementById('userpwd_s').innerHTML="<font color='#ff0000'><{$user_login.password_noerror|capitalize}></font>";
+			alert('密码中必须包含大小写字母、数字、特殊字符,长度最低8位！');
+			document.form1.userpwd.focus();
+			return false;
+		}
+		else
+		{
+			getaction="time="+get_t+"&user_name="+user_name+"&user_pwd="+user_pwd+"&checknum="+checknum+"&timeaa="+get_t;
+			getaction2="do.php?act=aaa&abc=haC"+str_encode(getaction);
+		
+			document.getElementById('username').value=str_encde_demo(user_name);
+			document.getElementById('userpwd').value=str_encde_demo(user_pwd);
+			document.getElementById('checknum').value=str_encde_demo(checknum);
+			document.form1.action = getaction2;
+			document.form1.submit();
+		}
+	}
+}
+
+function checkform()
+{
+
+	if(document.form1.username.value.length==0)
+	{
+		document.getElementById('username_s').innerHTML="<font color='#ff0000'><{$user_login.fill_in_account|capitalize}></font>";
+		document.getElementById('username').value = "";
+		document.form1.username.focus();
+		return false;
+	}
+	else if( isNull(document.getElementById('username').value) )
+	{
+		document.getElementById('username_s').innerHTML="<font color='#ff0000'><{$user_login.fill_in_account|capitalize}></font>";
+		
+		document.getElementById('username').value = "";
+		document.form1.username.focus();
+		return false;
+	}
+	else
+	{
+		document.getElementById('username_s').innerHTML="";
+	}
+
+	/*
+	if( isNull(document.getElementById('userpwd').value) )
+	{
+		document.getElementById('userpwd_s').innerHTML="<font color='#ff0000'><{$user_login.enter_password|capitalize}></font>";
+		
+		document.form1.userpwd.focus();
+		return false;
+	}
+	else if(!isNumberOr_Letter(document.getElementById('userpwd').value))
+	{
+		document.getElementById('userpwd_s').innerHTML="<font color='#ff0000'><{$user_login.only_number_letter|capitalize}></font>";
+		document.getElementById('userpwd').select();
+		document.form1.userpwd.focus();
+		return false;	
+	}
+	else
+	{
+		document.getElementById('userpwd_s').innerHTML="";
+	}
+	*/
+
+	if( isNull(document.getElementById('checknum').value ) )
+	{
+		document.getElementById('num_s').innerHTML="<font color='#ff0000'><{$user_login.enter_code|capitalize}></font>";
+		
+		document.form1.checknum.focus();
+		
+		return false;
+	}
+	else
+	{
+		document.getElementById('num_s').innerHTML="";
+	}
+	return true;
+}
+//刷新图片
+var xmlhttp=null; 
+function createXMLHttpRequest()
+{ 
+	if(window.ActiveXObject)
+	{ 
+		xmlhttp = new ActiveXObject("microsoft.XMLHTTP"); 
+	} 
+	else if(window.XMLHttpRequest)
+	{ 
+		xmlhttp = new XMLHttpRequest(); 
+	}
+	else
+	{
+		alert('<{$user_login.not_support_AJAX|capitalize}>');
+	}
+} 
+function refreshcode(url)
+{
+   createXMLHttpRequest();
+
+   xmlhttp.open( "get",url,false);
+   xmlhttp.onreadystatechange = function()
+   {
+      if( xmlhttp.readyState == 4 )
+      {
+         if( xmlhttp.status == 200 )
+         {
+			var obj = document.getElementById("verify");
+			
+			obj.removeAttribute("src");
+			
+			obj.setAttribute("src","verify.php");
+         }
+      }
+   }
+    xmlhttp.setRequestHeader( "If-Modified-Since", "0");
+    xmlhttp.send(null);
+}
+
+function regist_server()
+{
+	//跳转
+	window.location.href = "regist_server.php";
+}
+
+function eyeopenorclose()
+{
+	var mi =  window.document.getElementById('userpwd');
+	var	ima = window.document.getElementById('imagoc');
+	if (mi.type === 'password'){
+					mi.type = 'text';
+					ima.src="<{$user_login.eyeopen}>";
+			}else{
+					mi.type = 'password';
+					ima.src="<{$user_login.eyeclose}>";
+			}
+	
+}
+
+window.onload=function()
+{
+	var getday=<{$Days}>;
+	var days="<{$user_login.enddate|capitalize}>"+"<{$Days}>"+"<{$user_login.enddate2|capitalize}>";
+	
+	if(getday<=30&&getday>0)
+	{
+		alert(days);
+	}
+	else if(getday <0)
+	{
+		alert("<{$user_login.endpast|capitalize}>");
+	}
+}
+</script>
+</head>
+
+<body>
+	<{include file="login_form.html"}> 
+	<{include file="language/chinese_foot.php"}>  
+</body>
+</html>

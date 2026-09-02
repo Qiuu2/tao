@@ -1,0 +1,107 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=gb2312" />
+<title>DisplayTerminal</title>
+<link href="skin/css/main_page_style.css" rel="stylesheet" type="text/css" />
+<style>
+.backup_overlay
+{
+   display: none;
+   position: absolute;
+   top: 0%;
+   left: 0%;
+   width: 100%;
+   height: 100%;
+   background-color: #eeeeff;
+   z-index:1001;
+   filter: alpha(opacity=90);
+}
+.backup_content
+{
+   display: none;
+   position: absolute;
+   top: 25%;
+   left: 25%;
+   width: 50%;
+   height: 50%;
+   padding: 0px;
+   z-index:1002;
+   overflow: hidden;
+   text-align : center ;
+}
+.backup_title
+{
+  font-size:13px;
+  font-family:Georgia, "Times New Roman", Times, serif, "����"; 
+  background-color : #6699dd; 
+  text-align:left;
+  color:#FFFFFF;
+}
+.backup_table
+{
+   font-size:12px;
+   font-family:Georgia, "Times New Roman", Times, serif, "����";
+   background-color:#FFFFFF;
+   border:1px solid #336699;
+   margin:0px;
+   padding:0;
+}
+.backup_button
+{
+    border:1px solid #ddddff
+}
+
+ 
+ /* 奇数行样式 */
+ tr:nth-child(odd) {
+    background-color: #ffffff;
+ }
+ 
+ /* 偶数行样式 */
+ tr:nth-child(even) {
+    background-color: #c1cfe0;
+ }
+
+</style>
+<script language="javascript">
+
+function delLog()
+{
+/*
+	var qstr=getCheckboxItem();
+	if(qstr==null||qstr=="")
+	{
+		alert("<{$backup_restore.select_log|capitalize}>");
+		return void(0);	
+	}
+	else
+	{
+		if(!window.confirm("<{$backup_restore.del_log|capitalize}>"))
+		{
+				return void(0);
+		}	
+		else
+		{
+				location="do.php?act=tasklogdel_msg&filename="+qstr+"";
+		}
+	}
+	*/
+	if(!window.confirm("<{$backup_restore.del_log|capitalize}>"))
+		{
+				return void(0);
+		}	
+		else
+		{
+				location="do.php?act=tasklogdel_msg";
+		}
+}
+</script>
+
+
+</head>
+<body>	
+<{include file="LogManager/tasklogmanager_form.html"}> 
+<{include file="language/`$language`_foot.php"}>
+</body>
+</html>

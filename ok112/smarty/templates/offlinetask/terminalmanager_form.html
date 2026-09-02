@@ -1,0 +1,332 @@
+<form name="form2"  class="terminal_form_to_body">
+<tbody>
+<div id="divTest" style="width:100%;overflow-x:scroll;overflow-y:scroll">
+	<table width="98%"  border="0" cellpadding="2" cellspacing="1"   id="tableSort">
+	<thead>
+		<tr align='center' class="terminal_table_row_bg">
+			
+			<th width="4%" nowrap="nowrap"  class="change_thead_style">
+				<{$terminal_manager.Select|capitalize}>
+			</th> 
+
+			<th width="10%" nowrap="nowrap" onclick="sortTable('tableSort', 1,'1')" class="sort_data_table_sequence">
+				<{$terminal_manager.Terminal_Name|capitalize}>↑↓
+			</th>  
+			<script language="javascript">
+			window.onload = function ()
+			{
+			//   sortTable('tableSort', 1,'1');
+			}
+			</script>
+		<!--  
+			<td width="12%" nowrap="nowrap"><{$terminal_manager.Zone|capitalize}></td> 
+		-->      
+			<th width="6%" nowrap="nowrap" onclick="sortTable('tableSort', 2,'1')" class="sort_data_table_sequence">
+				<{$terminal_manager.Terminal_Type|capitalize}>↑↓
+			</th>  
+			
+			<th width="20%" nowrap="nowrap" onclick="sortTable('tableSort',3,'1')" class="sort_data_table_sequence">
+				<{$terminal_manager.Task_Status|capitalize}>↑↓
+			</th>  
+			
+			<th width="10%" nowrap="nowrap" onclick="sortTable('tableSort',4,'1')" class="sort_data_table_sequence">
+				<{$terminal_manager.Network_Status|capitalize}>↑↓
+			</th>
+			
+			<th width="10%" nowrap="nowrap" onclick="sortTable('tableSort',5,'1')" class="sort_data_table_sequence">
+				<{$terminal_manager.Device_Status|capitalize}>↑↓
+			</th>
+			
+			<th width="20%" nowrap="nowrap" onclick="sortTable('tableSort',6,'1')" class="sort_data_table_sequence">
+				<{$terminal_manager.IP_Address|capitalize}>↑↓
+			</th>     
+		
+			<th width="10%" nowrap="nowrap" onclick="sortTable('tableSort', 7,'1')" class="sort_data_table_sequence">
+				<{$terminal_manager.all_ram|capitalize}>↑↓
+			</th>
+			<th width="10%" nowrap="nowrap" onclick="sortTable('tableSort', 8,'1')" class="sort_data_table_sequence">
+				<{$terminal_manager.free_ram|capitalize}>↑↓
+			</th>
+			          	
+			<th width="10%" nowrap="nowrap"  class="change_thead_style">
+				<{$terminal_manager.Browse|capitalize}>
+			</th>
+		</tr> 
+	</thead>
+
+		<{if $terminal_info|@count neq 0}>    		    
+		<{section name=loop loop=$terminal_info}>   
+		   
+		  <tr align='center' class="terminal_per_row" style="width:100%;height:400;overflow:scroll">          	
+			<td nowrap="nowrap" align="right">
+			<{if $is_right == 1 || $admin_id == "administrator"}>
+			
+				<{$terminal_info[loop].id}>
+				
+				<input name="id" type="checkbox" id="id" value="<{$terminal_info[loop].id}>">
+			<{else}>
+				<{$terminal_info[loop].id}>
+				<!--
+				<{$smarty.section.loop.index+1 + $start}>
+				-->
+			<{/if}>
+			</td>	
+			<td nowrap="nowrap">
+					<label title="<{$terminal_info[loop].terminalname}>">
+						<{$terminal_info[loop].terminalname|truncate:18:"..."}>
+					</label>
+			</td>	
+	<!--
+			 <td nowrap="nowrap">
+				<{if $terminal_info[loop].groupid != 0}>
+				 <{section name=stream loop=$stream_info}>
+						 <{if $terminal_info[loop].groupid == $stream_info[stream].id}>
+							 <{$stream_info[stream].name}>
+						 <{/if}>
+				 <{/section}> 
+				 <{else}>
+				 	<{$terminal_manager.Unknown_area|capitalize}>
+				 <{/if}>
+			 </td> 
+	-->
+			 <td nowrap="nowrap">
+			 	<{if $terminal_info[loop].typeid != -1}>
+					 <{section name=type loop=$type_info}>
+						<{if $terminal_info[loop].typeid == $type_info[type].id}>        	 		
+							<!--<{$type_info[type].name}>-->		
+							<script language="javascript">
+								document.write(chinese_big5_english("<{$chinese_big5_english}>","<{$type_info[type].name}>"));	
+							</script>		      			  
+						<{/if}>
+					 <{/section}> 
+				 <{else}>
+				 	<{$terminal_manager.Unknown_type|capitalize}>
+				 <{/if}> 	     
+			 </td>
+			 
+			 <td nowrap="nowrap">
+				
+					<{if $terminal_info[loop].netstate == 0}>
+						<{$terminal_manager.Disconnected|capitalize}>
+					<{elseif $terminal_info[loop].netstate == 1 && $terminal_info[loop].taskstate == 0}>
+						<{$terminal_manager.Idle|capitalize}>
+					<{elseif $terminal_info[loop].netstate == 1 && $terminal_info[loop].taskstate == 1}>
+						<{$terminal_manager.Timing_Play|capitalize}>
+					<{elseif $terminal_info[loop].netstate == 1 && $terminal_info[loop].taskstate == 2}>
+						<{$terminal_manager.On_Talkback|capitalize}>
+					<{elseif $terminal_info[loop].netstate == 1 && $terminal_info[loop].taskstate == 3}>
+						<{$terminal_manager.AOD|capitalize}>
+					<{elseif $terminal_info[loop].netstate == 1 && $terminal_info[loop].taskstate == 4}>
+						<{$terminal_manager.Selected_Play|capitalize}>
+					<{elseif $terminal_info[loop].netstate == 1 && $terminal_info[loop].taskstate == 5}>
+						<{$terminal_manager.Paging|capitalize}>
+					<{elseif $terminal_info[loop].netstate == 1 && $terminal_info[loop].taskstate == 6}>
+						<{$terminal_manager.Paging|capitalize}>
+					<{elseif $terminal_info[loop].netstate == 1 && $terminal_info[loop].taskstate == 7}>
+						<{$terminal_manager.Local_Amplifying|capitalize}>
+					<{elseif $terminal_info[loop].netstate == 1 && $terminal_info[loop].taskstate == 8}>
+						<{$terminal_manager.Play_from_USB|capitalize}>
+					<{elseif $terminal_info[loop].netstate == 1 && $terminal_info[loop].taskstate == 9}>
+						<{$terminal_manager.Request_Talkback|capitalize}>
+					<{elseif $terminal_info[loop].netstate == 1 && $terminal_info[loop].taskstate == 10}>
+						<{$terminal_manager.Requested_Talkback|capitalize}>
+					<{elseif $terminal_info[loop].netstate == 1 && $terminal_info[loop].taskstate == 11}>
+						<{$terminal_manager.Paging_Play|capitalize}>
+					<{elseif $terminal_info[loop].netstate == 1 && $terminal_info[loop].taskstate == 12}>
+						<{$terminal_manager.Timing_Play|capitalize}>
+					<{elseif $terminal_info[loop].netstate == 1 && $terminal_info[loop].taskstate == 25}>
+						<{$terminal_manager.ttsmusic|capitalize}>
+					<{/if}>
+			</td>
+			
+			 <td nowrap="nowrap">
+			 
+				 <{if $terminal_info[loop].netstate == 0}>
+					<{$terminal_manager.Disconnected|capitalize}>
+				 <{elseif $terminal_info[loop].netstate == 1}>
+					<{$terminal_manager.Connected|capitalize}>
+				 <{/if}>
+			 
+			 </td>	 
+			 <td nowrap="nowrap">
+				 <{if $terminal_info[loop].netstate == 0}>
+					<{$terminal_manager.Disconnected|capitalize}>
+				 <{elseif $terminal_info[loop].netstate == 1 && $terminal_info[loop].devicestate == 0}>
+					<{$terminal_manager.Disabled|capitalize}>
+				 <{elseif $terminal_info[loop].netstate == 1 && $terminal_info[loop].devicestate == 1}>
+				 <span style="color:#ff0000;">
+					<{$terminal_manager.Enabled|capitalize}>●</span>
+				 <{/if}>
+			 </td>
+			 
+			 <td nowrap="nowrap"><{$terminal_info[loop].ip}></td> 	             
+		
+				 <td nowrap="nowrap">
+
+				<{if $terminal_info[loop].totalcapacity gte 1024}>
+					<{math equation ="x / 1048576" x=$terminal_info[loop].totalcapacity format="%.2f"}>M
+				<{else}>
+					<{$terminal_info[loop].totalcapacity}>K				
+				<{/if}>
+
+				 </td>
+				<td nowrap="nowrap">
+				
+				 <{if $terminal_info[loop].resetcapacity gte 1024}>
+					<{math equation ="x / 1048576" x=$terminal_info[loop].resetcapacity format="%.2f"}>M
+				<{else}>
+					<{$terminal_info[loop].resetcapacity}>K				
+				<{/if}>
+				 </td>
+			 <td nowrap="nowrap">
+			  		<{if $terminal_info[loop].typeid != 0}>
+				 	<{if $terminal_info[loop].netstate == 1}>
+					 <a  name="link_view" id="link_view" href="displayofflinetask.php?id=<{$terminal_info[loop].id}>"  >
+						<{$terminal_manager.terminal_task|capitalize}>
+					 </a>
+					<a  name="link_look" id="link_look" href="displayofflinemedia.php?id=<{$terminal_info[loop].id}>"> 
+						<{$terminal_manager.Media|capitalize}>
+					</a> 
+			 		<a name="link_view" id="link_view" href="http://<{$terminal_info[loop].ip}>" target="_blank"  >
+						<{$terminal_manager.Browse|capitalize}>
+					</a>
+				 	<{elseif $terminal_info[loop].netstate == 0}>
+					 <a  name="link_view" id="link_view" href="displayofflinetask.php?id=<{$terminal_info[loop].id}>">
+						<{$terminal_manager.terminal_task|capitalize}>
+					 </a>
+					 <a  name="link_look" id="link_look" href="displayofflinemedia.php?id=<{$terminal_info[loop].id}>">
+					<{$terminal_manager.Media|capitalize}>
+					 </a> 
+					 <a  name="link_view" id="link_view" href="http://<{$terminal_info[loop].ip}>" target="_blank"  >
+						<{$terminal_manager.Browse|capitalize}>
+					 </a>
+				 <{/if}>
+			<else>
+			<{/if}>
+			
+		
+			 </td>     
+		  </tr> 
+		 
+		<{/section}>
+		<{else}>
+		<tr class="tablestyle" >
+		<td colspan="10" style="text-align:center"><strong><{$Revise.No_data}></strong></td>
+		</tr>
+		<{/if}>
+		 
+		</table>
+		</div>
+		</tbody> 
+		<table cellpadding="0" cellspacing="0">
+		<tr style="background-color: #FFFFFF;">
+			<td height="28" colspan="9">		
+				<tr>
+					<td>			  
+						<table width="100%" border="0" >
+						<tr>
+							<script src="smarty/templates/UserAccessControl/CheckUserRights.js" type="text/javascript" language="javascript">
+							</script>
+							<td width="20%"  align="left" nowrap="nowrap">
+								<a  href="javascript:selAll(0)"  name="select_all_yes" id="select_all_yes">
+									<{$terminal_manager.Select_All|capitalize}>
+								</a>&nbsp;
+								
+								<a  href="javascript:noSelAll(0)" name="select_all_no" id="select_all_no">
+									<{$terminal_manager.Cancel|capitalize}>
+								</a>&nbsp;
+								
+								<a  href="javascript:doTerminal(1)" name="freeoffline" id="freeoffline">
+									<{$terminal_manager.Free_transport|capitalize}>
+								</a>&nbsp;
+								
+								<a  href="javascript:doTerminal(2)"  name="nowoffline" id="nowoffline">
+									<{$terminal_manager.now_transport|capitalize}>
+								</a>&nbsp;
+								
+								<!--
+								<a  href="javascript:doTerminal(4)" name="freedel" id="freedel">
+									<{$terminal_manager.free_del|capitalize}>
+								</a>&nbsp;
+								<a  href="javascript:doTerminal(5)" name="nowdel" id="nowdel">
+									<{$terminal_manager.now_del|capitalize}>
+								</a>&nbsp;
+								-->
+								<a  href="javascript:doTerminal(11)"  name="stopoffline" id="stopoffline">
+									<{$terminal_manager.stop_offline|capitalize}>
+								</a>&nbsp;
+								
+									<a  href="javascript:doTerminal(14)"  name="deloffline" id="deloffline">
+									<{$terminal_manager.del_all_offline|capitalize}>
+								</a>&nbsp;
+								<a href="javascript:doTerminal(15)"  name="offlinetime" id="offlinetime">
+									<{$terminal_manager.rsync_offlinetime|capitalize}>
+								</a>&nbsp;
+								<!--
+								<a href="javascript:doTerminal(18)" title="<{$terminal_manager.offline_remoremedia|capitalize}>" name="offlinedel" id="offlinedel">
+									<{$terminal_manager.delofflinemusic|capitalize}>
+								</a>&nbsp;
+								-->
+								<a href="javascript:doTerminal(19)"  title="<{$terminal_manager.offline_nomedia|capitalize}>" name="offlinedelmusic" id="offlinedelmusic">
+									<{$terminal_manager.delnomusic|capitalize}>
+								</a>&nbsp;
+						
+							</td>
+						</tr>
+						
+						</table>		
+				</table>	
+				</td>
+			</tr>
+	</td>
+  </tr>
+<script language="javascript">
+var   obj   =   document.getElementById( "divTest").offsetHeight; 
+ if(obj>=600)
+ {
+ document.getElementById("divTest").style.height=600+"px"; 
+
+ }
+ else
+ {
+  document.getElementById("divTest").style.height=document.getElementById( "divTest").offsetHeight;
+ }
+ var objwidth = document.getElementById( "divTest").offsetWidth;
+if(objwidth<=1200)
+ {
+ document.getElementById("divTest").style.width=1200+"px"; 
+
+ }
+ else
+ {
+  document.getElementById("divTest").style.width=document.getElementById( "divTest").offsetWidth;
+ }
+
+</script>
+
+  </form>
+  <tr>
+    <td align="center">
+		<table align="center"><tr><td><div class="link_style" align="center"><{$terminal_manager.sum}><{$pagestr}><{$terminal_manager.device}></div></td></tr></table>
+	</td>
+  </tr>
+
+<script language="javascript">
+	var get_user_right = "<{$is_right}>";
+
+	if(get_user_right == 1)
+	{
+		//什么也不做
+	}
+	else
+	{
+		var get_a_objects = document.getElementsByTagName("a");
+		for(var i=0; i<get_a_objects.length; i++)
+		{
+			get_a_objects[i].href = "javascript:void(0);";
+			get_a_objects[i].onclick = null;
+			get_a_objects[i].style.color="#787878";
+		//	get_a_objects[i].disabled = true;
+		}
+	}
+</script>

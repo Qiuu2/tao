@@ -1,0 +1,714 @@
+
+<form name="terminalfunctionplayform" class="terminal_form_to_body">
+<tbody>
+<div id="divTest" style="width:100%;overflow-x:hidden;overflow-y:scroll">
+<table width="98%" border="0" cellpadding="2" cellspacing="1" align="center" id="tabletask">
+<thead>
+<tr align='center' class="terminal_table_row_bg">
+
+  <th width="5%"  nowrap="nowrap" class="change_thead_style">
+  	<{$terminal_function.Select|capitalize}>
+  </th>
+  
+  <th width="10%" nowrap="nowrap"  onclick="sortTable('tabletask', 1,'1')" class="sort_data_table_sequence">
+  	<{$terminal_function.task_name|capitalize}>
+  </th>
+    <th width="10%" nowrap="nowrap"  onclick="sortTable('tabletask', 2,'1')" class="sort_data_table_sequence">
+  	<{$terminal_function.thecagegary|capitalize}>
+  </th>
+  <th width="15%" nowrap="nowrap" onclick="sortTable('tabletask', 3,'1')" class="sort_data_table_sequence">
+  	<{$terminal_function.Play_Cycle|capitalize}>
+  </th>
+
+  <th width="8%" nowrap="nowrap" onclick="sortTable('tabletask', 4,'1')" class="sort_data_table_sequence">
+  	<{$terminal_function.Run_Time|capitalize}>
+  </th>
+  
+  <th width="8%"  nowrap="nowrap" onclick="sortTable('tabletask', 5,'1')" class="sort_data_table_sequence">
+  	<{$terminal_function.Status|capitalize}>
+  </th>
+  
+  <th width="8%" nowrap="nowrap" onclick="sortTable('tabletask', 6,'1')" class="sort_data_table_sequence">
+  	<{$terminal_function.Start_Date|capitalize}>
+  </th>
+  
+  <th width="8%" nowrap="nowrap" onclick="sortTable('tabletask', 7,'1')" class="sort_data_table_sequence">
+  	<{$terminal_function.End_Date|capitalize}>
+  </th>
+  
+    <th width="8%" nowrap="nowrap" onclick="sortTable('tabletask', 8,'1')" class="sort_data_table_sequence">
+  	<{$terminal_function.enableday|capitalize}>
+  </th>
+  
+  <th width="8%" nowrap="nowrap" class="change_thead_style">
+  	<{$terminal_function.Terminal_Attribute|capitalize}>
+  </th>
+  
+  <th width="8%" nowrap="nowrap">
+  	<{$terminal_function.Operating_tasks|capitalize}>
+  </th>
+  
+</tr>
+	</thead>
+<tbody>
+
+<{if $is_right == 1 || $admin_id == "administrator"}>
+	<{if $info|@count neq 0}>
+
+ 	<{section name=loop loop=$info}>
+      
+      	<tr align="center" >
+	  
+			<td nowrap="nowrap">
+			<input name="id" type="checkbox" id="id" value="<{$info[loop].taskid}>">
+				<{$smarty.section.loop.index+1+$start}>
+			</td>
+		
+			<td nowrap="nowrap"><{$info[loop].taskname}></td> 
+			<td nowrap="nowrap">  
+				<{if $info[loop].tasktype == 1}>
+				 
+					<{$terminal_function.oneache|capitalize}>(<{$info[loop].info}>)
+			
+				<{elseif  $info[loop].tasktype == 2}>		   	
+			
+					<{$terminal_function.twofile|capitalize}>
+			
+				<{elseif $info[loop].tasktype == 3}>	
+			
+					<{$terminal_function.threefile|capitalize}>	
+
+				<{elseif $info[loop].tasktype == 10}>
+
+					<{$terminal_function.four|capitalize}>	
+					
+				<{elseif $info[loop].tasktype == 5}>	
+			
+					<{$terminal_function.five|capitalize}>	
+					
+				<{elseif $info[loop].tasktype == 4}>
+
+					<{$terminal_function.telphone|capitalize}>	
+				<{elseif $info[loop].tasktype == 17}>
+
+					<{$terminal_function.six|capitalize}>	
+				<{elseif $info[loop].tasktype == 19}>
+					<{$terminal_function.six|capitalize}>	
+					<{elseif $info[loop].tasktype == 15}>
+					<{$terminal_function.six|capitalize}>	
+				<{/if}>
+			</td>
+			<td>
+			<{if $info[loop].exemodel == "0000000"}>
+				<{$terminal_function.Manual}>
+			<{else}>
+				<script language="javascript">document.write(getdayofweek("<{$info[loop].exemodel}>"))</script>
+			<{/if}>
+		</td>
+
+		 	<td nowrap="nowrap"><{$info[loop].playtime}></td>
+		 
+		 	<td  id="dostate"  nowrap="nowrap">  
+				<{if $info[loop].state == 3}>
+				<span style="color:#0f6b24;">  
+					<{$terminal_function.Run|capitalize}>
+				</span> 
+				<{elseif  $info[loop].state == 0}>		   	
+				<script language="javascript">
+				var getstr = "<{$info[loop].playtime}>";
+			
+				var gettime = getstr.split(":");
+			 	var getcurtime=Number(gettime[0])*3600+Number(gettime[1])*60+Number(gettime[2]);
+				
+				var sec=<{$sec}>+<{$hours}>*3600+<{$minites}>*60;
+
+			
+				if(getcurtime>sec)
+				{
+					document.write("<{$terminal_function.Ready|capitalize}>●");
+					document.getElementById('dostate').style.color = "#ff0000";
+				//	document.getElementById('dostate').innerHTML="<font class='terminal_star'><{$terminal_function.Ready|capitalize}></font>";
+				}
+				else
+				{
+					document.write("<{$terminal_function.doed|capitalize}>");	
+				//	document.getElementById('dostate').style.color = "#FE0505";
+					
+				}
+				
+				</script>	
+			
+				<{elseif $info[loop].state == 2}>	
+				<span style="color:#0f6b24;">  
+					<{$terminal_function.Pause|capitalize}>	
+				</span> 
+				<{elseif $info[loop].state == 1}>
+				<span style="color:#0f6b24;">   
+					<{$terminal_function.Ready_play|capitalize}>●</span>	
+ 			   <{elseif $info[loop].state == 5}>
+				<span style="color:#0f6b24;">    
+					<{$terminal_function.doed|capitalize}>	 </span> 
+				<{elseif $info[loop].state == 6}>
+				<span style="color:#ff0000;"> 
+					<{$terminal_function.Ready|capitalize}>●	
+				</span> 
+				<{/if}>
+			</td>
+
+		 	<td nowrap="nowrap"><{$info[loop].startdate}></td>
+
+		 	<td nowrap="nowrap"><{$info[loop].enddate}></td>
+			<td nowrap="nowrap"><{$info[loop].disableday}></td>
+			<td nowrap="nowrap">
+		
+				<a name="link_view" id="link_view" href="displayterminal.php?term_id=<{$info[loop].taskid}>">
+			
+					<{$terminal_function.Browse_Terminal|capitalize}>
+				
+				</a>
+			</td> 
+		
+			<td nowrap="nowrap">
+			<{if $username=="admin"}>
+				<{if $info[loop].state == 1}>
+					<a href="javascript:pause_curr_active_task(<{$info[loop].taskid}>)">
+					<{$terminal_function.Pause|capitalize}>	
+					</a>
+				
+					<a href="javascript:void(0)" style="color:#666666" onclick="null">
+						
+					<{$terminal_function.Run|capitalize}>
+					</a>
+				<{elseif $info[loop].state == 0}>
+					<a href="javascript:void(0)" style="color:#666666" onclick="null">
+					<{$terminal_function.Pause|capitalize}>	
+					</a>
+						<a href="javascript:start_curr_active_task(<{$info[loop].taskid}>)">
+						<{$terminal_function.Run|capitalize}>
+						</a>				
+				<{else}>
+					<a href="javascript:pause_curr_active_task(<{$info[loop].taskid}>)">
+					<{$terminal_function.Pause|capitalize}>	
+					</a>
+				
+					<a href="javascript:void(0)" style="color:#666666" onclick="null">
+					<{$terminal_function.Run|capitalize}>
+					</a>
+				<{/if}> 
+		<{/if}>
+			</td>
+		       
+      	</tr>         
+    <{/section}>
+	<{else}>
+	<tr align="center">
+		<td colspan="8">
+			<strong><{$terminal_function.No_Record|capitalize}></strong>
+		</td>
+	</tr>
+	<{/if}>
+<{else}>
+
+	<{if $info|@count neq 0}>
+
+ 	<{section name=loop loop=$info}>
+      
+      	<tr align="center"  style= "color:   #8E8E8E " height="30" >
+	  
+			<td nowrap="nowrap">
+		
+				<{$smarty.section.loop.index+1+$start}>
+			
+			</td>
+		
+			<td nowrap="nowrap"><{$info[loop].taskname}></td> 
+
+				<td>
+			<{if $info[loop].exemodel == "0000000"}>
+				<{$terminal_function.Manual}>
+			<{else}>
+				<script language="javascript">document.write(getdayofweek("<{$info[loop].exemodel}>"))</script>
+			<{/if}>
+		</td>
+
+		 	<td nowrap="nowrap"><{$info[loop].playtime}></td>
+		 
+		 	<td nowrap="nowrap">  
+				<{if $info[loop].state == 3}>
+				<span style="color:#0f6b24;">  
+					<{$terminal_function.Run|capitalize}>
+				</span> 
+				<{elseif  $info[loop].state == 0}>	
+					<script language="javascript">
+				
+					var getstr = "<{$info[loop].playtime}>";
+					var gettime = getstr.split(":");
+					var getcurtime=gettime[0]*3600+gettime[1]*60+gettime[2];
+					var sec=<{$sec}>+<{$hours}>*3600+<{$minites}>*60;
+				
+					if(getcurtime>sec)
+					{
+						document.write("<{$terminal_function.Ready|capitalize}>");
+					}
+					else
+					{
+						document.write("<{$terminal_function.doed|capitalize}>");	
+					}
+					
+					</script>	   	
+			
+				<{elseif $info[loop].state == 2}>	
+				<span style="color:#0f6b24;">  
+					<{$terminal_function.Pause|capitalize}>	
+				</span>
+				<{elseif $info[loop].state == 1}>
+				<span style="color:#0f6b24;">  
+					<{$terminal_function.Ready_play|capitalize}>●</span>	
+			    <{elseif $info[loop].state == 5}>
+				<span style="color:#0f6b24;">
+					<{$terminal_function.doed|capitalize}>	 </span> 
+				<{elseif $info[loop].state == 6}>
+				<span style="color:#ff0000;"> 
+					<{$terminal_function.Ready|capitalize}>		
+					●	
+				</span> 
+				<{/if}>
+			</td>
+
+		 	<td nowrap="nowrap"><{$info[loop].startdate}></td>
+
+		 	<td nowrap="nowrap"><{$info[loop].enddate}></td>
+
+			<td nowrap="nowrap">
+		
+				<{$terminal_function.Browse_Terminal|capitalize}>
+				
+			</td> 
+		
+			<td nowrap="nowrap">
+					<{$terminal_function.Pause|capitalize}>	
+			
+					<{$terminal_function.Run|capitalize}>
+			</td>
+		       
+		</tr>         
+    
+	<{/section}>
+	
+	<{else}>
+	
+	<tr align="center" >
+		
+		<td colspan="8">
+			
+			<strong><{$terminal_function.No_Record|capitalize}></strong>
+		
+		</td>
+	
+	</tr>
+	
+	<{/if}>
+
+<{/if}>
+
+</table>
+</div>
+</tbody>
+<table cellpadding="0" cellspacing="0">	 
+
+<tr align="right" >
+
+	<{if $is_right == 1 || $admin_id == "administrator"}>
+	
+		<td  colspan="3" align="left" nowrap="nowrap" valign="bottom" width="50%">
+
+			<a href="javascript:get_week_date_task('1');" id="1">
+			<!--
+				<{$terminal_function.Select_All|capitalize}>
+			-->
+			<{$terminal_function.Monday|capitalize}>
+			</a> &nbsp;
+			
+			<a href="javascript:get_week_date_task('2');" id="2">
+			<!--
+				<{$terminal_function.Cancel|capitalize}>
+			-->
+			<{$terminal_function.Tuesday|capitalize}>
+			</a>&nbsp;
+			
+			<a href="javascript:get_week_date_task('3');" id="3">
+			<!--	
+				<{$terminal_function.Run}>
+			-->
+			<{$terminal_function.Wednesday|capitalize}>
+			</a>&nbsp;
+				
+			<a href="javascript:get_week_date_task('4');" id="4">
+			<!--
+				<{$terminal_function.Pause|capitalize}>
+			-->
+			<{$terminal_function.Thursday|capitalize}>
+			</a>&nbsp;
+			
+			<a  href="javascript:get_week_date_task('5');" id="5">
+			<!--
+				<{$terminal_function.Add|capitalize}>
+			-->
+			<{$terminal_function.Friday|capitalize}>
+			</a>&nbsp;
+			
+			<a href="javascript:get_week_date_task('6');" id="6">
+			<!--
+				<{$terminal_function.Update|capitalize}>
+			-->
+			<{$terminal_function.Saturday|capitalize}>
+			</a>&nbsp;
+			
+			<a href="javascript:get_week_date_task('0');" id="0">
+			<!--
+				<{$terminal_function.Delete}>
+			-->
+			<{$terminal_function.Sunday|capitalize}>
+			</a>&nbsp;
+			
+			
+			<!--
+			<a href="javascript:get_week_date_task('8');" id="8">
+		
+			<{$terminal_function.NextMonday|capitalize}>
+			</a>&nbsp;
+			<a href="javascript:get_week_date_task('9');" id="9">
+			
+			<{$terminal_function.NextTuesday|capitalize}>
+			</a>&nbsp;
+			<a href="javascript:get_week_date_task('10');" id="10">
+			
+			<{$terminal_function.NextWednesday|capitalize}>
+			</a>&nbsp;
+			<a href="javascript:get_week_date_task('11');" id="11">
+			
+			<{$terminal_function.NextThursday|capitalize}>
+			</a>&nbsp;
+			<a href="javascript:get_week_date_task('12');" id="12">
+			
+			<{$terminal_function.NextFriday|capitalize}>
+			</a>&nbsp;
+		   <a href="javascript:get_week_date_task('13');" id="13">
+			
+			<{$terminal_function.NextSaturday|capitalize}>
+			</a>&nbsp;
+			<a href="javascript:get_week_date_task('14');" id="14">
+			
+			<{$terminal_function.NextSunday|capitalize}>
+			</a>&nbsp;
+			-->
+		</td>
+			
+		<td colspan="3" align="right" nowrap="nowrap" valign="bottom" width="30%">
+			
+			<{$terminal_function.No|capitalize}>&nbsp;
+				
+				<input type="text" value="0" name="get_int_date" id="get_int_date" style="border:#CCCCCC solid 1px; width:40px; height:15; text-align:center" title="<{$terminal_function.Negative_Positive_day|capitalize}>"/>
+			
+				&nbsp;<{$terminal_function.Day|capitalize}>&nbsp;
+				<img src="skin/images/frame/search_task.gif" name="search_task_image" id="search_task_image" align="bottom" onclick="get_interval_day();" onmouseover="change_image()" onmouseout="reset_image()"/>
+ 		
+		</td>
+		<td colspan="2" align="right" nowrap="nowrap" valign="bottom" width="20%">
+	<!--	<div id="divenable" style="width:100%"> -->
+			<a href="javascript:enordis_week_date_task('0');" id="enableday">
+			<{$terminal_function.enableday|capitalize}>
+			</a>&nbsp;
+					
+			<a href="javascript:enordis_week_date_task('1');" id="disableday">
+			<{$terminal_function.disableday|capitalize}>
+			</a>&nbsp;
+		<!--	</div> -->
+		</td>
+	
+	<{else}>
+	
+	<tr align="right" style= "color:   #8E8E8E "> 
+	
+		<td  colspan="4" align="left" nowrap="nowrap" valign="bottom" width="50%">
+
+		
+			<{$terminal_function.Monday|capitalize}>
+			&nbsp;
+	
+			
+			<{$terminal_function.Tuesday|capitalize}>
+			&nbsp;
+			
+			
+			<{$terminal_function.Wednesday|capitalize}>
+			&nbsp;
+				
+			
+			<{$terminal_function.Thursday|capitalize}>
+			&nbsp;
+			
+			
+			<{$terminal_function.Friday|capitalize}>
+			&nbsp;
+			
+			
+			<{$terminal_function.Saturday|capitalize}>
+			&nbsp;
+			
+			
+			<{$terminal_function.Sunday|capitalize}>
+			&nbsp;
+			
+			<{$terminal_function.NextMonday|capitalize}>
+			&nbsp;
+			
+			<{$terminal_function.NextTuesday|capitalize}>
+			&nbsp;
+			
+			<{$terminal_function.NextWednesday|capitalize}>
+			&nbsp;
+			
+			<{$terminal_function.NextThursday|capitalize}>
+			&nbsp;
+			
+			<{$terminal_function.NextFriday|capitalize}>
+			&nbsp;
+			
+			<{$terminal_function.NextSaturday|capitalize}>
+			&nbsp;
+			
+			<{$terminal_function.NextSunday|capitalize}>
+			&nbsp;
+			
+		</td>
+ </tr>	
+		
+<{/if}>	
+		
+		
+	</tr>
+</table>
+<script language="javascript">
+var   obj   =   document.getElementById( "divTest").offsetHeight; 
+ if(obj>=600)
+ {
+ document.getElementById("divTest").style.height=600+"px"; 
+ }
+ else
+ {
+  document.getElementById("divTest").style.height=document.getElementById( "divTest").offsetHeight;
+ }
+ var objwidth = document.getElementById( "divTest").offsetWidth;
+if(objwidth<=1000)
+ {
+ document.getElementById("divTest").style.width=1000+"px"; 
+ }
+ else
+ {
+  document.getElementById("divTest").style.width=document.getElementById( "divTest").offsetWidth;
+ }
+ 
+
+
+
+ /*
+ 
+ var getweekday=<{$current_week_day}>;
+ var get_str_date=<{$get_str_date}>;
+
+ if((getweekday==get_str_date)||(get_str_date==0))
+ {
+ document.getElementById("divenable").style.display= "block";
+ }
+ else
+{
+document.getElementById("divenable").style.display= "none";
+}
+ 
+ */
+ 
+ window.onload = function ()
+{
+	var a_array_objs = document.all.tags('a');
+	
+	for(var i=0; i<a_array_objs.length; i++)
+	{
+		if( a_array_objs[i].id == '<{$current_week_day}>' )
+		{
+			a_array_objs[i].innerHTML = "<{$terminal_function.today|capitalize}>";
+			
+			break;
+		}
+	}
+
+}
+
+ 
+</script>
+</form>
+
+<table align="center"><tr><td><div class="link_style" align="center"><{$pagestr}></div></td></tr></table>
+
+</body>
+
+<script>
+
+function get_week_date_task(int_date)
+{
+	switch(int_date)
+	{
+		case "0":
+		
+		window.location.href = "./Browse_active_task.php?get_str_date=7&get_int_date=0&id="+<{$getid}>;
+		
+		break;	
+		
+		case "1":
+		
+		window.location.href = "./Browse_active_task.php?get_str_date=1&get_int_date=0&id="+<{$getid}>;
+		
+		break;
+		
+		case "2":
+		
+		window.location.href = "./Browse_active_task.php?get_str_date=2&get_int_date=0&id="+<{$getid}>;
+		
+		break;
+		
+		case "3":
+		
+		window.location.href = "./Browse_active_task.php?get_str_date=3&get_int_date=0&id="+<{$getid}>;
+		
+		break;
+		
+		case "4":
+		
+		window.location.href = "./Browse_active_task.php?get_str_date=4&get_int_date=0&id="+<{$getid}>;
+		
+		break;
+		
+		case "5":
+		
+		window.location.href = "./Browse_active_task.php?get_str_date=5&get_int_date=0&id="+<{$getid}>;
+		
+		break;
+		
+		case "6":
+		
+		window.location.href = "./Browse_active_task.php?get_str_date=6&get_int_date=0&id="+<{$getid}>;
+		
+		break;
+		
+		case "8":
+		
+		window.location.href = "./Browse_active_task.php?get_str_date=8&get_int_date=0&id="+<{$getid}>;
+		
+		break;
+		
+		case "9":
+		
+		window.location.href = "./Browse_active_task.php?get_str_date=9&get_int_date=0&id="+<{$getid}>;
+		
+		break;
+		
+		case "10":
+		
+		window.location.href = "./Browse_active_task.php?get_str_date=10&get_int_date=0&id="+<{$getid}>;
+		
+		break;
+		
+		case "11":
+		
+		window.location.href = "./Browse_active_task.php?get_str_date=11&get_int_date=0&id="+<{$getid}>;
+		
+		break;
+		
+		case "12":
+		
+		window.location.href = "./Browse_active_task.php?get_str_date=12&get_int_date=0&id="+<{$getid}>;
+		
+		break;
+		
+		case "13":
+		
+		window.location.href = "./Browse_active_task.php?get_str_date=13&get_int_date=0&id="+<{$getid}>;
+		
+		break;
+		
+		case "14":
+		
+		window.location.href = "./Browse_active_task.php?get_str_date=14&get_int_date=0&id="+<{$getid}>;
+		
+		break;
+		
+
+	}
+}
+
+
+
+
+function get_interval_day()
+{
+	var get_day_num = document.getElementById('get_int_date').value;
+	
+	get_day_num = get_day_num.replace(/(^\s*)|(\s*$)/g,""); 
+	
+	var regu = "^[-]{0,1}[0-9]+$"; 
+	
+	var re = new RegExp(regu);
+	
+	if (get_day_num.search(re) != -1) 
+	{
+		if( get_day_num > 30 || get_day_num < -30 )
+		{
+			alert('<{$terminal_function.enter_number_between|capitalize}>');
+		}
+		else
+		{
+			window.location.href = "./Browse_active_task.php?get_int_date="+get_day_num+"&get_str_date=0&id="+<{$getid}>;
+		}
+	} 
+	else 
+	{ 
+		alert('<{$terminal_function.enter_number|capitalize}>');
+	}
+}
+
+function change_image()
+{
+	document.getElementById('search_task_image').src = "skin/images/frame/search_task1.gif";
+	
+	document.getElementById('search_task_image').style.cursor = 'hand';
+}
+
+function reset_image()
+{
+	document.getElementById('search_task_image').src = "skin/images/frame/search_task.gif";
+}
+
+
+
+
+</script>
+</html>
+<script language="javascript">
+	var get_user_right = "<{$is_right}>";
+
+	if(get_user_right == 1)
+	{
+		//ʲôҲ����
+	}
+	else
+	{
+		var get_a_objects = document.getElementsByTagName("a");
+		for(var i=0; i<get_a_objects.length; i++)
+		{
+			get_a_objects[i].href = "javascript:void(0);";
+			get_a_objects[i].onclick = null;
+			get_a_objects[i].style.color="#787878";
+		//	get_a_objects[i].disabled = true;
+		}
+	}
+</script>

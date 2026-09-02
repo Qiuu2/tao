@@ -1,0 +1,556 @@
+<html>
+<head>
+<META http-equiv=Content-Type content="text/html; charset=utf-8">
+<title>SetTaskMapping</title>
+<!--导入树-->
+
+<link href="smarty/templates/BellManager/codebase/dhtmlxtree.css" rel="stylesheet" type="text/css">
+<script  src="smarty/templates/BellManager/codebase/dhtmlxcommon.js"></script>
+<script  src="smarty/templates/BellManager/codebase/dhtmlxtree.js"></script>
+<script src="skin/js/frame/analysis_tree_terminal_group_string.js"></script>
+<script  src="smarty/templates/ajax/get_terminaltype.js" ></script>
+<link href="skin/css/main_page_style.css" rel="stylesheet" type="text/css">
+
+<style type="text/css">
+	.input_title
+	{
+		font-size:12px;
+		font-family:Georgia, "Times New Roman", Times, serif, "宋体";
+	}
+</style>
+
+<script language="javascript">
+function isNumber( s )
+{
+    var regu = "^[0-9]+$";
+    var re = new RegExp(regu);
+    if (s.search(re) != -1) 
+    {
+        return true;
+    }
+    else 
+    {
+        return false;
+    }
+}
+function trim(str)
+{   
+    return str.replace(/(^\s*)|(\s*$)/ig, "");   
+}
+function isChinaOrNumbOrLett( s )
+{
+	var regu = "^[0-9a-zA-Z\u4e00-\u9fa5]+$"; 
+
+	var re = new RegExp(regu); 
+	if (re.test(s)) 
+	{ 
+		return true; 
+	}
+	else
+	{
+		return false; 
+	} 
+} 
+
+function isNull( str )
+{ 
+ if ( str == "" )
+ return true; 
+ var regu = "^[ ]+$"; 
+ var re = new RegExp(regu); 
+ return re.test(str); 
+}
+ 
+function checkform()
+{	//验证快捷名称
+	
+	if(document.getElementById('timeqiopen1').checked==true)
+		document.getElementById('timeqiopen1').value=1;
+	else
+		document.getElementById('timeqiopen1').value=0;
+	if(document.getElementById('timeqiopen2').checked==true)
+		document.getElementById('timeqiopen2').value=1;
+	else
+		document.getElementById('timeqiopen2').value=0;
+		if(document.getElementById('timeqiopen3').checked==true)
+		document.getElementById('timeqiopen3').value=1;
+	else
+		document.getElementById('timeqiopen3').value=0;
+		if(document.getElementById('timeqiopen4').checked==true)
+		document.getElementById('timeqiopen4').value=1;
+	else
+		document.getElementById('timeqiopen4').value=0;
+		if(document.getElementById('timeqiopen5').checked==true)
+		document.getElementById('timeqiopen5').value=1;
+	else
+		document.getElementById('timeqiopen5').value=0;
+		if(document.getElementById('timeqiopen6').checked==true)
+		document.getElementById('timeqiopen6').value=1;
+	else
+		document.getElementById('timeqiopen6').value=0;
+		if(document.getElementById('timeqiopen7').checked==true)
+		document.getElementById('timeqiopen7').value=1;
+	else
+		document.getElementById('timeqiopen7').value=0;
+		if(document.getElementById('timeqiopen8').checked==true)
+		document.getElementById('timeqiopen8').value=1;
+	else
+		document.getElementById('timeqiopen8').value=0;
+		if(document.getElementById('timeqiopen9').checked==true)
+		document.getElementById('timeqiopen9').value=1;
+	else
+		document.getElementById('timeqiopen9').value=0;
+		if(document.getElementById('timeqiopen10').checked==true)
+		document.getElementById('timeqiopen10').value=1;
+	else
+		document.getElementById('timeqiopen10').value=0;
+		if(document.getElementById('timeqiopen11').checked==true)
+		document.getElementById('timeqiopen11').value=1;
+	else
+		document.getElementById('timeqiopen11').value=0;
+		if(document.getElementById('timeqiopen12').checked==true)
+		document.getElementById('timeqiopen12').value=1;
+	else
+		document.getElementById('timeqiopen12').value=0;
+		if(document.getElementById('timeqiopen13').checked==true)
+		document.getElementById('timeqiopen13').value=1;
+	else
+		document.getElementById('timeqiopen13').value=0;
+		if(document.getElementById('timeqiopen14').checked==true)
+		document.getElementById('timeqiopen14').value=1;
+	else
+		document.getElementById('timeqiopen14').value=0;
+		if(document.getElementById('timeqiopen15').checked==true)
+		document.getElementById('timeqiopen15').value=1;
+	else
+		document.getElementById('timeqiopen15').value=0;
+		if(document.getElementById('timeqiopen16').checked==true)
+		document.getElementById('timeqiopen16').value=1;
+	else
+		document.getElementById('timeqiopen16').value=0;
+}
+
+function all_open_id()
+{
+	document.getElementById('timeqiopen1').checked=true;
+	document.getElementById('timeqiopen2').checked=true;
+	document.getElementById('timeqiopen3').checked=true;
+	document.getElementById('timeqiopen4').checked=true;
+	document.getElementById('timeqiopen5').checked=true;
+	document.getElementById('timeqiopen6').checked=true;
+	document.getElementById('timeqiopen7').checked=true;
+	document.getElementById('timeqiopen8').checked=true;
+	document.getElementById('timeqiopen9').checked=true;
+	document.getElementById('timeqiopen10').checked=true;
+	document.getElementById('timeqiopen11').checked=true;
+	document.getElementById('timeqiopen12').checked=true;
+	document.getElementById('timeqiopen13').checked=true;
+	document.getElementById('timeqiopen14').checked=true;
+	document.getElementById('timeqiopen15').checked=true;
+	document.getElementById('timeqiopen16').checked=true;
+}
+
+function all_close_id()
+{
+	document.getElementById('timeqiopen1').checked=false;
+	document.getElementById('timeqiopen2').checked=false;
+	document.getElementById('timeqiopen3').checked=false;
+	document.getElementById('timeqiopen4').checked=false;
+	document.getElementById('timeqiopen5').checked=false;
+	document.getElementById('timeqiopen6').checked=false;
+	document.getElementById('timeqiopen7').checked=false;
+	document.getElementById('timeqiopen8').checked=false;
+	document.getElementById('timeqiopen9').checked=false;
+	document.getElementById('timeqiopen10').checked=false;
+	document.getElementById('timeqiopen11').checked=false;
+	document.getElementById('timeqiopen12').checked=false;
+	document.getElementById('timeqiopen13').checked=false;
+	document.getElementById('timeqiopen14').checked=false;
+	document.getElementById('timeqiopen15').checked=false;
+	document.getElementById('timeqiopen16').checked=false;
+
+}
+
+
+var xmlhttp=null; 
+function createXMLHttpRequest()
+{ 
+	if(window.ActiveXObject)
+	{ 
+		xmlhttp = new ActiveXObject("microsoft.XMLHTTP"); 
+	} 
+	else if(window.XMLHttpRequest)
+	{ 
+		xmlhttp = new XMLHttpRequest(); 
+	}
+	else
+	{
+		alert("NOT Support AJAX");
+	}
+}
+
+function get_remote_task_id(url)
+{
+   createXMLHttpRequest();
+   xmlhttp.open( "post",url, true);
+   xmlhttp.onreadystatechange = function()
+   {
+      if( xmlhttp.readyState == 4 )
+      {
+         if( xmlhttp.status == 200 )
+         {
+           		var remote_task_id = trim(xmlhttp.responseText);
+		   		var get_key_array = remote_task_id.split(",");
+		   		document.getElementById('powertimeqiname1').value=get_key_array[18];
+				document.getElementById('powertimeqiname2').value=get_key_array[19];
+				document.getElementById('powertimeqiname3').value=get_key_array[20];
+				document.getElementById('powertimeqiname4').value=get_key_array[21];
+				document.getElementById('powertimeqiname5').value=get_key_array[22];
+				document.getElementById('powertimeqiname6').value=get_key_array[23];
+				document.getElementById('powertimeqiname7').value=get_key_array[24];
+				document.getElementById('powertimeqiname8').value=get_key_array[25];
+				document.getElementById('powertimeqiname9').value=get_key_array[26];
+				document.getElementById('powertimeqiname10').value=get_key_array[27];
+				document.getElementById('powertimeqiname11').value=get_key_array[28];
+				document.getElementById('powertimeqiname12').value=get_key_array[29];
+				document.getElementById('powertimeqiname13').value=get_key_array[30];
+				document.getElementById('powertimeqiname14').value=get_key_array[31];
+				document.getElementById('powertimeqiname15').value=get_key_array[32];
+				document.getElementById('powertimeqiname16').value=get_key_array[33];
+		   			
+					if(get_key_array[2]==1)
+					{
+						document.getElementById('timeqiopen1').checked=true;
+					}
+					else
+					{
+						document.getElementById('timeqiopen1').checked=false;
+					}
+					if(get_key_array[3]==1)
+					{
+						document.getElementById('timeqiopen2').checked=true;
+					}
+					else
+					{
+						document.getElementById('timeqiopen2').checked=false;
+					}
+					if(get_key_array[4]==1)
+					{
+						document.getElementById('timeqiopen3').checked=true;
+					}
+					else
+					{
+						document.getElementById('timeqiopen3').checked=false;
+					}
+					if(get_key_array[5]==1)
+					{
+						document.getElementById('timeqiopen4').checked=true;
+					}
+					else
+					{
+						document.getElementById('timeqiopen4').checked=false;
+					}
+					if(get_key_array[6]==1)
+					{
+						document.getElementById('timeqiopen5').checked=true;
+					}
+					else
+					{
+						document.getElementById('timeqiopen5').checked=false;
+					}
+					if(get_key_array[7]==1)
+					{
+						document.getElementById('timeqiopen6').checked=true;
+					}
+					else
+					{
+						document.getElementById('timeqiopen6').checked=false;
+					}
+					if(get_key_array[8]==1)
+					{
+						document.getElementById('timeqiopen7').checked=true;
+					}
+					else
+					{
+						document.getElementById('timeqiopen7').checked=false;
+					}
+					if(get_key_array[9]==1)
+					{
+						document.getElementById('timeqiopen8').checked=true;
+					}
+					else
+					{
+						document.getElementById('timeqiopen8').checked=false;
+					}
+					if(get_key_array[10]==1)
+					{
+						document.getElementById('timeqiopen9').checked=true;
+					}
+					else
+					{
+						document.getElementById('timeqiopen9').checked=false;
+					}
+					if(get_key_array[11]==1)
+					{
+						document.getElementById('timeqiopen10').checked=true;
+					}
+					else
+					{
+						document.getElementById('timeqiopen10').checked=false;
+					}
+					if(get_key_array[12]==1)
+					{
+						document.getElementById('timeqiopen11').checked=true;
+					}
+					else
+					{
+						document.getElementById('timeqiopen11').checked=false;
+					}
+					if(get_key_array[13]==1)
+					{
+						document.getElementById('timeqiopen12').checked=true;
+					}
+					else
+					{
+						document.getElementById('timeqiopen12').checked=false;
+					}
+					if(get_key_array[14]==1)
+					{
+						document.getElementById('timeqiopen13').checked=true;
+					}
+					else
+					{
+						document.getElementById('timeqiopen13').checked=false;
+					}
+					if(get_key_array[15]==1)
+					{
+						document.getElementById('timeqiopen14').checked=true;
+					}
+					else
+					{
+						document.getElementById('timeqiopen14').checked=false;
+					}
+					if(get_key_array[16]==1)
+					{
+						document.getElementById('timeqiopen15').checked=true;
+					}
+					else
+					{
+						document.getElementById('timeqiopen15').checked=false;
+					}
+					if(get_key_array[17]==1)
+					{
+						document.getElementById('timeqiopen16').checked=true;
+					}
+					else
+					{
+						document.getElementById('timeqiopen16').checked=false;
+					}
+
+         }
+      }
+   }
+	xmlhttp.setRequestHeader( "If-Modified-Since", "0");
+	xmlhttp.send(null);
+}
+
+function get_load_remote_task_id(get_key_id)
+{
+	var str_url = "";
+
+	str_url = "powercontrolget.php?device_id="+get_key_id+"";
+	
+	get_remote_task_id(str_url);
+}
+
+	function get_change_remote_id(obj)
+	{
+		var i=0;
+		var get_key_id = obj.value;
+		get_load_remote_task_id(get_key_id);	
+	}
+</script>
+</head>
+<body >
+
+<form name="setkeyform" action="do.php?act=set_powerqi_msg" method="post" onSubmit="return checkform();" class="terminal_form_to_body">
+<table width="600px" align="center" border="0" cellpadding="0" cellspacing="0"  class="terminal_table_border">
+	<tr height="50">
+		<td align="center" border="0" cellpadding="0" cellspacing="0">
+			<table>
+				<tr>
+					<td>
+						<img src="<{$stream_manager.power_img}>"/>
+					</td>
+				</tr>
+			</table>
+		</td>
+	</tr>
+	
+	<tr>
+		<td>
+			<table align="center" border="0" >
+				<tr>
+					<td width="80" align="right" ><{$stream_manager.powertimeqi|capitalize}></td>
+					<td width="420" align="left">
+						<select id="keyvalue" name="keyvalue" class="terminal_select_style" onChange="get_change_remote_id(this)">
+							<option value="0">请选择时序器</option>	
+							<{section name=sourceid loop=$aitts}>
+								document.write("<option value="<{$aitts[sourceid].terminalid}>"><{$aitts[sourceid].terminalname}></option>");	
+							<{/section}>	
+						</select>
+						&nbsp;&nbsp;&nbsp;
+						<input type="button" name="allopen" value="<{$stream_manager.all_open|capitalize}>" onclick="all_open_id()" class="terminal_button"/>
+						
+						<input type="button" name="allclose" value="<{$stream_manager.all_close|capitalize}>" onclick="all_close_id()" class="terminal_button"/>
+					</td>
+				</tr>
+				<tr>
+					<td width="80" align="right" ><{$stream_manager.powertimeqiname|capitalize}>1</td>
+					<td width="420" align="left">
+						<input  maxlength="30" style="width:100px;" class="terminal_input_font" name="powertimeqiname1" type="text" id="powertimeqiname1" value=""/>
+						<input name="timeqiopen1" type="checkbox" id="timeqiopen1" value="0"/>
+						<{$stream_manager.powertimeqiopen|capitalize}>
+				  	</td>
+				</tr>
+				<tr>
+					<td width="80" align="right" ><{$stream_manager.powertimeqiname|capitalize}>2</td>
+					<td width="420" align="left">
+						<input  maxlength="30" style="width:100px;" class="terminal_input_font" name="powertimeqiname2" type="text" id="powertimeqiname2" value=""/>
+						<input name="timeqiopen2" type="checkbox" id="timeqiopen2" value="0"/>
+						<{$stream_manager.powertimeqiopen|capitalize}>
+				  	</td>
+				</tr>
+				<tr>
+					<td width="80" align="right" ><{$stream_manager.powertimeqiname|capitalize}>3</td>
+					<td width="420" align="left">
+						<input  maxlength="30" style="width:100px;" class="terminal_input_font" name="powertimeqiname3" type="text" id="powertimeqiname3" value=""/>
+						<input name="timeqiopen3" type="checkbox" id="timeqiopen3" value="0"/>
+						<{$stream_manager.powertimeqiopen|capitalize}>
+				  </td>
+				</tr>
+				<tr>
+					<td width="80" align="right" ><{$stream_manager.powertimeqiname|capitalize}>4</td>
+					<td width="420" align="left">
+						<input  maxlength="30" style="width:100px;" class="terminal_input_font" name="powertimeqiname4" type="text" id="powertimeqiname4" value=""/>
+						<input name="timeqiopen4" type="checkbox" id="timeqiopen4" value="0"/>
+						<{$stream_manager.powertimeqiopen|capitalize}>
+				  </td>
+				</tr>
+				<tr>
+					<td width="80" align="right" ><{$stream_manager.powertimeqiname|capitalize}>5</td>
+					<td width="420" align="left">
+						<input  maxlength="30" style="width:100px;" class="terminal_input_font" name="powertimeqiname5" type="text" id="powertimeqiname5" value=""/>
+						<input name="timeqiopen5" type="checkbox" id="timeqiopen5" value="0"/>
+						<{$stream_manager.powertimeqiopen|capitalize}>
+				  </td>
+				</tr>
+				<tr>
+					<td width="80" align="right" ><{$stream_manager.powertimeqiname|capitalize}>6</td>
+					<td width="420" align="left">
+						<input  maxlength="30" style="width:100px;" class="terminal_input_font" name="powertimeqiname6" type="text" id="powertimeqiname6" value=""/>
+						<input name="timeqiopen6" type="checkbox" id="timeqiopen6" value="0"/>
+						<{$stream_manager.powertimeqiopen|capitalize}>
+				  </td>
+				</tr>
+				<tr>
+					<td width="80" align="right" ><{$stream_manager.powertimeqiname|capitalize}>7</td>
+					<td width="420" align="left">
+						<input  maxlength="30" style="width:100px;" class="terminal_input_font" name="powertimeqiname7" type="text" id="powertimeqiname7" value=""/>
+						<input name="timeqiopen7" type="checkbox" id="timeqiopen7" value="0"/>
+						<{$stream_manager.powertimeqiopen|capitalize}>
+				  </td>
+				</tr>
+				<tr>
+					<td width="80" align="right" ><{$stream_manager.powertimeqiname|capitalize}>8</td>
+					<td width="420" align="left">
+						<input  maxlength="30" style="width:100px;" class="terminal_input_font" name="powertimeqiname8" type="text" id="powertimeqiname8" value=""/>
+						<input name="timeqiopen8" type="checkbox" id="timeqiopen8" value="0"/>
+						<{$stream_manager.powertimeqiopen|capitalize}>
+				  	</td>
+				</tr>
+				<tr>
+					<td width="80" align="right" ><{$stream_manager.powertimeqiname|capitalize}>9</td>
+					<td width="420" align="left">
+						<input  maxlength="30" style="width:100px;" class="terminal_input_font" name="powertimeqiname9" type="text" id="powertimeqiname9" value=""/>
+						<input name="timeqiopen9" type="checkbox" id="timeqiopen9" value="0"/>
+						<{$stream_manager.powertimeqiopen|capitalize}>
+				  	</td>
+				</tr>
+				<tr>
+					<td width="80" align="right" ><{$stream_manager.powertimeqiname|capitalize}>10</td>
+					<td width="420" align="left">
+						<input  maxlength="30" style="width:100px;" class="terminal_input_font" name="powertimeqiname10" type="text" id="powertimeqiname10" value=""/>
+						<input name="timeqiopen10" type="checkbox" id="timeqiopen10" value="0"/>
+						<{$stream_manager.powertimeqiopen|capitalize}>
+				  </td>
+				</tr>
+				<tr>
+					<td width="80" align="right" ><{$stream_manager.powertimeqiname|capitalize}>11</td>
+					<td width="420" align="left">
+						<input  maxlength="30" style="width:100px;" class="terminal_input_font" name="powertimeqiname11" type="text" id="powertimeqiname11" value=""/>
+						<input name="timeqiopen11" type="checkbox" id="timeqiopen11" value="0"/>
+						<{$stream_manager.powertimeqiopen|capitalize}>
+				  </td>
+				</tr>
+				<tr>
+					<td width="80" align="right" ><{$stream_manager.powertimeqiname|capitalize}>12</td>
+					<td width="420" align="left">
+						<input  maxlength="30" style="width:100px;" class="terminal_input_font" name="powertimeqiname12" type="text" id="powertimeqiname12" value=""/>
+						<input name="timeqiopen12" type="checkbox" id="timeqiopen12" value="0"/>
+						<{$stream_manager.powertimeqiopen|capitalize}>
+				  </td>
+				</tr>
+				<tr>
+					<td width="80" align="right" ><{$stream_manager.powertimeqiname|capitalize}>13</td>
+					<td width="420" align="left">
+						<input  maxlength="30" style="width:100px;" class="terminal_input_font" name="powertimeqiname13" type="text" id="powertimeqiname13" value=""/>
+						<input name="timeqiopen13" type="checkbox" id="timeqiopen13" value="0"/>
+						<{$stream_manager.powertimeqiopen|capitalize}>
+				  </td>
+				</tr>
+				<tr>
+					<td width="80" align="right" ><{$stream_manager.powertimeqiname|capitalize}>14</td>
+					<td width="420" align="left">
+						<input  maxlength="30" style="width:100px;" class="terminal_input_font" name="powertimeqiname14" type="text" id="powertimeqiname14" value=""/>
+						<input name="timeqiopen14" type="checkbox" id="timeqiopen14" value="0"/>
+						<{$stream_manager.powertimeqiopen|capitalize}>
+				  </td>
+				</tr>
+				<tr>
+					<td width="80" align="right" ><{$stream_manager.powertimeqiname|capitalize}>15</td>
+					<td width="420" align="left">
+						<input  maxlength="30" style="width:100px;" class="terminal_input_font" name="powertimeqiname15" type="text" id="powertimeqiname15" value=""/>
+						<input name="timeqiopen15" type="checkbox" id="timeqiopen15" value="0"/>
+						<{$stream_manager.powertimeqiopen|capitalize}>
+				  </td>
+				</tr>
+				<tr>
+					<td width="80" align="right" ><{$stream_manager.powertimeqiname|capitalize}>16</td>
+					<td width="420" align="left">
+						<input  maxlength="30" style="width:100px;" class="terminal_input_font" name="powertimeqiname16" type="text" id="powertimeqiname16" value=""/>
+						<input name="timeqiopen16" type="checkbox" id="timeqiopen16" value="0"/>
+						<{$stream_manager.powertimeqiopen|capitalize}>
+				  </td>
+				</tr>
+				
+				<tr>
+					<td width="180"></td>
+					<td width="420">
+						<input type="submit" name="submit" value="<{$stream_manager.submit|capitalize}>" class="terminal_button"/>
+						&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+						<input type="reset" name="reset" value="<{$stream_manager.Cancel|capitalize}>" class="terminal_button"/>
+						&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+						
+				  </td>
+				</tr>
+		  </table>
+		</td>
+	</tr>
+</table>
+</form>
+
+<{include file="language/`$language`_foot.php"}>
+</body>
+
+</html>

@@ -1,0 +1,239 @@
+<form name="form2" class="terminal_form_to_body">
+<table width="98%" border="0" cellpadding="2" cellspacing="1" align="center" id="displaytable">
+
+	<tr align='center' class="terminal_table_row_bg">   
+		<td width="5%" nowrap="nowrap"><{$user_group_manager.Select|capitalize}></td>                 	  
+		<td width="10%" nowrap="nowrap"><{$user_group_manager.Group_Name|capitalize}></td>
+		<td width="5%" nowrap="nowrap"><{$user_group_manager.Level|capitalize}></td>
+		<td width="5%" nowrap="nowrap"><{$user_group_manager.Task_Management|capitalize}></td>
+		<td width="5%" nowrap="nowrap"><{$user_group_manager.Terminal_Management|capitalize}></td>
+		<td width="5%" nowrap="nowrap"><{$user_group_manager.Media_Management|capitalize}></td>
+		<td width="5%" nowrap="nowrap"><{$user_group_manager.User_Management|capitalize}></td>	
+
+		<td width="5%" nowrap="nowrap"><{$user_group_manager.Server_Management|capitalize}></td>   
+		<td width="5%" nowrap="nowrap"><{$user_group_manager.Folder_Management|capitalize}></td>   
+		<td width="5%" nowrap="nowrap"><{$user_group_manager.Zone_Management|capitalize}></td>   
+		<td width="5%" nowrap="nowrap"><{$user_group_manager.Alarm_Management|capitalize}></td>   
+		
+		<td width="5%" nowrap="nowrap"><{$user_group_manager.Bell_Management|capitalize}></td>   
+		<td width="5%" nowrap="nowrap"><{$user_group_manager.Collection_Management|capitalize}></td>   
+		<td width="5%" nowrap="nowrap"><{$user_group_manager.Phone_Management|capitalize}></td>   
+		<td width="5%" nowrap="nowrap"><{$user_group_manager.Power_Management|capitalize}></td>   
+		<td width="5%" nowrap="nowrap"><{$user_group_manager.tts_Management|capitalize}></td>   
+	
+		<td width="5%" nowrap="nowrap"><{$user_group_manager.View_User|capitalize}></td>      	
+	</tr> 
+<{if $group|@count neq 0}>  
+<{section name=loop loop=$group}>
+<tr align='center'>
+	<td  nowrap="nowrap">
+		<{if $admin_id == "administrator"}>
+		<input name="id" type="checkbox" value="<{$group[loop].id}>"  id="id">
+		<{else}>
+			<{$smarty.section.loop.index+1+$start}>
+		<{/if}>
+	</td>
+	<td nowrap="nowrap"> <{$group[loop].name}> </td> 
+	<td nowrap="nowrap"> <{$group[loop].level}> </td> 
+	<td nowrap="nowrap">
+		
+			<{if $group[loop].taskpriv==1}>
+				<img src="skin/images/frame/gou.gif"/>
+			<{else}>
+				<img src="skin/images/frame/cha.gif"/>
+			<{/if}>
+		
+	</td> 
+	<td nowrap="nowrap">
+		
+		<{if $group[loop].terminalpriv==1}>
+			<img src="skin/images/frame/gou.gif"/>
+		<{else}>
+			<img src="skin/images/frame/cha.gif"/>
+		<{/if}>
+		
+	</td> 
+	<td nowrap="nowrap">
+		
+		<{if $group[loop].mediapriv==1}>
+			<img src="skin/images/frame/gou.gif"/>
+		<{else}>
+			<img src="skin/images/frame/cha.gif"/>
+		<{/if}>
+		
+	</td> 
+	<td nowrap="nowrap">
+		
+		<{if $group[loop].userpriv==1}>
+			<img src="skin/images/frame/gou.gif"/>
+		<{else}>
+			<img src="skin/images/frame/cha.gif"/>
+		<{/if}>
+		
+	</td> 
+	<td nowrap="nowrap">
+		
+			<{if $group[loop].serverpriv==1}>
+				<img src="skin/images/frame/gou.gif"/>
+			<{else}>
+				<img src="skin/images/frame/cha.gif"/>
+			<{/if}>
+		
+	</td>   
+	<td nowrap="nowrap">
+		
+			<{if $group[loop].folderpriv==1}>
+				<img src="skin/images/frame/gou.gif"/>
+			<{else}>
+				<img src="skin/images/frame/cha.gif"/>
+			<{/if}>
+		
+	</td>   
+	<td nowrap="nowrap">
+		
+			<{if $group[loop].terminalgrouppriv==1}>
+				<img src="skin/images/frame/gou.gif"/>
+			<{else}>
+				<img src="skin/images/frame/cha.gif"/>
+			<{/if}>
+		
+	</td>   
+	<td nowrap="nowrap">
+		
+			<{if $group[loop].alarmgrouppriv==1}>
+				<img src="skin/images/frame/gou.gif"/>
+			<{else}>
+				<img src="skin/images/frame/cha.gif"/>
+			<{/if}>
+		
+	</td>   
+	<td nowrap="nowrap">
+		
+			<{if $group[loop].bellpriv==1}>
+				<img src="skin/images/frame/gou.gif"/>
+			<{else}>
+				<img src="skin/images/frame/cha.gif"/>
+			<{/if}>
+		
+	</td>   
+	<td nowrap="nowrap">
+		
+			<{if $group[loop].admpriv==1}>
+				<img src="skin/images/frame/gou.gif"/>
+			<{else}>
+				<img src="skin/images/frame/cha.gif"/>
+			<{/if}>
+		
+	</td>   
+	<td nowrap="nowrap">
+		
+			<{if $group[loop].telephonepriv==1}>
+				<img src="skin/images/frame/gou.gif"/>
+			<{else}>
+				<img src="skin/images/frame/cha.gif"/>
+			<{/if}>
+		
+	</td>   
+	<td nowrap="nowrap">
+		
+			<{if $group[loop].powerplay==1}>
+				<img src="skin/images/frame/gou.gif"/>
+			<{else}>
+				<img src="skin/images/frame/cha.gif"/>
+			<{/if}>
+		
+	</td>
+		<td nowrap="nowrap">
+		
+			<{if $group[loop].ttspriv==1}>
+				<img src="skin/images/frame/gou.gif"/>
+			<{else}>
+				<img src="skin/images/frame/cha.gif"/>
+			<{/if}>
+		
+	</td>  			  							
+	<td nowrap="nowrap">
+	 
+	 <a name="link_view" id="link_view" href="userlookat.php?id=<{$group[loop].id}>"><{$user_group_manager.Browse|capitalize}></a>				
+	 
+	</td>          		
+</tr>        
+<{/section}>
+<{else}>
+<tr align='center' >
+<td colspan="15"><strong><{$Revise.No_data}></strong></td>
+</tr>
+<{/if}>
+	<tr>
+	<script src="smarty/templates/UserAccessControl/CheckUserRights.js" language="javascript" type="text/javascript"></script>
+		<td  colspan="15">
+			<a title="<{$user_group_manager.Select_All_user|capitalize}>" href="javascript:selAll(0)" class="coolbg"><{$user_group_manager.Select_All|capitalize}></a>&nbsp;
+			<a title="<{$user_group_manager.Cancel_all_user|capitalize}>" href="javascript:noSelAll(0)" class="coolbg"><{$user_group_manager.Cancel|capitalize}></a>&nbsp;
+			<a title="<{$user_group_manager.Add_user_group|capitalize}>" href='usergroupadd.php' target='main' class="coolbg"><{$user_group_manager.Add_Group|capitalize}></a>&nbsp;
+			<a title="<{$user_group_manager.Update_user_group|capitalize}>" href="javascript:modifyusergroup()" class="coolbg"><{$user_group_manager.Modify_Group|capitalize}></a>&nbsp;
+			<a title="<{$user_group_manager.Delete_user_group|capitalize}>" href="javascript:delUserGroup()" class="coolbg"><{$user_group_manager.Delete_Group|capitalize}></a>&nbsp;
+		</td>
+	</tr>
+	<script>
+		rights_control(<{$is_right}>,"<{$admin_id}>","link_view");
+	</script>
+	</table>
+	</td>
+	</tr>  
+  <tr>
+    <td><div class="link_style" align="center"><{$pagestr}></div></td>
+  </tr>
+ </form>
+ </table> 
+
+  <!--  搜索表单  -->
+<form name='form3' action='usergroupmanager.php' method='get'>
+<input type='hidden' name='dopost' value='' /><!--保留未使用隐藏表单-->
+<table width='98%'  border='0' cellpadding='1' cellspacing='1' align="center">
+  <tr>
+    <td background='skin/images/wbg.gif' align='center'>
+      <table border='0' cellpadding='0' cellspacing='0'>
+        <tr>
+          <td width='90' align='center'><{$Searchform.Search_conditions}></td>
+          <td width='160'><select class="colors" name='searchkey' id="searchkey">
+            <option selected="selected" value=""><{$Searchform.Select_type}></option>
+            <option value="name"><{$Searchform.Group_name}></option>
+          </select></td>
+        <td width='70'><{$Searchform.Keyword}></td>
+        <td width='160'>
+          	<input class="colors" name='searchvalue' type='text' id="searchvalue" style='width:150px' value='' />        
+		</td>
+        <td width='110'>
+    		<select class="colors" name='searchsequence'>
+            <option  selected="selected" value=""><{$Searchform.Sort}></option>
+            <option value="userpriv"><{$Searchform.User_Permissions}></option>
+   	        </select>        
+		</td>
+        <td>
+          <input name="imageField" type="image" src="<{$user_group_manager.search_image}>" style="width:45px; height:20px; border-bottom-width:1px;"/>        
+		</td>
+       </tr>
+      </table>
+   </td>
+  </tr>
+</table>
+</form>
+<script language="javascript">
+	var get_user_right = "<{$is_right}>";
+
+	if(get_user_right == 1)
+	{
+		//什么也不做
+	}
+	else
+	{
+		var get_a_objects = document.getElementsByTagName("a");
+		for(var i=0; i<get_a_objects.length; i++)
+		{
+			get_a_objects[i].href = "javascript:void(0);";
+			get_a_objects[i].onclick = null;
+			get_a_objects[i].style.color="#787878";
+		//	get_a_objects[i].disabled = true;
+		}
+	}
+</script>

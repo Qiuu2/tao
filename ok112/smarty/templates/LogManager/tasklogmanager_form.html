@@ -1,0 +1,110 @@
+<form name="form2" class="terminal_form_to_body">
+<table width="98%" border="0" cellpadding="2" cellspacing="1"  align="center" class="terminal_form_to_body">
+<tr align='center' class="terminal_table_row_bg">
+  <td width="5%"  nowrap="nowrap"><{$backup_restore.Number|capitalize}></td>
+  <td width="15%"  nowrap="nowrap"><{$backup_restore.File_name|capitalize}></td>
+  <td width="8%"  nowrap="nowrap"><{$backup_restore.File_Size|capitalize}></td>
+  <td width="8%"  nowrap="nowrap"><{$backup_restore.create_time|capitalize}></td>
+  <td width="5%"  nowrap="nowrap"><{$backup_restore.File_format|capitalize}></td>
+  <td width="5%"  nowrap="nowrap"><{$backup_restore.Operation|capitalize}></td>
+</tr>
+<tr></tr>
+ <tr align='center' class="tablestyle"> 
+		<td>
+			<input type="checkbox" value="<{$backup_files[file].filename}>" id="id" name="id"/>
+		</td>
+		
+		<td id="filename">
+			<{$get_time}>
+		</td> 
+		 	
+		<td>
+			6.9KB
+		</td> 
+		
+		<td>
+			<{$get_time}>
+		</td>
+		
+		<td>
+			html
+		</td>
+		
+		<td>
+	
+			 <a   name="link_view" id="link_view" href="http://<{$get_ipaddr}>:<{$port}>/debug.html" target="main"  >
+								<{$backup_restore.lookup}>
+							</a>
+		</td>
+	  </tr>    
+<{if $backup_files|@count neq 0}>
+	<{section name=file loop=$backup_files}>        
+	  <tr align='center' class="tablestyle"> 
+		<td>
+			<input type="checkbox" value="<{$backup_files[file].filename}>" id="id" name="id"/>
+		</td>
+		
+		<td id="filename">
+			<{$backup_files[file].filename}>
+		</td> 
+		 	
+		<td>
+			<{$backup_files[file].filesize}>
+		</td> 
+		
+		<td>
+			<{$backup_files[file].filetime}>
+		</td>
+		
+		<td>
+			<{$backup_files[file].filetype}>
+		</td>
+		
+		<td>
+	
+			 <a charset="gb2312"  name="link_view" id="link_view"  href="javascript:setlog('<{$backup_files[file].filename}>')">
+								<{$backup_restore.lookup}>
+							</a>
+				
+			<script language="javascript">
+		
+function setlog(filename)
+{
+
+location="setlog.php?act="+filename+".html";
+}
+			</script>				
+		
+		</td>
+	  </tr>         
+	<{/section}>
+<{else}>
+
+<tr align='center' onmouseover="this.style.backgroundColor = '#EEEEFF'" onmouseout="this.style.backgroundColor = '#FFFFFF'">
+	<td colspan="6"><strong><{$Revise.No_data|capitalize}></strong></td>
+</tr>
+
+<{/if}>
+ <tr style="background-color: #FFFFFF;">
+	 <td  colspan="5">
+	 <!--
+		<a href="javascript:selAll(0)" class="coolbg"><{$backup_restore.Select_all|capitalize}></a>&nbsp;
+		<a href="javascript:noSelAll(0)" class="coolbg"><{$backup_restore.Cancel|capitalize}></a>&nbsp;
+		-->
+		<{if $admin_id=="administrator"}>
+		<a title="<{$backup_restore.Deletelogtask|capitalize}>" href="javascript:delLog()" class="coolbg"><{$backup_restore.Deletelog|capitalize}></a>&nbsp;
+		<{/if}>
+	</td>
+</tr>
+
+</table>
+
+ <tr>
+   <td>
+
+
+</td>
+  </tr>
+
+</form>
+

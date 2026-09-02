@@ -1,0 +1,202 @@
+<form name="form2" id="form2" class="terminal_form_to_body"  style="width:100%">
+<tbody>
+<table width="98%" border="0" cellpadding="2" cellspacing="1"  align="center" style="font-size:12px">
+<thead>
+	 <tr align='center' class="terminal_table_row_bg">
+	
+		<th width="8%"><{$file_manager.Selection|capitalize}></th>     		             	
+		<th width="15%"><{$file_manager.Name|capitalize}></th>    
+		<th width="8%"><{$file_manager.Size|capitalize}>
+		<!--
+		(<{if $getsize gte 1024}>
+					<{math equation ="x / 1024" x=$getsize format="%.2f"}>M
+				<{else}>
+					<{$getsize}>K				
+				<{/if}>
+		)
+		-->
+		</th>          
+		<th width="8%"><{$file_manager.Format|capitalize}></th>
+		<th width="8%"><{$file_manager.Bit_rate|capitalize}></th>
+		
+		<th width="8%"><{$file_manager.Play_Length|capitalize}></th>
+			
+		<th width="8%"><{$file_manager.Listen|capitalize}></th>
+	
+	</tr> 
+	  </thead>
+<{if $info|@count neq 0}>	
+	<{section name=loop loop=$info}>
+		<tr align='center' >
+			<td nowrap="nowrap">
+			<{if $is_right == 1 || $admin_id == "administrator"}>
+				<{$info[loop].id}>
+				<input name="id" type="checkbox" id="id" value="<{$info[loop].id}>" class="np"/>
+			<{else}>
+				<{$smarty.section.loop.index+1+$start}>
+			<{/if}>
+			</td>	
+			<td nowrap="nowrap">	
+				<{$info[loop].name}>
+			</td>
+			
+			<td nowrap="nowrap">
+				
+				<{if $info[loop].size gte 1024}>
+					<{math equation ="x / 1024" x=$info[loop].size format="%.2f"}>M
+				<{else}>
+					<{$info[loop].size}>K				
+				<{/if}>
+
+			</td>
+					
+			<td nowrap="nowrap">
+				<{$info[loop].typeid}>
+			</td>
+			<td nowrap="nowrap">
+				<{if $info[loop].bitrate gte 1000000}>
+					<{math equation ="x / 1000000" x=$info[loop].bitrate}>Mbps
+				<{elseif $info[loop].bitrate gte 1000}>
+					<{math equation ="x / 1000" x=$info[loop].bitrate}>kbps
+				<{else}>
+					<{$info[loop].bitrate}>bps
+				<{/if}>
+			</td>
+			
+			<td>
+				<script language="javascript">
+					var timelen=<{$info[loop].timelength}>;
+					var getmin=parseInt(timelen/60);
+					var getsec=parseInt(timelen%60);
+					document.write(getmin+"<{$file_manager.minutes|capitalize}>"+getsec+"<{$file_manager.second|capitalize}>");
+				</script>
+			</td>
+		
+			<td id="listen_download" >
+			<a title="<{$file_manager.file_listenmusic}>"  id="shiting" name="shiting" href="#" onclick="window.open('try_listenning.php?id=<{$info[loop].id}>				','_blank','height=65,width=300,status=no,toolbar=no,location=no')">
+			<{$file_manager.file_listen}>	
+			</a>
+			<a title="<{$file_manager.file_downloadmusic}>" id="xiazai" name="xiazai" href="javascript:download_file('<{$info[loop].filename}>','<{$info[loop].name}>','<{$info[loop].typeid}>')">
+			<{$file_manager.file_download}>
+			</a>
+			</td>
+		
+			</tr>
+	<{/section}>
+<{else}>
+	<tr align='center' class="tablestyle" >
+		<td colspan="6" height="30"><strong><{$file_manager.No_data|capitalize}></strong></td>
+	</tr>
+<{/if}>
+<script src="smarty/templates/UserAccessControl/CheckUserRights.js" type="text/javascript" ></script>
+<tr></tr>
+	<tr>
+	
+		<td colspan="6">
+			<a title="<{$file_manager.Select_allmediadata|capitalize}>" id="allsel" name="allsel" href="javascript:selAll(0)" >
+				<{$file_manager.Select_all|capitalize}>
+			</a>&nbsp;&nbsp;&nbsp;
+			
+			<a title="<{$file_manager.noSelect_allmediadata|capitalize}>" id="nosel" name="nosel" href="javascript:noSelAll(0)" >
+				<{$file_manager.Cancel|capitalize}>
+			</a>&nbsp;&nbsp;&nbsp;
+			
+			<a title="<{$file_manager.Upload_Mediadata|capitalize}>" href="javascript:get_next_frame_var(this,'<{$get_folder_id}>')" target='mediafile' >
+				<{$file_manager.Upload_Media|capitalize}>
+			</a>&nbsp;&nbsp;&nbsp;
+			
+			<a title="<{$file_manager.del_selectmedia|capitalize}>" id="delsel" name="delsel" href="javascript:delfile()" >
+				<{$file_manager.Delete|capitalize}>
+			</a>&nbsp;&nbsp;&nbsp;
+			
+			<a title="<{$file_manager.Create_subfolder|capitalize}>" href="javascript:addfolder(this,'<{$get_folder_id}>')" class="coolbg" >
+			<{$file_manager.Create_folder}>	
+			</a>&nbsp;&nbsp;&nbsp;
+			
+			<a title="<{$file_manager.Revise_subfolder|capitalize}>" href="javascript:modifyfolder(this,'<{$get_folder_id}>')" class="coolbg" >
+				<{$file_manager.Revise_folder}>	
+			</a>&nbsp;&nbsp;&nbsp;
+			
+			<a title="<{$file_manager.del_subfolder|capitalize}>" href="javascript:delfolder(this,'<{$get_folder_id}>')" class="coolbg" >
+			<{$file_manager.Delete_folder}>	
+			</a>&nbsp;&nbsp;&nbsp;
+		
+		<!--	<a title="<{$file_manager.Voice_media|capitalize}>" href="trainmedia.php?folderid=<{$get_folder_id}>" class="coolbg" >
+			<{$file_manager.Voice_media}>	
+			</a>&nbsp;&nbsp;&nbsp;	
+		-->	
+		</td>
+	</tr>
+</table>
+<script language="javascript">
+function addfolder(obj,get_folder_id)
+{
+	var sign = <{$sign}>;
+	if(sign == 1)
+	{
+		window.location.href="filefolderadd.php?id="+get_folder_id+"";
+	}
+	else
+	{
+	alert('<{$file_manager.sign|capitalize}>');
+	}	
+}
+
+	rights_control(<{$is_right}>,"<{$admin_id}>");
+
+	if(<{$userinfoid}>==5)
+	{
+			var a_obj = document.getElementsByTagName("a");
+			for(var i=0; i<a_obj.length; i++)
+			{
+				if(a_obj[i].name == "shiting"||a_obj[i].name == "xiazai"||a_obj[i].name == "allsel"||a_obj[i].name == "nosel"||a_obj[i].name == "delsel")
+				{
+					continue;
+				}
+	
+				a_obj[i].href = "javascript:void(0)";
+				a_obj[i].onclick = null;
+				a_obj[i].style.color="#787878";
+			}
+	}
+
+</script>
+
+</tbody>
+</form>	
+<div class="link_style"><{$pagestr}></div>
+<!--  �� --> 
+<form name="form3" target="_self" action="media_file.php?id=<{$get_folder_id}>&userinfoid=<{$userinfoid}>" method="post">
+<table width='100%'  border='0' cellpadding='1' cellspacing='1' class="middle" align="center" style="margin-top:8px">
+  <tr>
+    <td background='skin/images/wbg.gif' align='center'>
+      <table border='0' cellpadding='0' cellspacing='0'>
+        <tr>
+          <td width='90' align='center'><{$Searchform.Search_conditions}></td>
+          <td width='160'>
+          <select class="colors" name='searchkey'  id="searchkey" style='width:150'>
+          	<option value=""><{$Searchform.Select_type}></option>
+          	<option value='name'><{$Searchform.Media_Name}></option>
+			<option value='typeid'><{$Searchform.Media_Types}></option>
+          </select>        
+		  </td>
+        <td width='70'>
+          <{$Searchform.Keyword}>        
+		</td>
+        <td width='160'>
+          	<input type='text' name='searchvalue' id="searchvalue" value='' style='width:150px' /> </td>
+        <td width='110'>
+			<select class="colors" name='orderby' id="orderby" style='width:80px'>
+			  <option value=''><{$Searchform.Sort}></option>
+			  <option value="size"><{$Searchform.Media_Size}></option>
+			</select>
+		</td>
+        <td>
+          <input name="imageField" type="image" src="<{$file_manager.search_image}>" width="45" height="20" border="0"/> 
+		</td>
+       </tr>
+      </table>
+    </td>
+  </tr>
+</table>
+</form>

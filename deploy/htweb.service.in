@@ -1,0 +1,44 @@
+# htweb systemd 单元（模板，由 deploy/install.sh 替换占位符后安装到
+# /etc/systemd/system/htweb.service）
+#
+# 占位符：@SERVICE_USER@ = 运行账号（现网 tw）
+#         @APP_DIR@      = 安装目录（现网 /opt/apps/a9000/htweb）
+
+[Unit]
+Description=HT Broadcast New Web (htweb)
+Documentation=file://@APP_DIR@/README
+After=network-online.target docker.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=@SERVICE_USER@
+Group=@SERVICE_USER@
+WorkingDirectory=@APP_DIR@
+ExecStart=@APP_DIR@/htweb -config @APP_DIR@/config.yaml
+Restart=on-failure
+RestartSec=10
+# 现网建连要付约10秒反向DNS超时，预热8条连接需要更长启动时间
+TimeoutStartSec=120
+StandardOutput=append:@APP_DIR@/logs/htweb.log
+StandardError=append:@APP_DIR@/logs/htweb.log
+
+# ⚠ 这里**故意没有** NoNewPrivileges=true。
+#
+# 原来是有的，看着像加固，实际上把两个功能悄悄弄死了：
+# NoNewPrivileges 会禁掉整个 setuid 提权路径，而 sudo 正是 setuid 程序 ——
+# 于是不管 /etc/sudoers.d/htweb 写得多对，服务里的 `sudo -n` 一律失败。
+# 表现是「服务器信息 → 版本设置」的提交和「时间设置」的两个按钮永远是灰的，
+# 而且报的是「服务账号没有免密权限」，指向一个已经配好了的地方，极难排查。
+#
+# 真正的边界不在这一行，而在 /etc/sudoers.d/htweb 里：
+# 那里只放开了 timedatectl 的两个子命令和 update_audioserver.sh，别的一概不给。
+#
+# 如果哪天这三个功能都不要了，可以把下面这行的注释去掉重新收紧。
+# NoNewPrivileges=true
+
+# PrivateTmp 保留：它不影响 sudo，只是给服务一个独立的 /tmp
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

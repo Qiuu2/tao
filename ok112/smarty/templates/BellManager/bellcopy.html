@@ -1,0 +1,60 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>BellCopy</title>
+
+<link href="skin/css/main_page_style.css" rel="stylesheet" type="text/css" />
+<script src="skin/js/frame/jzdd.js" type="text/javascript"></script>
+<script language="javascript"> 
+function isNull( str )
+{
+	if ( str == "" || str==null) 
+	return true;
+	var regu = "^[ ]+$";
+	var re = new RegExp(regu);
+	return re.test(str);
+}
+function isChinaOrNumbOrLett(s)
+{ 
+	var regu = "^[0-9a-zA-Z\u4e00-\u9fa5]+$"; 
+	var re = new RegExp(regu); 
+	if (re.test(s)) 
+	{ 
+		return true; 
+	}
+	else
+	{ 
+		return false; 
+	} 
+} 
+function checkform()
+{
+	if(isNull(document.bellForm.bellName.value))
+	{
+		document.getElementById('bellName_s').innerHTML="<font class='terminal_star'><{$bellcopy.enter_name|capitalize}></font>";
+		document.bellForm.bellName.focus();
+		return false;
+	}
+	else
+	{
+		if(!isChinaOrNumbOrLett(document.bellForm.bellName.value))
+		{
+			document.getElementById('bellName_s').innerHTML="<font class='terminal_star'><{$copybell.letter_number_Chinese|capitalize}></font>";
+			document.bellForm.bellName.focus();
+			return false;
+		}
+	}
+	
+	document.getElementById('bellName_s').innerHTML="<font class='terminal_star'></font>";
+	djdd();
+	
+	return true;
+}
+</script>
+</head>
+<body>
+<{include file="BellManager/bellcopy_from.html"}>
+<{include file="language/`$language`_foot.php"}> 
+</body>
+</html>

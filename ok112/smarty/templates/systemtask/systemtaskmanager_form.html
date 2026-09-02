@@ -1,0 +1,187 @@
+<form name="terminalfunctionplayform" class="terminal_form_to_body">
+<table width="98%" border="0" cellpadding="2" cellspacing="1" align="center">
+<tr align='center' class="terminal_table_row_bg">
+  <td width="8%"  nowrap="nowrap"><{$terminal_function.Select|capitalize}></td>
+  
+  <td width="15%" nowrap="nowrap"><{$terminal_function.systemtask_Name|capitalize}></td>
+
+  <td width="15%" nowrap="nowrap"><{$terminal_function.task_Play|capitalize}></td>
+  
+  <td width="8%" nowrap="nowrap"><{$terminal_function.Start_Date|capitalize}></td>
+  
+  <td width="8%" nowrap="nowrap"><{$terminal_function.End_Date|capitalize}></td>
+  
+  <td width="8%" nowrap="nowrap"><{$terminal_function.Run_Time|capitalize}></td>
+  
+  <td width="8%" nowrap="nowrap"><{$terminal_function.Duration|capitalize}></td>
+  
+  <!--
+  <td width="8%"  nowrap="nowrap"><{$terminal_function.Status|capitalize}></td>
+  -->
+  
+  <td width="8%"  nowrap="nowrap"><{$terminal_function.Task_level|capitalize}></td>
+  
+  <td width="8%" nowrap="nowrap"><{$terminal_function.Terminal_Attribute|capitalize}></td>
+</tr>
+<tr></tr>
+<{if $info|@count neq 0}>
+ <{section name=loop loop=$info}>        
+      <tr align="center" >
+	  
+		<td>
+			<{if $is_right == 1 || $admin_id == "administrator"}>
+				<input name="id" type="checkbox" id="id" value="<{$info[loop].taskid}>" class="np">
+			<{else}>
+				<{$smarty.section.loop.index+1+$start}>
+			<{/if}>
+		</td>
+		
+      	 <td><{$info[loop].taskname}></td> 
+
+		<td>
+			<{if $info[loop].exemodel == "0000000"}>
+				<{$terminal_function.Manual|capitalize}>
+			<{else}>
+				<script language="javascript">document.write(getdayofweek("<{$info[loop].exemodel}>"))</script>
+			<{/if}>
+		</td>
+		 
+		 <td><{$info[loop].startdate}></td>
+		 
+		 <td><{$info[loop].enddate}></td>
+		 
+		 <td><{$info[loop].playtime}></td>
+		 
+		 <td>
+		 	<script language="javascript">
+				var gethour;
+				var getmin;
+				var getsen;
+				var gettime=<{$info[loop].timelength}>;
+				gethour=parseInt(gettime/3600);
+				getmin=parseInt((gettime-gethour*3600)/60);
+				getsen=gettime-gethour*3600-getmin*60;
+				if(gethour>0)
+					document.write(gethour,'<{$terminal_function.hour}>');
+				if(getmin>0)
+					document.write(getmin,'<{$terminal_function.min}>');
+				if(getsen>0)
+					document.write(getsen,'<{$terminal_function.sec}>');
+				</script>
+		 </td>
+		 
+		 <!--
+		 <td>  
+			<{if $info[loop].state == 3}>		 
+				<{$terminal_function.Run|capitalize}>
+			<{elseif  $info[loop].state == 0}>		   	
+				<{$terminal_function.Ready|capitalize}>
+			<{elseif $info[loop].state == 2}>	
+				<{$terminal_function.Pause|capitalize}>	
+			<{elseif $info[loop].state == 1}>
+				<{$terminal_function.Ready_play|capitalize}>	
+			<{/if}>
+		</td>
+		-->
+		 
+		<td><{$info[loop].priority}></td> 
+		 
+		<td>
+			<a name="link_view" id="link_view" href="displayterminal.php?term_id=<{$info[loop].taskid}>">
+				<{$terminal_function.Browse_Terminal|capitalize}>
+			</a>
+		</td>            
+      </tr>         
+    <{/section}>
+<{else}>
+<tr align="center">
+	<td colspan="8">
+		<strong><{$terminal_function.No_Record|capitalize}></strong>
+	</td>
+</tr>
+<{/if}>	 
+<tr align="right" style="background-color: #FFFFFF;">
+<script type="text/javascript" language="javascript" src="smarty/templates/UserAccessControl/CheckUserRights.js"></script>
+<td  colspan="8" align="left">
+	<table width="300px">
+		<tr class="tablestyle">
+			<td width="30%" align="left" nowrap="nowrap">
+				<a title="<{$terminal_function.Select_All_task|capitalize}>" href="javascript:selAll(0)" >
+					<{$terminal_function.Select_All|capitalize}>
+				</a> &nbsp;
+				
+				<a title="<{$terminal_function.Cancel_all_task|capitalize}>" href="javascript:noSelAll(0)" >
+					<{$terminal_function.Cancel|capitalize}>
+				</a>&nbsp;
+				
+				<a title="<{$terminal_function.Run_task|capitalize}>" href="javascript:starttask()" >
+					<{$terminal_function.Run}>
+				</a>&nbsp;
+					
+				<a title="<{$terminal_function.Pause_task|capitalize}>" href="javascript:stoptask()" >
+					<{$terminal_function.Pause|capitalize}>
+				</a>&nbsp;
+				
+				<a title="<{$terminal_function.Add_task|capitalize}>"  href="systemtaskadd.php" target='main' >
+					<{$terminal_function.Add|capitalize}>
+				</a>&nbsp;
+				
+				<a title="<{$terminal_function.Update_task|capitalize}>" href="javascript:modifytask()" >
+					<{$terminal_function.Update|capitalize}>
+				</a>&nbsp;
+				
+				<a title="<{$terminal_function.Delete_task|capitalize}>" href="javascript:deltask()" >
+					<{$terminal_function.Delete}>
+				</a>&nbsp;
+				
+			</td>
+		</tr>
+		<script>
+			rights_control(<{$is_right}>,"<{$is_admin}>","link_view");
+		</script>
+	</table>
+</td>
+</tr>
+</table>
+</form>
+<table align="center">
+ <tr>
+    <td><div class="link_style" align="center"><{$pagestr}></div></td>
+ </tr>
+</table>
+<form name="form3" action="terminalfunctionplay.php" method="get">
+<input type='hidden' name='dopost' value='' /><!--保留隐藏表单-->
+<table class="middle" width='98%'  border='0' cellpadding='1' cellspacing='1' align="center">
+  <tr>
+    <td background='skin/images/wbg.gif' align='center'>
+      <table border='0' cellpadding='0' cellspacing='0'>
+        <tr>
+          <td width='90' align='center'><{$Searchform.Search_conditions}></td>
+          <td width='160'><select class="colors" name='searchkey' id="searchkey">
+            <option value=""><{$Searchform.Select_type}></option>
+            <option value="taskname"><{$Searchform.Task_name}></option>
+            <option value="playtime"><{$Searchform.Execution_time}></option>
+          </select></td>
+          <td width='70'>
+          <{$Searchform.Keyword}>        
+		  </td>
+        <td width='160'><input class="colors" type='text' name='searchvalue' id="searchvalue" value='' style='width:150px' /></td>
+        <td width='110'>
+    		<select class="colors" name='searchsequence' id="searchsequence">
+    		  <option value=""><{$Searchform.Sort}></option>
+    		  <option value="playtime"><{$Searchform.Time}></option>
+      	    </select>        
+		</td>
+        <td>
+          <input name="imageField" type="image" src="<{$terminal_function.search_image}>" style="width:45px; height:20px; border-bottom-width:0px;"/>
+		</td>       
+       </tr>
+      </table>
+    </td>
+  </tr>
+</table>
+</form>
+</body>
+</html>
+
+

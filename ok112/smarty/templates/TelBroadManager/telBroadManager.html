@@ -1,0 +1,217 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>TelAdmManager</title>
+
+<link href="skin/css/main_page_style.css" rel="stylesheet" type="text/css" />
+
+<script language="javascript">
+function addTask()
+{
+	location="teladdtask.php";
+}
+
+function modifyTelTask()
+{
+	var getItem=getCheckboxItem();
+	var count=0;
+	for(i=0;i<document.fileAdvForm.id.length;i++)
+	{
+		if(document.fileAdvForm.id[i].checked)
+		{
+			count++;
+			if(count>=2)
+			{
+				alert('<{$phone_collect.only_select_one|capitalize}>');
+				return void(0);
+			}
+		}
+	}
+	if(getItem==null||getItem=="")
+	{
+		alert("<{$phone_collect.select_broadcast_task|capitalize}>");
+		return void(0);
+	}
+	else
+	{
+		location="telBroadManagerModify.php?id="+getItem+"";
+	}
+}
+function startTask()
+{
+	var getItem;
+	getItem=getCheckboxItem();
+	if(getItem==null||getItem=="")
+	{
+		window.alert("<{$phone_collect.select_broadcast_task|capitalize}>");
+		return void(0);
+	}
+	else
+	{
+		location="do.php?act=teltaskstart_msg&id="+getItem+"";
+	}
+}
+
+function delTask()
+{
+	var getItem=getCheckboxItem();
+	
+	if(getItem==null||getItem=="")
+	{
+		alert("<{$phone_collect.select_broadcast_task|capitalize}>");
+		return void(0);
+	}
+	else
+	{
+		if(confirm("<{$phone_collect.confirm_deleting|capitalize}>"))
+		{
+			location="do.php?act=teltaskdel_msg&id="+getItem+"";
+		}
+		else
+		{
+			return void(0);
+		}
+	}
+}
+function stopTask()
+{
+	var getItem=getCheckboxItem();
+	if(getItem==null||getItem=="")
+	{
+		alert("<{$phone_collect.select_broadcast_task|capitalize}>");
+		return void(0);
+	}
+	else
+	{
+		if(window.confirm("<{$phone_collect.suspending_task|capitalize}>"))
+		{
+			location="do.php?act=teltaskstop_msg&id="+getItem+"";
+		}
+		else
+		{
+			return void(0);
+		}
+	}
+}
+
+function getCheckboxItem()
+{
+	var allSel="";
+	if(document.fileAdvForm.id.checked)
+	{
+		allSel=document.fileAdvForm.id.value;
+		if(allSel==undefined)
+		{
+			allSel="";
+		}
+	}
+	for(i=0;i<document.fileAdvForm.id.length;i++)
+	{
+		if(document.fileAdvForm.id[i].checked)
+		{
+			if(allSel=="")
+				allSel=document.fileAdvForm.id[i].value;
+			else
+				allSel=allSel+","+document.fileAdvForm.id[i].value;
+		}
+	}
+	return allSel;
+}
+
+function selAll(aid)
+{
+	if(aid==0)
+	{
+		document.fileAdvForm.id.checked=true;
+	}
+	for(i=0;i<document.fileAdvForm.id.length;i++)
+	{
+		if(!document.fileAdvForm.id[i].checked)
+		{
+			document.fileAdvForm.id[i].checked=true;
+		}
+	}
+}
+
+function noSelAll(aid)
+{
+	if(aid==0)
+	{
+		document.fileAdvForm.id.checked=false;
+	}
+	for(i=0;i<document.fileAdvForm.id.length;i++)
+	{
+		if(document.fileAdvForm.id[i].checked)
+		{
+			document.fileAdvForm.id[i].checked=false;
+		}
+	}
+}
+
+function getdayofweek(str)
+{
+   var dayofweek="";
+   var count=0;
+   for(i=0;i<str.length;i++)
+   {
+        if(str.charAt(i)=="1")
+        {
+			count++;
+            switch(i)
+            {
+                case 0:
+				dayofweek+="<{$Admmanager.Sunday}>";
+                break;
+                case 1:
+				dayofweek+="<{$Admmanager.Monday}>";
+                break;
+                case 2:
+				dayofweek+="<{$Admmanager.Tuesday}>";
+                break;
+                case 3:
+				dayofweek+="<{$Admmanager.Wednesday}>";
+                break;
+                case 4:
+				dayofweek+="<{$Admmanager.Thursday}>";
+                break;
+                case 5:
+				dayofweek+="<{$Admmanager.Friday}>";
+                break;
+                case 6:
+                dayofweek+="<{$Admmanager.Saturday}>";
+                break;
+            }
+        }
+   }
+   if(count==7)
+   {
+   		return "<{$phone_collect.every_day|capitalize}>";
+   }
+   return dayofweek;
+}
+
+function set_task_volume()
+{
+	var task_id = getCheckboxItem();
+	//var volume_value = trim(document.getElementById('d1').innerHTML);
+	if(navigator.appName.indexOf("Explorer") > -1)        
+	 var volume_value = document.getElementById('d1').innerText;
+	 else
+	 var volume_value = document.getElementById('d1').textContent;
+	ajax_set_task_volume("4",volume_value,task_id);
+}
+function disappear_volume_div()
+{
+	if(document.getElementById('change_volume').style.display == "block")
+	{
+		document.getElementById('change_volume').style.display = "none";
+	}
+}
+</script>
+</head>
+<body>
+<{include file="TelBroadManager/telBroadManager_form.html"}> 
+<{include file="language/`$language`_foot.php"}>    
+</body>
+</html>

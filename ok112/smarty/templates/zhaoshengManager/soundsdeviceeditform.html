@@ -1,0 +1,95 @@
+<form method="post" action="do.php?act=soundsdeviceedit_msg&id=<{$streamid}>" onsubmit="return checkform();" classs= "terminal_form_to_body">
+<table width="600px" border="0" align="center" cellpadding="0" cellspacing="0" class="terminal_table_border">
+	<tr>
+	<td>
+		<table width="100%" border="0" align="center" cellpadding="0" cellspacing="0">
+			<tr>
+				<td>
+					<img src="<{$stream_modify.modify_sounds_device}>"/>
+				</td>
+			</tr>
+		</table>
+	</td>
+	</tr>
+	<tr>
+	<td>
+		<table width="100%" border="0" align="center" cellpadding="5" cellspacing="0">
+			<tr>
+				<td width="150" align="right" nowrap="nowrap"><{$stream_modify.device_name|capitalize}></td>
+				<td width="450">
+					<input  type="text" value="<{$streaminfo.name}>" name="devicename" maxlength="16" id="devicename"  class="terminal_input_font"/>
+					<span id="devicename_s" class="terminal_star">*</span>
+				</td>
+			</tr>
+			<tr>
+				<td width="150" align="right" nowrap="nowrap"><{$stream_modify.device_ip|capitalize}></td>
+				<td width="450">
+					<input type="text" value="<{$streaminfo.ip}>" name="device_ip" id="device_ip" onkeyup="checkip();"  class="terminal_input_font"/>
+					 <span id="device_ips" class="terminal_star">*</span>
+				</td>
+			</tr>
+				<tr>
+				<td width="150" align="right" nowrap="nowrap"><{$stream_modify.device_addr|capitalize}></td>
+				<td width="450">
+					<select name="device_addr" id="device_addr" style="width:80px;">
+						 <script>
+							var addr=0;
+							for(addr=1;addr<255;addr++)
+							{
+								document.write("<option value='"+addr+"'>"+addr+"</option>");
+							}
+					  </script>
+					</select>
+					 <script>
+							var obj = document.getElementById('device_addr');
+							for(var i=0;i<obj.options.length;i++)
+							{
+								if(obj.options[i].value == <{$streaminfo.devaddr}>)
+								{
+									obj.options[i].selected = true;
+								}
+							}
+							  </script>
+				  </td>
+				</td>
+			</tr>
+			<!--
+				<tr>
+				<td width="150" align="right" nowrap="nowrap"><{$stream_modify.send_port|capitalize}></td>
+				<td width="450">
+					<select name="send_channe" id="send_channe" style="width:80px;">
+						 <script>
+							var sendchanne=0;
+							for(sendchanne=1;sendchanne<5;sendchanne++)
+							{
+								document.write("<option value='"+sendchanne+"'>"+sendchanne+"</option>");
+							}
+								
+					  </script>
+					</select>
+					 <script>
+							var obj = document.getElementById('send_channe');
+							for(var i=0;i<obj.options.length;i++)
+							{
+								if(obj.options[i].value == <{$streaminfo.sendport}>)
+								{
+									obj.options[i].selected = true;
+								}
+							}
+							  </script>
+				  </td>
+				</td>
+			</tr>-->
+			<tr>
+				<td></td>
+				<td>
+					<input type="submit" name="submit" id="submit" value="<{$stream_modify.Sumbit|capitalize}>" class="terminal_button"/>
+					&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+					<input name="reset" type="reset" id="reset" value="<{$stream_modify.Cancel|capitalize}>" class="terminal_button"/>
+				</td>
+			</tr>
+			</table> 
+		</td>
+	</tr>
+</table>
+</form> 

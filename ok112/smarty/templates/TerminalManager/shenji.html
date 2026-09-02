@@ -1,0 +1,127 @@
+<html>
+<head>
+<META http-equiv=Content-Type content="text/html; charset=utf-8">
+<title>SetTerminalMapping</title>
+
+<link href="smarty/templates/BellManager/codebase/dhtmlxtree.css" rel="stylesheet" type="text/css">
+<script  src="smarty/templates/BellManager/codebase/dhtmlxcommon.js"></script>
+<script  src="smarty/templates/BellManager/codebase/dhtmlxtree.js"></script>
+<script src="skin/js/frame/analysis_tree_terminal_group_string.js"></script>
+	<script  src="smarty/templates/ajax/get_terminaltype.js" ></script>
+<link href="skin/css/main_page_style.css" rel="stylesheet" type="text/css">
+
+<script language="javascript">
+function isNumber( s )
+{
+    var regu = "^[0-9]+$";
+    var re = new RegExp(regu);
+    if (s.search(re) != -1) 
+    {
+        return true;
+    }
+    else 
+    {
+        return false;
+    }
+}
+function trim(str)
+{   
+    return str.replace(/(^\s*)|(\s*$)/ig, "");   
+}
+function isChinaOrNumbOrLett( s )
+{
+	var regu = "^[0-9a-zA-Z\u4e00-\u9fa5]+$"; 
+	var re = new RegExp(regu); 
+	if (re.test(s)) 
+	{ 
+		return true; 
+	}
+	else
+	{
+		return false; 
+	} 
+}
+function isNull( str )
+{ 
+ if ( str == "" )
+ return true; 
+ var regu = "^[ ]+$"; 
+ var re = new RegExp(regu); 
+ return re.test(str); 
+} 
+
+function selectupdateversion()
+{
+	 var radios = document.getElementsByName("updatever");
+	 var value;
+	
+    for(var i=0;i<radios.length;i++){
+        if(radios[i].checked){
+            value = radios[i].value;
+			window.location.href = "set_pathname.php?pathname="+value+"&terminal_id="+<{$id}>;
+            break;
+        }
+    }
+	
+	
+}
+
+
+</script>
+</head>
+<body>
+<form name="setkeyform" action="upload_file.php?terminal_id=<{$id}>" method="post" enctype="multipart/form-data" class="terminal_form_to_body">
+<table width="600px" align="center" border="0" cellpadding="0px" cellspacing="0"  class="terminal_table_border">
+	<tr>
+		<td>
+			<table align="center" border="0" cellpadding="0px" cellspacing="0">
+				<tr>
+					<td>
+						<img src="<{$set_shotcut.shotcut_image}>"/>
+					</td>
+				</tr>
+			</table>
+		</td>
+	</tr>
+	<tr>
+		<td>
+			<table align="center" border="0" cellpadding="5px" cellspacing="0" style="font-size:12px;font-family:Georgia, 'Times New Roman', Times, serif, '宋体'">
+				<tr>
+					<td width="180" align="right" ><{$set_shotcut.upgrade_file|capitalize}>:</td>
+					<td width="420" align="left">
+					<input type="file" name="file" id="file" /><input type="submit" name="<{$set_shotcut.upgrade|capitalize}>" value="<{$set_shotcut.upgrade|capitalize}>" />
+				  </td>
+				</tr>
+				
+				<tr>
+					<td width="180" align="right" valign="top"><{$set_shotcut.upgrade_version|capitalize}></td>
+					<td width="420">
+							
+				  </td>
+				</tr>
+					<{if $terminal_info|@count neq 0}>        
+				<{section name=loop loop=$terminal_info}>    
+				<tr>
+					<td width="180" align="right" valign="top"></td>
+					<td width="420">
+					  <input type="radio" name="updatever" value="<{$terminal_info[loop].filename}>"><{$terminal_info[loop].filename}>
+					  </td>
+					</tr>
+				
+					<{/section}>	
+					<{/if}>
+				<tr>
+					<td width="180"></td>
+					<td width="420">
+					<input type="button" value="<{$set_shotcut.Sumbit|capitalize}>" onClick="selectupdateversion()" />
+				 </td>
+				</tr>
+			</table>
+		</td>
+	</tr>
+</table>
+ 
+</form>
+<{include file="language/`$language`_foot.php"}>
+</body>
+</html>

@@ -1,0 +1,77 @@
+<form name="frmSearch2" method="post" action="do.php?act=zhaoshengdeviceadd_msg" onSubmit="return checkform();" classs= "terminal_form_to_body">
+<table width="600px" border="0" align="center" cellpadding="0" cellspacing="0" class="terminal_table_border">
+	<tr>
+	<td>
+		<table width="100%" border="0" align="center" cellpadding="0" cellspacing="0">
+			<tr>
+				<td>
+						<img src="<{$stream_create.create_sounds_device}>"/>
+				</td>
+			</tr>
+		</table>
+	</td>
+	</tr>
+	<tr>
+	<td>
+		<table width="100%" border="0" align="center" cellpadding="5" cellspacing="0">
+			<tr>
+				<td width="150" align="right" nowrap="nowrap"><{$stream_create.device_name|capitalize}></td>
+				<td width="450">
+					<input  type="text" value="" maxlength="16" name="devicename" id="devicename"  class="terminal_input_font"/>
+					<span id="devicename_s" class="terminal_star">*</span>
+				</td>
+			</tr>
+			<tr>
+				<td width="150" align="right" nowrap="nowrap"><{$stream_create.device_ip|capitalize}></td>
+				<td width="450">
+					 <input class="terminal_input_font" name="device_ip" type="text" id="device_ip" onkeyup="checkip();" value="" style="width:150px;"/>
+					 <span id="device_ips" class="terminal_star">*</span>
+				  </td>
+				</td>
+			</tr>
+			
+			<tr>
+				<td width="150" align="right" nowrap="nowrap"><{$stream_create.device_addr|capitalize}></td>
+				<td width="450">
+					<select name="device_addr" id="device_addr" style="width:80px;">
+						 <script>
+							var addr=0;
+							for(addr=1;addr<255;addr++)
+							{
+								document.write("<option value='"+addr+"'>"+addr+"</option>");
+							}
+								
+					  </script>
+					</select>
+				  </td>
+				</td>
+			</tr>
+				<!--	<tr>
+				<td width="150" align="right" nowrap="nowrap"><{$stream_create.send_port|capitalize}></td>
+				<td width="450">
+					<select name="send_channe" id="send_channe" style="width:80px;">
+						 <script>
+							var sendchanne=0;
+							for(sendchanne=1;sendchanne<5;sendchanne++)
+							{
+								document.write("<option value='"+sendchanne+"'>"+sendchanne+"</option>");
+							}
+								
+					  </script>
+					</select>
+				  </td>
+				</td>
+			</tr>-->
+			<tr>
+				<td></td>
+				<td>
+					<input type="submit" name="submit" id="submit" value="<{$stream_create.Sumbit|capitalize}>" class="terminal_button"/>
+					&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+					<input name="reset" type="reset" id="reset" value="<{$stream_create.Cancel|capitalize}>" class="terminal_button"/>
+				</td>
+			</tr>
+			</table> 
+		</td>
+	</tr>
+</table>
+</form> 

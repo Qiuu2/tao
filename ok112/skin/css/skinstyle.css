@@ -1,0 +1,64 @@
+﻿.pagetablestyle 
+{
+	font-family: Arial, Helvetica, sans-serif, "宋体";
+	font-size: 13px;
+	font-weight: bold;
+	color: #3366ff;
+	background-image: url(../images/frame/menubg.gif);
+	background-repeat: repeat-x;
+	width: 20px;
+}
+.tablestyle 
+{
+	font-family: "宋体";
+	font-size: 12px;
+	color: #3366ff;
+	background-color: #f3f3f3;
+}
+.middle 
+{
+	background-color: #CECECE;
+	color: #3366ff;
+}
+.wbt 
+{
+	background-image:url(../images/frame/menubg.gif);
+	color: #3366ff;	
+	
+}
+.add 
+{
+	border: 10px solid #d8d8d8;
+	color: #3366ff;
+	margin: 0px;
+	padding: 0px;
+}
+.colors
+{
+color:#3366ff;
+}
+.nature 
+{
+	background-color: #566B9F;
+}
+.prompt 
+{
+color:#FF00ff;
+}
+.bgcolors1 
+{
+background-color:#FFFFFF;
+}
+.handel 
+{
+background-color:#f0f8ff;
+border:#d5e4f4;
+}
+.tablecellbgcolor 
+{
+	font-family: Arial, Helvetica, sans-serif, "宋体";
+	font-size: 12px;
+	font-weight: normal;
+	color: #3366FF;
+	background-color: #D8D8D8;
+}

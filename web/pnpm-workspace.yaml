@@ -1,0 +1,8 @@
+# pnpm 10+/11 默认拦截依赖包的 postinstall 构建脚本。
+# esbuild 必须靠 postinstall 下载平台二进制，不放行则 vite build 无法运行。
+# 这里显式放行 Geeker-Admin 依赖树里需要构建脚本的四个包。
+allowBuilds:
+  "@parcel/watcher": true
+  es5-ext: true
+  esbuild: true
+  vue-demi: true

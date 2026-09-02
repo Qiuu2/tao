@@ -1,0 +1,597 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>ServerManager</title>
+
+<link href="skin/css/main_page_style.css" rel="stylesheet" type="text/css"/>
+
+<script type="text/javascript">
+function trim(str)
+{
+   str=str.replace(/(^\s*)|(\s*$)/g,""); 
+   return str;
+}
+
+function isNull( str )
+{
+	if ( str == "" || str==null) 
+	return true;
+	var regu = "^[ ]+$";
+	var re = new RegExp(regu);
+	return re.test(str);
+}
+function isIP(strIP) 
+{ 
+	if (isNull(strIP)) 
+	return false; 
+	var re=/^(\d+)\.(\d+)\.(\d+)\.(\d+)$/g; 
+	if(re.test(strIP)) 
+	{ 
+		if(RegExp.$1 <256 & RegExp.$2<256 && RegExp.$3<256 && RegExp.$4<256)
+		return true; 
+	} 
+	return false; 
+} 
+
+function isIPduan(strIP,Ip,netmask,slaveip) 
+{ 
+	var IP_1 = strIP.split(".");
+	var IP_1_0=parseInt(IP_1[0]);
+	var IP_1_1=parseInt(IP_1[1]);
+	var IP_1_2=parseInt(IP_1[2]);
+	var IP_2 = Ip.split(".");
+	var IP_2_0=parseInt(IP_2[0]);
+	var IP_2_1=parseInt(IP_2[1]);
+	var IP_2_2=parseInt(IP_2[2]);
+	var netmask_1 = netmask.split(".");
+	var netmask_1_0=parseInt(netmask_1[0]);
+	var netmask_1_1=parseInt(netmask_1[1]);
+	var netmask_1_2=parseInt(netmask_1[2]);
+	var slaveip_0 = slaveip.split(".");
+	var slaveip_0_0=parseInt(slaveip_0[0]);
+	var slaveip_0_1=parseInt(slaveip_0[1]);
+	var slaveip_0_2=parseInt(slaveip_0[2]);
+	var m=0,n=0;
+	if(netmask_1_0!=0)
+	{
+		m++;
+		if((IP_1_0&netmask_1_0)==(IP_2_0&netmask_1_0))
+		{
+			n++;
+		}
+		else
+		{
+		
+		}
+		if(IP_1_0==slaveip_0_0)
+		{
+		
+		}
+		else
+		{
+			document.getElementById('slave_s').innerHTML="<font class='server_star'><{$server_manager.address_same_net|capitalize}></font>";
+			document.getElementById('Slave_IP').select();
+			document.serverform.Slave_IP.focus();
+			return false; 
+		}
+	}
+	if(netmask_1_1!=0)
+	{
+		m++;
+		if((IP_1_1&netmask_1_1)==(IP_2_1&netmask_1_1))
+		{
+			n++;
+		}
+		else
+		{
+		
+		}
+		if(IP_1_1==slaveip_0_1)
+		{
+		
+		}
+		else
+		{
+			document.getElementById('slave_s').innerHTML="<font class='server_star'><{$server_manager.address_same_net|capitalize}></font>";
+			document.getElementById('Slave_IP').select();
+			document.serverform.Slave_IP.focus();
+			return false; 
+		}
+	}
+	
+	if(netmask_1_2!=0)
+	{
+		m++;
+		if((IP_1_2&netmask_1_2)==(IP_2_2&netmask_1_2))
+		{
+			n++;
+		}
+		else
+		{
+		
+		}
+		
+		if(IP_1_2==slaveip_0_2)
+		{
+		
+		}
+		else
+		{
+			document.getElementById('slave_s').innerHTML="<font class='server_star'><{$server_manager.address_same_net|capitalize}></font>";
+			document.getElementById('Slave_IP').select();
+			document.serverform.Slave_IP.focus();
+			return false; 
+		}
+	}
+	
+	if(m==n)
+	{
+		document.getElementById('master_s').innerHTML="<font class='server_star'><{$server_manager.address_not_net|capitalize}></font>";
+		document.getElementById('master_ip').select();
+		document.serverform.master_ip.focus();
+		return false; 
+	}	
+	
+	return true; 
+} 
+
+function isChinaOrNumbOrLett(s)
+{ 
+	var regu = "^[0-9a-zA-Z\u4e00-\u9fa5]+$"; 
+	var re = new RegExp(regu); 
+	if (re.test(s)) 
+	{ 
+		return true; 
+	}
+	else
+	{ 
+		return false; 
+	} 
+} 
+
+
+function isNumber(s)
+{ 
+	var regu = "^[0-9]+$"; 
+	var re=new RegExp(regu);
+	if(re.test(s))
+	{
+		return true;
+	}
+	else
+	{
+		return false;
+	}
+}
+
+function isPort( str )
+{ 
+    return (isNumber(str) & str<65536); 
+}
+
+function pathverify(str)
+{
+	var regu = "(^\\.|^/|^[a-zA-Z])?:?/.+(/$)?"; 
+	var re=new RegExp(regu);
+	if(re.test(str))
+	{
+		return true;
+	}
+	else
+	{
+		return false;
+	}
+}
+
+function checkform()
+{
+	//验证主服务器名
+	if(isNull(document.serverform.name.value))
+	{  
+		document.getElementById('name_s').innerHTML="<font class='server_star'><{$server_manager.enter_server_name|capitalize}></font>";
+		document.serverform.name.focus();	
+		return false;
+	}
+	else
+	{
+		if(!isChinaOrNumbOrLett(document.serverform.name.value))
+		{
+			document.getElementById('name_s').innerHTML="<font class='server_star'><{$server_manager.letter_number_Chinese|capitalize}></font>";
+			document.getElementById('name').select();
+			document.serverform.name.focus();
+			return false;
+		}
+	}
+	document.getElementById('name_s').innerHTML="<font class='server_star'></font>";
+
+	//验证子服务器名
+	if(isNull(document.serverform.slavename.value))
+	{  
+		document.getElementById('slavename_s').innerHTML="<font class='server_star'><{$server_manager.enter_server_name|capitalize}></font>";
+		document.serverform.slavename.focus();	
+		return false;
+	}
+	else
+	{
+		if(!isChinaOrNumbOrLett(document.serverform.slavename.value))
+		{
+			document.getElementById('slavename_s').innerHTML="<font class='server_star'><{$server_manager.letter_number_Chinese|capitalize}></font>";
+			document.getElementById('slavename').select();
+			document.serverform.slavename.focus();
+			return false;
+		}
+	}
+	document.getElementById('slavename_s').innerHTML="<font class='server_star'></font>";
+
+	//验证ip
+	if(isNull(document.serverform.ip.value))
+	{
+		document.getElementById('ip_s').innerHTML="<font class='server_star'><{$server_manager.enter_IP_address|capitalize}></font>";
+		document.serverform.ip.focus();
+		return false;
+	}
+	else
+	{
+		if(!isIP(document.serverform.ip.value))
+		{
+			document.getElementById('ip_s').innerHTML="<font class='server_star'><{$server_manager.address_format_error|capitalize}></font>";
+			document.getElementById('ip').select();
+			document.serverform.ip.focus();
+			return false;
+		}
+	}
+	document.getElementById('ip_s').innerHTML="<font class='server_star'></font>";
+
+	//验证子网掩码
+	if(isNull(document.serverform.subnetmaskip.value))
+	{
+		document.getElementById('netmask').innerHTML="<font class='server_star'><{$server_manager.inputSalve_Server|capitalize}></font>";
+		document.serverform.subnetmaskip.focus();
+		return false;
+	}
+	else
+	{
+		if(!isIP(document.serverform.subnetmaskip.value))
+		{
+			document.getElementById('netmask').innerHTML="<font class='server_star'><{$server_manager.address_format_error|capitalize}></font>";
+			document.getElementById('subnetmaskip').select();
+			document.serverform.subnetmaskip.focus();
+			return false;
+		}
+	}
+	document.getElementById('netmask').innerHTML="<font class='server_star'></font>";
+
+	//验证主服务器地址
+	if(isNull(document.serverform.dateport.value))
+	{
+		document.getElementById('dateport_s').innerHTML="<font class='server_star'><{$server_manager.Only_number|capitalize}></font>";
+		document.serverform.dateport.focus();
+		return false;
+	}
+	else
+	{
+		if(!isPort(document.serverform.dateport.value))
+		{
+			document.getElementById('dateport_s').innerHTML="<font class='server_star'><{$server_manager.Port_error|capitalize}></font>";
+			document.getElementById('dateport').select();
+			document.serverform.dateport.focus();
+			return false;
+		}
+	}
+	document.getElementById('dateport_s').innerHTML="<font class='server_star'></font>";
+
+	if(isNull(document.serverform.webport.value))
+	{
+		document.getElementById('webport_s').innerHTML="<font class='server_star'><{$server_manager.Only_number|capitalize}></font>";
+		document.serverform.webport.focus();
+		return false;
+	}
+	else
+	{
+		if(!isPort(document.serverform.webport.value))
+		{
+			document.getElementById('webport_s').innerHTML="<font class='server_star'><{$server_manager.Port_error|capitalize}></font>";
+			document.serverform.webport.focus();
+			
+			return false;
+		}
+		document.getElementById('setwebport').value=trim(document.getElementById('webport').value);
+	}
+		
+	document.getElementById('webport_s').innerHTML="<font class='server_star'></font>";
+	
+	if(isNull(document.serverform.sdkport.value))
+	{
+		document.getElementById('sdkport_s').innerHTML="<font class='server_star'><{$server_manager.Only_number|capitalize}></font>";
+		document.serverform.sdkport.focus();
+		return false;
+	}
+	else
+	{
+		if(!isPort(document.serverform.sdkport.value))
+		{
+			document.getElementById('sdkport_s').innerHTML="<font class='server_star'><{$server_manager.Port_error|capitalize}></font>";
+			document.serverform.sdkport.focus();
+			return false;
+		}
+	}
+		
+	document.getElementById('sdkport_s').innerHTML="<font class='server_star'></font>";
+
+	/*//sdk地址
+	if(isNull(document.serverform.sdkaddr.value))
+	{
+		document.getElementById('sdkaddr_s').innerHTML="<font class='server_star'><{$server_manager.inputSalve_Server|capitalize}></font>";
+		document.serverform.sdkaddr.focus();
+		return false;
+	}
+	else
+	{
+		if(!isIP(document.serverform.sdkaddr.value))
+		{
+			document.getElementById('sdkaddr_s').innerHTML="<font class='server_star'><{$server_manager.address_format_error|capitalize}></font>";
+			document.getElementById('sdkaddr').select();
+			document.serverform.sdkaddr.focus();
+			return false;
+		}
+	}
+	
+	document.getElementById('sdkaddr_s').innerHTML="<font class='server_star'></font>";*/
+	//验证heartbeat子网掩码
+	if(isNull(document.serverform.mastersubnetmask.value))
+	{
+		document.getElementById('mastersubnetmasks').innerHTML="<font class='server_star'><{$server_manager.inputSalve_Server|capitalize}></font>";
+		document.serverform.mastersubnetmask.focus();
+		return false;
+	}
+	else
+	{
+		if(!isIP(document.serverform.mastersubnetmask.value))
+		{
+			document.getElementById('mastersubnetmasks').innerHTML="<font class='server_star'><{$server_manager.address_format_error|capitalize}></font>";
+			document.getElementById('mastersubnetmask').select();
+			document.serverform.mastersubnetmask.focus();
+			return false;
+		}
+	}
+	document.getElementById('mastersubnetmasks').innerHTML="<font class='server_star'></font>";
+
+//验证heartbeat网关
+	
+if(isNull(document.serverform.Slavegateway.value))
+	{
+	//	document.getElementById('gateway_s').innerHTML="<font class='server_star'><{$server_manager.enter_gateway_address|capitalize}></font>";
+	//	document.serverform.gateway.focus();
+		//return false;
+	}
+	else
+	{
+		if(!isIP(document.serverform.Slavegateway.value))
+		{
+			document.getElementById('Slavegateway_s').innerHTML="<font class='server_star'><{$server_manager.address_format_error|capitalize}></font>";
+			document.getElementById('Slavegateway').select();
+			document.serverform.Slavegateway.focus();
+			return false;
+		}
+	}
+	document.getElementById('Slavegateway_s').innerHTML="<font class='server_star'></font>";
+
+
+	//验证网关
+	
+	if(isNull(document.serverform.gateway.value))
+	{
+	//	document.getElementById('gateway_s').innerHTML="<font class='server_star'><{$server_manager.enter_gateway_address|capitalize}></font>";
+	//	document.serverform.gateway.focus();
+		//return false;
+	}
+	else
+	{
+		if(!isIP(document.serverform.gateway.value))
+		{
+			document.getElementById('gateway_s').innerHTML="<font class='server_star'><{$server_manager.address_format_error|capitalize}></font>";
+			document.getElementById('gateway').select();
+			document.serverform.gateway.focus();
+			return false;
+		}
+	}
+	document.getElementById('gateway_s').innerHTML="<font class='server_star'></font>";
+
+
+	//验证端口
+	if(isNull(document.serverform.udpport.value))
+	{
+		document.getElementById('rtspport_s').innerHTML="<font class='server_star'><{$server_manager.enter_port|capitalize}></font>";
+		document.serverform.udpport.focus();
+		return false;
+	}
+	else
+	{
+		if( !isNumber( trim(document.getElementById('udpport').value) ) )
+		{
+			document.getElementById('rtspport_s').innerHTML="<font class='server_star'><{$server_manager.Only_number|capitalize}></font>";
+			document.getElementById('udpport').select();
+			document.serverform.udpport.focus();
+			return false;
+		}
+		
+		if(!isPort(document.serverform.udpport.value))
+		{
+			document.getElementById('rtspport_s').innerHTML="<font class='server_star'><{$server_manager.Port_error|capitalize}></font>";
+			document.getElementById('udpport').select();
+			document.serverform.udpport.focus();
+			return false;
+		}
+	}
+	document.getElementById('rtspport_s').innerHTML="<font class='server_star'></font>";
+	//验证连接数是否是数字
+	if(isNull(document.serverform.maxhttpconnections.value))
+	{
+		document.getElementById('maxhttpconnections_s').innerHTML="<font class='server_star'><{$server_manager.max_connections|capitalize}></font>";
+		document.serverform.maxhttpconnections.focus();
+		return false;
+	}
+	else
+	{
+		if(!isNumber(document.serverform.maxhttpconnections.value))
+		{
+			document.getElementById('maxhttpconnections_s').innerHTML="<font class='server_star'><{$server_manager.Only_number|capitalize}></font>";
+			document.getElementById('maxhttpconnections').select();
+			document.serverform.maxhttpconnections.focus();
+			return false;
+		}
+	}
+	document.getElementById('maxhttpconnections_s').innerHTML="<font class='server_star'></font>";
+	//验证连接端口	
+	if(isNull(document.serverform.port.value))
+	{
+		document.getElementById('port_s').innerHTML="<font class='server_star'><{$server_manager.enter_port|capitalize}></font>";
+		document.serverform.port.focus();
+		return false;
+	}
+	else
+	{
+		if( !isNumber( trim(document.getElementById('port').value) ) )
+		{
+			document.getElementById('port_s').innerHTML="<font class='server_star'><{$server_manager.Only_number|capitalize}></font>";
+			document.getElementById('port').select();
+			document.serverform.udpport.focus();
+			return false;
+		}
+	
+		if(!isPort(document.serverform.port.value))
+		{
+			document.getElementById('port_s').innerHTML="<font class='server_star'><{$server_manager.Port_error|capitalize}></font>";
+			document.getElementById('port').select();
+			document.serverform.port.focus();
+			return false;
+		}
+	}
+	document.getElementById('port_s').innerHTML="<font class='server_star'></font>";
+	//验证最大连接最大带宽
+	if(isNull(document.serverform.maxbandwidth.value))
+	{
+		document.getElementById('maxbandwidth_s').innerHTML="<font class='server_star'><{$server_manager.enter_bandwidth|capitalize}></font>";
+		document.serverform.port.focus();
+		return false;
+	}
+	else
+	{
+		if(!isNumber(document.serverform.maxbandwidth.value))
+		{
+			document.getElementById('maxbandwidth_s').innerHTML="<font class='server_star'><{$server_manager.Only_number|capitalize}></font>";
+			document.getElementById('maxbandwidth').select();
+			document.serverform.port.focus();
+			return false;
+		}
+	}
+	document.getElementById('maxbandwidth_s').innerHTML="<font class='server_star'></font>";
+	//验证离线端口
+	if(isNull(document.serverform.offlineport.value))
+	{
+		document.getElementById('offlinepport_s').innerHTML="<font class='server_star'><{$server_manager.poffline_port|capitalize}></font>";
+		document.serverform.offlineport.focus();
+		return false;
+	}
+	else
+	{
+		if(!isNumber(document.serverform.offlineport.value))
+		{
+			document.getElementById('offlinepport_s').innerHTML="<font class='server_star'><{$server_manager.Only_number|capitalize}></font>";
+			document.getElementById('offlineport').select();
+			document.serverform.offlineport.focus();
+			return false;
+		}
+	}
+	document.getElementById('offlinepport_s').innerHTML="<font class='server_star'></font>";
+
+	//验证主服务器ip
+	if(isNull(document.serverform.master_ip.value))
+	{
+		document.getElementById('master_s').innerHTML="<font class='server_star'><{$server_manager.enter_IP_address|capitalize}></font>";
+		document.serverform.master_ip.focus();
+		return false;
+	}
+	else
+	{
+		if(!isIP(document.serverform.master_ip.value))
+		{
+			document.getElementById('master_s').innerHTML="<font class='server_star'><{$server_manager.address_format_error|capitalize}></font>";
+			document.getElementById('master_ip').select();
+			document.serverform.master_ip.focus();
+			return false;
+		}
+	}
+
+	document.getElementById('master_s').innerHTML="<font class='server_star'></font>";
+	//验证子服务器ip
+	if(isNull(document.serverform.Slave_IP.value))
+	{
+		document.getElementById('slave_s').innerHTML="<font class='server_star'><{$server_manager.enter_IP_address|capitalize}></font>";
+		document.serverform.Slave_IP.focus();
+		return false;
+	}
+	else
+	{
+		if(!isIP(document.serverform.Slave_IP.value))
+		{
+			document.getElementById('slave_s').innerHTML="<font class='server_star'><{$server_manager.address_format_error|capitalize}></font>";
+			document.getElementById('Slave_IP').select();
+			document.serverform.Slave_IP.focus();
+			return false;
+		}
+
+	/*	
+		if(!isIPduan(document.serverform.master_ip.value,document.serverform.ip.value,document.serverform.subnetmaskip.value,document.serverform.Slave_IP.value))
+		{	
+
+			return false;
+		}
+		*/
+	}
+
+	document.getElementById('slave_s').innerHTML="<font class='server_star'></font>";
+  	return true;
+}
+
+function restart_server()
+{
+	if(window.confirm("<{$server_manager.sure_restart_server}>") == false)
+		return void(0);
+	else
+		window.location.href = "do.php?act=restart_server_msg";
+		return true;
+}
+function init_date()
+{
+	var server_model=1;
+	
+	if(document.getElementsByName('servermodel')[0].checked==true)
+	{
+	server_model=1;
+	}
+	else
+	{
+	server_model=2;
+	}
+	if(window.confirm("<{$server_manager.init_dates}>") == false)
+		return void(0);
+	else
+		window.location.href = "do.php?act=init_date_msg&servermodel="+server_model;
+}
+
+
+
+</script>
+
+<script language="javascript" src="smarty/templates/ajax/synchronization.js"></script>
+<!--
+<script language="javascript" src="smarty/templates/ajax/restart_server.js"></script>
+-->
+</head>
+<body >
+	<{include file="servermanager_form.html"}> 
+	<{include file="language/`$language`_foot.php"}>
+</body>
+</html>

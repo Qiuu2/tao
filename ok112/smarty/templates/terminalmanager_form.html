@@ -1,0 +1,427 @@
+<form name="form2" class="terminal_form_to_body">
+	<table width="98%" border="0" cellpadding="2" cellspacing="1"  align="center" id="tableSort">
+	<thead>
+		<tr align='center' class="terminal_table_row_bg">
+			
+			<th width="7%" nowrap="nowrap"  class="change_thead_style">
+				<{$terminal_manager.Select|capitalize}>
+			</th> 
+
+			<th width="12%" nowrap="nowrap" onclick="sortTable('tableSort', 1)" class="sort_data_table_sequence">
+				<{$terminal_manager.Terminal_Name|capitalize}>↑↓
+			</th>  
+		<!--  
+			<td width="12%" nowrap="nowrap"><{$terminal_manager.Zone|capitalize}></td> 
+		-->      
+			<th width="8%" nowrap="nowrap" onclick="sortTable('tableSort', 2)" class="sort_data_table_sequence">
+				<{$terminal_manager.Terminal_Type|capitalize}>↑↓
+			</th>  
+			
+			<th width="7%" nowrap="nowrap" onclick="sortTable('tableSort',3)" class="sort_data_table_sequence">
+				<{$terminal_manager.Task_Status|capitalize}>↑↓
+			</th>  
+			
+			<th width="7%" nowrap="nowrap" class="change_thead_style">
+				<{$terminal_manager.Network_Status|capitalize}>
+			</th>
+			
+			<th width="7%" nowrap="nowrap" class="change_thead_style">
+				<{$terminal_manager.Device_Status|capitalize}>
+			</th>
+			
+			<th width="8%" nowrap="nowrap" onclick="sortTable('tableSort',3)" class="sort_data_table_sequence">
+				<{$terminal_manager.IP_Address|capitalize}>↑↓
+			</th>     
+			
+			<th width="7%" nowrap="nowrap" class="change_thead_style">
+				<{$terminal_manager.Volume|capitalize}>
+			</th>
+			
+			<th width="7%" nowrap="nowrap" onclick="sortTable('tableSort', 8)" class="sort_data_table_sequence">
+				<{$terminal_manager.Talkback_Status|capitalize}>↑↓
+			</th>
+			
+			<th width="7%" nowrap="nowrap" class="change_thead_style">
+				<{$terminal_manager.Termianl_manager_SInstancy|capitalize}>
+			</th>
+			          	
+			<th width="7%" nowrap="nowrap" class="change_thead_style">
+				<{$terminal_manager.Browse|capitalize}>
+			</th>
+		</tr> 
+	</thead>
+	<tbody>
+		<{if $terminal_info|@count neq 0}>        
+		<{section name=loop loop=$terminal_info}>   
+		   
+		  <tr align='center' class="terminal_per_row" onmouseover="this.style.backgroundColor = '#EEEEFF'" onmouseout="this.style.backgroundColor = '#F1F4F5'">             	
+			<td nowrap="nowrap">
+			<{if $is_right == 1 || $admin_id == "administrator"}>
+			
+				<{$terminal_info[loop].id}>
+				
+				<input name="id" type="checkbox" id="id" value="<{$terminal_info[loop].id}>">
+			<{else}>
+				<{$terminal_info[loop].id}>
+				<!--
+				<{$smarty.section.loop.index+1 + $start}>
+				-->
+			<{/if}>
+			</td>	
+			<td nowrap="nowrap">
+					<label title="<{$terminal_info[loop].terminalname}>">
+						<{$terminal_info[loop].terminalname|truncate:18:"..."}>
+					</label>
+			</td>	
+	<!--
+			 <td nowrap="nowrap">
+				<{if $terminal_info[loop].groupid != 0}>
+				 <{section name=stream loop=$stream_info}>
+						 <{if $terminal_info[loop].groupid == $stream_info[stream].id}>
+							 <{$stream_info[stream].name}>
+						 <{/if}>
+				 <{/section}> 
+				 <{else}>
+				 	<{$terminal_manager.Unknown_area|capitalize}>
+				 <{/if}>
+			 </td> 
+	-->
+			 <td nowrap="nowrap">
+			 	<{if $terminal_info[loop].typeid != -1}>
+					 <{section name=type loop=$type_info}>
+						<{if $terminal_info[loop].typeid == $type_info[type].id}>        	 		
+							<!--<{$type_info[type].name}>-->		
+							<script language="javascript">
+								document.write(chinese_big5_english("<{$chinese_big5_english}>","<{$type_info[type].name}>"));	
+							</script>		      			  
+						<{/if}>
+					 <{/section}> 
+				 <{else}>
+				 	<{$terminal_manager.Unknown_type|capitalize}>
+				 <{/if}> 	     
+			 </td>
+			 
+			 <td nowrap="nowrap">
+				
+					<{if $terminal_info[loop].netstate == 0}>
+						<{$terminal_manager.Disconnected|capitalize}>
+					<{elseif $terminal_info[loop].netstate == 1 && $terminal_info[loop].taskstate == 0}>
+						<{$terminal_manager.Idle|capitalize}>
+					<{elseif $terminal_info[loop].netstate == 1 && $terminal_info[loop].taskstate == 1}>
+						<{$terminal_manager.Timing_Play|capitalize}>
+					<{elseif $terminal_info[loop].netstate == 1 && $terminal_info[loop].taskstate == 2}>
+						<{$terminal_manager.On_Talkback|capitalize}>
+					<{elseif $terminal_info[loop].netstate == 1 && $terminal_info[loop].taskstate == 3}>
+						<{$terminal_manager.AOD|capitalize}>
+					<{elseif $terminal_info[loop].netstate == 1 && $terminal_info[loop].taskstate == 4}>
+						<{$terminal_manager.Selected_Play|capitalize}>
+					<{elseif $terminal_info[loop].netstate == 1 && $terminal_info[loop].taskstate == 5}>
+						<{$terminal_manager.Paging|capitalize}>
+					<{elseif $terminal_info[loop].netstate == 1 && $terminal_info[loop].taskstate == 6}>
+						<{$terminal_manager.Talkback_Ready|capitalize}>
+					<{elseif $terminal_info[loop].netstate == 1 && $terminal_info[loop].taskstate == 7}>
+						<{$terminal_manager.Local_Amplifying|capitalize}>
+					<{elseif $terminal_info[loop].netstate == 1 && $terminal_info[loop].taskstate == 8}>
+						<{$terminal_manager.Play_from_USB|capitalize}>
+					<{elseif $terminal_info[loop].netstate == 1 && $terminal_info[loop].taskstate == 9}>
+						<{$terminal_manager.Request_Talkback|capitalize}>
+					<{elseif $terminal_info[loop].netstate == 1 && $terminal_info[loop].taskstate == 10}>
+						<{$terminal_manager.Requested_Talkback|capitalize}>
+					<{elseif $terminal_info[loop].netstate == 1 && $terminal_info[loop].taskstate == 11}>
+						<{$terminal_manager.Paging_Play|capitalize}>
+					<{elseif $terminal_info[loop].netstate == 1 && $terminal_info[loop].taskstate == 12}>
+						<{$terminal_manager.Timing_Play|capitalize}>
+					<{/if}>
+			</td>
+			
+			 <td nowrap="nowrap">
+			 
+				 <{if $terminal_info[loop].netstate == 0}>
+					<{$terminal_manager.Disconnected|capitalize}>
+				 <{elseif $terminal_info[loop].netstate == 1}>
+					<{$terminal_manager.Connected|capitalize}>
+				 <{/if}>
+			 
+			 </td>	
+			 	 
+			 <td nowrap="nowrap">
+				 <{if $terminal_info[loop].netstate == 0}>
+					<{$terminal_manager.Disconnected|capitalize}>
+				 <{elseif $terminal_info[loop].netstate == 1 && $terminal_info[loop].devicestate == 0}>
+					<{$terminal_manager.Disabled|capitalize}>
+				 <{elseif $terminal_info[loop].netstate == 1 && $terminal_info[loop].devicestate == 1}>
+					<{$terminal_manager.Enabled|capitalize}>
+				 <{/if}>
+			 </td>
+			 
+			 <td nowrap="nowrap"><{$terminal_info[loop].ip}></td> 	             
+			 
+			 <td nowrap="nowrap"><{$terminal_info[loop].volume}></td> 
+			 
+			 <td nowrap="nowrap">
+			 
+			 <{if $terminal_info[loop].typeid != -1}>
+			 
+				<{section name=type loop=$type_info}>
+				
+					<{if $terminal_info[loop].isspeech==1 && $terminal_info[loop].typeid== $type_info[type].id && $type_info[type].isdecode == 1 && $type_info[type].isencode == 1}>
+					
+						<{$terminal_manager.Talkback|capitalize}>
+					
+					<{elseif $terminal_info[loop].isspeech==1 && $terminal_info[loop].typeid==$type_info[type].id && $type_info[type].isdecode == 0 && $type_info[type].isencode == 1}>
+					
+						<{$terminal_manager.Paging|capitalize}>
+					
+					<{elseif $terminal_info[loop].isspeech==1 && $terminal_info[loop].typeid==$type_info[type].id && $type_info[type].isdecode == 1 && $type_info[type].isencode == 0}>
+					
+						<{$terminal_manager.Requested_Paging|capitalize}>
+					
+					<{elseif $terminal_info[loop].isspeech==0 && $terminal_info[loop].typeid==$type_info[type].id && $type_info[type].isdecode == 1 && $type_info[type].isencode == 1}>
+					
+						<{$terminal_manager.Closed|capitalize}>
+					
+					<{elseif $terminal_info[loop].isspeech==0 && $terminal_info[loop].typeid==$type_info[type].id && $type_info[type].isdecode == 0 && $type_info[type].isencode == 1}>
+					
+						<{$terminal_manager.Closed|capitalize}>
+					
+					<{elseif $terminal_info[loop].isspeech==0 && $terminal_info[loop].typeid==$type_info[type].id && $type_info[type].isdecode == 0 && $type_info[type].isencode == 1}>
+					
+						<{$terminal_manager.Closed|capitalize}>
+					
+					<{elseif $terminal_info[loop].typeid==$type_info[type].id && $type_info[type].isdecode == 0 && $type_info[type].isencode == 0}>
+					
+						<{$terminal_manager.Unavailable|capitalize}>
+					 <{/if}>
+				 
+				 <{/section}>
+				 
+				<{else}>
+				
+					<{$terminal_manager.Unknown|capitalize}>
+					
+				<{/if}>
+			 </td>
+			 
+			 <td nowrap="nowrap">				
+					<{if $terminal_info[loop].instancy == 1}>			
+						<{$Termianl_manager_SInstancy|capitalize}>		
+					<{else}>
+						<{$Termianl_manager_NInstancy|capitalize}>
+					<{/if}>
+			</td>
+			
+			 <td nowrap="nowrap">
+			  <{if $terminal_info[loop].typeid != 0}>
+				 <{if $terminal_info[loop].netstate == 1}>
+					 <a  name="link_view" id="link_view" href="http://<{$terminal_info[loop].ip}>/bbr.cgi" target="_blank"  >
+						<{$terminal_manager.Browse|capitalize}>
+					 </a>
+					 
+				 <{elseif $terminal_info[loop].netstate == 0}>
+					 <a  name="link_view" id="link_view" href="#" onclick="alert('<{$Revise.Disconnected}>');return void(0);">
+						<{$terminal_manager.Browse|capitalize}>
+					 </a>
+				 <{/if}>
+			<else>
+			
+			<{/if}>
+			 </td>     
+		  </tr> 
+		 
+		<{/section}>
+		<{else}>
+		<tr class="tablestyle"  onmouseover="this.style.backgroundColor = '#EEEEFF'" onmouseout="this.style.backgroundColor = '#FFFFFF'">
+		<td colspan="10" style="text-align:center"><strong><{$Revise.No_data}></strong></td>
+		</tr>
+		<{/if}>
+		</tbody>      
+		<tr class="bgcolors1">
+			<td height="28" colspan="9">		
+				<table cellpadding="0" cellspacing="0">
+				<tr>
+					<td>			  
+						<table width="100%" border="0" >
+						<tr>
+							<script src="smarty/templates/UserAccessControl/CheckUserRights.js" type="text/javascript" language="javascript">
+							</script>
+							<td width="20%"  align="left" nowrap="nowrap">
+								<a href="javascript:selAll(0)" name="select_all_yes" id="select_all_yes">
+									<{$terminal_manager.Select_All|capitalize}>
+								</a>&nbsp;
+								
+								<a href="javascript:noSelAll(0)" name="select_all_no" id="select_all_no">
+									<{$terminal_manager.Cancel|capitalize}>
+								</a>&nbsp;
+								
+								<a href="javascript:startTerminal()">
+									<{$terminal_manager.Start_Terminal|capitalize}>
+								</a>&nbsp;
+								
+								<a href="javascript:stopTerminal()">
+									<{$terminal_manager.Disable_Terminal|capitalize}>
+								</a>&nbsp;
+								
+								<a href="javascript:startspeech()">
+									<{$terminal_manager.Start_Talkback|capitalize}>
+								</a>&nbsp;
+								
+								<a href="javascript:closespeech()">
+									<{$terminal_manager.Disable_Talkback|capitalize}>
+								</a>&nbsp;
+								
+								<a href="javascript:delterminal(0)">
+									<{$terminal_manager.Re_registration|capitalize}>
+								</a>&nbsp;
+								
+								<a href="javascript:setshotcut()">
+									<{$terminal_manager.Set_Shortcut_Key|capitalize}>
+								</a>&nbsp;
+								
+								<a href="javascript:view_shotcut()">
+									<{$terminal_manager.View_Shortcut_Key|capitalize}>
+								</a>&nbsp;
+								<a href="javascript:cancel_shotcut()">
+									<{$terminal_manager.Delete_Shortcut_Key|capitalize}>
+								</a>&nbsp;
+								
+								<a href="javascript:showDiv()">
+									<{$terminal_manager.Set_terminal_password}>
+								</a>&nbsp;
+								
+								<a href="javascript:set_terminal_Minstancy()">
+									<{$terminal_manager.Instancy_Add_Termial}>
+								</a>&nbsp;
+								
+								<a href="javascript:set_terminal_Sinstancy()">
+									<{$terminal_manager.Instancy_Del_Termial}>
+								</a>&nbsp;
+								
+							</td>
+						</tr>
+							<script>
+								rights_control(<{$is_right}>,"<{$is_admin}>","link_view");
+							</script>
+						</table>		
+				</table>	
+				</td>
+			</tr>
+		</table>
+		
+	</td>
+  </tr>
+  </form>
+  <tr>
+    <td align="center">
+		<table align="center"><tr><td><div class="link_style" align="center"><{$pagestr}></div></td></tr></table>
+	</td>
+  </tr>
+<!--  搜索表单  -->
+<form name='formsearch' action='terminalmanager.php' method='get' onSubmit="return checksearch();">
+<input type='hidden' name='dopost' value='' />
+<table width='98%'  border='0' cellpadding='1' cellspacing='1' class="middle" align="center" style="margin-top:8px">
+  <tr>
+    <td background='skin/images/wbg.gif' align='center'>
+		<table border='0' cellpadding='0' cellspacing='0'>
+			<tr>
+				<td width='90' align='center'><{$Searchform.Search_conditions}></td>
+				<td width='160'>
+					<select name='searchkey' id="searchkey" style='width:150px'>
+						<option value=""><{$Searchform.Select_type}></option>
+						
+						<option value="terminalname"><{$Searchform.Terminal_name}></option>
+						
+						<option value="ip"><{$Searchform.IP_Address}></option>
+						
+					</select>
+				</td>
+				<td width='70'>
+				<{$Searchform.Keyword}>
+				</td>
+				<td width='160'>
+					<input type='text' name='searchvalue' id="searchvalue" value=''/>        
+				</td>
+				<td width='110'>
+					<select name='searchsequence' id="searchsequence" style='width:80px'>
+					  <option value=""><{$Searchform.Sort}></option>
+					  
+					  <option value="id"><{$Searchform.Published}></option>
+					</select>        
+				</td>
+				<td>
+					<input name="imageField" type="image" src="<{$terminal_manager.search_image}>" width="45px" height="20px" border="0px"/>        
+				</td>       
+			</tr>
+		</table>
+    </td>
+  </tr>
+</table>
+</form>
+<{if $user_rights ==1}>
+<!--什么也不做-->
+<{elseif $user_rights ==2}>
+<script>
+	var input_objs = document.getElementsByName('id');
+	for(var i=0; i< input_objs.length; i++)
+	{
+		input_objs[i].disabled = true;
+	}
+	for(var i=0; i< input_objs.length; i++)
+	{
+		<{section name=ter_id loop=$user_terminal}>
+		if(input_objs[i].value == "<{$user_terminal[ter_id]}>")
+		{
+			input_objs[i].disabled = false;
+		}
+		<{/section}>
+	}
+	document.getElementById('select_all_yes').style.display = 'none';
+	document.getElementById('select_all_no').style.display = 'none';
+</script>
+<{elseif $user_rights ==0}>
+<!--什么也不做-->
+<{/if}>
+
+
+<!-----------------------添加隐藏层--------------------------------------------->
+<div id="popDiv" class="mydiv" style="display:none;">
+<table border="0" width="300" height="150" align="center" cellpadding="0" cellspacing="0" >
+    <tr height="20%">
+        <td colspan="2" align="left" valign="middle" style="background-color:#6699DD;color:#FFFFFF">
+            <{$terminal_manager.Batch_Settings_password}>
+        </td>
+    </tr>
+    
+    <tr height="20%">
+        <td colspan="2" align="left" valign="middle">
+           <{$terminal_manager.Note_password_only_number}>
+        </td>
+    </tr>
+    
+    <tr height="30%">
+        <td align="right" width="30%">
+            <{$terminal_manager.password}>
+        </td>
+        
+        <td align="left" width="70%">
+        
+            <input type="password" value="" id="terminal_password" name="terminal_password" maxlength="15" size="20"/>
+            
+            <span id="terminal_password_msg" style="color:#FF0000;vertical-align:text-top;"><{$terminal_manager.must}></span>
+        </td>
+    </tr>
+    
+    <tr height="20%">
+		<td></td>
+        <td valign="middle" align="left">
+            <input type="button" onclick="setupDiv()" style="border:1px solid #aaaaaa;" value="<{$terminal_manager.setup}>">
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+            <input type="button" onclick="closeDiv()" style="border:1px solid #aaaaaa;" value="<{$terminal_manager.close}>">
+        </td>
+    </tr>
+</table>
+
+</div>
+<!----------------------添加隐藏背景层---------------------------------------------->
+<div id="bg" class="bg" style="display:none;"></div>
+<!----------------------防止层的漏出------------------------------------------------>
+<iframe id='popIframe' class='popIframe' frameborder='0' ></iframe>

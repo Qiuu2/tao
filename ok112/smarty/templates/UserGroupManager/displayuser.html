@@ -1,0 +1,95 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>DisplayMedia</title>
+
+<link href="skin/css/main_page_style.css" rel="stylesheet" type="text/css" />
+
+<script type="text/javascript">
+function isNull( str )
+{
+   if ( str == "" ) return true;
+   var regu = "^[ ]+$";
+   var re = new RegExp(regu);
+   return re.test(str);
+}
+function getCheckboxItem()
+{
+	var getid = "";
+	if(document.getElementsByName('id').length <= 0)
+	{
+		alert('<{$group_user.No_Record|capitalize}>');
+	}	
+	for(var i=0; i<document.getElementsByName('id').length; i++)
+	{
+		if(document.getElementsByName('id')[i].checked == true)
+		{
+			if(isNull(getid))
+			{
+				getid = document.getElementsByName('id')[i].value;
+			}
+			else
+			{
+				getid +="," + document.getElementsByName('id')[i].value;
+			}
+		}
+	}
+	return getid;
+}
+function selAll()
+{
+	if(document.getElementsByName('id').length <= 0)
+	{
+		alert('<{$group_user.No_Record|capitalize}>');
+	}	
+	for(var i=0; i<document.getElementsByName('id').length; i++)
+	{
+		if(document.getElementsByName('id')[i].checked == false)
+		{
+			document.getElementsByName('id')[i].checked = true;
+		}
+	}
+}
+function noSelAll(aid)
+{
+	if(document.getElementsByName('id').length <= 0)
+	{
+		alert('<{$group_user.No_Record|capitalize}>');
+	}	
+	for(var i=0; i<document.getElementsByName('id').length; i++)
+	{
+		if(document.getElementsByName('id')[i].checked == true)
+		{
+			document.getElementsByName('id')[i].checked = false;
+		}
+	}
+}
+function delUser()
+{
+	var getid = getCheckboxItem();
+		
+	if(isNull(getid))
+	{
+		alert("<{$Displayuser.Select_Options}>");
+		return void(0);	
+	}
+	else
+	{ 
+		if(!window.confirm("<{$Displayuser.OK_to_delete}>"))
+		{
+			return void(0);
+		}	
+		else
+		{
+			location="do.php?act=userdel_msg&id="+getid+"";
+		}
+	}
+}
+</script>
+</head>
+<body>	
+<{include file="UserGroupManager/displayuser_from.html"}> 
+<{include file="language/`$language`_foot.php"}>
+</body>
+</html>

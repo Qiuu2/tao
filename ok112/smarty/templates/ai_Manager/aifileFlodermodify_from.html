@@ -1,0 +1,48 @@
+<form action="do.php?act=aifoldermodify_msg&id=<{$id}>" method="post" name="fileForm" onSubmit="return checkform();" class="terminal_form_to_body">
+
+		<table width="500" border="0" align="center" cellpadding="0" cellspacing="0" class="terminal_table_border">	
+		  <tr>
+			<td colspan="2">
+				<table border="0" align="center" cellpadding="0" cellspacing="0">
+					<tr>
+						<td>
+							<img src="<{$create_folder.modify_folder_aiimage}>"/>
+						</td>
+					</tr>
+				</table>
+			</td>
+		  </tr>
+		  
+		  <tr>
+		  	<td>
+				<table border="0" align="center" cellpadding="5" cellspacing="0" style="margin-top:10px;">
+				
+				  <tr class="bgcolors1">
+				
+					<td width="25%" height="" align="right"><{$create_folder.ai_devicename}></td>
+					
+					<td width="50%" height="" align="left" valign="middle">     	
+						<input class="terminal_input_font" name="ai_devicename" type="text" id="ai_devicename" value="">		
+						<span id="folderName_s" class="terminal_star">*</span>	
+						
+						<script language="javascript">
+							document.getElementById('ai_devicename').value = chinese_big5_english("<{$chinese_big5_english}>","<{$folder_info.deviceaddr}>");
+						</script>
+									
+					</td>			 
+				  </tr>	 
+				
+				
+				  <tr class="bgcolors1">
+					<td align="center" colspan="2">
+						<input name="Submit" type="submit" class="terminal_button" value="<{$create_folder.Modify}>"/>
+						&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+						<input name="reset" type="reset" class="terminal_button" id="reset" value="<{$create_folder.Cancel}>" />
+					</td>
+				  
+				  </tr>
+				</table>
+			   </td>
+			</tr>
+		</table>
+</form>

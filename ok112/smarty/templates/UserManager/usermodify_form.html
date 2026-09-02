@@ -1,0 +1,285 @@
+<form name="formadd" method="post" action="do.php?act=useredit_msg&id=<{$userid}>&get_count=<{$ctrlterminalcount}>" onSubmit="return checkform();" class="terminal_form_to_body">
+	<table name="usertable" id="usertable" width="600" border="0" align="center" cellpadding="0" cellspacing="0" class="terminal_table_border">
+		<tr>
+			<td>
+				<table  width="100%" border="0" align="center" cellpadding="0" cellspacing="0">
+					<tr>
+						<td>
+							<img src="<{$user_modify.user_modify_image}>"/>
+						</td>
+					</tr>
+				</table>
+			</td>
+		</tr> 
+		
+		<tr>
+			<td>
+				<table  width="100%" border="0" align="center" cellpadding="5" cellspacing="0">
+				
+				<tr>
+					<td width="180" align="right" style="white-space:nowrap"><{$user_modify.User_Name|capitalize}></td>
+					<td width="420">
+						<input title="<{$user_modify.User_Nametask|capitalize}>" class="terminal_input_font" name="username" type="text" id="username" value="<{$user_info.username}>">
+						<span class="terminal_star" id="username_s">*</span>
+					</td>
+				</tr> 
+				
+				<tr>
+					<td width="180" align="right" style="white-space:nowrap">
+					<{$user_modify.Description}>
+					</td>
+					<td width="420">
+					<input title="<{$user_modify.Descriptiontask|capitalize}>" class="terminal_input_font" type="text" name="info" id="info" value="<{$user_info.info}>" maxlength="30"/>
+					(<{$user_modify.Max_character|capitalize}>)	   
+					</td>
+				</tr>
+				
+				<tr>
+					<td width="180" align="right" style="white-space:nowrap"><{$user_modify.User_Group|capitalize}></td>
+					<td width="420">
+					<select title="<{$user_modify.Select_Grouptask|capitalize}>" class="terminal_select_style" name="usergroup" id="usergroup" onchange="is_user_terminal(this);get_group_purview(this.value);" onmouseover="mouse_click_position(event);">
+					<option value=""><{$user_modify.Select_Group|capitalize}></option>
+					<{section name=groupid loop=$group_info}>
+					<option value="<{$group_info[groupid].id}>"><{$group_info[groupid].name}> </option>
+					<{/section}> 
+					</select>
+					<span class="terminal_star" id="usergroup_txt">*(<{$user_modify.View_group_authority|capitalize}>)</span>
+					
+					<div id="display_purview_div" class="r-displayVolume">
+ <iframe style="position:absolute; width:145;height:105px;left:0px; top:0px;filter:alpha(opacity=0);-moz-opacity:0; border:0;z-index:-1"></iframe>		
+					<div class="display_purview" onmouseover="mounse_over_apper()" onmouseout="mouse_out_disapper()">
+					<table border='0' cellpadding='5' cellspacing='5' style='background-color:#EEFEEF;'>
+						<tr>
+							<td>
+								<{$user_modify.Select_Group|capitalize}>
+							</td>
+						</tr>
+					</table>
+					</div>
+					</div>
+					
+					<script>
+					var usergroup_obj = document.getElementById('usergroup');
+					for(var i=0; i<usergroup_obj.options.length; i++)
+					{
+						if(usergroup_obj.options[i].value == <{$user_info.usergroupid}>)
+						{
+							usergroup_obj.options[i].selected = true;
+							get_group_purview(<{$user_info.usergroupid}>);
+							break;
+						}
+					}
+					</script>
+					</td>
+				</tr> 
+				<tr id="fenkong_id">
+				<td width="180" align="right" style="white-space:nowrap"><{$user_modify.fenkongID|capitalize}></td>
+				<td width="420">
+				
+				<input  name="ctrlterminalcount" type="checkbox" id="ctrlterminalcount" value="1"/>
+				 <script language="javascript">
+				
+					if(<{$ctrlwind}> > 0)
+					{
+						document.getElementById('ctrlterminalcount').checked = true;
+					}
+					else
+					{
+					  var getctrlterminalcount = <{$ctrlterminalcount}>;
+						 var k=0;
+						 for(var i =0 ; i<=getctrlterminalcount; i++)
+						 {
+							 <{section name=wind loop=$ctrlwinds}>
+								if(i==<{$ctrlwinds[wind].ctrlwind}>&&i!=0)
+									k++;
+							 <{/section}> 
+						 }
+						 if(k==getctrlterminalcount)
+						 {
+							 document.getElementById('ctrlterminalcount').disabled = true;
+						 }
+					}
+				</script>
+
+				<{$user_modify.cumperID|capitalize}>
+				<input  name="fenkongIDtask" type="checkbox" id="fenkongIDtask" value="1"/>
+					<script language="javascript">
+					
+					
+					if(<{$subwind}> > 0)
+					{
+						document.getElementById('fenkongIDtask').checked = true;
+					}
+					else
+					{
+						 var ctrlterminalcounts = <{$ctrlterminalcount}>;
+						 k=0;
+						 for(i =0;i<=ctrlterminalcounts;i++)
+						 {
+							 <{section name=uwind loop=$subwinds}>
+								if(i==<{$subwinds[uwind].subwind}>&&i!=0)
+									k++;
+							 <{/section}> 
+						 }
+						 if(k==ctrlterminalcounts)
+						 {
+							 document.getElementById('fenkongIDtask').disabled = true;
+						 }
+					}
+					</script>
+					
+					<{$user_modify.jiankongID|capitalize}>
+					<input  name="jiankongID" type="checkbox" id="jiankongID" value="1"/>
+					<script language="javascript">
+					
+					if(<{$camerawind}> > 0)
+					{
+						document.getElementById('jiankongID').checked = true;
+					}
+					else
+					{
+					
+						 var ctrlterminalcount3 = <{$ctrlterminalcount}>;
+						  k=0;
+						 for(i =0 ; i<=ctrlterminalcount3; i++)
+						 {
+							 <{section name=cwind loop=$camerawinds}>
+								if(i==<{$camerawinds[cwind].camerawind}>&&i!=0)
+									k++;
+							 <{/section}> 
+						 }
+						 if(k==ctrlterminalcount3)
+						 {
+							 document.getElementById('jiankongID').disabled = true;
+						 }
+					 }
+					</script>
+				</td>
+				</tr>       
+				
+				<tr>
+					<td width="180" align="right" style="white-space:nowrap"><{$user_modify.Password|capitalize}></td>
+					
+					<td width="420">
+						<input title="<{$user_modify.Passwordtask|capitalize}>" name="newpwd" type="password" class="terminal_input_font" id="newpwd"  value="" maxlength="16" readonly="true"/>
+						
+						<span id="newpwd_s" class="terminal_star">*(<{$user_modify.Max_characters|capitalize}>)</span>
+						
+						<script language="javascript">
+							document.getElementById('newpwd').value = "<{$user_info.userpwd}>";
+						</script>
+						
+						<input title="<{$user_modify.Passwordtask|capitalize}>" name="confirm_modify_password" type="button" style="border:#7B92BE 1px solid" id="confirm_modify_password" value="<{$user_modify.Modify_Password|capitalize}>" onclick="confirm_modify_usr_password(this);"/>
+					</td>
+				</tr>
+				
+				<tr>
+					<td width="180" align="right" style="white-space:nowrap"><{$user_modify.confirm_password|capitalize}></td>
+					<td width="420">
+						<input title="<{$user_modify.Passwordtask|capitalize}>" name="confirmpwd" type="password" class="terminal_input_font" id="confirmpwd" value="" maxlength="16" readonly="true"/>
+
+						<span id="confirmpwd_s" class="terminal_star">*(<{$user_modify.Max_characters|capitalize}>)</span>
+						
+						<script language="javascript">
+							document.getElementById('confirmpwd').value = "<{$user_info.userpwd}>";
+						</script>
+					</td>
+				</tr>
+				<!--
+				<tr>
+					<td width="180" align="right" nowrap="nowrap"><{$user_modify.mac1|capitalize}></td>
+					
+					<td width="420">
+					<input  name="mac1" type="text" class="terminal_input_font" id="mac1" value="<{$sn1}>"/>
+					
+					</td>
+				</tr>	
+				<tr>
+					<td width="180" align="right" nowrap="nowrap"><{$user_modify.mac2|capitalize}></td>
+					
+					<td width="420">
+					<input  name="mac2" type="text" class="terminal_input_font" id="mac2" value="<{$sn2}>"/>
+					
+					</td>
+				</tr>	
+				<tr>
+					<td width="180" align="right" nowrap="nowrap"><{$user_modify.mac3|capitalize}></td>
+					
+					<td width="420">
+					<input  name="mac3" type="text" class="terminal_input_font" id="mac3" value="<{$sn3}>"/>
+					
+					</td>
+				</tr>
+				-->
+				<tr>
+				<td width="180" align="right" valign="top"><{$user_modify.Terminal_selection|capitalize}></td>
+				<td width="420" align="left" valign="top">
+				<div id="treeofbox" name="treeofbox" style="width:80%;height:200px;background-color:#f5f5f5;border :1px solid Silver;overflow-y:auto; text-align:left;"></div>
+				</td>
+				</tr>
+				<input type="hidden" id="terminal_id" name="terminal_id" value="" />
+
+				<input type="hidden" id="analysis_tree_group_string" name="analysis_tree_group_string" value=""/>
+				<script>
+					tree2=new dhtmlXTreeObject("treeofbox","100%","100%",0);
+					tree2.setSkin('dhx_skyblue');
+					tree2.setImagePath("smarty/templates/BellManager/codebase/csh_bluebooks/");
+					tree2.enableCheckBoxes(1);
+					tree2.enableThreeStateCheckboxes(true);	
+					tree2.loadXMLString("<{$terminal_array_id}>");
+				</script>
+				<tr>
+					<td width="180"></td>
+					<td width="420">
+					<input title="<{$user_modify.Sumbittask|capitalize}>" type="submit" name="button" id="button" value="<{$user_modify.Submit|capitalize}>" class="terminal_button">
+					&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+					<input title="<{$user_modify.Canceltask|capitalize}>" name="reset" type="reset" id="reset" value="<{$user_modify.Cancel|capitalize}>" class="terminal_button"/>
+					</td>
+				</tr>    
+			</table>
+		</td>
+	</tr>
+</table>
+</form>
+<script>
+create_div();
+function display_info()
+{
+
+	if(<{$is_right}> == 1)
+	{
+	
+		<{if $terminal_id|@count neq 0}>
+		
+			var get_div_obj = document.getElementById('new_div');
+			get_div_obj.style.visibility = "hidden";
+
+			<{section name=id loop=$terminal_id}>
+			//	tree2.setCheck(<{$terminal_id[id]}>,true);
+		
+			tree2.setCheck(merge_tree_terminal_group_string('<{$group_id[id]}>','<{$terminal_id[id]}>'),true);
+	
+			<{/section}>
+		<{/if}>
+	}
+	else if(<{$is_right}> == 0)
+	{
+		var get_div_obj = document.getElementById('new_div');
+		get_div_obj.style.visibility = "visible";
+	}
+}
+display_info();
+
+var registerflag="<{$registerflag}>";
+if(registerflag==1||registerflag==2)
+{
+		
+}
+else
+{
+	document.getElementById("fenkong_id").style.display="none";
+	
+}
+
+</script>
+

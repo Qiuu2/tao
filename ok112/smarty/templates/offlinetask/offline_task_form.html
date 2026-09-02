@@ -1,0 +1,101 @@
+<form name="form2" class="terminal_form_to_body">
+	<table width="98%" border="0" cellpadding="2" cellspacing="1"  align="center">
+    <tr align='center' class="terminal_table_row_bg" height="22px" >   
+    	<td width="10%" nowrap="nowrap"><{$remote_task.Selection|capitalize}></td>                 	
+		<td width="15%" nowrap="nowrap"><{$remote_task.offline_Name|capitalize}></td>    
+		<td width="10%" nowrap="nowrap"><{$remote_task.start_date|capitalize}></td>  
+		<td width="15%" nowrap="nowrap"><{$remote_task.end_date|capitalize}></td>
+		<td width="15%" nowrap="nowrap"><{$remote_task.off_line_playtime|capitalize}></td>
+		<td width="15%" nowrap="nowrap"><{$remote_task.off_line_exemodel|capitalize}></td>
+    </tr> 
+	<{if $info|@count neq 0}>        
+    <{section name=loop loop=$info}>      
+      <tr align='center' onmouseover="this.style.backgroundColor = '#EEEEFF'" onmouseout="this.style.backgroundColor = '#FFFFFF'">      	
+      	 <td>
+		 <{if $is_right == 1 || $admin_id == "administrator"}>
+		 <input name="id" type="checkbox" id="id" value="<{$info[loop].id}>">
+		 <{else}>
+		 	<{$smarty.section.loop.index+1+$start}>
+		 <{/if}>
+		 </td>
+		 
+      	 <td><{$info[loop].name}></td>			 
+		 <td><{$info[loop].startdate}></td>
+		 <td><{$info[loop].enddate}></td> 
+		<td><{$info[loop].off_line_playtime}></td> 
+		 <td><{$info[loop].off_line_exemodel}></td> 
+      </tr>         
+    <{/section}>
+	<{else}>
+	<tr onmouseover="this.style.backgroundColor = '#EEEEFF'" onmouseout="this.style.backgroundColor = '#FFFFFF'">
+	<td colspan="4" style="text-align:center"><strong><{$remote_task.No_record|capitalize}></strong></td>
+	</tr>
+	<{/if}>
+    <tr class="bgcolors1">
+		<td height="28" colspan="4">		
+<table cellpadding="0" cellspacing="0">
+<tr>
+<td>
+<script src="smarty/templates/UserAccessControl/CheckUserRights.js" type="text/javascript" language="javascript"></script>
+	<table width="100%" border="0" >
+		<tr>
+			<td width="20%"  align="left" nowrap="nowrap">
+				<a title="<{$remote_task.Select_Allmapping|capitalize}>" href="javascript:selAll(0)" class="coolbg"><{$remote_task.Select_All|capitalize}></a>&nbsp;
+				<a title="<{$remote_task.noSelect_Allmapping|capitalize}>" href="javascript:noSelAll(0)" class="coolbg"><{$remote_task.Cancel|capitalize}></a>&nbsp;
+				<a title="<{$remote_task.Set_Maptask|capitalize}>" href="javascript:set_taskmapping()" class="coolbg"><{$remote_task.Set_Bind|capitalize}></a>&nbsp;
+				<a title="<{$remote_task.del_Maptask|capitalize}>" href="javascript:del_taskmapping()" class="coolbg"><{$remote_task.Delete_offline|capitalize}></a>&nbsp;
+			</td>
+		</tr>
+	</table>
+<script>
+	rights_control(<{$is_right}>,"<{$admin_id}>","link_view");
+</script>
+	
+</table>	
+</td>
+</tr>
+</table>
+	</td>
+  </tr>
+  </form>
+  <tr>
+    <td align="center">
+		<table align="center"><tr><td><div class="link_style" align="center"><{$pagestr}></div></td></tr></table>
+	</td>
+  </tr>
+<!--  搜索表单  -->
+<form name='formsearch' action='task_mapping.php' method="get">
+<input type='hidden' name='dopost' value='' />
+<table width='98%'  border='0' cellpadding='1' cellspacing='1' class="middle" align="center" style="margin-top:8px">
+  <tr>
+    <td background='skin/images/wbg.gif' align='center'>
+      <table border='0' cellpadding='0' cellspacing='0'>
+        <tr>
+          <td width='90' align='center'><{$Searchform.Search_conditions}></td>
+          <td width='160'>
+		  <select class="colors" name='searchkey' id="searchkey" style='width:150px'>
+		    <option value=""><{$Searchform.Select_type}></option>
+		    <option value="name"><{$remote_task.Map_Name}></option>
+          </select>
+		  </td>
+        <td width='70'>
+          <{$Searchform.Keyword}>
+		</td>
+        <td width='160'>
+          	<input class="colors" type='text' name='searchvalue' id="searchvalue" value='' style='width:150px' />        
+		</td>
+        <td width='110'>
+			<select class="colors" name='searchsequence' id="searchsequence" style='width:80px'>
+			  <option value=""><{$Searchform.Sort}></option>
+			  <option value="key"><{$remote_task.Key_No}></option>
+			</select>        
+		</td>
+       <td>
+          <input name="imageField" type="image" src="<{$remote_task.search_image}>" width="45px" height="20px" border="0px" class="np" />        
+	   </td>       
+       </tr>
+      </table>
+    </td>
+  </tr>
+</table>
+</form>

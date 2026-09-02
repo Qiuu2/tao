@@ -1,0 +1,23 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=gb2312" />
+<title>areadir</title>
+<style>
+body
+{
+  scrollbar-base-color:#C0D586;
+  scrollbar-arrow-color:#FFFFFF;
+  scrollbar-shadow-color:DEEFC6;
+}
+</style>
+
+</head>
+<frameset cols="200,*" name="btFrame" frameborder="yes" border="1" framespacing="1">
+    <frame src="dir_stream_tree.php?terminal_id=<{$terminal_id}>" name="mediafolder" frameborder="no" scrolling="auto"  marginwidth="0" id="mediafolder">
+    <frame src="dir_terminal_area.php?terminal_id=<{$terminal_id}>" name="dirarea" id="dirarea" scrolling="auto" marginwidth="0">
+</frameset>
+
+<noframes>
+	<body>NOT Support FrameSet</body>
+</noframes>
+</html>

@@ -1,0 +1,522 @@
+<form name="bellForm" class="terminal_form_to_body">
+<tbody>
+<div id="divTest" style="width:100%;overflow-x:hidden;overflow-y:scroll">
+<table width="98%" border="0" cellpadding="2" cellspacing="1"  align="center" id="tablebell">
+	<thead>
+<tr align='center' class="terminal_table_row_bg">
+
+	<th width="10%" nowrap="nowrap">
+		<{$bell_manager.Select|capitalize}></th>
+	
+	<th width="20%" nowrap="nowrap" onclick="sortTable('tablebell', 1,'1')" class="sort_data_table_sequence">
+		<{$bell_manager.Solution_Name|capitalize}>↑↓</th>
+	
+	<th width="15%" nowrap="nowrap" onclick="sortTable('tablebell', 2,'1')" class="sort_data_table_sequence">
+		<{$bell_manager.Start_Date|capitalize}>↑↓</th>
+	
+	<th width="13%" nowrap="nowrap" onclick="sortTable('tablebell', 3,'1')" class="sort_data_table_sequence">
+		<{$bell_manager.End_Date|capitalize}>↑↓</th>
+	
+	<th width="6%" nowrap="nowrap" onclick="sortTable('tablebell', 4,'1')" class="sort_data_table_sequence">
+		<{$bell_manager.Status|capitalize}>↑↓</th>
+	
+	<th width="6%" nowrap="nowrap" onclick="sortTable('tablebell', 5,'1')" class="sort_data_table_sequence">
+		<{$bell_manager.Task_amount|capitalize}>↑↓</th>
+	<th width="10%" nowrap="nowrap" onclick="sortTable('tablebell', 6,'1')" class="sort_data_table_sequence">
+		<{$bell_manager.belonguser|capitalize}>↑↓</th>
+	<th width="10%" nowrap="nowrap"><{$bell_manager.Terminal_Attribute|capitalize}></th>
+  
+</tr>
+	</thead>
+	<tbody>
+<{if $info|@count neq 0}>
+ <{section name=loop loop=$info}>        
+      <tr align='center'>
+	   
+		<td>
+			<{if $is_right == 1 || $admin_id == "administrator"}>
+				<input name="id" type="checkbox" id="id" value="<{$info[loop].taskid}>">
+			<{else}>
+				<{$smarty.section.loop.index+1+$start}>
+			<{/if}>
+		</td>	
+		
+		<td>
+			<label title="<{$info[loop].info}>">
+				<{$info[loop].info|truncate:18:"..."}>
+			</label>
+		</td> 
+		
+		<td><{$info[loop].startdate}></td>
+		
+		<td><{$info[loop].enddate}></td>
+		 
+		<td>
+			<{if $info[loop].projectstate == 0}>	
+			<span style="color:#ff0000;">
+				<{$bell_manager.Enabled|capitalize}>●</span> 
+			<{elseif  $info[loop].projectstate == 1}>		   	
+				<{$bell_manager.Disenabled|capitalize}>
+			<{/if}>
+		</td>
+		
+		<td><{$info[loop].taskname}></td> 
+		  <td><{$info[loop].username}></td>
+		<td nowrap="nowrap">
+			<a name="link_view" id="link_view" href="displayplantask.php?taskid=<{$info[loop].taskid}>">
+				<{$bell_manager.View_task|capitalize}>
+			</a>
+		</td> 
+		
+      </tr>         
+    <{/section}>	 
+<{else}>
+<tr align='center' >
+	<td colspan="7">
+		<strong><{$bell_manager.No_Record|capitalize}></strong>
+	</td>
+</tr>
+<{/if}>	
+</table>
+</div>
+</tbody>
+<table cellpadding="0" cellspacing="0">
+<tr align="right">
+<script src="smarty/templates/UserAccessControl/CheckUserRights.js" language="javascript" type="text/javascript"></script>
+	<td colspan="7" align="left" class="tablestyle">
+
+		<a title="<{$bell_manager.Select_Alltask|capitalize}>" href="javascript:selAll(0)" >
+			<{$bell_manager.Select_All|capitalize}>
+		</a>&nbsp;
+		
+		<a title="<{$bell_manager.noSelect_Alltask|capitalize}>" href="javascript:noSelAll(0)" >
+			<{$bell_manager.Cancel|capitalize}>
+		</a>&nbsp;
+		 
+		<a  title="<{$bell_manager.Add_Solutiontask|capitalize}>" href="javascript:addbell()" >
+			<{$bell_manager.Add_Solution|capitalize}>
+		</a>&nbsp;
+		
+		<a title="<{$bell_manager.update_Solutiontask|capitalize}>" href="javascript:modifybell()" >
+			<{$bell_manager.Update_Solution|capitalize}>
+		</a>&nbsp;
+		 
+		<a title="<{$bell_manager.Delete_Solutiontask|capitalize}>" href="javascript:delbell()" >
+			<{$bell_manager.Delete_Solution|capitalize}>
+		</a>&nbsp;
+		
+		<a title="<{$bell_manager.copy_Solutiontask|capitalize}>" href="javascript:copybell()" >
+			<{$bell_manager.copy_Solution|capitalize}>
+		</a>&nbsp;
+		<a title="<{$bell_manager.Solution_Enabletask|capitalize}>" href="javascript:startbelling()" >
+			<{$bell_manager.Solution_Enable|capitalize}>
+		</a>&nbsp;
+		
+		<a title="<{$bell_manager.Solution_disabletask|capitalize}>" href="javascript:stopbell()" >
+			<{$bell_manager.Solution_Disable|capitalize}>
+		</a>&nbsp;
+		<a title="<{$bell_manager.Adjust_Volumetask|capitalize}>" href="javascript:void(0)" id="volume_handle" onclick="mouse_click_position(event)">
+			<{$bell_manager.Adjust_Volume|capitalize}>
+		</a>&nbsp;
+		<a title="<{$bell_manager.all_modify_task|capitalize}>" href="javascript:allmodify()" id="all_modify" >
+			<{$bell_manager.all_modify|capitalize}>
+		</a>&nbsp;
+		<a title="<{$bell_manager.all_time_playtask|capitalize}>" href="javascript:modifytimeplay()" id="all_modify" >
+			<{$bell_manager.all_time|capitalize}>
+		</a>&nbsp;
+		<!--
+	  <{if $IE==1}>
+		<a title="<{$bell_manager.backup_belltask|capitalize}>"  href="javascript:void(0)" onclick="open_backup();" >
+			<{$bell_manager.backup_bell|capitalize}>
+		</a>&nbsp;
+		
+		<a title="<{$bell_manager.restore_belltask|capitalize}>" href="javascript:void(0)" onclick="open_restore();" >
+			<{$bell_manager.restore_bell|capitalize}>
+		</a>&nbsp;
+	<{/if}>
+	-->
+	</td>
+</tr>
+
+<script>
+	rights_control(<{$is_right}>,"<{$is_admin}>","link_view");
+</script>
+</table>
+<script language="javascript">
+var   obj =document.getElementById( "divTest").offsetHeight; 
+ if(obj>=600)
+ {
+ document.getElementById("divTest").style.height=600+"px"; 
+ }
+ else
+ {
+  document.getElementById("divTest").style.height=document.getElementById( "divTest").offsetHeight;
+ }
+ var objwidth = document.getElementById( "divTest").offsetWidth;
+if(objwidth<=1000)
+ {
+ document.getElementById("divTest").style.width=1000+"px"; 
+ }
+ else
+ {
+  document.getElementById("divTest").style.width=document.getElementById( "divTest").offsetWidth;
+ }
+</script>
+</form>
+
+<table align="center">
+ <tr>
+    <td><div class="link_style" align="center"><{$pagestr}></div></td>
+ </tr>
+</table>
+
+<p>&nbsp;</p>
+<form name="form1" action="bellmanager.php" method="get">
+<input type='hidden' name='dopost' value='' />
+<table width='98%'  border='0' cellpadding='1' cellspacing='1' class="middle" align="center" style="margin-top:8px">
+  <tr>
+    <td background='skin/images/wbg.gif' align='center'>
+      <table border='0' cellpadding='0' cellspacing='0'>
+        <tr>
+          <td width='90' align='center'><{$Searchform.Search_conditions}></td>
+          <td width='160'>
+          <select name='searchkey' id="searchkey" style='width:150px'>
+            <option value=""><{$Searchform.Select_type}></option>
+            <option value="info"><{$bell_manager.Solution_Name|capitalize}></option>
+          </select>
+        </td>
+        <td width='70'>
+          <{$Searchform.Keyword}>
+        </td>
+        <td width='160'>
+          	<input type='text' name='searchvalue' value='' style='width:150px' />
+        </td>
+        <td width='110'>
+    		<select name='searchsequence' id="searchsequence" style='width:80px'>
+    		  <option value=""><{$Searchform.Sort}></option>
+    		  <option value="startdate"><{$Searchform.Time}></option>
+      	    </select>
+        </td>
+        <td>
+          <input name="imageField" type="image" src="<{$bell_manager.search_image}>" style="width:45px; height:20px; border-bottom-width:0px;"/>
+        </td>       
+       </tr>
+      </table>
+    </td>
+  </tr>
+</table>
+</form>
+<!--修改声音-->
+  <script type="text/javascript" src="skin/js/frame/jquery.min.js"></script>
+ <script type="text/javascript" src="skin/js/frame/rating.min.js"></script>
+<div id="change_volume" class="r-displayVolume">
+ <iframe style="position:absolute; width:145;height:105px;left:0px; top:0px;filter:alpha(opacity=0);-moz-opacity:0; border:0;z-index:-1"></iframe>
+<div style="position:absolute;border:0;width:150; left:0px; top:0px; height:110px;z-index:100">
+
+	<table border="0" cellpadding="10" cellspacing="0" width="150" style="background-color:#EEFFEE">
+		
+		<tr>
+			<td nowrap="nowrap" align="center">
+			<div id="s1"></div>
+			<div id="d1"></div>
+			</td>
+		</tr>
+		<tr>
+			<td nowrap="nowrap" align="center">
+				<a href="javascript:void(0)" onclick="set_task_volume()"> 
+					<{$bell_manager.Submit|capitalize}>
+				</a>
+				&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+				<a href="javascript:void(0)" onclick="disappear_volume_div()"> 
+					<{$bell_manager.Cancel|capitalize}>
+				</a>
+			</td>
+		</tr>
+		
+	</table>
+</div>
+</div>
+
+<script language="javascript">
+
+var hidden_display = true;//默认隐藏
+var xmlhttp=null; 
+
+function createXMLHttpRequest()
+{ 
+	if(window.ActiveXObject)
+	{ 
+		xmlhttp = new ActiveXObject("microsoft.XMLHTTP"); 
+	} 
+	else if(window.XMLHttpRequest)
+	{ 
+		xmlhttp = new XMLHttpRequest(); 
+	}
+	else
+	{
+		alert('Not Supported AJAX');
+	}
+} 
+
+function ajax_set_task_volume(set_volume_server,volume_value,task_id)
+{
+   createXMLHttpRequest();
+   
+   if(task_id == "")
+   {
+   		if("<{$language}>"=="english")
+			alert("<{$bell_manager.select_task}>");
+		else
+			alert('请选择任务'); 
+	
+		return void(0);
+   }
+  
+   xmlhttp.open( "get","set_task_volume_server.php?tasktype="+set_volume_server+"&volume="+volume_value+"&task_id="+task_id+"",true );
+   
+   
+   xmlhttp.onreadystatechange = function()
+   {
+      if( xmlhttp.readyState == 4 )
+      {
+         if( xmlhttp.status == 200 )
+         {
+            if( xmlhttp.responseText == 0)
+            {
+				if("<{$language}>"=="english")
+					alert("fail");
+				else
+				alert('失败');
+            }
+			else if(xmlhttp.responseText == 1)
+			{
+			if("<{$language}>"=="english")
+					alert("success");
+				else
+				alert('成功');
+				
+				get_div_obj('change_volume').style.display = "none";
+				
+				self.location.reload();
+			}
+         }
+		 else
+		 {
+			if("<{$language}>"=="english")
+					alert("fail");
+				else
+				alert('失败'); 
+		 }
+      }
+   }
+    xmlhttp.setRequestHeader( "If-Modified-Since", "0");
+	xmlhttp.send(null);
+}
+
+function get_mouse_coordinates(event)
+{
+   var eve = event||window.event;
+   if(eve.pageX)
+   {
+
+    return {x:eve.pageX,y:eve.pageY};
+   }
+   else
+   {
+
+    return {
+                x:eve.clientX+document.body.scrollLeft - document.body.clientLeft,
+                y:eve.clientY+document.body.scrollTop - document.body.clientTop
+            };
+   }
+}
+function get_div_obj(str_id)
+{
+ 	return document.getElementById(str_id);   
+}
+function mouse_click_position(event)
+{
+    if(document.all)
+    {
+        window.event.cancelBubble = true;   
+    }
+    else
+    {
+        event.stopPropagation();
+    }
+    var mouse_obj_xy = get_mouse_coordinates(event);
+    get_div_obj('change_volume').style.left = mouse_obj_xy.x+20+'px';
+    get_div_obj('change_volume').style.top = mouse_obj_xy.y+'px';
+	get_div_obj('change_volume').style.display = "block";
+}
+ $(document).ready(function () {
+          $('#s1').slidy({
+            maxval: 100, 
+			minval:0,
+            interval: 1,
+            defaultValue: 50,
+           
+            moveCallback: function (value) {
+              $('#d1').html('<strong>' + value + '</strong>');
+            }
+          });
+
+        })
+function animation_text_start()
+{
+   if(str_temp_count <= 3)
+   {
+      str_temp_txt = str_temp_txt+".";
+      document.getElementById('prompt').innerHTML = temp_txt+""+str_temp_txt;
+      str_temp_count++;
+      inver_time_handle = setTimeout("animation_text_start()", 500);
+   }
+   else
+   {
+      str_temp_count = 0;
+	  str_temp_txt = "";
+	  document.getElementById('prompt').innerHTML = temp_txt;
+   }
+}
+function animation_text_start1()
+{
+	if(str_temp_count <= 3)
+   {
+      str_temp_txt = str_temp_txt+".";
+      document.getElementById('prompt_restore').innerHTML = temp_txt+""+str_temp_txt;
+      str_temp_count++;
+      inver_time_handle = setTimeout("animation_text_start1()", 500);
+   }
+   else
+   {
+      str_temp_count = 0;
+	  str_temp_txt = "";
+	  document.getElementById('prompt_restore').innerHTML = temp_txt;
+   }
+}
+
+
+</script>
+
+<script language="javascript">
+	var get_user_right = "<{$is_right}>";
+	if(get_user_right == 1)
+	{
+		//什么也不做
+	}
+	else
+	{
+		var get_a_objects = document.getElementsByTagName("a");
+		for(var i=0; i<get_a_objects.length; i++)
+		{
+			get_a_objects[i].href = "javascript:void(0);";
+			get_a_objects[i].onclick = null;
+			get_a_objects[i].style.color="#787878";
+		//	get_a_objects[i].disabled = true;
+		}
+	}
+</script>
+
+<!--备份数据-->
+<div id="light" class="backup_content">
+
+<table width="80%" height="50%" border="0" align="center" cellpadding="5" cellspacing="0" class="backup_table">
+    <tr>
+        <td colspan="2" class="backup_title">
+            <{$bell_manager.Backup_data}>
+        </td>
+    </tr>
+	<tr>
+		<td colspan="2" nowrap="nowrap">
+			<span id="prompt" style="font-size:12px">
+				<{$bell_manager.Please_wait_being_backed_up}>
+				<img src=\'skin/images/frame/please_wait.gif\'/>
+			</span>
+		</td>
+	</tr>
+	
+	<tr>
+		<td colspan="2">
+			
+		</td>
+	</tr>
+	
+    <tr>
+        <td align='right' nowrap="nowrap">
+            <{$bell_manager.Backup_Name}>
+        </td>
+        <td align='left' nowrap="nowrap">
+            <input type="text" name="backup_name" id="backup_name"/>
+        </td>
+    </tr>
+    <tr>
+          <td colspan="2" align="center" nowrap="nowrap">
+            <input type="button" value="<{$bell_manager.Backup}>" class="backup_button" onclick= "validate_backup_name('backup_name')"/>
+            	&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+            <input type="reset" value="<{$bell_manager.close}>" onclick="colose_backup();" class="backup_button"/>
+        </td>  
+    </tr>
+</table>
+
+</div> 
+<div id="fade" class="backup_overlay"></div> 
+<!--还原数据-->
+<div id="restore_light" class="backup_content">
+<form  action="bell_manager_restore.php" onSubmit="return checkform();" method="post" enctype="multipart/form-data">
+
+<table width="80%" height="50%" border="0" align="center" cellpadding="5" cellspacing="0" class="backup_table">
+    <tr>
+        <td colspan="2" class="backup_title">
+            <{$bell_manager.restore_data}>
+        </td>
+    </tr>
+	<tr>
+		<td colspan="2" nowrap="nowrap">
+			<span id="prompt1" style="font-size:12px">
+				<{$bell_manager.Please_wait_being_restore_up}>
+				<img src=\'skin/images/frame/please_wait.gif\'/>
+			</span>
+		</td>
+	</tr>
+	
+	<tr>
+		<td colspan="2">
+			
+		</td>
+	</tr>
+	
+    <tr>
+        <td align='right' nowrap="nowrap">
+            <{$bell_manager.restore_name}>
+        </td>
+        <td align='left' nowrap="nowrap">
+            <input type="file" name="upfile" id="upfile"/>
+        </td>
+    </tr>
+    <tr>
+          <td colspan="2" align="center" nowrap="nowrap">
+            <input type="submit" name="submit" value="<{$bell_manager.restore}>" class="backup_button"/>
+            	&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+            <input type="reset" name="reset" value="<{$bell_manager.close}>" onclick="colose_restore();" class="backup_button"/>
+        </td>  
+    </tr>
+</table>
+</form>
+</div> 
+<div id="restore_fade" class="backup_overlay"></div> 
+
+
+</body>
+</html>
+<script language="javascript">
+var registerflag="<{$registerflag}>";
+if(registerflag==1||registerflag==2)
+{
+	
+}
+else
+{
+	document.getElementById("all_modify").style.display="none";	
+
+}
+</script>

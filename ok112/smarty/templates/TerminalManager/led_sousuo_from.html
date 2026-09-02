@@ -1,0 +1,310 @@
+<form name="form2" class="terminal_form_to_body">
+<tbody>
+<div id="divTest" style="width:100%;overflow-x:scroll;overflow-y:scroll">
+<table width="98%" border="0" cellpadding="2" cellspacing="1"  align="center" id="tableSort">
+<thead>
+	<tr align='center' class="terminal_table_row_bg">   
+		<th width="7%" nowrap="nowrap" onclick="sortTable('tableSort', 1,'1')"><{$terminal_manager.Select|capitalize}></th>                 	
+		<th width="18%" nowrap="nowrap" onclick="sortTable('tableSort', 2,'1')"><{$terminal_manager.devicename|capitalize}>↑↓</th>    
+		<th width="13%" nowrap="nowrap" onclick="sortTable('tableSort', 3,'1')"><{$terminal_manager.IP_Address|capitalize}>↑↓</th>      
+		<th width="13%" nowrap="nowrap" onclick="sortTable('tableSort', 4,'1')"><{$terminal_manager.pingwidthheight|capitalize}>↑↓</th>  
+		<th width="12%" nowrap="nowrap" onclick="sortTable('tableSort', 5,'1')"><{$terminal_manager.Terminal_Name|capitalize}>↑↓</th>  
+		<th width="12%" nowrap="nowrap" onclick="sortTable('tableSort', 6,'1')"><{$terminal_manager.ledgateway|capitalize}>↑↓</th> 
+		<th width="12%" nowrap="nowrap" onclick="sortTable('tableSort', 7,'1')"><{$terminal_manager.chezhannumber|capitalize}>↑↓</th> 
+		<th width="12%" nowrap="nowrap" onclick="sortTable('tableSort', 8,'1')"><{$terminal_manager.checi|capitalize}>↑↓</th> 
+	</tr> 
+	</thead>
+	<{if $terminal_info|@count neq 0}>        
+		<{section name=loop loop=$terminal_info}>    
+		  <tr align='center' class="terminal_per_row" onmouseover="this.style.backgroundColor = '#EEEEFF'" onmouseout="this.style.backgroundColor = '#F1F4F5'">             	
+			<td nowrap="nowrap">
+				<{$terminal_info[loop].id}>
+				<input name="id" type="checkbox" id="id" value="<{$terminal_info[loop].id}>">
+			</td>	
+			<td nowrap="nowrap"><{$terminal_info[loop].ledname}></td>	
+		<td nowrap="nowrap"><{$terminal_info[loop].ip}></td>	
+			 <td nowrap="nowrap"><{$terminal_info[loop].ledwidth}>*<{$terminal_info[loop].ledheight}></td>	
+			 <td nowrap="nowrap"><{$terminal_info[loop].subterminalname}></td> 		 
+			 <td nowrap="nowrap"><{$terminal_info[loop].parantterminalname}></td> 
+			 <td nowrap="nowrap"><{$terminal_info[loop].chezhannumber}></td> 	
+			 <td nowrap="nowrap"><{$terminal_info[loop].checi}></td> 		 
+		  </tr>         
+		<{/section}>
+	<{else}>
+	
+	<tr class="tablestyle"  onmouseover="this.style.backgroundColor = '#EEEEFF'" onmouseout="this.style.backgroundColor = '#FFFFFF'">
+		<td colspan="6" style="text-align:center"><strong><{$Revise.No_data}></strong></td>
+	</tr>
+	<{/if}>
+	</table>
+	</div>
+	</tbody> 
+	<table cellpadding="0" cellspacing="0">
+<tr class="tablestyle">
+	<td colspan="6" style="text-align:left">
+		<a  href="javascript:selAll(0)" name="select_all_yes" id="select_all_yes">
+			<{$terminal_manager.Select_All|capitalize}>
+		</a>&nbsp;				
+		<a  href="javascript:noSelAll(0)" name="select_all_no" id="select_all_no">
+			<{$terminal_manager.Cancel|capitalize}>
+		</a>&nbsp;
+		<a href="javascript:del_terminal_shotcut()">
+		<{$terminal_manager.now_del|capitalize}>
+		</a>&nbsp;
+		<a href="javascript:void(0)" id="chezhanset" onclick="modifychezhanset(event)">
+			<{$terminal_manager.chezhanset|capitalize}>
+			</a>&nbsp;
+			<a href="javascript:updatechezhan()">
+				<{$terminal_manager.updatechezhan|capitalize}>
+				</a>&nbsp;
+		<{if $ledflag!=2}>        
+		<a href="javascript:void(0)" id="systemname" onclick="modifyterminalname(event)">
+				<{$terminal_manager.modifyname|capitalize}>
+			</a>
+		<{/if}>	
+	</td>
+</tr>
+</table>
+
+</form>
+<div id="change_volume" class="r-displayVolume" >
+
+<div >
+	<table border="0" cellpadding="3" cellspacing="0" width="150" style="background-color:#EEFFEE">
+		<tr>
+			<td nowrap="nowrap" align="center">
+			<{$terminal_manager.modifyname|capitalize}>
+			 <input  maxlength="32" style="width:100px" name="terminalname" type="text" id="terminalname"/>
+			</td>
+			</tr>
+		<tr>
+			<tr>
+				<td nowrap="nowrap" align="center">
+				<{$terminal_manager.modifyname|capitalize}>
+				<select  class="terminal_select_style" name="subterminalid" id="subterminalid" style="width:120px">
+					<option  value=""><{$collect_task_add.select_terminal|capitalize}></option>
+					<{section name=sourceid loop=$subterminal_info}>
+							<option value="<{$subterminal_info[sourceid].id}>"><{$subterminal_info[sourceid].terminalname}></option>
+					<{/section}>
+					</select>
+				</td>
+				</tr>
+			<tr>
+			<td nowrap="nowrap" align="center">
+				<a href="javascript:void(0)" onclick="set_terminalname()"> 
+					<{$terminal_manager.Sumbit|capitalize}>			
+				</a>
+				
+				&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+				<a href="javascript:void(0)" onclick="disappear_pass_div()"> 
+				<{$terminal_manager.Cancel|capitalize}>		
+				</a>
+			</td>
+		</tr>
+		
+	</table>
+</div>
+</div>
+
+
+<div id="change_chezhan" class="r-displayVolume" >
+
+	<div >
+		<table border="0" cellpadding="3" cellspacing="0" width="150" style="background-color:#EEFFEE">
+			<tr>
+				<td nowrap="nowrap" align="center">
+				<{$terminal_manager.chezhannumber|capitalize}>
+				 <input  maxlength="2" style="width:100px" name="chezhannumber" type="text" id="chezhannumber"/>
+				</td>
+				</tr>
+			<tr>
+				<tr>
+					<td nowrap="nowrap" align="center">
+						<{$terminal_manager.checi|capitalize}>
+						 <input  maxlength="6" style="width:100px" name="checi" type="text" id="checi"/>
+						</td>
+					</tr>
+				<tr>
+				<td nowrap="nowrap" align="center">
+					<a href="javascript:void(0)" onclick="set_chezhan()"> 
+						<{$terminal_manager.Sumbit|capitalize}>			
+					</a>
+					
+					&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+					<a href="javascript:void(0)" onclick="disappear_pass_div()"> 
+					<{$terminal_manager.Cancel|capitalize}>		
+					</a>
+				</td>
+			</tr>
+			
+		</table>
+	</div>
+	</div>
+
+
+
+<script language="javascript">
+
+var xmlhttp=null; 
+function createXMLHttpRequest()
+{ 
+	if(window.ActiveXObject)
+	{ 
+		xmlhttp = new ActiveXObject("microsoft.XMLHTTP"); 
+	} 
+	else if(window.XMLHttpRequest)
+	{ 
+		xmlhttp = new XMLHttpRequest(); 
+	}
+	else
+	{
+		alert('Not Supported AJAX');
+	}
+} 
+
+function disappear_pass_div()
+{
+	if(document.getElementById('change_volume').style.display == "block")
+	{
+		document.getElementById('change_volume').style.display = "none";
+	}
+	if(document.getElementById('change_chezhan').style.display == "block")
+	{
+		document.getElementById('change_chezhan').style.display = "none";
+	}
+}
+
+function get_mouse_coordinates(event)
+{
+   var eve = event||window.event;
+   if(eve.pageX)
+   {
+
+    return {x:eve.pageX,y:eve.pageY};
+   }
+   else
+   {
+    return {
+                x:eve.clientX,
+                y:eve.clientY/3
+            };
+   }
+}
+
+function get_div_obj(str_id)
+{
+ 	return document.getElementById(str_id);   
+}
+
+
+
+
+function modifyterminalname(event)
+{
+
+ if(document.all)
+    {
+        window.event.cancelBubble = true;   
+    }
+    else
+    {
+        event.stopPropagation();
+    }
+    var mouse_obj_xy = get_mouse_coordinates(event);
+
+    get_div_obj('change_volume').style.left = mouse_obj_xy.x+100+'px';
+    get_div_obj('change_volume').style.top = mouse_obj_xy.y-30+'px';
+	
+
+	get_div_obj('change_volume').style.display = "block";
+}
+
+function modifychezhanset(event)
+{
+	var getid=getCheckboxItem();
+		if(getid==""||getid==null)
+		{
+			alert("<{$terminal_manager.select_task|capitalize}>");
+		}
+	else
+	{
+		var strarray=getid.split(",");
+		if(strarray.length>1)
+		{
+			alert('<{$terminal_manager.Only_select_one|capitalize}>');
+			return void(0);
+		}
+
+		if(document.all)
+    {
+        window.event.cancelBubble = true;   
+    }
+    else
+    {
+        event.stopPropagation();
+    }
+    var mouse_obj_xy = get_mouse_coordinates(event);
+
+    get_div_obj('change_chezhan').style.left = mouse_obj_xy.x+100+'px';
+    get_div_obj('change_chezhan').style.top = mouse_obj_xy.y-30+'px';
+	  get_div_obj('change_chezhan').style.display = "block";
+	}
+}
+
+function set_chezhan()
+{
+	var getid=getCheckboxItem();
+	
+		if(getid==null||getid=="")
+	{
+		alert("<{$terminal_manager.select_terminal|capitalize}>");
+		
+		return void(0);	
+	}
+	else
+	{
+		var strarray=getid.split(",");
+		if(strarray.length>1)
+		{
+			alert('<{$terminal_manager.Only_select_one|capitalize}>');
+			return void(0);
+		}
+
+		createXMLHttpRequest();
+		var chezhannumber=document.getElementById('chezhannumber').value;
+		var checi=document.getElementById('checi').value;
+		
+		xmlhttp.open( "get","ledsetterminalname.php?id="+getid+"&chezhannumber="+chezhannumber+"&checi="+checi+"",true);
+	   xmlhttp.onreadystatechange = function()
+	   {
+		  if( xmlhttp.readyState == 4 )
+		  {
+			 if( xmlhttp.status == 200 )
+			 {
+					document.getElementById('change_chezhan').style.display = "none";
+					if(xmlhttp.responseText == 3)
+					{
+						alert('信息设置错误!');
+					}
+					else
+					{
+						alert('设置成功!');
+					}
+				
+				self.location.reload();
+			}
+		  }
+	   }
+		xmlhttp.setRequestHeader( "If-Modified-Since", "0");
+		xmlhttp.send(null);	
+		
+	}
+	
+	
+	
+}
+
+
+</script>
+<table align="center"><tr><td><div class="link_style" align="center"><{$pagestr}></div></td></tr></table>
+

@@ -1,0 +1,48 @@
+<html>
+<head>
+<title>listen</title>
+<meta http-equiv="Content-Type" content="application/octet-stream; charset=utf-8">
+
+<style type="text/css">
+div
+{
+	width:300px; 
+	height:10%; 
+	font-size:12px; 
+	font-family:Georgia, "Times New Roman", Times, serif, "宋体";
+	background-color:#336699;
+	text-align:center;
+	color:#FFFFFF;
+	float:none;
+}
+
+</style>
+
+
+
+</head>
+<body style="margin:0px; padding:0px;">
+
+<div>
+	<marquee id="flash_text" direction="right" loop="-1"  scrolldelay="200" width="50%"><{$task_name}></marquee>
+	
+</div>
+
+
+        
+<!--播放器部分-->
+<object classid=clsid:22D6F312-B0F6-11D0-94AB-0080C74C7E95 height=70 id=TVPlayer style="LEFT: 0px; TOP: 0px" width=100%>
+
+ 			  <param name="autostart" value="1" />
+              <param name="PlayCount" value="10">
+              <param name="Volume" value="0">
+              <param name="ShowControls" value="1">
+              <param name="ShowStatusBar" value="1">
+			  
+              <param name="FileName" value="<{$cmdargs}>">
+</object>
+<!--播放器部分END-->
+
+
+</body>
+</html>

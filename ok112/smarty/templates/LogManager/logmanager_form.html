@@ -1,0 +1,91 @@
+<form name="form2" class="terminal_form_to_body">
+ <td>
+ <table width="98%" border="0" cellpadding="2" cellspacing="1" align="center">
+    <tr align='center' class="terminal_table_row_bg">   
+		<td width="8%"><{$log_manager.Select|capitalize}></td>     
+		<td width="23%"><{$log_manager.User|capitalize}></td>       
+		<td width="23%"><{$log_manager.Operation|capitalize}></td>       
+		<td width="23%"><{$log_manager.Time|capitalize}></td>         
+		<td width="23%"><{$log_manager.IP_Address|capitalize}></td>    
+    </tr>   
+    <tr>
+      </tr>
+<{if $info|@count neq 0}>
+<{section name=loop loop=$info}>           		
+	<tr align='center' >
+	<td width="10%">
+	<input name="id" type="checkbox" id="id" value="<{$info[loop].id}>">
+	</td>
+	<td width="20%"><{$info[loop].user}></td>  
+	<td width="20%"><{$info[loop].operate}></td>   
+	<td width="20%"><{$info[loop].time}></td>  
+	<td width="20%"><{$info[loop].ip}></td>  		
+	</tr>                  
+<{/section}>
+<{else}>
+<tr align='center' >
+	 <td  colspan="5">
+		<strong><{$log_manager.No_Record|capitalize}></strong>
+	</td>
+</tr>
+<{/if}>
+ <tr style="background-color: #FFFFFF;">
+	 <td  colspan="5">
+	 <!--
+		<a  href="javascript:selAll(0)" class="coolbg"><{$log_manager.Select_all|capitalize}></a>&nbsp;
+		<a href="javascript:noSelAll(0)" class="coolbg"><{$log_manager.Cancel|capitalize}></a>&nbsp;
+		-->
+		<{if $admin_id=="administrator"}>
+		<a title="<{$log_manager.deletinglogtask|capitalize}>" href="javascript:delLog()" class="coolbg"><{$log_manager.Delete|capitalize}></a>&nbsp;
+		<{/if}>
+	</td>
+</tr>
+</table>
+	</td>
+  </tr>
+  <tr>
+    <td><div class="link_style" align="center"><{$pagestr}></div></td>
+  </tr>
+  
+  <!--  搜索表单  -->
+<form name='form3' action='logmanager.php' method='get'>
+<input type='hidden' name='dopost' value='' /><!--保留该隐藏表单-->
+<table  width='98%'  border='0' cellpadding='1' cellspacing='1' align="center">
+  <tr>
+    <td background='skin/images/wbg.gif' align='center'>
+      <table border='0' cellpadding='0' cellspacing='0'>
+        <tr>
+          <td width='90' align='center'><{$Searchform.Search_conditions}></td>
+          <td width='160'>
+          <select name='searchkey' id="searchkey" style='width:150px'>
+          <option  selected="selected" value=""><{$Searchform.Select_type}></option>
+          <option value="user"><{$Searchform.User}></option>
+          <option value="time"><{$Searchform.Time}></option>
+          <option value="ip"><{$Searchform.IP}></option>	
+          </select>
+        </td>
+        <td width='70'>
+          <{$Searchform.Keyword}>
+        </td>
+        <td width='160'>
+          	<input name="searchvalue" type="text" id="searchvalue" style="width:150px" value=""/>
+        </td>
+        <td width='110'>
+    		<select name="searchsequence" id="searchsequence" style="width:80px">
+    		  <option selected="selected" value=""><{$Searchform.Sort}></option>
+    		  <option value="time"><{$Searchform.Time}></option>
+      	    </select>
+        </td>
+        <td>
+          <input name="imageField" type="image" src="<{$log_manager.search_image}>" style="width:45px; height:20px; border-bottom-width:0px;"/>
+        </td>
+       </tr>
+      </table>
+    </td>
+  </tr>
+</table>
+</form>
+
+
+
+

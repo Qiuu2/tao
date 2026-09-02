@@ -1,0 +1,166 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>Alarmmanager.html</title>
+
+<link href="skin/css/main_page_style.css" rel="stylesheet" type="text/css" />
+<style>
+ 
+	table {
+		width: 100%;
+		border-collapse: collapse;
+		margin-top: 20px;
+	}
+	
+	
+	
+	td {
+		padding: 5px;
+		
+	}
+	
+	/* 奇数行样式 */
+	tr:nth-child(odd) {
+		background-color: #ffffff;
+	}
+	
+	/* 偶数行样式 */
+	tr:nth-child(even) {
+		background-color: #c1cfe0;
+	}
+</style>
+<script type="text/javascript">
+function isNull(str)
+{ 
+ if ( str == "" )
+ return true; 
+ var regu = "^[ ]+$"; 
+ var re = new RegExp(regu); 
+ return re.test(str); 
+} 
+
+function getCheckboxItem()
+{
+	var allSel="";
+	if(document.form2.id.checked)
+	{
+		allSel=document.form2.id.value;
+		if(allSel==undefined)
+		allSel="";
+	}
+	for(i=0;i<document.form2.id.length;i++)
+	{
+		if(document.form2.id[i].checked)
+		{
+			if(allSel=="")
+				allSel=document.form2.id[i].value;
+			else
+				allSel=allSel+","+document.form2.id[i].value;
+		}
+	}
+	return allSel;
+}
+
+function selAll(aid)
+{
+	if(aid==0)
+	{
+		document.form2.id.checked=true;
+	}
+	for(i=0;i<document.form2.id.length;i++)
+	{
+		if(!document.form2.id[i].checked)
+		{
+			document.form2.id[i].checked=true;
+		}
+	}
+}
+function noSelAll(aid)
+{
+	if(aid==0)
+	{
+		document.form2.id.checked=false;
+	}
+	for(i=0;i<document.form2.id.length;i++)
+	{
+		if(document.form2.id[i].checked)
+		{
+			document.form2.id[i].checked=false;
+		}
+	}
+}
+
+function startalarm()
+{
+	var qstr=getCheckboxItem();
+	if(isNull(qstr))
+	{
+		alert("<{$alarm_mapping.select_option|capitalize}>");
+		return void(0);	
+	}
+	else
+	{
+			location="do.php?act=alarmstart_msg&id="+qstr+"";		
+	}
+}
+function stopalarm()
+{	
+	var qstr=getCheckboxItem();
+	if(isNull(qstr))
+	{
+		alert("<{$alarm_mapping.select_option|capitalize}>");
+		return void(0);	
+	}
+	else
+	{
+			location="do.php?act=alarmstop_msg&id="+qstr+"";		
+	}	
+}
+function cancel_alarm_mapping()
+{
+	var get_id = getCheckboxItem();
+	if(isNull(get_id))
+	{
+		alert('<{$alarm_mapping.select_option|capitalize}>');
+		return void(0);
+	}
+	else
+	{
+		if(window.confirm('<{$alarm_mapping.confirm_deleting|capitalize}>'))
+		{
+			window.location.href = "do.php?act=cancel_fire_alarm_mapping_msg&id="+get_id+"";
+		}
+		else
+		{
+			return void(0);
+		}
+	}
+}
+
+function setalarmmap()
+{
+	window.location.href = "setalarmkeymap.php";
+}
+
+function modifyalarmmap()
+{
+	var get_id = getCheckboxItem();
+	if(isNull(get_id))
+	{
+		alert('<{$alarm_mapping.select_option|capitalize}>');
+		return void(0);
+	}
+	else
+	{
+		window.location.href = "modifyalarmkeymap.php?id="+get_id+"";
+	}
+}
+
+</script>
+</head>
+<body>
+<{include file="alarmmanager/alarmmanager_form.html"}> 
+<{include file="language/`$language`_foot.php"}> 
+</body>
+</html>

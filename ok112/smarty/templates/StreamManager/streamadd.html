@@ -1,0 +1,109 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>stream manager</title>
+
+<link href="skin/css/main_page_style.css" rel="stylesheet" type="text/css" />
+
+<!--导入树-->
+<link href="smarty/templates/BellManager/codebase/dhtmlxtree.css" rel="stylesheet" type="text/css">
+<script language="JavaScript" src="smarty/templates/BellManager/codebase/dhtmlxtree.js" type"text/JavaScript"></script>	
+<script language="JavaScript" src="smarty/templates/BellManager/codebase/dhtmlxcommon.js" type"text/JavaScript"></script>
+
+<script language="javascript">
+function isNumber( s )
+{ 
+	var regu = "^[0-9]+$"; 
+	var re = new RegExp(regu); 
+	if (s.search(re) != -1) 
+	{ 
+		return true; 
+	}
+	else 
+	{ 
+		return false; 
+	} 
+} 
+function trim(str)
+{
+   str=str.replace(/(^\s*)|(\s*$)/g,""); 
+   return str;
+}
+function isNull( str )
+{
+	if ( str == "" || str==null) 
+	return true;
+	var regu = "^[ ]+$";
+	var re = new RegExp(regu);
+	return re.test(str);
+}
+function isChinaOrNumbOrLett(s)
+{
+	var regu = "^[0-9a-zA-Z\u4e00-\u9fa5]+$"; 
+	var re = new RegExp(regu); 
+	if (re.test(s)) 
+	{ 
+		return true; 
+	}
+	else
+	{ 
+		return false; 
+	} 
+} 
+function checkform()
+{	
+	//验证组名
+	if(isNull(trim(document.getElementById('streamname').value)))
+	{
+		document.getElementById('streamname_s').innerHTML="<font class='terminal_star'><{$stream_create.Zoning_name|capitalize}></font>";
+		document.getElementById('streamname').focus();
+		return false;
+	}
+	else
+	{
+		if(!isChinaOrNumbOrLett(trim(document.getElementById('streamname').value)))
+		{
+			document.getElementById('streamname_s').innerHTML="<font class='terminal_star'><{$stream_create.letter_number_Chinese|capitalize}></font>";
+			document.getElementById('streamname').focus();
+			return false;
+		}
+	}
+	document.getElementById('streamname_s').innerHTML="<font class='terminal_star'></font>";
+	//验证媒体文件是否为空
+	var str=trim(tree2.getAllChecked());
+	var strarray=str.split(",");
+	var temp=0;
+	var storearray=new Array();
+	for(var i=0;i<strarray.length;i++)
+	{
+		if(isNumber(strarray[i]))
+		{
+			storearray[temp]=strarray[i];
+			
+			temp++;
+		}
+		continue;
+	}
+	
+	document.getElementById('nostreamterminal').value=trim(storearray.toString());	
+	
+	if(isNull(document.getElementById('nostreamterminal').value))
+	{
+		if(window.confirm('<{$stream_create.terminal_or_not|capitalize}>'))
+		{
+			return false;
+		}
+		else
+		{
+			return true;
+		}
+	}
+}
+</script>
+</head>
+<body>
+<{include file="StreamManager/streamadd_form.html"}>
+<{include file="language/`$language`_foot.php"}> 
+</body>
+</html>

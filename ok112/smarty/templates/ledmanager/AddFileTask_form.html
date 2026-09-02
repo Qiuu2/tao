@@ -1,0 +1,1212 @@
+<html>
+<head>
+<META http-equiv=Content-Type content="text/html; charset=utf-8">
+<title>AddFileTask</title>
+
+<link href="skin/css/main_page_style.css" rel="stylesheet" type="text/css" />
+
+<!--添加文件列表开始-->
+<style>
+/*想要改输入日历控件的样子就改下面的CSS样式就可以了*/
+/*Date*/
+.header {
+	font-weight: bold;
+	font-weight: bold;
+	color: #000000;
+	background:#C2DEED;
+	height: 25px;
+	padding-left: 10px;
+	font-family: Arial, Tahoma;
+	font-size: 12px;
+}
+.header td
+{
+   padding-left: 10px;
+}
+.header a
+{
+   color: #154BA0;
+}
+.header input
+{
+   background:none;
+   vertical-align: middle;
+   height: 16px;
+}
+.category
+{
+   font: 12px Arial, Tahoma;
+   font: 11px Arial, Tahoma;
+   color: #92A05A;
+   height:20px;
+   background-color: #FFFFD9;
+}
+.category td
+{
+   border-bottom: 1px solid #DEDEB8;
+}
+.expire, .expire a:link, .expire a:visited
+{
+   color: #999999;
+}
+.default, .default a:link, .default a:visited
+{
+   color: #000000;
+}
+.checked, .checked a:link, .checked a:visited
+{
+   color: #FF0000;
+}
+.today, .today a:link, .today a:visited
+{
+   color: #00BB00;
+}
+#calendar_year
+{
+   display: none;
+   line-height: 130%;
+   background: #FFFFFF;
+   position: absolute;
+   z-index: 10;
+}
+#calendar_year .col
+{
+   float: left;
+   background: #FFFFFF;
+   margin-left: 1px;
+   border: 1px solid #86B9D6;
+   padding: 4px;
+}
+#calendar_month
+{
+   display: none;
+   background: #FFFFFF;
+   line-height: 130%;
+   border: 1px solid #86B9D6;
+   padding: 4px;
+   position: absolute;
+   z-index: 11;
+}
+.tableborder
+{
+   background: white;
+   border: 1px solid #86B9D6;
+}
+#year, #month
+{
+   padding-right:10px;
+   background:url(onbottom.gif) no-repeat center right;
+}/*图片路径可以改成自己的*/
+/*Date*/
+</style>
+<script language="javascript" defer="defer">
+	//这段脚本如果你的页面里有，就可以去掉它们了
+	var ie=true;
+	//var ie =navigator.appName=="Microsoft Internet Explorer"?true:false;
+ if (navigator.appName.indexOf("Microsoft")!= -1)
+  {   
+	  ie=true;
+   } 
+  else 
+  {   
+	 ie=false;
+    }
+
+	function $(objID)
+	{
+		return document.getElementById(objID);
+	}
+</script>
+	<link href="smarty/templates/BellManager/codebase/dhtmlxtree.css" rel="stylesheet" type="text/css">
+	<script language="JavaScript" src="smarty/templates/BellManager/codebase/dhtmlxtree.js" type"text/JavaScript"></script>	
+	<script language="JavaScript" src="smarty/templates/BellManager/codebase/dhtmlxcommon.js" type"text/JavaScript"></script>
+
+	
+	<script src="skin/js/frame/analysis_tree_terminal_group_string.js"></script>
+	<script  src="smarty/templates/ajax/get_terminaltype.js" ></script>
+
+<!--添加文件列表结束-->
+<!--修改脚本2010/5/6-->
+<script>
+//获取当前日期
+function getNowFormatDate()
+{
+   var day = new Date();
+   var Year = 0;
+   var Month = 0;
+   var Day = 0;
+   var CurrentDate = "";
+   //初始化时间
+   Year= day.getFullYear();
+   Month= day.getMonth()+1;
+   Day = day.getDate();
+   CurrentDate += Year + "-";
+   if (Month >= 10 )
+   {
+	  CurrentDate += Month + "-";
+   }
+   else
+   {
+	  CurrentDate += "0" + Month + "-";
+   }
+   if (Day >= 10 )
+   {
+	  CurrentDate += Day ;
+   }
+   else
+   {
+	  CurrentDate += "0" + Day ;
+   }
+   return CurrentDate;
+}
+</script>
+
+<SCRIPT language="javascript" defer="true">
+
+function isNull( str )
+{
+	if ( str == "" || str==null) 
+	return true;
+	var regu = "^[ ]+$";
+	var re = new RegExp(regu);
+	return re.test(str);
+}
+
+function isChinaOrNumbOrLett(s)
+{
+	var regu = "^[0-9a-zA-Z\u4e00-\u9fa5]+$"; 
+	var re = new RegExp(regu); 
+	if (re.test(s)) 
+	{ 
+		return true; 
+	}
+	else
+	{ 
+		return false; 
+	} 
+}
+
+function lenReg(str){
+　　return str.replace(/[^x00-xFF]/g,'***').length;
+}; 
+
+function isNumber( s )
+{ 
+	var regu = "^[0-9]+$"; 
+	var re = new RegExp(regu); 
+	if (s.search(re) != -1) 
+	{ 
+		return true; 
+	}
+	else 
+	{ 
+		return false; 
+	} 
+} 
+function trim(str)
+{
+   str=str.replace(/(^\s*)|(\s*$)/g,""); 
+   return str;
+}
+
+//验证每次时长
+function checkintervallen()
+{
+	var objexemodel = document.getElementById('intervalmode');
+	
+		var alllenhour=document.getElementById('lenghtHour').value;
+		var alllenmin=document.getElementById('lenghtMin').value;
+		var alllensenc=document.getElementById('lenghtSenc').value;
+		var alltime=parseInt(alllenhour)*3600+parseInt(alllenmin)*60+parseInt(alllensenc);
+		if(alltime==0)
+		{
+			document.getElementById('intervallen').innerHTML="<font class='terminal_star'><{$media_task_add.not_zero|capitalize}></font>";
+			document.getElementById('intervallen').focus();
+			return false
+		}
+	
+	return true; 
+}
+
+
+//验证表单 
+function checkform()
+{
+	//验证任务名
+	if(isNull(trim(document.getElementById('taskname').value)))
+	{
+		document.getElementById('taskname_text').innerHTML="<font class='terminal_star'><{$media_task_add.enter_task_name|capitalize}></font>";
+		document.getElementById('taskname').focus();
+		return false;
+	}
+	else
+	{
+		if(!isChinaOrNumbOrLett(trim(document.getElementById('taskname').value)))
+		{
+			document.getElementById('taskname_text').innerHTML="<font class='terminal_star'><{$media_task_add.letter_number_Chinese|capitalize}></font>";
+			document.getElementById('taskname').select();
+			return false;
+		}
+	}
+	document.getElementById('taskname_text').innerHTML="<font class='terminal_star'></font>";
+
+	if(document.getElementById('timelength').value==0)
+	{
+		document.getElementById('timelength_s').innerHTML="<font class='terminal_star'><{$media_task_add.not_zero|capitalize}></font>";
+		document.getElementById('lenghtHour').focus();
+		return false;
+	}
+	
+	document.getElementById('timelength_s').innerHTML="<font class='terminal_star'></font>";
+
+	//获取执行时间
+	document.getElementById("playtime").value=document.getElementById("starthour").value+":"+document.getElementById("startmin").value+":"+document.getElementById("startsenc").value;
+
+	//验证开始时间和结束时间
+	if(document.getElementById('startdate').value>document.getElementById('enddate').value)
+	{
+		document.getElementById('timedatecompare').innerHTML="<font class='terminal_star'><{$media_task_add.smaller_than_end_date|capitalize}></font>";
+		document.getElementById('startdate').select();
+		return false;
+	}
+	document.getElementById('timedatecompare').innerHTML="<font class='terminal_star'></font>";
+	//验证执行模式
+	var obj = document.getElementById('exemodel')
+	var strnum="";
+	if(obj.options[obj.selectedIndex].value==2)
+	{
+		for(var i=0;i<document.getElementsByName('week').length;i++)
+		{
+		
+			if(document.getElementsByName('week')[i].checked)
+			{
+			
+				if(strnum=="")
+				{
+					strnum+=1;
+				}
+				else
+				{
+					strnum+=","+1;
+				}
+			
+			}
+			else
+			{
+				if(strnum=="")
+				{
+					strnum+=0;
+				}
+				else
+				{
+					strnum+=","+0;
+				}
+			}
+		} 
+		var temp = strnum.split(",");
+		var flag = 0;
+		for(var i=0;i<temp.length;i++)
+		{
+			if(temp[i]=="1")
+			{
+				var flag =1;
+			}
+		}
+		if(flag==0)
+		{
+			document.getElementById('exemodel_text').innerHTML="<font class='terminal_star'><{$media_task_add.select_the_date|capitalize}></font>";
+			document.getElementById('exemodel').focus();
+			return false;
+		}
+		document.getElementById('hiddenweek').value = trim(strnum); 
+	}
+	//alert(document.getElementById('exeModel_text').innerHTML);
+	//document.getElementById('exeModel_text').innerHTML="<font class='terminal_star'></font>";
+	//验证媒体文件是否有值
+	//var str=trim(tree2.getAllChecked());
+/*
+	var str = trim(sel_item_seq.toString());
+
+	//alert(str);
+	
+	var strarray=str.split(",");
+	
+	var temp=0;
+	
+	var storearray=new Array();
+	
+	for(var i=0;i<strarray.length;i++)
+	{
+		if(isNumber(strarray[i]))
+		{
+			storearray[temp]=strarray[i];
+			temp++;
+		}
+		continue;
+	}
+	document.getElementById('listvalue').value=trim(storearray.toString());*/
+	/*
+	if(isNull(document.getElementById('listvalue').value))
+	{
+		alert("<{$media_task_add.select_media_files|capitalize}>");
+		return false;
+	}
+	*/
+	
+	var haha=document.getElementById("gettextarea").value;
+	if(512<=lenReg(haha))
+	{
+		alert("<{$media_task_add.charbig|capitalize}>");
+		return false;
+	}
+	if(lenReg(haha)==0)
+	{
+		alert("<{$media_task_add.noempoty|capitalize}>");
+		return false;
+	
+	
+	}
+	
+	//验证终端是否有值
+	/*
+	var str=trim(tree3.getAllChecked());
+	analysis_tree_terminal_group_string(str);
+
+	document.getElementById('analysis_tree_group_string').value = trim(analysis_tree_group_string.toString()); 
+
+	analysis_tree_group_string = new Array();
+	
+	document.getElementById('terminallistvalue').value = trim(analysis_tree_terminal_string.toString());
+	*/
+	analysis_tree_terminal_string = new Array();
+
+	if(false==checkintervallen())
+	{
+		return false;
+	}
+	
+	var ledstr=trim(tree.getAllChecked());
+	analysis_tree_terminal_group_string(ledstr);
+
+	document.getElementById('led_group_string').value = trim(analysis_tree_group_string.toString()); 
+	analysis_tree_group_string = new Array();
+	document.getElementById('ledlistvalue').value = trim(analysis_tree_terminal_string.toString());
+
+	
+	if(isNull(trim(document.getElementById('ledlistvalue').value)))
+	{
+		alert("<{$media_task_add.selectterminal|capitalize}>");
+		return false;
+	
+	
+	}
+	
+
+	analysis_tree_terminal_string = new Array();
+
+
+return true;
+}
+</script>
+<script language="javascript" defer="true">
+var rownum=0;
+function get_length()
+{
+
+document.getElementById('intervallength_s').innerHTML="<font class='terminal_star'>*</font>";
+document.getElementById('intervalTime_s').innerHTML="<font class='terminal_star'>*</font>";
+}
+function displayintervalmode(obj)
+{
+	var table = document.getElementById("lefttable");
+	if(obj.options[obj.selectedIndex ].value==0)
+	{
+	
+		if(rownum!=0)
+		{
+			table.deleteRow(rownum);
+			rownum = 0;
+		}
+		var newRow = table.insertRow(-1);
+		var h=0,m=0,s=0;
+		rownum = newRow.rowIndex;
+		newRow.style.textAlign = "left";
+		var newcell = newRow.insertCell(0);
+		newcell.colSpan = 2;
+		var str ="<div class=\"bell_div\">";
+			str +="	&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;";
+			 str +=" <{$media_task_add.Duration|capitalize}><select class=\"terminal_select_style\" name=\"lenghtHour\" id=\"lenghtHour\" onChange=\"showlength();\"  style=\"width:58px;\">";	
+	 for (h = 0; h <= 23; h++) 
+		{
+			str += "<option value=\"" + h + "\">" + h + "</option>";
+		}
+		str +="</select><{$media_task_add.Hour|capitalize}>";
+		str +="<select class=\"terminal_select_style\" name=\"lenghtMin\" id=\"lenghtMin\" onChange=\"showlength();\" style=\"width:58px;\">";
+		for (m = 0; m <= 59; m++) 
+		{
+			str += "<option value=\"" + m + "\">" + m + "</option>";
+		}
+		str +="</select><{$media_task_add.Minute|capitalize}>";
+		str +="<select class=\"terminal_select_style\" name=\"lenghtSenc\" id=\"lenghtSenc\" onChange=\"showlength();\" style=\"width:58px;\">";
+		for (s = 0; s <= 59; s++) 
+		{
+			str += "<option value=\"" + s + "\">" + s + "</option>";
+		}
+		str +="</select><{$media_task_add.Second|capitalize}> <span class=\"terminal_star\" id=\"timelength_s\">*</span><br>";
+
+		str+=" </div>";
+		newcell.innerHTML =str;
+		
+	
+	}
+	else if(obj.options[obj.selectedIndex ].value==1)
+	{
+		if(rownum!=0)
+		{
+			table.deleteRow(rownum);
+			rownum = 0;
+		}
+		var newRow = table.insertRow(-1);
+		var h=0,m=0,s=0;
+		rownum = newRow.rowIndex;
+		newRow.style.textAlign = "left";
+		var newcell = newRow.insertCell(0);
+		newcell.colSpan = 2;
+		var str ="<div class=\"bell_div\">";
+			str +="	&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<input  name=\"timelengthtype\" id=\"timelengthtype\" type=\"radio\" value=\"1\" style=\"visibility :hidden;\" checked=\"checked\" onClick=\"javascript:timelengthtype.disabled=true;circleTime.disabled=true;lenghtHour.disabled=false;lenghtMin.disabled=false;lenghtSenc.disabled=false;\"/>";
+            
+			 str +=" <{$media_task_add.Duration|capitalize}>:<select class=\"terminal_select_style\" name=\"lenghtHour\" id=\"lenghtHour\" onChange=\"showlength();\"  style=\"width:58px;\">";	
+	 for (h = 0; h <= 23; h++) 
+		{
+			str += "<option value=\"" + h + "\">" + h + "</option>";
+		}
+		str +="</select><{$media_task_add.Hour|capitalize}>";
+		str +="<select class=\"terminal_select_style\" name=\"lenghtMin\" id=\"lenghtMin\" onChange=\"showlength();\" style=\"width:58px;\">";
+		for (m = 0; m <= 59; m++) 
+		{
+			str += "<option value=\"" + m + "\">" + m + "</option>";
+		}
+		str +="</select><{$media_task_add.Minute|capitalize}>";
+		str +="<select class=\"terminal_select_style\" name=\"lenghtSenc\" id=\"lenghtSenc\" onChange=\"showlength();\"  style=\"width:58px;\">";
+		for (s = 0; s <= 59; s++) 
+		{
+			str += "<option value=\"" + s + "\">" + s + "</option>";
+		}
+		str +="</select><{$media_task_add.Second|capitalize}> <span class=\"terminal_star\" id=\"timelength_s\">*</span><br>";
+		str +="&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<{$media_task_add.intervallength|capitalize}>:<select class=\"terminal_select_style\" name=\"intervallenHour\" id=\"intervallenHour\"   style=\"width:58px;\">";
+	
+		for (h = 0; h <= 23; h++) 
+		{
+			str += "<option value=\"" + h + "\">" + h + "</option>";
+		}
+		str +="</select><{$media_task_add.Hour|capitalize}>";
+		str +="<select class=\"terminal_select_style\" name=\"intervallenMin\" id=\"intervallenMin\"  style=\"width:58px;\">";
+		for (m = 0; m <= 59; m++) 
+		{
+			str += "<option value=\"" + m + "\">" + m + "</option>";
+		}
+		str +="</select><{$media_task_add.Minute|capitalize}>";
+		str +="<select class=\"terminal_select_style\" name=\"intervallenSenc\" id=\"intervallenSenc\"  style=\"width:58px;\">";
+		for (s = 0; s <= 59; s++) 
+		{
+			str += "<option value=\"" + s + "\">" + s + "</option>";
+		}
+		str +="</select><{$media_task_add.Second|capitalize}> <span class=\"terminal_star\" id=\"intervallen\">*</span> <br>";
+		str+="&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<input type=\"radio\" value=\"1\" id=\"intervaltype\" name=\"intervaltype\" checked=\"checked\" onchange=\"get_length(this)\" onClick=\"javascript:intervaltype.disabled=true;intervalcircle.disabled=true;intervalHour.disabled=false;intervalMin.disabled=false;intervalSenc.disabled=false;\"/><{$media_task_add.intervalDuration|capitalize}>:<select class=\"terminal_select_style\" name=\"intervalHour\" id=\"intervalHour\"  style=\"width:58px;\">"
+		for (h = 0; h <= 23; h++) 
+		{
+			str += "<option value=\"" + h + "\">" + h + "</option>";
+		}
+		str +="</select><{$media_task_add.Hour|capitalize}>";
+		str +="<select class=\"terminal_select_style\" name=\"intervalMin\" id=\"intervalMin\"  style=\"width:58px;\">";
+		for (m = 0; m <= 59; m++) 
+		{
+			str += "<option value=\"" + m + "\">" + m + "</option>";
+		}
+		str +="</select><{$media_task_add.Minute|capitalize}>";
+		str +="<select class=\"terminal_select_style\" name=\"intervalSenc\" id=\"intervalSenc\"  style=\"width:58px;\">";
+		for (s = 0; s <= 59; s++) 
+		{
+			str += "<option value=\"" + s + "\">" + s + "</option>";
+		}
+		str +="</select><{$media_task_add.Second|capitalize}> <span class=\"terminal_star\" id=\"intervallength_s\">*</span> <br>";
+		str+="&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<input type=\"radio\" value=\"2\" id=\"intervaltype\" name=\"intervaltype\" onchange=\"get_length(this)\" onClick=\"javascript:intervaltype.disabled=true;intervalcircle.disabled=false;intervalHour.disabled=true;intervalMin.disabled=true;intervalSenc.disabled=true;\"/><{$media_task_add.intervalcishu|capitalize}>:";
+	str+="<input class=\"terminal_input_font\" name=\"intervalcircle\"  type=\"text\" id=\"intervalcircle\" size=\"48\" value=\"1\" disabled=\"disabled\"/><span class=\"terminal_star\" id=\"intervalTime_s\"> *</span> ";	
+		
+		str+=" </div>";
+		
+		
+		newcell.innerHTML =str;
+		
+		if( document.getElementsByName('timelengthtype')[0].checked==true)
+		{
+			document.getElementsByName('timelengthtype')[1].disabled=true;
+			document.getElementsByName('timelengthtype')[0].disabled=true;
+			 document.getElementById("lenghtHour").disabled=false;
+			  document.getElementById("lenghtMin").disabled=false;
+			   document.getElementById("lenghtSenc").disabled=false;
+			 
+		}
+		else
+		{
+			document.getElementsByName('timelengthtype')[0].checked=true;
+			document.getElementsByName('timelengthtype')[1].disabled=true;
+			document.getElementsByName('timelengthtype')[0].disabled=false;
+				 document.getElementById("lenghtHour").disabled=false;
+			  document.getElementById("lenghtMin").disabled=false;
+			   document.getElementById("lenghtSenc").disabled=false;
+		
+		}
+		
+		
+	}
+}
+
+
+var row_num=0;
+function displayweek(obj)
+{
+	var tables = document.getElementById("timetable");
+	
+	if(obj.options[obj.selectedIndex ].value==2)
+	{
+	
+		var newRows = tables.insertRow(-1);
+		row_num = newRows.rowIndex;
+		newRows.style.textAlign = "center";
+		var newcells = newRows.insertCell(0);
+		newcells.colSpan = 2;
+		newcells.innerHTML ="<div class=\"bell_div\"><input type=\"checkbox\" value=\"1\" id=\"week\" name=\"week\"/><{$media_task_add.Sunday|capitalize}><input type=\"checkbox\" value=\"1\" id=\"week\" name=\"week\"/><{$media_task_add.Monday|capitalize}><input type=\"checkbox\" value=\"1\" id=\"week\" name=\"week\"/><{$media_task_add.Tuesday|capitalize}><input type=\"checkbox\" value=\"1\" id=\"week\" name=\"week\"/><{$media_task_add.Wednesday|capitalize}><input type=\"checkbox\" value=\"1\" id=\"week\" name=\"week\"/><{$media_task_add.Thursday|capitalize}><input type=\"checkbox\" value=\"1\" id=\"week\" name=\"week\"/><{$media_task_add.Friday|capitalize}><input type=\"checkbox\" value=\"1\" id=\"week\" name=\"week\"/><{$media_task_add.Saturday|capitalize}>";
+		
+		document.getElementById('starthour').disabled = false;
+		document.getElementById('startmin').disabled = false;
+		document.getElementById('startsenc').disabled = false;
+		document.getElementById('startdate').disabled = false;
+		document.getElementById('enddate').disabled = false;
+	}
+	else if(obj.options[obj.selectedIndex ].value==1)
+	{
+		if(row_num!=0)
+		{
+			tables.deleteRow(row_num);
+			row_num = 0;
+		}
+		document.getElementById('starthour').disabled = false;
+		document.getElementById('startmin').disabled = false;
+		document.getElementById('startsenc').disabled = false;
+		document.getElementById('startdate').disabled = false;
+		document.getElementById('enddate').disabled = false;
+	}
+	else if(obj.options[obj.selectedIndex ].value==3)
+	{
+	
+		if(row_num!=0)
+		{
+			table.deleteRow(row_num);
+			row_num = 0;
+		}
+		
+		document.getElementById('starthour').disabled = true;
+		document.getElementById('startmin').disabled = true;
+		document.getElementById('startsenc').disabled = true;
+		document.getElementById('startdate').disabled = true;
+		document.getElementById('enddate').disabled = true;
+	}
+}
+
+</script>
+</head>
+<body>
+<form name="frmSearch2" method="post" action="do.php?act=ledaddplaytask_msg&getfolderid=<{$getfolderid}>&userid=<{$userid}>" onSubmit="return checkform();" class="terminal_form_to_body">
+  <table width="780" align="center" border="0" cellpadding="0" cellspacing="0"  class="terminal_table_border">
+    <tr>
+      <td colspan="2">
+	  	<img src="<{$media_task_add.led_task_add}>"/>
+	  </td>
+    </tr>
+    <tr>
+      <td rowspan="2"  width="390" align="left" valign="top" class="fileadm_frame_border">
+	  <table width="100%" border="0" cellspacing="0" cellpadding="0" id="lefttable">
+          <tr>
+           <td colspan="2" class="fileadm_table_title"><{$media_task_add.Task_attribute|capitalize}></td>
+          </tr>
+          <tr>
+            <td nowrap class="belll_table_col_rightalign"><{$media_task_add.Task_Name|capitalize}></td>
+			
+            <td nowrap class="bell_talbe_col_leftalign">
+				<input title="<{$media_task_add.Task_Name_task|capitalize}>" maxlength="8" class="terminal_input_font" name="taskname" type="text" id="taskname"/>
+				<span class="terminal_star" id="taskname_text">*</span>
+			</td>
+          </tr>
+	
+          <tr>
+            <td class="belll_table_col_rightalign" nowrap="nowrap"><{$media_task_add.Pre_power_on|capitalize}></td>
+            <td nowrap class="bell_talbe_col_leftalign">
+			<select title="<{$media_task_add.Pre_power_on_task|capitalize}>" class="terminal_select_style" name="prepower" id="prepower" style="width:80px;"> 
+					<script>
+					var i=0;
+						while(1)
+						{
+							document.write("<option value='"+i+"'>"+i+"<{$media_task_add.Second|capitalize}></option>");
+							i+=5;
+							if(i>=59)
+							break;
+						}
+						
+						var obj = document.getElementById('prepower');
+						for(var i=0;i<obj.options.length;i++)
+						{
+							if(obj.options[i].value == 15)
+							{
+								obj.options[i].selected = true;
+							}
+						}
+					</script>
+					<option value="60">1 <{$media_task_add.Minute|capitalize}></option>
+					<option value="120" >2 <{$media_task_add.Minute|capitalize}></option>
+					<option value="180">3 <{$media_task_add.Minute|capitalize}></option>
+					<option value="240">4 <{$media_task_add.Minute|capitalize}></option>
+					<option value="300">5 <{$media_task_add.Minute|capitalize}></option>	
+              </select>
+ <!--添加优先级开始-->					
+
+
+<{$media_task_add.Task_level}>
+
+<select title="<{$media_task_add.Task_level_task|capitalize}>" name="task_priority_text" id="task_priority_text" style="width:80px;">
+	 <script>
+  	var level=0;
+  	for(level=<{$getlevel}>;level<=109;level++)
+	{
+		document.write("<option value='"+level+"'>"+level+"</option>");
+	}
+  </script>
+</select>
+
+
+<!--添加优先级结束-->	
+		  
+            </td>
+          </tr>
+		    <tr>
+            <td nowrap class="belll_table_col_rightalign"><{$media_task_add.Send_mode|capitalize}></td>
+            <td nowrap class="bell_talbe_col_leftalign">
+			<select   name="datasendmodel" id="datasendmodel" style="width:69px;">
+                <option value="0"><{$media_task_add.unicast}></option>
+                <option value="1"><{$media_task_add.multicast}></option>
+            </select>
+		
+		
+
+            </td>
+          </tr> 
+		
+		     <tr>
+            <td nowrap class="belll_table_col_rightalign"><{$media_task_add.intervalmode|capitalize}></td>
+            <td nowrap class="terminal_select_style">
+			<select  class="terminal_select_style" name="intervalmode" id="intervalmode" style="width:89px;" onChange="displayintervalmode(this)">
+                <option value="0"><{$media_task_add.normalmode}></option>
+              
+            </select>
+			 <script language="javascript" defer="true">
+			 function showlength()
+					{
+					document.getElementById("timelength").value=parseInt(document.getElementById("lenghtHour").value)*60*60+parseInt(document.getElementById("lenghtMin").value)*60+parseInt(document.getElementById("lenghtSenc").value);
+					}
+				var obj = document.getElementById('intervalmode');
+				displayintervalmode(obj);
+			
+//用来判断播放时间长度不能为零
+			 </script>	
+			 <input title="<{$media_task_add.playtimenum|capitalize}>" name="timelength" type="text" id="timelength" readonly="readonly" value="0" style="display:none" >
+            </td>
+          </tr>
+      </table>
+	  </td>
+      <td width="390" align="left" valign="top" class="fileadm_frame_border">
+	  <table width="100%"  border="0" id="timetable" name="timetable" cellspacing="0" cellpadding="0">
+          <tr>
+            <td colspan="2" class="fileadm_table_title"><{$media_task_add.Run_time|capitalize}></td>
+          </tr>
+		  
+          <tr>
+            <td class="belll_table_col_rightalign"><{$media_task_add.Play_time|capitalize}></td>
+            <td nowrap class="bell_talbe_col_leftalign">
+			<select title="<{$media_task_add.Start_timetask|capitalize}>" class="terminal_select_style" name="starthour" id="starthour" style="width:55px;">
+				<script>
+					for(var i=0;i<=23;i++)
+					{
+						var obj = new Date();
+						var gethours = obj.getHours();
+						if(i== gethours)
+						{
+							document.write("<option value='"+i+"' selected='selected'>"+i+"</option>");
+						}
+						else
+						{
+							document.write("<option value='"+i+"'>"+i+"</option>");
+						}
+					}
+				</script>
+			</select>
+			<{$media_task_add.Hour|capitalize}>
+			<select title="<{$media_task_add.Start_timetask|capitalize}>" class="terminal_select_style" name="startmin" id="startmin" style="width:55px;">
+			<script>
+				for(var i=0;i<=59;i++)
+				{
+					var obj = new Date();
+					var getminutes = obj.getMinutes();
+					if(i == getminutes)
+					{
+						document.write("<option value='"+i+"' selected='selected'>"+i+"</option>");
+					}
+					else
+					{
+						document.write("<option value='"+i+"'>"+i+"</option>");
+					}
+				}
+			</script>
+			</select>
+			<{$media_task_add.Minute|capitalize}>
+			
+			<select title="<{$media_task_add.Start_timetask|capitalize}>" class="terminal_select_style" name="startsenc" id="startsenc" style="width:55px;">
+			<script>
+			for(var i=0;i<=59;i++)
+			{
+				var obj = new Date();
+				var getsecond = obj.getSeconds();
+				if(i==getsecond)
+				{
+					document.write("<option value='"+i+"' >"+i+"</option>");
+				}
+				else
+				{
+					document.write("<option value='"+i+"'>"+i+"</option>");
+				}	 
+			}
+			</script>
+			</select>
+			<{$media_task_add.Second|capitalize}>
+			
+			<input title="<{$media_task_add.Start_timetask|capitalize}>" name="playtime" type="text" id="playtime" readonly="readonly" value=""  style="display:none;" >
+			<span id="starttime_s" class="terminal_star"></span>
+</td>
+  </tr>
+     <tr>
+       <td class="belll_table_col_rightalign"><{$media_task_add.Start_date|capitalize}></td>
+        <td nowrap class="bell_talbe_col_leftalign">
+
+                <input title="<{$media_task_add.Start_Datetask|capitalize}>" class="bell_input_style" name="startdate" id="startdate" type="text" value="" size="14" readonly="readonly" onClick="showcalendar(event, this);" onFocus="showcalendar(event, this);if(this.value=='0000-00-00')this.value=''" /></td>
+          </tr>
+          <tr>
+            <td class="belll_table_col_rightalign"><{$media_task_add.End_date|capitalize}></td>
+            <td nowrap class="bell_talbe_col_leftalign">
+			<input title="<{$media_task_add.ent_datetask|capitalize}>" class="bell_input_style" name="enddate" id="enddate" type="text" value="" size="14" readonly="readonly" onClick="showcalendar(event, this);" onFocus="showcalendar(event, this);if(this.value=='0000-00-00')this.value=''" />
+                <span class="terminal_star" id="timedatecompare">*</span> 
+			</td>
+				<script>
+				
+				document.getElementById('startdate').value = getNowFormatDate();
+				
+				document.getElementById('enddate').value = getNowFormatDate();
+				</script>
+          </tr>
+
+          <tr>
+            <td class="belll_table_col_rightalign"><{$media_task_add.Run_mode|capitalize}></td>
+            <td nowrap class="bell_talbe_col_leftalign">
+			<select title="<{$media_task_add.Run_modetask|capitalize}>" class="terminal_select_style" name="exemodel" id="exemodel" onChange="displayweek(this)">
+                <option value="1"><{$media_task_add.Every_day|capitalize}></option>
+                <option value="2"><{$media_task_add.Every_week|capitalize}></option>
+				<option value="3"><{$media_task_add.Manual|capitalize}></option>
+            </select>
+            <span class="terminal_star" id="exemodel_text">*</span> 
+            </td>
+          </tr>
+		 
+      </table>
+	  </td>
+    </tr>
+    <tr>
+      <td height="0" align="left" valign="top">
+	  <input type="hidden" id="hiddenweek" name="hiddenweek" value=""/></td>
+    </tr>
+    <tr >
+      <td height="" colspan="2" align="left" valign="top">
+	  <table width="100%" border="0" cellspacing="0" cellpadding="0" >
+          <tr>
+           
+            <td ><div class="fileadm_right_div"><{$media_task_add.LEDtext|capitalize}></div></td>
+          </tr>
+          <tr>
+          
+            <td width="100%" align="left">
+				<textarea rows="20" cols="108" id="gettextarea" name="gettextarea" ></textarea>
+            </td>
+          </tr>
+		    <tr>
+           
+            <td ><div class="fileadm_right_div"><{$media_task_add.LEDTerminal_list|capitalize}></div></td>
+          </tr>
+          <tr>
+        
+            <td width="100%" align="left">
+			<div id="ledlists" name="ledlists"  style="width:100%; height:200px; "></div>
+				<input type="hidden"  id="ledlistvalue" name="ledlistvalue" value=""/>
+				<input type="hidden" id="led_group_string" name="led_group_string" value=""/>
+				<script language="javascript" defer="true">
+			  
+					var leddata = "<{$ledlist}>";
+					tree=new dhtmlXTreeObject("ledlists","100%","100%",0);
+					tree.setSkin('dhx_skyblue');
+					tree.setImagePath("smarty/templates/BellManager/codebase/csh_bluebooks/");
+					tree.enableCheckBoxes(1);
+					tree.enableThreeStateCheckboxes(true);
+				
+					
+					tree.loadXMLString(leddata);
+					
+				//	var get_led_id = tree.getAllChildless();
+					
+				//	alert(get_led_id);
+				
+				</script>
+	
+            </td>
+          </tr>
+      </table></td>
+    </tr>
+
+    <tr>
+      <td height="28" colspan="2" align="center" valign="middle">
+	  <input type="hidden" name="taskType" value="ledplaytask"/>
+          <input title="<{$media_task_add.submit_task|capitalize}>" name="Submit" type="submit" class="terminal_button" value="<{$media_task_add.Submit|capitalize}>"/>
+        	&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+      <!--    <input title="<{$media_task_add.cannel_task|capitalize}>" name="reset" type="reset" class="terminal_button" id="reset" value="<{$media_task_add.Cancel|capitalize}>" />
+	  -->
+	  <p><{include file="language/`$language`_foot.php"}>
+</p>
+	  </td>
+    </tr>
+  </table>
+ <script language="javascript">
+
+ var row3=0;
+function display()
+{
+   
+	var get_tables = document.getElementById("get_areas");
+    
+	for(var get_num = get_tables.rows.length-1;get_num>=0;get_num--)
+	{
+	
+	   get_tables.deleteRow(get_num);
+	   
+	}  
+	
+	var get_newRow;
+	var get_newcell;
+	var getcell="";
+    var row;
+	var i=0;
+		get_newRow = get_tables.insertRow(row);
+		get_newRow.style.textAlign = "left";
+		for( i=0;i<channelnum;i++)
+		{
+			switch(i)
+			{
+				case 0:
+				getcell+="<input type=\"checkbox\" value=\"1\" id=\"lead2\" name=\"lead2\"/><{$media_task_add.zone_1|capitalize}>";
+				break;
+				case 1:
+				getcell+="&nbsp;&nbsp;&nbsp;&nbsp;<input type=\"checkbox\" value=\"1\" id=\"lead2\" name=\"lead2\"/><{$media_task_add.zone_2|capitalize}>";
+				break;
+				case 2:
+				getcell+="<input type=\"checkbox\" value=\"1\" id=\"lead2\" name=\"lead2\"/><{$media_task_add.zone_3|capitalize}>";
+				break;
+				case 3:
+				getcell+="&nbsp;&nbsp;&nbsp;&nbsp;<input type=\"checkbox\" value=\"1\" id=\"lead2\" name=\"lead2\"/><{$media_task_add.zone_4|capitalize}>";
+				break;
+				case 4:
+				getcell+="<input type=\"checkbox\" value=\"1\" id=\"lead2\" name=\"lead2\"/><{$media_task_add.zone_5|capitalize}>";
+				break;
+				case 5:
+				getcell+="&nbsp;&nbsp;&nbsp;&nbsp;<input type=\"checkbox\" value=\"1\" id=\"lead2\" name=\"lead2\"/><{$media_task_add.zone_6|capitalize}>";
+				break;
+				case 6:
+				getcell+="<input type=\"checkbox\" value=\"1\" id=\"lead2\" name=\"lead2\"/><{$media_task_add.zone_7|capitalize}>";
+				break;
+				case 7:
+				getcell+="&nbsp;&nbsp;&nbsp;&nbsp;<input type=\"checkbox\" value=\"1\" id=\"lead2\" name=\"lead2\"/><{$media_task_add.zone_8|capitalize}>";
+				break;
+				case 8:
+				getcell+="<input type=\"checkbox\" value=\"1\" id=\"lead2\" name=\"lead2\"/><{$media_task_add.zone_9|capitalize}>";
+				break;
+				case 9:
+				getcell+="&nbsp;&nbsp;&nbsp;&nbsp;<input type=\"checkbox\" value=\"1\" id=\"lead2\" name=\"lead2\"/><{$media_task_add.zone_10|capitalize}>";
+				break;
+				case 10:
+				getcell+="<input type=\"checkbox\" value=\"1\" id=\"lead2\" name=\"lead2\"/><{$media_task_add.zone_11|capitalize}>";
+				break;
+				case 11:
+				getcell+="<input type=\"checkbox\" value=\"1\" id=\"lead2\" name=\"lead2\"/><{$media_task_add.zone_12|capitalize}>";
+				break;
+				case 12:
+				getcell+="<input type=\"checkbox\" value=\"1\" id=\"lead2\" name=\"lead2\"/><{$media_task_add.zone_13|capitalize}>";
+				break;
+				case 13:
+				getcell+="<input type=\"checkbox\" value=\"1\" id=\"lead2\" name=\"lead2\"/><{$media_task_add.zone_14|capitalize}>";
+				break;
+				case 14:
+				getcell+="<input type=\"checkbox\" value=\"1\" id=\"lead2\" name=\"lead2\"/><{$media_task_add.zone_15|capitalize}>";
+				break;
+				case 15:
+				getcell+="<input type=\"checkbox\" value=\"1\" id=\"lead2\" name=\"lead2\"/><{$media_task_add.zone_16|capitalize}>";
+				break;
+			
+			}
+			if(i%2!=0)
+				getcell+="\n";
+		}
+		if(i==channelnum)
+		getcell+="&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<input type=\"button\" value=\"<{$media_task_add.Sumbit|capitalize}>\"  onclick=\"set_task_volume_prepose();\"class=\"bell_button_style\"><input type=\"button\" value=\"<{$media_task_add.Cancel|capitalize}>\"  onclick=\"disappear_volume_div_prepose();\"class=\"bell_button_style\">";
+		get_newRow.insertCell(0).innerHTML=getcell;
+
+}
+  </script>
+ <div id="lead" class="r-displayVolume">
+	<table border="0" cellpadding="0" cellspacing="0" width="170" height="10" style="background-color:#EEFFEE"  id="get_areas">
+	
+	</table>
+</div>
+
+</form>
+<p>
+  <script language="javascript">
+function get_mouse_coordinates()
+{
+  // var eve = event ;
+  	if(navigator.appName.indexOf("Explorer") > -1)   
+	{
+	 var eve = event||window.event;
+	 return {
+                x:eve.clientX+document.body.scrollLeft - document.body.clientLeft,
+                y:eve.clientY+document.body.scrollTop - document.body.clientTop
+            };
+	
+	}
+else
+	{
+		
+		
+		 return {
+                x:document.getElementById( "terminallist").offsetWidth+200,
+                y:document.getElementById( "terminallist").offsetHeight+120
+            };
+	}
+ 
+}
+function get_div_obj(str_id)
+{
+ 	return document.getElementById(str_id);   
+}
+</script>
+  <script type="text/javascript" src="calendar.js" defer="true"></script>
+</p>
+
+</body>
+</html>
+
+
+<script language="javascript" defer="true">
+var controlid = null;
+var currdate = null;
+var startdate = null;
+var enddate  = null;
+var yy = null;
+var mm = null;
+var hh = null;
+var ii = null;
+var currday = null;
+var addtime = false;
+var today = new Date();
+var lastcheckedyear = false;
+var lastcheckedmonth = false;
+
+function _cancelBubble(event) {
+	e = event ? event : window.event ;
+	if(ie) {
+		e.cancelBubble = true;
+	} else {
+		e.stopPropagation();
+	}
+}
+
+function getposition(obj) {
+	var r = new Array();
+	r['x'] = obj.offsetLeft;
+	r['y'] = obj.offsetTop;
+	while(obj = obj.offsetParent) {
+		r['x'] += obj.offsetLeft;
+		r['y'] += obj.offsetTop;
+	}
+	return r;
+}
+
+function loadcalendar() {
+	s = '';
+	s += '<div id="calendar" style="display:none; position:absolute; z-index:9;" onclick="_cancelBubble(event)">';
+	if (ie)
+	{
+		s += '<iframe width="200" height="160" src="about:blank" style="position: absolute;z-index:-1;"></iframe>';
+	}
+	s += '<div style="width: 200px;"><table class="tableborder" cellspacing="0" cellpadding="0" width="100%" style="text-align: center">';
+	s += '<tr align="center" class="header"><td class="header"><a href="#" onclick="refreshcalendar(yy, mm-1);return false" title="<{$media_task_add.lastmonth|capitalize}>">&lt;&lt;</a></td><td colspan="5" style="text-align: center" class="header"><a href="#" onclick="showdiv(\'year\');_cancelBubble(event);return false" title="<{$media_task_add.pleaseclickyear|capitalize}>" id="year"></a>&nbsp; - &nbsp;<a id="month" title="<{$media_task_add.pleaseclickmonth|capitalize}>" href="#" onclick="showdiv(\'month\');_cancelBubble(event);return false"></a></td><td class="header"><A href="#" onclick="refreshcalendar(yy, mm+1);return false" title="<{$media_task_add.nextmonth|capitalize}>">&gt;&gt;</A></td></tr>';
+	s += '<tr class="category"><td><{$media_task_add.day|capitalize}></td><td><{$media_task_add.one|capitalize}></td><td><{$media_task_add.two|capitalize}></td><td><{$media_task_add.three|capitalize}></td><td><{$media_task_add.four|capitalize}></td><td><{$media_task_add.five|capitalize}></td><td><{$media_task_add.six|capitalize}></td></tr>';
+	for(var i = 0; i < 6; i++) {
+		s += '<tr class="altbg2">';
+		for(var j = 1; j <= 7; j++)
+			s += "<td id=d" + (i * 7 + j) + " height=\"19\">0</td>";
+		s += "</tr>";
+	}
+	s += '<tr id="hourminute"><td colspan="7" align="center"><input type="text" size="1" value="" id="hour" onKeyUp=\'this.value=this.value > 23 ? 23 : zerofill(this.value);controlid.value=controlid.value.replace(/\\d+(\:\\d+)/ig, this.value+"$1")\'> <{$media_task_add.point|capitalize}> <input type="text" size="1" value="" id="minute" onKeyUp=\'this.value=this.value > 59 ? 59 : zerofill(this.value);controlid.value=controlid.value.replace(/(\\d+\:)\\d+/ig, "$1"+this.value)\'> <{$media_task_add.part|capitalize}></td></tr>';
+	s += '</table></div></div>';
+	s += '<div id="calendar_year" onclick="_cancelBubble(event)"><div class="col">';
+	for(var k = 2010; k <= 2039; k++) {
+		s += k != 1930 && k % 10 == 0 ? '</div><div class="col">' : '';
+		s += '<a href="#" onclick="refreshcalendar(' + k + ', mm);$(\'calendar_year\').style.display=\'none\';return false"><span' + (today.getFullYear() == k ? ' class="today"' : '') + ' id="calendar_year_' + k + '">' + k + '</span></a><br />';
+	}
+	s += '</div></div>';
+	s += '<div id="calendar_month" onclick="_cancelBubble(event)">';
+	for(var k = 1; k <= 12; k++) {
+		s += '<a href="#" onclick="refreshcalendar(yy, ' + (k - 1) + ');$(\'calendar_month\').style.display=\'none\';return false"><span' + (today.getMonth()+1 == k ? ' class="today"' : '') + ' id="calendar_month_' + k + '">' + k + ( k < 10 ? '&nbsp;' : '') + ' <{$media_task_add.month|capitalize}></span></a><br />';
+	}
+	s += '</div>';
+
+	var nElement = document.createElement("div");
+	nElement.innerHTML=s;
+	document.getElementsByTagName("body")[0].appendChild(nElement);
+
+//	document.write(s);
+	document.onclick = function(event) {
+		$('calendar').style.display = 'none';
+		$('calendar_year').style.display = 'none';
+		$('calendar_month').style.display = 'none';
+	}
+	$('calendar').onclick = function(event) {
+		_cancelBubble(event);
+		$('calendar_year').style.display = 'none';
+		$('calendar_month').style.display = 'none';
+	}
+}
+
+function parsedate(s) {
+	/(\d+)\-(\d+)\-(\d+)\s*(\d*):?(\d*)/.exec(s);
+	var m1 = (RegExp.$1 && RegExp.$1 > 1899 && RegExp.$1 < 2101) ? parseFloat(RegExp.$1) : today.getFullYear();
+	var m2 = (RegExp.$2 && (RegExp.$2 > 0 && RegExp.$2 < 13)) ? parseFloat(RegExp.$2) : today.getMonth() + 1;
+	var m3 = (RegExp.$3 && (RegExp.$3 > 0 && RegExp.$3 < 32)) ? parseFloat(RegExp.$3) : today.getDate();
+	var m4 = (RegExp.$4 && (RegExp.$4 > -1 && RegExp.$4 < 24)) ? parseFloat(RegExp.$4) : 0;
+	var m5 = (RegExp.$5 && (RegExp.$5 > -1 && RegExp.$5 < 60)) ? parseFloat(RegExp.$5) : 0;
+	/(\d+)\-(\d+)\-(\d+)\s*(\d*):?(\d*)/.exec("0000-00-00 00\:00");
+	return new Date(m1, m2 - 1, m3, m4, m5);
+}
+
+function settime(d) {
+	$('calendar').style.display = 'none';
+	controlid.value = yy + "-" + zerofill(mm + 1) + "-" + zerofill(d) + (addtime ? ' ' + zerofill($('hour').value) + ':' + zerofill($('minute').value) : '');
+}
+
+function showcalendar(event,controlid1, addtime1, startdate1, enddate1) {
+	controlid = controlid1;
+	addtime = addtime1;
+	startdate = startdate1 ? parsedate(startdate1) : false;
+	enddate = enddate1 ? parsedate(enddate1) : false;
+	currday = controlid.value ? parsedate(controlid.value) : today;
+	hh = currday.getHours();
+	ii = currday.getMinutes();
+	var p = getposition(controlid);
+	$('calendar').style.display = 'block';
+	$('calendar').style.left = p['x']+'px';
+	$('calendar').style.top	= (p['y'] + 20)+'px';
+	_cancelBubble(event);
+	refreshcalendar(currday.getFullYear(), currday.getMonth());
+	if(lastcheckedyear != false) {
+		$('calendar_year_' + lastcheckedyear).className = 'default';
+		$('calendar_year_' + today.getFullYear()).className = 'today';
+	}
+	if(lastcheckedmonth != false) {
+		$('calendar_month_' + lastcheckedmonth).className = 'default';
+		$('calendar_month_' + (today.getMonth() + 1)).className = 'today';
+	}
+	$('calendar_year_' + currday.getFullYear()).className = 'checked';
+	$('calendar_month_' + (currday.getMonth() + 1)).className = 'checked';
+	$('hourminute').style.display = addtime ? '' : 'none';
+	lastcheckedyear = currday.getFullYear();
+	lastcheckedmonth = currday.getMonth() + 1;
+}
+
+function refreshcalendar(y, m) {
+	var x = new Date(y, m, 1);
+	var mv = x.getDay();
+	var d = x.getDate();
+	var dd = null;
+	yy = x.getFullYear();
+	mm = x.getMonth();
+	$("year").innerHTML = yy;
+	$("month").innerHTML = mm + 1 > 9  ? (mm + 1) : '0' + (mm + 1);
+
+	for(var i = 1; i <= mv; i++) {
+		dd = $("d" + i);
+		dd.innerHTML = "&nbsp;";
+		dd.className = "";
+	}
+
+	while(x.getMonth() == mm) {
+		dd = $("d" + (d + mv));
+		dd.innerHTML = '<a href="###" onclick="settime(' + d + ');return false">' + d + '</a>';
+		if(x.getTime() < today.getTime() || (enddate && x.getTime() > enddate.getTime()) || (startdate && x.getTime() < startdate.getTime())) {
+			dd.className = 'expire';
+		} else {
+			dd.className = 'default';
+		}
+		if(x.getFullYear() == today.getFullYear() && x.getMonth() == today.getMonth() && x.getDate() == today.getDate()) {
+			dd.className = 'today';
+			dd.firstChild.title = '<{$media_task_add.today|capitalize}>';
+		}
+		if(x.getFullYear() == currday.getFullYear() && x.getMonth() == currday.getMonth() && x.getDate() == currday.getDate()) {
+			dd.className = 'checked';
+		}
+		x.setDate(++d);
+	}
+
+	while(d + mv <= 42) {
+		dd = $("d" + (d + mv));
+		dd.innerHTML = "&nbsp;";
+		d++;
+	}
+
+	if(addtime) 
+	{
+		$('hour').value = zerofill(hh);
+		$('minute').value = zerofill(ii);
+	}
+}
+
+function showdiv(id) {
+
+	var p = getposition($(id));
+	$('calendar_' + id).style.left = p['x']+'px';
+	$('calendar_' + id).style.top = (p['y'] + 16)+'px';
+	$('calendar_' + id).style.display = 'block';
+}
+
+function zerofill(s) {
+	var s = parseFloat(s.toString().replace(/(^[\s0]+)|(\s+$)/g, ''));
+	s = isNaN(s) ? 0 : s;
+	return (s < 10 ? '0' : '') + s.toString();
+}
+
+loadcalendar();
+
+</script>
+

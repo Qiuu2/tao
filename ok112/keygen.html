@@ -1,0 +1,288 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<!--规则是读取服务器端CPU序列号加密写入注册表或-->
+<?php 
+header("content-type:text/html; charset=utf-8");
+$vali_result = "";
+function read_reg()
+{
+	$serial_number_temp = "";
+	
+	$shell = new COM ( 'WScript.Shell' ); 
+	try
+	{
+		$serial_number_temp = $shell->regRead( 'HKEY_CURRENT_USER\Environment\HT-9000-SERVER' );
+	}
+	catch(Exception $e)
+	{
+		return 0;
+	}
+ return $serial_number_temp;
+}
+
+function write_reg($str)
+{
+	header("content-type:text/html; charset=utf-8");
+	
+	$reg_succ = 1;
+	
+	$serial_number_temp = md5($str);
+	
+	$shell = new COM ( 'WScript.Shell' ); 
+	try
+	{
+		 $shell->RegWrite('HKEY_CURRENT_USER\Environment\HT-9000-SERVER',$serial_number_temp,'REG_SZ'); 
+	}
+	catch(Exception $e)
+	{
+		$reg_succ = 0;
+		
+		return $reg_succ;
+	}
+return  $reg_succ;
+}
+
+function invalid_server()
+{
+	$sys_sort = 1;
+	if(strtoupper(substr(PHP_OS,0,3)) == 'WIN')
+	{
+		$sys_sort = 1;
+	}
+	else
+	{
+		$sys_sort = 0;
+	}
+return $sys_sort;
+}
+
+function read_envar()
+{
+	//读linux
+}
+
+function write_envar()
+{
+	//写linux
+}
+
+if(isset($_POST['regist']))
+{
+	$serial_number = "";
+
+	if(isset($_POST['serial_number']))
+	{
+		$serial_number = trim($_POST['serial_number']);
+	}
+	//判断操作系统
+	if(invalid_server() == 1)
+	{
+		if( read_reg() != 0 )
+		{
+			if(read_reg() == md5($serial_number))
+			{
+				$vali_result = "已经注册";
+			}
+			else
+			{
+				$vali_result = "非法使用";
+			}
+		}
+		else
+		{
+			//读取cpu列号
+			
+			//写入注册表
+			write_reg($serial_number);
+		}
+	}
+	else
+	{
+		
+	}
+	//判断服务器是否注册
+	
+	//读取硬盘序列号信息处理
+}
+?>
+<style>
+body 
+{
+	padding: 0; 
+	margin: 0;
+}
+body,html
+{
+	height: 100%;
+}
+#outer 
+{
+	height: 100%; 
+	overflow: hidden; 
+	position: relative;
+	width: 100%; 
+	background:#111111;
+}
+
+#outer[id] 
+{
+	display: table; 
+	position: static;
+}
+
+#middle 
+{
+	position: absolute; 
+	top: 50%;
+	left: 0
+}
+
+#middle[id] 
+{
+	display: table-cell; 
+	vertical-align: middle; 
+	position: static;
+}
+
+#inner 
+{
+	position: relative; 
+	top: -50%; 
+	margin: 0 auto;
+}
+
+#content
+{
+	width:320px; 
+	height:300px; 
+	border:1px solid #FFFFFF; 
+	background:#111111; 
+	margin: 0 auto; 
+	padding:0px;
+}
+</style>
+<script language="javascript">
+var legally_var = 0;//1表示true
+function isNull( str )
+{
+	if ( str == "" ) 
+		return true; 
+	var regu = "^[ ]+$"; 
+	var re = new RegExp(regu); 
+	return re.test(str); 
+} 
+
+function isNum_Letter_(str)
+{
+	if(!isNull(str))
+	{
+	   var regu = "^[0-9a-zA-Z\-]+$";
+	   var re = new RegExp(regu);
+	   if(re.test(str))
+	   {
+		  return true;
+	   }
+	   else
+	   {
+		  return false;
+	   }
+	}
+return false;
+}
+
+function invalid_serial(obj)
+{
+	var obj_license = document.getElementById('license_num');
+	
+	if(isNum_Letter_(obj.value))
+	{
+		legally_var = 1;
+		
+		obj_license.value = "";//生成验证码号码
+		
+		obj_license.style.color = "#0000FF";
+	}
+	else
+	{
+		legally_var = 0;
+		
+		obj_license.value = "序列号输入非法错误";
+		
+		obj_license.style.color = "#FF0000";
+	}
+}
+
+function invalid_form()
+{
+	var obj_license = document.getElementById('license_num');
+
+	if(legally_var == 0)
+	{
+		obj_license.value = "序列号输入非法错误";
+		
+		obj_license.style.color = "#FF0000";
+		
+		return false;
+	}
+return true;
+}
+</script>
+</head>
+<body>
+
+<div id="outer">
+    <div id="middle">
+        <div id="inner">
+             <div id="content">
+			 <form action="<?php echo $_SERVER["PHP_SELF"];?>" onsubmit="return invalid_form();" method="post">
+			 
+			 		<div style="color:#FFFFFF; text-align:center; margin:0 auto; height:60px; width:100%; padding:0px; border-bottom:1px solid #FFFFFF;">
+						<img src="" alt="注册码图片"/>
+					</div>
+					
+					<div style="color:#FFFFFF; text-align:center; margin:0 auto; height:215px; width:100%; padding:0px; border-bottom:1px solid #FFFFFF;">
+						<div style="margin-top:0px; height:30%; vertical-align:middle; width:100%; padding-top:50px; padding-bottom:10px;">
+						
+							<div style="width:20%; padding:0px; float:left; text-align:center;">
+								序列号
+							</div>
+							
+							<div style="width:80%; padding:0px; float:right; text-align:center;">
+								<input type="text" value="" name="serial_number" id="serial_number" style="width:80%; border:1px solid #FFFFFF; text-align:center;" onchange="invalid_serial(this)"/>
+							</div>						
+						</div>
+						
+						<div style="margin-top:0px; height:50%; width:100%; padding-top:10px; padding-bottom:10px;">
+							<div style="width:20%; padding:0px; float:left; text-align:center;">
+								注册码
+							</div>
+							<div style="width:80%; padding:0px; float:right; text-align:center;">
+								<input type="text" value="<?php echo $vali_result ;?>" name="license_num" readonly="true" id="license_num" style="width:80%; border:1px solid #FFFFFF; text-align:center;"/>
+							</div>	
+						</div>
+
+					</div>
+					
+			 		<div style="width:100%; height:25px; margin:0 auto; padding:0px; ">
+						<div style="width:50%; height:25px; text-align:center; vertical-align:baseline; padding:0px; margin:0px; float:left;">
+							<input type="submit" value="注册" name="regist" style="border:1px solid #FFFFFF; background-color:#FFFFFF; height:24px;" />
+						</div>
+						
+						<div style="width:50%; height:25px; text-align:center; vertical-align:baseline; padding:0px; margin:0px; float:right;">
+						
+							<input type="reset" value="退出" style="border:1px solid #FFFFFF; background-color:#FFFFFF; height:24px;" />
+							
+						</div>
+						
+					</div>
+			 </form>
+			 </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>
+
+

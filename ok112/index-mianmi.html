@@ -1,0 +1,265 @@
+�?html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>Internet Explorer</title>
+<script src="skin/js/frame/actiondo.js"></script>
+<!--验证会话失效-->
+<?php
+
+	if (!session_id()) session_start();
+	if( empty($_SESSION['language']) )
+	{
+		$_SESSION['language'] = "chinese";
+	}
+	
+	require_once("language/".$_SESSION['language'].".php");	
+?>
+<style>
+body
+{
+  scrollbar-base-color:#C0D586;
+  scrollbar-arrow-color:#FFFFFF;
+  scrollbar-shadow-color:DEEFC6;
+}
+</style>
+<script>
+function isNull( str )
+{
+   if ( str == "" ) return true;
+   var regu = "^[ ]+$";
+   var re = new RegExp(regu);
+   return re.test(str);
+}
+function trim(str)
+{
+   str = str.replace(/(^\s*)|(\s*$)/g,""); 
+   return str;
+}
+//url解析
+function url_decode(url_str)
+{
+    var new_url = "";
+    if(trim(url_str)=="")
+    {
+     return false;   
+    }
+    else
+    {
+       var str_temp = url_str.replace(/\/\//ig,"||");
+       var str_index = str_temp.indexOf("/");
+       new_url = str_temp.substr(str_index+1);
+    }
+    if(isNull(new_url))
+    {
+      return false;  
+    }
+    else
+    {
+        return new_url;
+    }
+}
+//截取url参数
+function sub_url_decode(str)
+{
+    if(str == "")
+    {
+      return false;  
+    }
+    var sub_cookie_value = new Array();
+    
+    var str_index = str.indexOf("=");
+    if(str_index == -1)
+    {
+      return false;  
+    }
+    sub_cookie_value[0] = str.substring(0,str_index);
+    
+    sub_cookie_value[1] = str.substr(str_index+1);
+    
+    if(sub_cookie_value.length == 0)
+    {
+      return false;  
+    }
+    else
+    {
+        return sub_cookie_value;
+    }
+}
+//判断cookie是否有�?function search_str(str)
+{
+	var flag = false;
+	
+	var cookie_str = str.split(';');
+	
+	for(var i=0; i<cookie_str.length; i++)
+	{
+		var str_array = sub_url_decode(cookie_str[i]);
+		if( trim(str_array[0]) == "url_name" && !isNull(trim(str_array[1])) )
+		{
+			flag = true;
+		}
+	}
+	return flag;      
+}
+//判断cookie是否为空�?function search_lstr(str)
+{
+	var flag = false;
+	
+	var cookie_str = str.split(';');
+	
+	for(var i=0; i<cookie_str.length; i++)
+	{
+		var str_array = sub_url_decode(cookie_str[i]);
+		
+		if( trim(str_array[0]) == "url_lname" && trim(str_array[1]) == "about:blank" )
+		{
+			flag = true;
+		}
+	}
+	return flag;      
+}
+
+function get_location_lurl(str)
+{
+	var url = "";
+	
+	var cookie_str = str.split(';');
+	
+	for(var i=0; i<cookie_str.length; i++)
+	{
+		var str_array = sub_url_decode(cookie_str[i]);
+	
+		if( trim(str_array[0]) == "url_name" && trim(str_array[1]) == "do.php?act=login" )
+		{
+           url = "servermanager.php";
+           break;
+		}
+		else if(trim(str_array[0]) == "url_name" && trim(str_array[1]) == "do.php?act=logout")
+		{
+            url = "login.php";
+            break;
+        }
+	}
+		if(url == "")
+		{
+      return false;  
+    }
+    else
+    {
+      return url;
+    }
+}
+
+function get_location_url(str)
+{
+    var url = "";
+	
+	var cookie_str = str.split(';');
+	
+	for(var i=0; i<cookie_str.length; i++)
+	{
+		var str_array = sub_url_decode(cookie_str[i]);
+	
+		if( trim(str_array[0]) == "url_name" && !isNull(trim(str_array[1])))
+		{
+		  url = trim(str_array[1]);
+		  break;
+        }
+    }
+    if(url == "")
+    {
+      return "login.php";  
+    }
+    else
+    {
+        return url;
+    }
+}
+
+
+window.onbeforeunload = function cancel_window(event)
+{
+	event = (event) ? event : window.event;
+	var n = event.screenX - window.screenLeft; 
+	var b = n > document.documentElement.scrollWidth-20; 
+	if(b && event.clientY < 0 || event.altKey)
+	{
+		window.location.href = "do.php?act=logout";
+	}
+	else
+	{
+		var url_add = window.frames['main'].location.href;
+		
+		if(trim(url_decode(url_add)) != "about:blank")
+		{
+			document.cookie = "url_name=" + url_decode(url_add);
+		}
+	}
+}
+</script>
+
+<script>
+	
+function GetQueryString(name)
+{
+     var reg = new RegExp("(^|&)"+ name +"=([^&]*)(&|$)");
+     var r = window.location.search.substr(1).match(reg);
+     if(r!=null)return  unescape(r[2]); return null;
+}
+	
+//如：出现其它页面重页、需要更改此路径
+window.onload = function ()
+{
+	//http://192.168.1.19/index.html?user_name=admin&user_pwd=123456&checknum=htjy123
+	if(GetQueryString("user_name") != null)
+	{
+	var user_pwds=GetQueryString("user_pwd");
+	 //var user_pwds="htjy";
+	var checknums=GetQueryString("checknum");
+	var user_names=GetQueryString("user_name");
+	var get_useinfo="user_name="+user_names+"&user_pwd="+user_pwds+"&checknum="+checknums;
+	//	window.location.href = "do.php?act=login&info=dXNlcl9uYW1lPWFkbWluJnVzZXJfcHdkPWh0ankmY2hlY2tudW09aHRqeQ==";
+	//http://192.168.2.159/index-mianmi.html?info=aa=0&user_name=admin&user_pwd=123456&checknum=Htjy123
+	window.location.href = "do.php?act=login&info="+str_encode(get_useinfo);
+		
+	}
+else
+	{
+		var str_cookie = trim(document.cookie);
+		if(get_location_url(str_cookie) == "do.php?act=logout")
+		{
+			window.frames['main'].location.href = "login.php";
+		}
+		else
+		{
+			window.frames['main'].location.href = get_location_url(str_cookie);
+		}
+	}
+}
+</script>
+</head>
+<frameset rows="102,*" cols="*" frameborder="no" border="0" framespacing="0">
+
+  <frame src="top.html" name="topFrame" scrolling="no" noresize marginwidth="0" marginheight="0">
+  
+  <frameset cols="170,*" name="btFrame" frameborder="NO" border="0" framespacing="0">
+  
+    <frame src="menu.html" name="menu" scrolling="auto" noresize marginwidth="0">
+  
+    <frame src="" noresize name="main" scrolling="auto">
+  
+  </frameset>
+<?php 
+	//验证是否失效
+
+	require_once("verify_user_sessionin_valid.php");
+	
+	verifysessionvalid();
+?>
+</frameset>
+
+<noframes>
+	<body>NOT Support FrameSet</body>
+</noframes>
+
+</html>

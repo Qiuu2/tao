@@ -1,0 +1,111 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>group_form</title>
+<form name="form2" class="terminal_form_to_body">
+ <td>
+ <table width="98%" border="0" cellpadding="2" cellspacing="1"  align="center" id="displayttable" >
+ <thead>
+    <tr align='center' class="terminal_table_row_bg">   
+		<th width="10%" nowrap="nowrap">
+			<{$stream_manager.Select|capitalize}>
+		</th>     
+		<th width="70%" nowrap="nowrap" onclick="sortTable('displayttable', 1)" class="sort_data_table_sequence">
+			<{$stream_manager.Zone_Name|capitalize}>↑↓
+	  </th>       
+		<th width="20%" nowrap="nowrap">
+			<{$stream_manager.View_Terminal|capitalize}>
+			</th>      
+    </tr>
+    
+</thead>
+<tbody>
+<{if $info|@count neq 0}>   
+	<{section name=loop loop=$info}>           		
+	<tr align='center' class="terminal_per_row" >   
+	             	
+		<td nowrap="nowrap">
+		<{if $is_right == 1 || $admin_id == "administrator"}>
+			<input name="id" type="checkbox" id="id" value="<{$info[loop].id}>" class="np">
+		<{else}>
+			<{$smarty.section.loop.index+1+$start}>
+		<{/if}>
+		</td>
+
+		<td nowrap="nowrap"><{$info[loop].name}></td>  
+
+		<td nowrap="nowrap">
+			<a  name="link_view" id="link_view" href="view_terminal_call.php?id=<{$info[loop].id}>">
+				<{$stream_manager.Browse|capitalize}>
+			</a>
+		</td>
+	</tr>
+	<{/section}>
+<{else}>
+<tr align='center' class="tablestyle" >
+<td colspan="5"><strong><{$Revise.No_data}></strong></td>
+</tr>
+<{/if}>
+</tbody>  
+	<tr style="background-color: #FFFFFF;">
+	<script src="smarty/templates/UserAccessControl/CheckUserRights.js" type="text/javascript" language="javascript"></script>
+		<td height="28" colspan="5">
+			<a href="javascript:selAll(0)"><{$stream_manager.Select_All|capitalize}></a>&nbsp;
+			<a href="javascript:noSelAll(0)"><{$stream_manager.Cancel|capitalize}></a>&nbsp;
+			 <{if $flag == 2}>
+			 <a href="dirstreammanager.php?terminal_id=<{$terminal_id}>&flag=<{$flag}>" target='main'><{$stream_manager.dir_modify|capitalize}></a>	
+			 <{/if}>
+			<a href="call_group_add.php?id=<{$terminal_id}>&flag=<{$flag}>" target='main'><{$stream_manager.Add_Zone|capitalize}></a>&nbsp;
+			<a href="javascript:modifyStream()"><{$stream_manager.Modify_Zone|capitalize}></a>&nbsp;
+			<a href="javascript:delStream()"><{$stream_manager.Delete_Zone|capitalize}></a>
+		</td>
+	</tr>
+	<script>
+		rights_control(<{$is_right}>,"<{$admin_id}>","link_view");
+	</script>
+ </table>
+	</td>
+  </tr>
+
+  <tr>
+    <td><div class="link_style" align="center"><{$pagestr}></div></td>
+  </tr>
+<!--  搜索表单  -->
+<form name='form3' action='' method='get'>
+<input type='hidden' name='dopost' value='' />
+<table width='98%'  border='0' cellpadding='1' cellspacing='1' class="middle" align="center" style="margin-top:8px">
+  <tr>
+    <td background='skin/images/wbg.gif' align='center'>
+      <table border='0' cellpadding='0' cellspacing='0'>
+        <tr>
+			<td width='90' align='center'><{$Searchform.Search_conditions}></td>
+			<td width='160'>
+				<select class="colors" name='searchkey' id="searchkey">
+					<option value=''><{$Searchform.Select_type}></option>
+					<option value='name'><{$Searchform.Regional_Name}> </option>
+				</select>
+			</td>
+			<td width='70'>
+				<{$Searchform.Keyword}>        
+			</td>
+			<td width='160'>
+				<input class="colors" type='text' name='keyvalue' id="keyvalue" value='' />       
+			</td>
+			
+			<td width='110'>
+				<select class="colors" name='orderby' id="orderby">
+					<option value=''><{$Searchform.Sort}></option>
+					<option value='name'><{$Searchform.Stream_name}></option>
+				</select>        
+			</td>
+			
+			<td>
+				<input name="imageField" type="image" src="<{$stream_manager.search_image}>" width="45" height="20" border="0" class="np" />
+			</td>
+       </tr>
+      </table>
+    </td>
+  </tr>
+</table>
+</form>

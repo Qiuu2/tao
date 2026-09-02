@@ -1,0 +1,123 @@
+
+=== 首页  (/index) ===
+  表1列 (10): 序号 | 任务名称 | 所属分类 | 播放周期 | 执行时间 | 状态 | 起始日期 | 结束日期 | 终端属性 | 操作任务
+  按钮: 新增文件广播(primary)  编辑文件广播(primary)  绑定快捷任务(primary)  执行(success)  停止(danger)  当天启用(primary)  当天停用(danger)
+  输入框: (无占位符)
+
+=== 服务器信息  (/home/home) ===
+  表: (无表格，是表单页)
+  按钮: 重启服务器(warning)  确 定(primary)  取消(default)  提交(primary)  重置(default)
+  输入框: 请输入服务器地址 / 请输入数据端口 / 请输入子网掩码 / 请输入控制端口 / 请输入网关地址 / 请输入数据端口2 / 请输入最大带宽 / 请输入最大连接数 / 请输入web端口 / 请输入离线端口 / 请输入sdk端口 / 请输入主服务器地址 / 请输入备份服务器地址 / 请输入主服务器名称 / 请输入备份服务器名称 / 选择重启时间 / 选择关机时间 / (无占位符)
+
+=== 时间设置  (/home/time) ===
+  表: (无表格，是表单页)
+  按钮: 设置服务器时间(primary)  同步当前时间(default)  北斗校时(default)  不校时(default)
+  输入框: (无占位符)
+
+=== 备份还原  (/home/backup) ===
+  表1列 (4): ID | 媒体文件 | 数据库压缩包 | 创建时间
+  按钮: 自动备份数据(primary)  数据恢复(warning)  手动备份(primary)  删除(danger)  1(default)
+  输入框: 请选择 / 页数
+
+=== 节假日管理  (/home/holiday) ===
+  表1列 (5): 节假日名称 | 开始时间 | 结束时间 | 状态 | 操作
+  按钮: 添加节假日(primary)  删除(danger)  批量启用(primary)  批量禁用(warning)
+  输入框: (无)
+
+=== 终端管理  (/terminal/list) ===
+  表1列 (17): id | 终端名称 | 终端类型 | 任务状态 | 网络状态 | 设备状态 | IP地址 | 音量 | 对讲 | 急救 | 录音 | 发言 | 左声道开路 | 右声道开路 | 温度(℃) | 湿度(RH) | 操作
+  按钮: 批量操作(default)  查看(primary)
+  输入框: 设备名称查找
+  页签: 全部 | 解码终端 | 采集终端 | 话筒 | 遥控终端 | 报警终端 | 对讲终端 | 扩展设备
+
+=== 终端分区  (/terminal/cate) ===
+  表1列 (5): 分类名称 | 分区描述 | 终端列表 | 创建时间 | 操作
+  按钮: 添加(primary)  删除(danger)  查看(link)  编辑(link)
+  输入框: (无)
+
+=== 文件管理  (/terminal/media) ===
+  表1列 (5): 媒体名称 | 媒体大小 | 媒体类型 | 媒体比特率 | 播放时长
+  表2列 (1): 操作
+  按钮: 添加媒体(primary)  删除(danger)  试听(default)  下载(default)
+  输入框: 请输入媒体名称
+
+=== 报警分区  (/terminal/alarm-zone) ===
+  表1列 (5): 分区名称 | 分区描述 | 分区终端 | 创建时间 | 操作
+  按钮: 添加(primary)
+  输入框: (无)
+
+=== 报警映射  (/terminal/alarm-map) ===
+  表1列 (7): 报警主机名称 | 报警映射名称 | 报警分区名称 | 媒体名称 | 通道 | 分区终端 | 操作
+  按钮: 添加(primary)
+  输入框: (无)
+
+=== 遥控任务  (/terminal/remote-task) ===
+  表1列 (3): 任务名称 | 按键映射 | 映射任务
+  按钮: 添加映射(primary)  删除映射(danger)
+  输入框: (无)
+
+=== 作息方案  (/task/rest-plan) ===
+  表1列 (6): 方案名称 | 起始日期 | 结束日期 | 状态 | 任务数 | 终端属性
+  按钮: 添加方案(primary)  删除方案(danger)  启用方案(primary)  停用方案(danger)  调整音量(warning)  复制方案(primary)  智能排课(primary)  查看任务(link)
+  输入框: (无)
+
+=== 文件广播  (/task/file) ===
+  表1列 (12): 广播任务名称 | 执行模式 | 开始日期 | 结束日期 | 执行时间 | 播放时长 | 状态 | 播放模式 | 音量 | 任务级别 | 播放状态 | 操作
+  按钮: 添加(primary)  批量编辑(primary)  删除(danger)  执行(default)  停止(default)  暂停(default)  恢复(default)  启用(default)  停用(default)  紧急设置(default)  取消紧急设置(default)  设置音量(default)  编辑(link)  终端(link)  媒体(link)
+  输入框: (无)
+
+=== 终端功放  (/task/power) ===
+  表1列 (9): 终端功放任务名称 | 播放周期 | 开始日期 | 结束日期 | 执行时间 | 播放时长 | 状态 | 音量 | 操作
+  按钮: 添加(primary)  删除(danger)  执行(default)  停止(default)  设置音量(default)
+  输入框: (无)
+
+=== 采播管理  (/task/broadcast) ===
+  表1列 (13): 采播任务 | 播放周期 | 播放时长 | 开始日期 | 结束日期 | 执行时间 | 状态 | 正在播放 | 通道 | 采样率 | 比特率 | 任务级别 | 音量
+  表2列 (1): 操作
+  按钮: 添加(primary)  删除(danger)  执行(default)  停止(default)  启用(default)  停用(default)  设置音量(default)
+  输入框: (无)
+
+=== 文字语音  (/task/tts) ===
+  表1列 (10): 文字语音任务 | 播放周期 | 开始日期 | 结束日期 | 执行时间 | 播放时长 | 状态 | 音量 | 任务级别 | 任务状态
+  表2列 (1): 操作
+  按钮: 添加(primary)  删除(danger)  执行(default)  停止(default)  启用(default)  停用(default)  设置音量(default)  编辑(link)  终端(link)
+  输入框: (无)
+
+=== led播放  (/task/led/index) ===
+  表1列 (10): LED广播任务名称 | 播放周期 | 开始日期 | 结束日期 | 执行时间 | 播放时长 | 状态 | 音量 | 任务级别 | 任务状态
+  表2列 (1): 操作
+  按钮: 添加(primary)  删除(danger)  执行(default)  停止(default)  启用(default)  停用(default)  编辑(link)  终端(link)
+  输入框: (无)
+
+=== 启用管理  (/task/enableManagement/index) ===
+  表1列 (4): 任务名称 | 起始日期 | 播放时间 | 操作
+  按钮: 添加(primary)  删除(danger)
+  输入框: (无)
+
+=== 云广播终端  (/broad-cast/terminal) ===
+  表1列 (9): 终端名称 | 终端类型 | 任务状态 | 网络状态 | 设备状态 | IP地址 | 总容量 | 剩余容量 | 操作
+  按钮: 空闲传输(default)  立即传输(default)  停止传输(default)  全部清除(default)  同步时间(default)  清除空闲媒体(default)
+  输入框: (无)
+
+=== 音乐传输  (/broad-cast/music-transfer) ===
+  表: (无表格，是表单页)
+  按钮: 空闲传输(default)  立即传输(primary)
+  输入框: 设备名称搜索 / 媒体名称搜索
+  左树: 22 | 未分类终端
+
+=== 任务传送  (/broad-cast/task-transfer) ===
+  表1列 (9): 任务名称 | 播放周期 | 开始日期 | 结束日期 | 执行时间 | 播放时长 | 状态 | 离线状态 | 操作
+  表2列 (9): 任务名称 | 播放周期 | 开始日期 | 结束日期 | 执行时间 | 播放时长 | 状态 | 离线状态 | 操作
+  按钮: 空闲传输(default)  立即传输(default)  终端(link)  媒体(link)
+  输入框: (无)
+  页签: 作息方案 | 文件广播
+
+=== 噪声设备  (/noise/equipment) ===
+  表1列 (6): ID | 设备IP | 设备名称 | 设备地址 | 设备噪声值 | 操作
+  按钮: 添加设备(primary)  删除设备(danger)
+  输入框: (无)
+
+=== 声场分区  (/noise/partition) ===
+  表1列 (2): 分区名称 | 操作
+  按钮: 添加分区(primary)  删除分区(danger)
+  输入框: (无)

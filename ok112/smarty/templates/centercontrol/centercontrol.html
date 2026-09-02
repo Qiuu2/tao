@@ -1,0 +1,727 @@
+<html>
+<head>
+
+<META http-equiv=Content-Type content="text/html; charset=utf-8">
+
+<title>AddBellTask</title>
+<link rel="stylesheet" href="smarty/templates/centercontrol/css/style.css">
+<!--添加文件列表开始-->
+<link href="smarty/templates/BellManager/codebase/dhtmlxtree.css" rel="stylesheet" type="text/css">
+<script language="JavaScript" src="smarty/templates/BellManager/codebase/dhtmlxtree.js" type"text/JavaScript"></script>	
+<script language="JavaScript" src="smarty/templates/BellManager/codebase/dhtmlxcommon.js" type"text/JavaScript"></script>
+<script type="text/javascript" src="skin/js/frame/jquery.min.js"></script>
+<style>
+#wrap{
+    display: flex;
+    flex-wrap: wrap;
+	margin-top:55px;	
+}
+
+#nav{
+	position:fixed; 
+	top:0; 
+	width:98%; 
+	height:50px; 
+	text-align:center;
+	z-index:999;
+	background-color:#fff;
+	border:3px solid #808080;
+}
+
+#getvolume{
+	position:fixed; 
+	top:0; 
+	width:30px; 
+	height:20px; 
+	text-align:center;
+	z-index:999;
+	background-color:#fff;
+}
+
+.r-div
+{
+    float:left;
+	width:306px;
+	height:230px;
+    border:3px solid #808080;
+	background-color:#a9a9a9;
+	text-align:center;
+	margin: 5px 5px 5px 5px;
+	padding: 0px;	
+}
+
+.head-div
+{
+	float:none;
+	width:306px;
+	height:34px;
+ 	text-align:center;
+	margin: -3px;
+	padding: 0px;	
+    border:3px solid #808080;
+}
+
+.left-div
+{
+ 	float:left;
+	width:56px;
+	height:35px;
+ 	text-align:left;
+	margin: 5px 0px 5px 10px;
+	padding: 5px 0px 0px 0px;	
+}
+
+.left-one
+{
+  position: relative;
+  left: 0px;
+  top: -165px;
+}
+
+.left-two
+{
+  position: relative;
+  left: 0px;
+  top: -165px;
+}
+.left-three
+{
+	float:right;
+	position: relative;
+	z-index:99;
+	 left: -173px;
+ 	top: -120px;
+}
+
+.left-four
+{
+	float:right;
+	width:56px;
+	height:35px;
+ 	text-align:left;
+	margin: 5px 0px 5px 10px;
+	padding: 5px 0px 0px 0px;
+	position: relative;
+	z-index:99;
+ 	left: -173px;
+ 	top: -120px;
+}
+
+.left-five
+{
+	float:right;
+	position: relative;
+	z-index:99;
+	 left: -173px;
+ 	top: -125px;
+}
+
+.left-six
+{
+	float:right;
+	width:56px;
+	height:35px;
+ 	text-align:left;
+	margin: 5px 0px 5px 10px;
+	padding: 5px 0px 0px 0px;
+	position: relative;
+	z-index:99;
+ 	left: -173px;
+ 	top: -125px;
+}
+
+.leftmid-div
+{
+ 	float:right;
+	width:155px;
+	height:126px;
+ 	text-align:left;
+	margin: 3px 5px 5px 5px;
+	padding: 5px 0px 0px 0px;	
+	display: flex;   
+	flex-wrap: wrap;
+	z-index:5;
+	border-radius: 5%;
+	border:3px solid #808080;
+}
+
+.mid-div
+{
+	position: relative;
+  	float:right;
+	width:112px;
+	height:112px;
+ 	text-align:left;
+	z-index:50;
+}
+
+.button{
+  position: relative;
+  width: 72px;
+  height: 20px;
+  z-index:99;
+  background-color:transparent;
+  border:0px;
+outline::none;
+}
+
+.button1{  
+  left: 213px;
+  top: -40px;
+}
+.button1:active{
+	color:#ff9900;
+}
+.button1:focus{
+	margin: 0;
+	padding: 0;
+	border: 1px solid transparent;  //自定义边框
+	outline: none;    //消除默认点击蓝色边框效果
+}
+
+.button2{  
+  left: 213px;
+  top: -30px;
+}
+.button2:active{
+  color:#ff9900;
+}
+.button2:focus{
+outline::none;
+}
+.button3{  
+  left: 115px;
+  top: -80px;
+}
+
+.button3:active{
+  color:#ff9900;
+}
+.button3:focus{
+outline::none;
+}
+.button4{  
+  left: 115px;
+  top: -70px;
+}
+.button4:active{
+  color:#ff9900;
+}
+.button4:focus{
+outline::none;
+}
+
+
+.button5{  
+  left: 205px;
+  top: -65px;
+}
+.button5:active{
+  color:#ff9900;
+}
+.button5:focus{
+outline::none;
+}
+.button6{  
+  left: 115px;
+  top: -83px;
+}
+.button6:active{
+  color:#ff9900;
+}
+.button6:focus{
+outline::none;
+}
+.button7{  
+  left: 213px;
+  top: -70px;
+}
+.button7:active{
+  color:#ff9900;
+}
+.button7:focus{
+outline::none;
+}
+
+.button8{  
+  left: 114px;
+  top: -90px;
+}
+.button8:active{
+  color:#ff9900;
+}
+.button8:focus{
+outline::none;
+}
+
+
+
+.zeromusic-div
+{
+	position: relative;
+ 	float:right;
+	left: 105px;
+  	top: 15px;
+	width:37px;
+	height:37px;
+ 	text-align:left;
+	z-index:60;
+	padding: 5px 0px 0px 0px;	
+	border-radius: 50%;
+	border:3px solid #808080;
+}
+
+.onemusic-div
+{
+	position: relative;
+ 	float:right;
+	left: 148px;
+  	top: 80px;
+	width:37px;
+	height:37px;
+ 	text-align:left;
+	z-index:70;
+	padding: 5px 0px 0px 0px;	
+	border-radius: 50%;
+	border:3px solid #808080;
+}
+
+
+
+
+
+
+</style>
+<!--添加弹出时  transform:rotate(10deg);间-->
+<script>
+
+function isNull( str )
+{
+	if ( str == "" || str==null) 
+	return true;
+	var regu = "^[ ]+$";
+	var re = new RegExp(regu);
+	return re.test(str);
+}
+function trim(str)
+{
+   str=str.replace(/(^\s*)|(\s*$)/g,""); 
+   return str;
+}
+
+var xmlhttp=null; 
+function createXMLHttpRequests()
+{ 
+	if(window.ActiveXObject)
+	{ 
+		xmlhttp = new ActiveXObject("microsoft.XMLHTTP"); 
+	} 
+	else if(window.XMLHttpRequest)
+	{ 
+		xmlhttp = new XMLHttpRequest(); 
+	}
+	else
+	{
+		alert('<{$alarm_setting.Not_support_AJAX|capitalize}>');
+	}
+} 
+function getcentercontrolvalue(url)
+{
+   createXMLHttpRequests();
+   var getresult="";
+   xmlhttp.open( "get",url, false);
+   xmlhttp.onreadystatechange = function()
+   {
+      if( xmlhttp.readyState == 4 )
+      {
+         if( xmlhttp.status == 200 )
+         {
+			getresult= trim(xmlhttp.responseText); 
+         }
+      }
+   }
+    xmlhttp.setRequestHeader( "If-Modified-Since", "0");
+	xmlhttp.send(null);
+	return getresult;
+}
+
+
+function postcentercontrolvalue(url)
+{
+   createXMLHttpRequests();
+   var getresult="";
+   xmlhttp.open( "get",url, false);
+   xmlhttp.onreadystatechange = function()
+   {
+      if( xmlhttp.readyState == 4 )
+      {
+         if( xmlhttp.status == 200 )
+         {
+			getresult= trim(xmlhttp.responseText); 
+         }
+      }
+   }
+    xmlhttp.setRequestHeader( "If-Modified-Since", "0");
+	xmlhttp.send(null);
+	return getresult;
+}
+
+
+function setdevstate(obj)
+{
+	var url,getid,selected,gettext=0;
+	var strs= new Array(); //定义一数组
+	getid=obj.id; 
+	
+	if(obj.checked==true)
+	selected=1;
+	else if(obj.checked==false)
+	selected=0;
+	strs=getid.split("-"); //字符分割 	
+	url ="centercontrolpost.php?device="+strs[1]+"&id="+strs[2]+"&selected="+selected;	
+	
+	gettext=postcentercontrolvalue(url);
+
+	if(gettext==2)
+	alert("<{$centercontrol.volume_max|capitalize}>");
+	else if(getttext==3)
+	alert("<{$centercontrol.volume_min|capitalize}>!");
+	return gettext;
+
+}
+
+function centercontroldiv(id,terminalname)
+{
+	var text;
+	var controlflag='1';
+	text='<div id="centerone'+id+'" class="r-div">'+'<div class="head-div" id="centerone-0-'+id+'">'+terminalname+'</div>';
+	text+='<div class="left-div toggle--push-sh toggle--push--glow" id="centerone1-'+id+'">'+'<input type="checkbox" id="centerone-one-'+id+'" class="toggle--checkbox" onChange="setdevstate(this);">'+'<label class="toggle--btn" for="centerone-one-'+id+'" data-label-on="on"  data-label-off="off"><{$centercontrol.system|capitalize}></label>'+'</div>';
+	text+='<div class="left-div toggle--push-sh toggle--push--glow" id="centerone2-'+id+'">'+'<input type="checkbox" id="centerone-two-'+id+'" class="toggle--checkbox" onChange="setdevstate(this);">'+'<label class="toggle--btn" for="centerone-two-'+id+'" data-label-on="on"  data-label-off="off"><{$centercontrol.sleep|capitalize}></label>'+'</div>';
+text+='<div class="left-div toggle toggle--switch" id="centerone3-'+id+'">'+'<input type="checkbox" id="centerone-three-'+id+'" class="toggle--checkbox" onChange="setdevstate(this);">'+'<label class="toggle--btn" for="centerone-three-'+id+'">'+'<span class="toggle--feature" data-label-on=\"<{$centercontrol.projection_open|capitalize}>\"  data-label-off=\"<{$centercontrol.projection_close|capitalize}>\"></span></label>'+'</div>';
+	text+='<div class="left-div toggle--push toggle--push--glow" id="centerone4-'+id+'">'+'<input type="checkbox" id="centerone-four-'+id+'" class="toggle--checkbox" onChange="setdevstate(this);">'+'<label class="toggle--btn" for="centerone-four-'+id+'" data-label-on="on"  data-label-off="off"><{$centercontrol.conputer|capitalize}></label>'+'</div>';
+	text+='<div class="leftmid-div"></div>';
+	text+='<div class="zeromusic-div toggle--push-th toggle--push--glow" id="centerone5-'+id+'">'+'<input type="checkbox" id="centerone-five-'+id+'" class="toggle--checkbox" onChange="setdevstate(this);">'+'<label class="toggle--btn" for="centerone-five-'+id+'" data-label-on="on"  data-label-off="off"><{$centercontrol.mute|capitalize}></label>'+'</div>';	
+	text+='<div class="onemusic-div toggle--push-th toggle--push--glow" id="centerone14-'+id+'">'+'<input type="checkbox" id="centerone-twothr-'+id+'" class="toggle--checkbox" onChange="setdevstate(this);">'+'<label class="toggle--btn" for="centerone-twothr-'+id+'" data-label-on="on"  data-label-off="off"><{$centercontrol.mixing|capitalize}></label>'+'</div>';	
+	text+='	<div class="mid-div" id="centerone6-'+id+'"><button class="button button1" id="centerone-six-'+id+'" onClick="setdevstate(this);"><{$centercontrol.projection_lift|capitalize}></button><button class="button button2" id="centerone-serven-'+id+'" onClick="setdevstate(this);"><{$centercontrol.volume1|capitalize}></button><button class="button button3" id="centerone-eight-'+id+'" onClick="setdevstate(this);"><{$centercontrol.projection_drop|capitalize}></button><button class="button button4" id="centerone-night-'+id+'" onClick="setdevstate(this);"><{$centercontrol.volume2|capitalize}></button><button class="button button5" id="centerone-fourth-'+id+'" onClick="setdevstate(this);"><{$centercontrol.netvolume1|capitalize}></button><button class="button button6" id="centerone-fiveth-'+id+'" onClick="setdevstate(this);"><{$centercontrol.netvolume2|capitalize}></button><button class="button button7" id="centerone-sixth-'+id+'" onClick="setdevstate(this);"><{$centercontrol.mic1|capitalize}></button><button class="button button8" id="centerone-serventh-'+id+'" onClick="setdevstate(this);"><{$centercontrol.mic2|capitalize}></button>    </div>';
+	text+='<div class="left-div left-one toggle--push-sh toggle--push--glow" id="centerone8-'+id+'">'+'<input type="checkbox" id="centerone-ten-'+id+'" class="toggle--checkbox" onChange="setdevstate(this);">'+'<label class="toggle--btn" for="centerone-ten-'+id+'" data-label-on="on"  data-label-off="off"><{$centercontrol.Exhibition|capitalize}></label>'+'</div>';
+	text+='<div class="left-div left-two toggle--push-sh toggle--push--glow" id="centerone9-'+id+'">'+'<input type="checkbox" id="centerone-ele-'+id+'" class="toggle--checkbox" onChange="setdevstate(this);">'+'<label class="toggle--btn" for="centerone-ele-'+id+'" data-label-on="on"  data-label-off="off"><{$centercontrol.notebook|capitalize}></label>'+'</div>';	
+	text+='<div class="left-div left-three toggle--push-sh toggle--push--glow" id="centerone10-'+id+'">'+'<input type="checkbox" id="centerone-twort-'+id+'" class="toggle--checkbox" onChange="setdevstate(this);">'+'<label class="toggle--btn" for="centerone-twort-'+id+'" data-label-on="on"  data-label-off="off"><{$centercontrol.conputer_vga|capitalize}></label>'+'</div>';	
+text+='<div class="left-div left-four toggle--push-sh toggle--push--glow" id="centerone11-'+id+'">'+'<input type="checkbox" id="centerone-thirt-'+id+'" class="toggle--checkbox" onChange="setdevstate(this);">'+'<label class="toggle--btn" for="centerone-thirt-'+id+'" data-label-on="on"  data-label-off="off"><{$centercontrol.hdmi|capitalize}></label>'+'</div>';		
+text+='<div class="left-div left-five toggle--push-sh toggle--push--glow" id="centerone12-'+id+'">'+'<input type="checkbox" id="centerone-eighth-'+id+'" class="toggle--checkbox" onChange="setdevstate(this);">'+'<label class="toggle--btn" for="centerone-eighth-'+id+'" data-label-on="on"  data-label-off="off"><{$centercontrol.excon1|capitalize}></label>'+'</div>';		
+text+='<div class="left-div left-six toggle--push-sh toggle--push--glow" id="centerone13-'+id+'">'+'<input type="checkbox" id="centerone-nighth-'+id+'" class="toggle--checkbox" onChange="setdevstate(this);">'+'<label class="toggle--btn" for="centerone-nighth-'+id+'" data-label-on="on"  data-label-off="off"><{$centercontrol.excon2|capitalize}></label>'+'</div>';		
+	text+='</div>';
+	return text;
+}
+
+function  divcontrolupdatestate(id,systemstate,dormancy,projectionstate,pcstate,volstate,projectionscreenstate,volume,mix_preced,mic_vol,net_vol,showcase,notebook,computer,hdmi,power1,power2,netstate,flag)
+{
+	var divid;
+	var inputs,inputbutton,dev,headstate;
+	var i=1,m=0;
+	if(flag==0)
+	{
+		divid="centerone-0-"+id;
+	   if(netstate==1)
+	   {
+	  		headstate= document.getElementById(divid);
+			headstate.style.background = '#5CACEE';
+	   }
+	   else
+	   {
+	 	  	headstate= document.getElementById(divid);
+			headstate.style.background = '#8F8F8F';
+	   }
+
+		for(i=1;i<=15;i++)
+		{
+			if(i<6)
+			{
+				divid="centerone"+i+"-"+id;
+				if(i==1)dev=systemstate;else if(i==2)dev=dormancy;else if(i==3)dev=projectionstate;else if(i==4)dev=pcstate;else if(i==5)dev=volstate;
+				inputs=document.getElementById(divid).getElementsByTagName("input");
+			}
+			else if(i>=6&&i<=7)
+			{
+			  	inputs.length=0;
+		
+			}
+			else if(i>7&&i<=14)
+			{
+				divid="centerone"+i+"-"+id;
+				if(i==8)dev=showcase;else if(i==9)dev=notebook;else if(i==10)dev=computer;else if(i==11)dev=hdmi;else if(i==12)dev=power1;else if(i==13)dev=power2;else if(i==14)dev=mix_preced;
+				inputs=document.getElementById(divid).getElementsByTagName("input");
+			}
+			for(var k = 0; k < inputs.length; k++) { 
+					if (inputs[k].type == 'checkbox') { 
+					 if(netstate==0)
+					{
+						inputs[k].disabled=true;
+					}	
+					else
+					{
+					if(<{$is_right}>==0)
+					inputs[k].disabled=true;
+					else
+						inputs[k].disabled=false;
+					}
+					if(dev==1)
+						inputs[k].checked=true;
+					else
+					{
+						if(<{$is_right}>==0)
+						inputs[k].disabled=true;
+						else
+							inputs[k].checked=false;
+						}
+					} 
+				} 
+		}
+		for(var m=0;m<8;m++)
+		{	
+			if(m==0)
+			divid="centerone-six-"+id;
+			else if(m==1)
+			divid="centerone-serven-"+id;
+			else if(m==2)
+			divid="centerone-eight-"+id;
+			else if(m==3)
+			divid="centerone-night-"+id;
+			else if(m==4)
+			divid="centerone-fourth-"+id;
+			else if(m==5)
+			divid="centerone-fiveth-"+id;
+			else if(m==6)
+			divid="centerone-sixth-"+id;
+			else if(m==7)
+			divid="centerone-serventh-"+id;
+			
+			
+			
+			inputbutton=document.getElementById(divid);
+			 if(netstate==0)
+				inputbutton.disabled=true;
+			else
+			{
+			  inputbutton.disabled=false;
+				
+			}
+		}
+			
+		
+		
+	}
+}
+
+function  divcontrolset(settext,num)
+{
+	var text;
+	var divid,inputdiv;
+	var i=0,j=0,k=0;
+	var list =  JSON.parse(settext);//转换为json对象
+
+	if(num==1)
+		inputdiv=document.getElementById('wrap').getElementsByTagName('div');
+	
+	for(i=0;i<list.length;i++)
+	{
+		if(num==0)
+		{	
+			text=centercontroldiv(list[i].terminalid,list[i].terminalname);	
+			$('#wrap').append(text);			
+			divcontrolupdatestate(list[i].terminalid,list[i].systemstate,list[i].dormancy,list[i].projectionstate,list[i].pcstate,list[i].volstate,list[i].projectionscreenstate,list[i].volume,list[i].mix_preced,list[i].mic_vol,list[i].net_vol,list[i].showcase,list[i].notebook,list[i].computer,list[i].hdmi,list[i].power1,list[i].power2,list[i].netstate,num);		
+			
+		}
+		else if(num==1)
+		{
+			j=0;
+			for( k = 0; k < inputdiv.length; k++) { 
+					divid="centerone"+list[i].terminalid;
+					if(inputdiv[k].id==divid)
+					{
+						j=1;
+						divcontrolupdatestate(list[i].terminalid,list[i].systemstate,list[i].dormancy,list[i].projectionstate,list[i].pcstate,list[i].volstate,list[i].projectionscreenstate,list[i].volume,list[i].mix_preced,list[i].mic_vol,list[i].net_vol,list[i].showcase,list[i].notebook,list[i].computer,list[i].hdmi,list[i].power1,list[i].power2,list[i].netstate,0);		
+						break;
+					}	
+			}
+			if(j==0)
+			{
+				text=centercontroldiv(list[i].terminalid,list[i].terminalname);	
+				$('#wrap').append(text);
+				divcontrolupdatestate(list[i].terminalid,list[i].systemstate,list[i].dormancy,list[i].projectionstate,list[i].pcstate,list[i].volstate,list[i].projectionscreenstate,list[i].volume,list[i].mix_preced,list[i].mic_vol,list[i].net_vol,list[i].showcase,list[i].notebook,list[i].computer,list[i].hdmi,list[i].power1,list[i].power2,list[i].netstate,num);	
+			}
+		}  
+	}
+	if(num==1)
+	{
+		for( k = inputdiv.length-1; k >=0; k--) 
+		{ 
+			if(inputdiv[k].className=="r-div")
+			{
+				j=0;
+				for(i=0;i<list.length;i++)
+				{
+					divid="centerone"+list[i].terminalid;
+					if(inputdiv[k].id==divid)
+					{
+						j=1;
+						
+						break;
+					}
+				}
+				if(j==0)
+				{
+					temp="div#"+inputdiv[k].id;
+					$(temp).remove();
+				}
+			}	
+		}
+	}
+}
+
+var searchtype="";
+var searchvalue="";
+function getcontroltext(num,flag)
+{
+ 	var url;	
+	url ="centercontrolget.php?flag="+flag+"&searchtype="+searchtype+"&searchvalue="+searchvalue;	
+
+	var gettext=getcentercontrolvalue(url);
+	
+	divcontrolset(gettext,num);
+	
+	
+	
+	
+	return gettext;
+}
+
+function checksearch()
+{
+
+	if(!isNull(document.getElementById('searchkey').value))
+	{
+		searchtype=document.getElementById('searchkey').value;
+	
+		searchvalue=document.getElementById('searchvalue').value;
+
+		getcontroltext(1,0);  
+	}
+	else
+	{
+		searchtype="";
+		searchvalue="";
+		getcontroltext(1,0);  
+	}
+
+}
+
+
+window.onload=function(){
+ 	getcontroltext(0,0);  
+	self.setInterval("getcontroltext(1,0)",10000);//N毫秒刷新一次，1000毫秒＝1秒
+}
+
+
+
+
+
+</script>
+</head>
+<body>
+<div id="nav">
+
+<input type='hidden' name='dopost' value='' />
+<table width='98%'  border='0' cellpadding='1' cellspacing='1' class="middle" align="center" style="margin-top:8px">
+  <tr>
+    <td background='skin/images/wbg.gif' align='center'>
+		<table border='0' cellpadding='0' cellspacing='0'>
+			<tr>
+				<td width='90' align='center'><{$centercontrol.searchcriteria|capitalize}></td>
+				<td width='160'>
+					<select name='searchkey' id="searchkey" style='width:150px'>
+						<option value=""><{$centercontrol.selectiontype|capitalize}></option>
+
+						<option value="terminalname"><{$centercontrol.devicename|capitalize}></option>
+				
+						
+					</select>
+				</td>
+				<td width='70'>
+				<{$centercontrol.keyword|capitalize}>
+
+				</td>
+				<td width='160'>
+					<input type='text' name='searchvalue' id="searchvalue" value=''/>        
+				</td>
+				
+				<td>
+					<input name="imageField" type="image" src="<{$centercontrol.search_image}>" width="45px" height="20px" border="0px" onClick="checksearch();"/>        
+				</td>       
+			</tr>
+		</table>
+    </td>
+  </tr>
+</table>
+
+</div>
+<div id="wrap">
+	<!--	<div class="r-div"> 
+			<div class="head-div">顶部（header）</div>
+			<div class="left-div toggle--push-sh toggle--push--glow">
+			<input type="checkbox" id="toggle--push--glow1"  class="toggle--checkbox">
+			<label class="toggle--btn" for="toggle--push--glow1" data-label-on="on"  data-label-off="off">系统</label>
+			</div>  
+			<div class="left-div toggle--push-sh toggle--push--glow">
+			<input type="checkbox" id="toggle--push--glow2" class="toggle--checkbox">
+			<label class="toggle--btn" for="toggle--push--glow2" data-label-on="on"  data-label-off="off">休眠</label>
+			</div>  
+			<div class="left-div toggle toggle--switch">
+			<input type="checkbox" id="toggle--switch" class="toggle--checkbox">
+			<label class="toggle--btn" for="toggle--switch"><span class="toggle--feature" data-label-on="投影开"  data-label-off="投影关"></span></label>
+			</div>
+			<div class="left-div toggle--push toggle--push--glow">
+			<input type="checkbox" id="toggle--push--glow3"  class="toggle--checkbox" onChange="setdevstate(this);">
+			<label class="toggle--btn" for="toggle--push--glow3" data-label-on="on"  data-label-off="off">电脑</label>
+			</div> 
+			<div class="leftmid-div"></div>
+			<div class="zeromusic-div toggle--push-th toggle--push--glow">
+			<input type="checkbox" id="toggle--push--glow9" class="toggle--checkbox">
+			<label class="toggle--btn" for="toggle--push--glow9" data-label-on="on"  data-label-off="off">静音</label>
+			</div>  
+			<div class="onemusic-div toggle--push-th toggle--push--glow">
+			<input type="checkbox" id="toggle--push--glow10" class="toggle--checkbox">
+			<label class="toggle--btn" for="toggle--push--glow10" data-label-on="on"  data-label-off="off">混音</label>
+			</div>  
+			<div class="mid-div"><button class="button button1" >投影幕升</button><button class="button button2" onClick="setdevstate(this);">音量+</button><button class="button button3">投影幕降</button><button class="button button4">音量-</button><button class="button button5">网络音量+</button><button class="button button6">网络音量-</button><button class="button button7">话筒+</button><button class="button button8">话筒-</button>  </div>
+			
+			<div class="left-div left-one toggle--push-sh toggle--push--glow">
+			<input type="checkbox" id="toggle--push--glow4" class="toggle--checkbox">
+			<label class="toggle--btn" for="toggle--push--glow4" data-label-on="on"  data-label-off="off">展台</label>
+			</div>  
+			<div class="left-div left-two toggle--push-sh toggle--push--glow">
+			<input type="checkbox" id="toggle--push--glow5" class="toggle--checkbox">
+			<label class="toggle--btn" for="toggle--push--glow5" data-label-on="on"  data-label-off="off">笔记本</label>
+			</div>  
+		
+			<div class="left-div left-three toggle--push-sh toggle--push--glow">
+			<input type="checkbox" id="toggle--push--glow6"  class="toggle--checkbox">
+			<label class="toggle--btn" for="toggle--push--glow6" data-label-on="on"  data-label-off="off">电脑</label>
+			</div>  
+			<div class="left-div left-four toggle--push-sh toggle--push--glow">
+			<input type="checkbox" id="toggle--push--glow7" class="toggle--checkbox">
+			<label class="toggle--btn" for="toggle--push--glow7" data-label-on="on"  data-label-off="off">高清</label>
+			</div>  
+				<div class="left-div left-five toggle--push-sh toggle--push--glow">
+			<input type="checkbox" id="toggle--push--glow11"  class="toggle--checkbox">
+			<label class="toggle--btn" for="toggle--push--glow11" data-label-on="on"  data-label-off="off">外控2</label>
+			</div>  
+			<div class="left-div left-six toggle--push-sh toggle--push--glow">
+			<input type="checkbox" id="toggle--push--glow8" class="toggle--checkbox">
+			<label class="toggle--btn" for="toggle--push--glow8" data-label-on="on"  data-label-off="off">外控1</label>
+			</div>  
+		</div>	
+		-->
+</div>
+
+</body>
+

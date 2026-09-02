@@ -1,0 +1,63 @@
+<form name="frmSearch2" method="post" action="do.php?act=zhaoshengstreamadd_msg" onSubmit="return checkform();" classs= "terminal_form_to_body">
+<table width="600px" border="0" align="center" cellpadding="0" cellspacing="0" class="terminal_table_border">
+	<tr>
+	<td>
+		<table width="100%" border="0" align="center" cellpadding="0" cellspacing="0">
+			<tr>
+				<td>
+						<img src="<{$stream_create.create_sounds_stream}>"/>
+				</td>
+			</tr>
+		</table>
+	</td>
+	</tr>
+	
+	<tr>
+	<td>
+		<table width="100%" border="0" align="center" cellpadding="5" cellspacing="0">
+			<tr>
+				<td width="150" align="right" nowrap="nowrap"><{$stream_create.Zone_Name|capitalize}></td>
+				<td width="450">
+					<input title="<{$stream_create.Create_Zonetask|capitalize}>" type="text" value="" maxlength="8" name="streamname" id="streamname"  class="terminal_input_font"/>
+					<span id="streamname_s" class="terminal_star">*</span>
+				</td>
+			</tr>
+						
+			<tr>
+				<td width="150" align="right" valign="top" nowrap="nowrap"><{$stream_create.Select_Terminal|capitalize}></td>
+				<td width="450">
+					<div id="treeofbox" name="treeofbox" style="width:80%; height:200px;background-color:#f5f5f5;border:1px solid Silver;"/>
+					<input type="hidden"  id="nostreamterminal" name="nostreamterminal" value=""/>
+						<input type="hidden"  id="nosoundsdevice" name="nosoundsdevice" value=""/>
+					<!--�ڴ˱���ý���б��ֵ-->
+					<script language="javascript">
+					
+					
+							var treedata = "<{$nogroupterminal}>";
+							tree2=new dhtmlXTreeObject("treeofbox","100%","100%",0);
+							tree2.setSkin('dhx_skyblue');
+							tree2.setImagePath("smarty/templates/BellManager/codebase/csh_bluebooks/");
+							tree2.enableCheckBoxes(1);
+							tree2.enableThreeStateCheckboxes(true);
+							
+							tree2.loadXMLString(treedata);
+							
+							
+						</script>
+							
+				
+				</td>
+			</tr>
+			<tr>
+				<td></td>
+				<td>
+					<input type="submit" name="submit" id="submit" value="<{$stream_create.Sumbit|capitalize}>" class="terminal_button"/>
+					&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+					<input name="reset" type="reset" id="reset" value="<{$stream_create.Cancel|capitalize}>" class="terminal_button"/>
+				</td>
+			</tr>
+			</table> 
+		</td>
+	</tr>
+</table>
+</form> 

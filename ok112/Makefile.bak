@@ -1,0 +1,34 @@
+
+CC = gcc
+CFLAGS = -g -Wall -O3
+
+INCLUDE = -I/usr/include/mysql/
+#LFLAGS = -L/usr/lib/mysql -lmysqlclient -lssl
+LFLAGS = -L/usr/lib64/mysql -lmysqlclient -lssl -lcrypto -pthread  #64¦Ë??
+
+TARGET = resetsdk
+
+SOUCE_FILES = $(wildcard *.c)
+OBJS = $(patsubst %.c,%.o,$(SOUCE_FILES))
+
+%.o : %.c %.h
+	$(CC) -c $(CFLAGS) $< -o $@ $(INCLUDE)
+
+%.o : %.c
+	$(CC) -c $(CFLAGS) $< -o $@ $(INCLUDE)
+
+#.PHONY:clean
+
+all:clean $(TARGET)
+
+	
+$(TARGET):$(OBJS)
+	$(CC) $^ -o $@ $(LFLAGS)
+
+clean:
+	$(RM) $(TARGET) $(OBJS)
+
+	
+
+	
+	

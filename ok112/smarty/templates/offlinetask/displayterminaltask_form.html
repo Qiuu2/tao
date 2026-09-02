@@ -1,0 +1,148 @@
+<form name="bellForm" class="terminal_form_to_body">
+<tbody>
+<div id="divTest" style="width:100%;overflow-x:hidden;overflow-y:scroll">
+<table width="98%" border="0" cellpadding="2" cellspacing="1"  align="center"  id="tableplan" class="terminal_form_to_body">
+	<thead> 
+		<tr align='center' class="terminal_table_row_bg">
+		  <th width="8%" nowrap="nowrap">
+		  	<{$Bellmanager.No_}>
+		  </th >
+		
+		  <th  width="10%" nowrap="nowrap" onclick="sortTable('tableplan',1, 1)" class="sort_data_table_sequence">
+		  	<{$Bellmanager.Task_name|capitalize}>
+			</th>  
+		   <th  width="10%" nowrap="nowrap" onclick="sortTable('tableplan',2,1)" class="sort_data_table_sequence">
+		  	<{$Bellmanager.belongtype|capitalize}>
+			</th>  
+		  <th  width="15%" nowrap="nowrap" onclick="sortTable('tableplan',3,1)" class="sort_data_table_sequence">
+		  	<{$Bellmanager.Run_Mode|capitalize}>
+			</th>  
+		
+		  <th  width="15%" nowrap="nowrap" onclick="sortTable('tableplan',4,1)" class="sort_data_table_sequence">
+		  	<{$Bellmanager.Task_Status|capitalize}>
+			</th>  
+		  
+		  <th  width="8%" nowrap="nowrap">
+		  	<{$Bellmanager.Ring_Volume}>
+		  </th >
+		
+		  <th  width="8%" nowrap="nowrap" onclick="sortTable('tableplan',5,1)" class="sort_data_table_sequence">
+		  	<{$Bellmanager.Play_Time|capitalize}>
+			</th>  
+		
+		  <th  width="8%" nowrap="nowrap" onclick="sortTable('tableplan',6,1)" class="sort_data_table_sequence">
+		  	<{$Bellmanager.Start_date|capitalize}>
+			</th>  
+		
+		  <th  width="8%" nowrap="nowrap" onclick="sortTable('tableplan',7,1)" class="sort_data_table_sequence">
+		  	<{$Bellmanager.End_Date|capitalize}>
+			</th>  
+		  
+		  <th  width="8%" nowrap="nowrap"><{$Bellmanager.Duration}></th >
+		
+		  <th  width="10%" nowrap="nowrap"><{$Bellmanager.Task_Terminal}></th >
+		</tr>
+	</thead>
+	<tbody>
+	<{if $getplantaskinfo|@count neq 0}>
+	 <{section name=loop loop=$getplantaskinfo}>        
+	      <tr align='center' class="tablestyle" > 
+		   
+			<td nowrap="nowrap"><{$smarty.section.loop.index+1+$start}></td>
+			
+			<td nowrap="nowrap"><{$getplantaskinfo[loop].taskname}> </td>
+			<td nowrap="nowrap">
+			<{if $getplantaskinfo[loop].tasktype == 1}>	 
+				<{$Bellmanager.belongsche|capitalize}>
+			<{elseif  $getplantaskinfo[loop].tasktype == 2}>		   	
+				<{$Bellmanager.belongfile|capitalize}>
+			<{/if}>
+			 </td>
+			<td nowrap="nowrap">
+				<{if $getplantaskinfo[loop].exemodel eq "0000000"}>
+					<{$Bellmanager.Manual}>
+				<{else if $getplantaskinfo[loop].exemodel neq "0000000"}>
+					<script>document.write(getdayofweek("<{$getplantaskinfo[loop].exemodel}>"))</script>
+				<{/if}>
+			</td>
+	
+			<td nowrap="nowrap">
+			<{if $getplantaskinfo[loop].projectstate == 0}>	 
+				<{$Bellmanager.Enabled|capitalize}>
+			<{elseif  $getplantaskinfo[loop].projectstate == 1}>		   	
+				<{$Bellmanager.Disenabled|capitalize}>
+			<{/if}>
+			 </td>
+			
+			<td nowrap="nowrap"><{$getplantaskinfo[loop].defaultvolume}> </td>
+			
+			<td nowrap="nowrap"><{$getplantaskinfo[loop].playtime}></td>
+			
+			<td nowrap="nowrap"><{$getplantaskinfo[loop].startdate}></td> 
+			
+			<td nowrap="nowrap"><{$getplantaskinfo[loop].enddate}> </td>
+	
+			<td nowrap="nowrap">
+			<script language="javascript">
+			var gettimetype=<{$getplantaskinfo[loop].timelengthtype}>;
+			var gettime=<{$getplantaskinfo[loop].timelength}>;
+	
+			if(gettimetype<2)
+			{
+				var gethour;
+				var getmin;
+				var getsen;
+				
+				gethour=parseInt(gettime/3600);
+				getmin=parseInt((gettime-gethour*3600)/60);
+				getsen=gettime-gethour*3600-getmin*60;
+				if(gethour>0)
+					document.write(gethour,'<{$Bellmanager.hour}>');
+				if(getmin>0)
+					document.write(getmin,'<{$Bellmanager.min}>');
+				if(getsen>0)
+					document.write(getsen,'<{$Bellmanager.Second}>');
+			}
+			else
+			{
+			document.write(gettime,'<{$Bellmanager.num}>');
+			}
+				</script>
+		
+			</td>
+	
+			<td nowrap="nowrap"><a href="displayplanonetaskterminal.php?taskid=<{$getplantaskinfo[loop].taskid}>"><{$Bellmanager.View_Terminal}></a></td>
+	
+	      </tr>         
+	<{/section}>
+	<{else}>
+	 <tr align='center'> 
+	 	<td colspan="9">
+			<strong style="font-size:12px"><{$Bellmanager.No_data}></strong>
+		</td>
+	 </tr>
+	<{/if}>
+	</table>
+</div>
+</tbody>
+<script language="javascript">
+var   obj   =   document.getElementById( "divTest").offsetHeight; 
+ if(obj>=600)
+ {
+ document.getElementById("divTest").style.height=600+"px"; 
+ }
+ else
+ {
+  document.getElementById("divTest").style.height=document.getElementById( "divTest").offsetHeight;
+ }
+ var objwidth = document.getElementById( "divTest").offsetWidth;
+if(objwidth<=1000)
+ {
+ document.getElementById("divTest").style.width=1000+"px"; 
+ }
+ else
+ {
+  document.getElementById("divTest").style.width=document.getElementById( "divTest").offsetWidth;
+ }
+</script>
+<div class="link_style" style="float:none; margin-top:5px; text-align:center;"><{$pagestr}></div>

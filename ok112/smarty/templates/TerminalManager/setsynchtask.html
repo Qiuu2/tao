@@ -1,0 +1,159 @@
+<html>
+<head>
+<META http-equiv=Content-Type content="text/html; charset=utf-8">
+<title>SetTaskMapping</title>
+<!--导入树-->
+<link href="smarty/templates/BellManager/codebase/dhtmlxtree.css" rel="stylesheet" type="text/css">
+<script  src="smarty/templates/BellManager/codebase/dhtmlxtree.js"></script>
+<script  src="smarty/templates/BellManager/codebase/dhtmlxcommon.js"></script>
+
+
+
+<link href="skin/css/main_page_style.css" rel="stylesheet" type="text/css">
+
+<style type="text/css">
+	.input_title
+	{
+		font-size:12px;
+		font-family:Georgia, "Times New Roman", Times, serif, "宋体";
+	}
+</style>
+
+<script language="javascript">
+function isNumber( s )
+{
+    var regu = "^[0-9]+$";
+    var re = new RegExp(regu);
+    if (s.search(re) != -1) 
+    {
+        return true;
+    }
+    else 
+    {
+        return false;
+    }
+}
+function trim(str)
+{   
+    return str.replace(/(^\s*)|(\s*$)/ig, "");   
+}
+function isChinaOrNumbOrLett( s )
+{
+	var regu = "^[0-9a-zA-Z\u4e00-\u9fa5]+$"; 
+
+	var re = new RegExp(regu); 
+	if (re.test(s)) 
+	{ 
+		return true; 
+	}
+	else
+	{
+		return false; 
+	} 
+} 
+
+function isNull( str )
+{ 
+ if ( str == "" )
+
+ return true; 
+
+ var regu = "^[ ]+$"; 
+
+ var re = new RegExp(regu); 
+
+ return re.test(str); 
+}
+var analysis_tree_terminal_string = new Array();
+function analysis_task_group_string(string_array)
+{
+	var string_arrays = string_array.split(",");
+	
+	for(var i=0; i<string_arrays.length; i++)
+	{
+		if(string_arrays[i].indexOf("::") == -1)
+		{
+			analysis_tree_terminal_string.push(string_arrays[i]);
+		}
+	}
+}
+ 
+function checkform()
+{	
+	//验证终端
+	var getterminalid = trim(tree3.getAllChecked());
+
+	var count = 0;
+
+	analysis_task_group_string(getterminalid);
+
+	document.getElementById('task_map_id').value = trim(analysis_tree_terminal_string.toString());
+
+	if(isNull(document.getElementById('task_map_id').value))
+	{
+		alert("<{$set_remote_map.select_task|capitalize}>");
+		return false;
+	}
+}
+</script>
+</head>
+<body>
+
+<form name="setkeyform" action="do.php?act=set_task_synch&terminalid=<{$terminal_id}>" method="post" onSubmit="return checkform();" class="terminal_form_to_body">
+<table width="600px" align="center" border="0" cellpadding="0" cellspacing="0"  class="terminal_table_border">
+	<tr height="50">
+		<td align="center" border="0" cellpadding="0" cellspacing="0">
+			<table>
+				<tr>
+					<td>
+						<img src="<{$set_remote_map.remote_synch_task}>"/>
+					</td>
+				</tr>
+			</table>
+		</td>
+	</tr>
+	
+	<tr>
+		<td>
+			<table align="center" border="0" cellpadding="5" cellspacing="0">
+
+				<tr>
+					<td width="180" align="right" valign="top" class="input_title"><{$set_remote_map.Map_Task|capitalize}></td>
+					<td width="420">
+					<input title="<{$set_remote_map.Map_Taskache|capitalize}>" type="hidden"  id="task_map_id" name="task_map_id" value=""/>
+					
+					<div id="treeofbox2" name="treeofbox2" style="width:80%; height:200px;background-color:#f5f5f5;border :1px solid Silver;"/> 
+						<script language="javascript">
+							var treedata = "<{$tree_info}>";
+							
+							tree3 = new dhtmlXTreeObject("treeofbox2","100%","100%",0);
+							
+							tree3.setSkin('dhx_skyblue');
+							
+							tree3.setImagePath("smarty/templates/BellManager/codebase/csh_bluebooks/");
+							
+							tree3.enableCheckBoxes(1);
+							
+							tree3.enableThreeStateCheckboxes(true);
+							
+							tree3.loadXMLString(treedata);
+						</script>
+				  </td>
+				</tr>
+				<tr>
+					<td width="180">					</td>
+					<td width="420">
+						<input type="submit" name="submit" value="<{$set_remote_map.Sumbit|capitalize}>" class="terminal_button"/>
+						&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+						<input type="reset" name="reset" value="<{$set_remote_map.Cancel|capitalize}>" class="terminal_button"/>
+				  </td>
+				</tr>
+		  </table>
+		</td>
+	</tr>
+</table>
+</form>
+<{include file="language/`$language`_foot.php"}>
+</body>
+
+</html>

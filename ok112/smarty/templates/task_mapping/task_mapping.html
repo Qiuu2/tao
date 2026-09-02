@@ -1,0 +1,105 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>TaskMapping</title>
+
+<link href="skin/css/main_page_style.css" rel="stylesheet" type="text/css" />
+<style>
+ 
+
+	/* 奇数行样式 */
+	tr:nth-child(odd) {
+		background-color: #ffffff;
+	}
+	
+	/* 偶数行样式 */
+	tr:nth-child(even) {
+		background-color: #c1cfe0;
+	}
+</style>
+<script type="text/javascript">
+function isNull(str)
+{ 
+ if ( str == "" )
+ return true; 
+ var regu = "^[ ]+$"; 
+ var re = new RegExp(regu); 
+ return re.test(str); 
+} 
+function getCheckboxItem()
+{
+	var allSel="";
+	if(document.form2.id.checked)
+	{
+		allSel=document.form2.id.value;
+		if(allSel==undefined)
+		allSel="";
+	}
+	for(i=0;i<document.form2.id.length;i++)
+	{
+		if(document.form2.id[i].checked)
+		{
+			if(allSel=="")
+				allSel=document.form2.id[i].value;
+			else
+				allSel=allSel+","+document.form2.id[i].value;
+		}
+	}
+	return allSel;
+}
+
+function selAll(aid)
+{
+	if(aid==0)
+	{
+		document.form2.id.checked=true;
+	}
+	for(i=0;i<document.form2.id.length;i++)
+	{
+		if(!document.form2.id[i].checked)
+		{
+			document.form2.id[i].checked=true;
+		}
+	}
+}
+function noSelAll(aid)
+{
+	if(aid==0)
+	{
+		document.form2.id.checked=false;
+	}
+	for(i=0;i<document.form2.id.length;i++)
+	{
+		if(document.form2.id[i].checked)
+		{
+			document.form2.id[i].checked=false;
+		}
+	}
+}
+function set_taskmapping()
+{
+	window.location.href = "set_task_mapping.php";
+}
+
+function del_taskmapping()
+{
+	var get_mapping = getCheckboxItem();
+	if(isNull(get_mapping))
+	{
+		alert("<{$remote_task.select_remote_task|capitalize}>");
+		return void(0);
+	}
+	if(window.confirm("<{$remote_task.confirm_deleting|capitalize}>"))
+	{
+		window.location.href = "do.php?act=del_task_mapping_msg&id="+get_mapping+"";
+	}
+}
+</script>
+</head>
+
+<body>
+	<{include file="task_mapping/task_mapping_form.html"}> 
+	<{include file="language/`$language`_foot.php"}> 
+</body>
+</html>

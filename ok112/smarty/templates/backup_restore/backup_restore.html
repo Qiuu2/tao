@@ -1,0 +1,257 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>DisplayTerminal</title>
+<link href="skin/css/main_page_style.css" rel="stylesheet" type="text/css" />
+<style>
+.backup_overlay
+{
+   display: none;
+   position: absolute;
+   top: 0%;
+   left: 0%;
+   width: 100%;
+   height: 100%;
+   background-color: #eeeeff;
+   z-index:1001;
+   filter: alpha(opacity=90);
+}
+.backup_content
+{
+   display: none;
+   position: absolute;
+   top: 25%;
+   left: 25%;
+   width: 50%;
+   height: 50%;
+   padding: 0px;
+   z-index:1002;
+   overflow: hidden;
+   text-align : center ;
+}
+.backup_title
+{
+  font-size:13px;
+  font-family:Georgia, "Times New Roman", Times, serif, "宋体"; 
+  background-color : #6699dd; 
+  text-align:left;
+  color:#FFFFFF;
+}
+.backup_table
+{
+   font-size:12px;
+   font-family:Georgia, "Times New Roman", Times, serif, "宋体";
+   background-color:#FFFFFF;
+   border:1px solid #336699;
+   margin:0px;
+   padding:0;
+}
+.backup_button
+{
+    border:1px solid #ddddff
+}
+
+</style>
+<script language="javascript" src="skin/js/frame/public.js"></script>
+<script>
+
+
+
+
+
+
+
+//还原
+function colose_restore()
+{
+ document.getElementById('light2').style.display='none';
+    document.getElementById('fade2').style.display='none';
+}
+
+function open_restore()
+{
+    document.getElementById('restore_light').style.display='block';
+    document.getElementById('restore_fade').style.display='block';
+}
+
+function open_backup2()
+{
+	document.getElementById('backup_name2').disabled = false;
+	document.getElementById('prompt2').innerHTML = "<{$backup_restore.backup_name_default}>";
+    document.getElementById('light2').style.display='block';
+    document.getElementById('fade2').style.display='block';
+}
+
+function validate_backup_name2(input_str2)
+{
+	var input_obj = document.getElementById(input_str2);
+	var str = trim(input_obj.value);
+	var url = "";
+	if(isNull(str))
+	{
+		 window.confirm("<{$backup_restore.use_default_name|capitalize}>");
+		 return void(0);
+	
+	}
+	else
+	{
+		if(!isNumberOr_Letter(str))
+		{
+			document.getElementById('prompt2').innerHTML = "<{$bell_manager.correct_name|capitalize}>";
+			return void(0);
+		}
+		else
+		{
+			temp_txt = "<{$backup_restore.backuping|capitalize}>";
+			animation_text_start2();
+			var backup_name = str;
+			url = "bellManager_form.php?backup_name="+str+"";
+			
+			backup_data2(url);
+			input_obj.disabled = true;
+	        document.getElementById('light2').style.display='none';
+            document.getElementById('fade2').style.display='none';
+			alert("<{$backup_restore.backuping|capitalize}>");
+			window.location.href = "download_bellManager.php?backup_name="+str+"";
+
+			
+		}
+	}
+}	
+	//self.location.reload();
+function backup_data2(url)
+{
+	createXMLHttpRequest();
+	xmlhttp.open( "get",url, true );
+	xmlhttp.onreadystatechange = function()
+	{
+	  if( xmlhttp.readyState == 4 )
+	  {
+		 if( xmlhttp.status == 200 )
+		 {
+			switch(xmlhttp.responseText)
+			{
+				case "0":
+					document.getElementById('prompt2').innerHTML = "<{$bell_manager.backup_failed|capitalize}>";
+					document.getElementById('backup_name2').disabled = false;
+					clearInterval(inver_time_handle);
+				break;
+				
+				case "1":
+					document.getElementById('prompt2').innerHTML = "<{$bell_manager.Backup_success|capitalize}>";
+					document.getElementById('backup_name2').disabled = false;
+					clearInterval(inver_time_handle);
+					//self.location.reload();
+					
+				break;
+				
+				case "2":
+					document.getElementById('prompt2').innerHTML = "<{$bell_manager.same_name|capitalize}>";
+					document.getElementById('backup_name2').disabled = false;
+					clearInterval(inver_time_handle);
+				break;
+				
+				case "3":
+					document.getElementById('prompt2').innerHTML = "<{$bell_manager.Not_Data|capitalize}>";
+					document.getElementById('backup_name2').disabled = false;
+					clearInterval(inver_time_handle);
+				break;
+			}
+		 }
+	  }
+	}
+	xmlhttp.setRequestHeader( "If-Modified-Since", "0");
+	xmlhttp.send(null);
+}
+</script>	
+
+</script>
+<script>
+
+
+//删除数据
+function del_backup_file(file_name)
+{
+	if(window.confirm("<{$backup_restore.del_not_restore}>"))
+	{
+		createXMLHttpRequest();
+		var file_name = trim(file_name);
+		var url = "del_backup_file.php?file_name="+file_name+"";
+		xmlhttp.open( "get",url, true );
+		xmlhttp.onreadystatechange = function()
+		{
+		  if( xmlhttp.readyState == 4 )
+		  {
+			 if( xmlhttp.status == 200 )
+			 {
+		
+				switch(trim(xmlhttp.responseText))
+				{
+					case "0":
+						
+						alert('<{$backup_restore.delete_failed|capitalize}>');
+					break;
+					
+					case "1":
+					
+						alert('<{$backup_restore.delete_success|capitalize}>');
+						self.location.reload();
+					break;
+					
+					case "2":
+						
+						alert('<{$backup_restore.Not_file|capitalize}>');
+					break;
+				}
+			 }
+		  }
+		}
+		xmlhttp.setRequestHeader( "If-Modified-Since", "0");
+		xmlhttp.send(null);
+	}
+	else
+	{
+		return void(0);
+	}
+}
+
+
+
+/*
+function restore_data2(restore_name)
+{
+	var input_obj = document.getElementById(restore_name);
+	var str = trim(input_obj.value);
+	var url = "";
+    if(isNull(str))
+	{
+		alert('<{$backup_restore.select_files|capitalize}>');
+		return void(0);
+	}
+	else
+	{
+	       
+			temp_txt = "<{$backup_restore.wait_Restoring|capitalize}>";
+			
+			animation_text_start();
+			var backup_name = str;
+		
+			url = "bell_manager_restore.php?backup_name="+str+"";
+		    
+			restore_backup_data(url);
+			input_obj.disabled = true;
+	}
+	
+}
+*/
+
+
+</script>
+</head>
+<body>	
+<{include file="backup_restore/backup_restore_from.html"}> 
+<{include file="language/`$language`_foot.php"}>
+
+</body>
+</html>

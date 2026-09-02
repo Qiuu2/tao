@@ -1,0 +1,85 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>FileFolderModify</title>
+
+<link href="skin/css/main_page_style.css" rel="stylesheet" type="text/css" />
+
+<script language="javascript"> 
+function isNull( str )
+{
+	if ( str == "" || str==null) 
+	return true;
+	var regu = "^[ ]+$";
+	var re = new RegExp(regu);
+	return re.test(str);
+}
+function isChinaOrNumbOrLett(s)
+{ 
+	var regu = "^[0-9a-zA-Z\u4e00-\u9fa5]+$"; 
+	var re = new RegExp(regu); 
+	if (re.test(s)) 
+	{ 
+		return true; 
+	}
+	else
+	{ 
+		return false; 
+	} 
+} 
+function checkform()
+{
+	if(isNull(document.fileForm.folderName.value))
+	{
+		document.getElementById('folderName_s').innerHTML="<font class='terminal_star'><{$create_folder.enter_name|capitalize}></font>";
+		document.fileForm.folderName.focus();
+		return false;
+	}
+	else
+	{
+		if(!isChinaOrNumbOrLett(document.fileForm.folderName.value))
+		{
+			document.getElementById('folderName_s').innerHTML="<font class='terminal_star'><{$create_folder.letter_number_Chinese|capitalize}></font>";
+			document.fileForm.folderName.focus();
+			return false;
+		}
+	}
+
+	document.getElementById('folderName_s').innerHTML="<font class='terminal_star'></font>";
+	return true;
+}
+function chinese_big5_english(curr_language,txt_msg)
+{
+    if(curr_language == "big5")
+    {
+        switch(txt_msg)
+        {
+            case "任务列表":
+            txt_msg= "任务列表";
+            break;
+          
+        }
+    }
+    else if(curr_language == "chinese") 
+    {
+        //不做处理
+    }
+    else if(curr_language == "english")
+    {
+        switch(txt_msg)
+        {
+            case "任务列表":
+            txt_msg= "task table";
+            break;
+        }
+    }
+return txt_msg;
+}
+</script>
+</head>
+<body>
+<{include file="ledmanager/fileFlodermodify_from.html"}>
+<{include file="language/`$language`_foot.php"}> 
+</body>
+</html>

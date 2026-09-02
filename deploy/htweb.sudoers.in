@@ -1,0 +1,38 @@
+# htweb 需要的免密提权（模板，由 deploy/install.sh 替换占位符后安装）
+#
+# 安装位置：/etc/sudoers.d/htweb      权限：0440 root:root
+# 占位符：  @SERVICE_USER@ = 跑 htweb 的账号（现网 tw）
+#           @A9000_ROOT@   = 旧系统安装根目录（现网 /opt/apps/a9000）
+#
+# ─────────────────────────────────────────────────────────────
+# 为什么需要这些
+#
+# htweb 以普通账号运行（不是 root，也不该是）。但「服务器信息」和「时间设置」
+# 两页上有三个动作绕不开 root：
+#
+#   设置服务器时间 / 同步当前时间 → timedatectl set-time
+#   （手工设时间前关掉自动校时）  → timedatectl set-ntp
+#   版本设置的「提交」            → update_audioserver.sh，它内部全是 sudo docker
+#
+# 没有这几条时程序不会去猜密码、也不会假装成功：接口会探测一次，
+# 探不通就把「缺哪条 sudoers」原样显示在页面上，按钮置灰。
+# 装上这个文件之后按钮立刻可用，不需要改代码、不需要重启 htweb。
+#
+# ─────────────────────────────────────────────────────────────
+# 为什么只放开这几条
+#
+# 没有写成 `@SERVICE_USER@ ALL=(ALL) NOPASSWD: ALL`。
+# 上面三件事之外的任何提权，htweb 都不需要，也就不给。
+#
+# ⚠ update_audioserver.sh 这条等于把「重建 audioserver 容器」的能力给了 htweb。
+#   这是版本设置页的全部意义所在，避不开；接口那一侧挂在**超管**路由上、
+#   界面还要再确认一次，作为补偿。
+#
+# ⚠ 脚本路径写死在这里。谁能改这个脚本，谁就等于拿到了 root ——
+#   所以 install.sh 会检查它属主是不是 root 或服务账号本人，
+#   并且**不允许**它对其它用户可写。
+
+Cmnd_Alias HTWEB_CLOCK = @TIMEDATECTL@ set-time *, @TIMEDATECTL@ set-ntp *
+Cmnd_Alias HTWEB_AUDIO = @A9000_ROOT@/script/cmd/update_audioserver.sh
+
+@SERVICE_USER@ ALL=(root) NOPASSWD: HTWEB_CLOCK, HTWEB_AUDIO

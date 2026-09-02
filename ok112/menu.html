@@ -1,0 +1,867 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>menu</title>
+<link rel="stylesheet" href="skin/css/base.css" type="text/css" />
+<link rel="stylesheet" href="skin/css/menu.css" type="text/css" />
+<link href="skin/css/main_page_style.css" rel="stylesheet" type="text/css" />
+<script language='javascript'>var curopenItem = '1';</script>
+<script language="javascript" type="text/javascript" src="skin/js/frame/menu2.js"></script>
+
+<base target="main" />
+<?php
+	if (!session_id()) session_start();
+	require_once("language/".$_SESSION['language'].".php");
+?>
+</head>
+
+
+<body style="overflow-x:hidden; vertical-align:top" target="main" class="terminal_form_to_body">
+<table width='170px' height="100%" border='0' align="left" style="margin-top:1px; vertical-align:top" cellpadding='0' cellspacing='0'> 
+  <tr valign="top" align="left">
+    <td height="880"  align="left" valign="top" background="skin/images/frame/menu_center_bg.gif" >
+    <div style="width:160px; vertical-align:top; margin-top:1px" >
+    	<!-- Item 2 Strat -->
+        <div id="menu_nav_top"><img src="skin/images/frame/menu_cl_top.gif"></div>
+		
+        <div id="menu_nav_center"> 
+		
+		<dl class='bitem'>
+		
+		<dt onClick='showHide("items4_1")' style="text-align:left; padding-left:14px;">
+			<span onMouseOver="javasript:this.style.color='#FC0'" onMouseOut="javascript:this.style.color='#fff'" style="color:#FFF">
+				<?php echo $index_menu['Server_management'] ?>
+			</span>
+		</dt>
+		
+		<dd style='display:block;background:url(../images/frame/menu_cl_center_bg.gif)' class='sitem' id='items4_1'>
+			<ul class='sitemu'>  
+				<div style=" padding:0px; margin:0px">
+				<table width="160px" border="0" cellpadding="0" cellspacing="0" style="margin-bottom:8px">  
+					<tr id='server_manager'>     
+						<td width="50" align="center" class="nav_td">  
+							<a href='servermanager.php' target='main'>
+								<img src="<?php echo $syestem_image_path['base_param']; ?>" alt="" width="26" height="26"/></a>
+						</td>
+						
+						<td width="154" align="left" nowrap="nowrap" class="nav_td">
+							<a href='servermanager.php' target='main'>
+								<?php echo $index_menu['Basic_parameter'] ?>
+							</a>
+						</td>
+					</tr>
+					<script src="skin/js/frame/set_server_time.js" type="text/javascript" language="javascript"></script>
+					<tr id='set_time'>  
+						<td width="50" align="center" class="nav_td">  
+						
+							<a href="javascript:window.open('set_server_time.html','main')">
+								<img src="<?php echo $syestem_image_path['setup_time']; ?>" alt="" width="26" height="26"/></a>
+						
+						</td>
+						
+						<td width="154" align="left" nowrap="nowrap" class="nav_td">
+							<a href="javascript:window.open('set_server_time.html','main')">
+								<?php echo $index_menu['set_time'] ?>
+							</a>
+						</td>
+
+					</tr>
+					
+					<tr id='set_backup'> 
+						<td width="50" align="center" class="nav_td">  
+							<a href="backup_restore.php" target="main">
+								<img src="<?php echo $syestem_image_path['backup_restore']; ?>" alt="" width="26" height="26"/></a>
+						</td>
+						
+						<td width="154" align="left" nowrap="nowrap" class="nav_td">
+							<a href="backup_restore.php" target="main">
+								<?php echo $index_menu['Backup_and_restore'] ?>
+							</a>
+						</td>
+					</tr>
+					
+				</table>
+				</div>
+			</ul>
+		</dd>
+	</dl>
+   </div> 
+    <div id="menu_nav_bottom"></div>
+    
+      <!-- Item 2 End -->
+	    <!-- Item 1 Strat -->
+     <div id="menu_nav_top"><img src="skin/images/frame/menu_cl_top.gif"></div>
+     <div id="menu_nav_center"> 
+	 <dl class='bitem'>
+		<dt onClick='showHide("items1_1")' style="text-align:left; padding-left:14px; color:#FFF">
+			<span onMouseOver="javasript:this.style.color='#FC0'" onMouseOut="javascript:this.style.color='#fff'" style="color:#FFF">
+				<?php echo $index_menu['Resource_management'] ?>
+			</span>
+		</dt>
+		<dd style='display:block; background:url(../images/frame/menu_cl_center_bg.gif)' class='sitem' id='items1_1'>
+		<ul class='sitemu'>		  
+			<div >		  
+				<table width="160px" border="0" cellpadding="0" cellspacing="0" style="margin-bottom:8px">
+					<tr id='terminal_manager'>
+						<td width="50" align="center" class="nav_td">
+							<a href='terminaldismanager.php' target='main'>
+								<img src="<?php echo $syestem_image_path['terminal_manager']; ?>" alt="" width="26" height="26"></a>						</td>
+						<td width="154" nowrap="nowrap" class="nav_td">
+						
+							<a  href='terminaldismanager.php' target='main'>
+								<?php echo $index_menu['Terminal_management'] ?>							</a>						</td>
+					</tr>
+				<!--	
+					<tr>
+						<td width="50" align="center" class="nav_td">
+							<a href='centercontrol.php' target='main'>
+								<img src="<?php echo $syestem_image_path['Terminal_amplifier']; ?>" alt="" width="26" height="26"></a>
+						</td>
+						<td width="154" class="nav_td">
+							<a href='centercontrol.php' target='main'>
+								<?php echo $index_menu['centercontrol'] ?>
+							</a>  
+						</td>
+					</tr>
+					-->
+					<tr id='terminal_area'>
+						<td width="50" align="center" class="nav_td">
+							<a href='streammanager.php' target='main'>
+								<img src="<?php echo $syestem_image_path['terminal_area']; ?>" alt="" width="26" height="26"></a>						</td>
+						<td width="154" class="nav_td">
+							<a href='streammanager.php' target='main'>
+								<?php echo $index_menu['Terminal_zone'] ?>							</a>						</td>
+					</tr>
+					<!--
+					<tr id='dir_area'>
+						<td width="50" align="center" class="nav_td">
+							<a title="<?php echo $index_menu['dir_area'] ?>" href='dirstreammanager.php' target='main'>
+								<img src="<?php echo $syestem_image_path['terminal_area']; ?>" alt="" width="26" height="26"></a>						</td>
+						<td width="154" class="nav_td">
+							<a title="<?php echo $index_menu['dir_area'] ?>" href='dirstreammanager.php' target='main'>
+								<?php echo $index_menu['dir_area'] ?>							</a>						</td>
+					</tr>
+					-->
+					<tr id='file_manager'>
+						<td width="50" align="center" class="nav_td">
+							<a href='filemanager.php' target='main'>
+								<img src="<?php echo  $syestem_image_path['media_file_manager'] ?>" alt="" width="26" height="26"/></a>						</td>
+						<td width="154" class="nav_td">
+							<a href='filemanager.php' target='main'>
+								<?php echo $index_menu['File_management'] ?>							</a>						</td>
+					</tr>
+<!--					<tr>
+						<td width="50" align="center" class="nav_td">
+							<a href='filefoldermanager.php' target='main'>
+								<img src="<?php echo $syestem_image_path['folder_manager']; ?>" alt="" width="26" height="26"></a>
+						</td>
+						<td width="154" class="nav_td">
+							<a href='filefoldermanager.php' target='main'>
+								<?php echo $index_menu['Folder_management'] ?>
+							</a>  
+						</td>
+					</tr>-->
+					
+					<tr id='alarm_manager'>
+						<td width="50" align="center" class="nav_td">
+							<a href='alarmmanagement.php' target='main'>
+								<img src="<?php echo $syestem_image_path['alarm_map']; ?>" alt="" width="26" height="26"></a>						</td>
+						<td width="154" class="nav_td">
+							<a href='alarmmanagement.php' target='main'>
+								<?php echo $index_menu['Alarm_Mapping'] ?>							</a>						</td>
+					</tr>
+					
+					<tr id='alarm_area'>
+						<td width="50" align="center" class="nav_td">
+							<a href='display_alarm_area.php' target='main'>
+								<img src="<?php echo $syestem_image_path['alarm_area']; ?>" alt="" width="26" height="26"></a>						</td>
+						<td width="154" class="nav_td">
+							<a href='display_alarm_area.php' target='main'>
+								<?php echo $index_menu['Alarm_zone'] ?>							</a>						</td>
+					</tr>
+					
+					<tr id='task_mapping'>
+						<td width="50" align="center" class="nav_td">
+							<a href='task_mapping.php' target='main'>
+								<img src="<?php echo $syestem_image_path['remote_task']; ?>" alt="" width="26" height="26"></a>						</td>
+						<td width="154" class="nav_td">
+							<a href='task_mapping.php' target='main'>
+								<?php echo $index_menu['Remote_task'] ?></a></td>
+					</tr>
+					<tr id='keytask_mapping'>
+						<td width="50" align="center" class="nav_td">
+							<a href='keytask_mapping.php' target='main'>
+								<img src="<?php echo $syestem_image_path['Terminal_amplifier']; ?>" alt="" width="26" height="26"></a>				
+						</td>
+						<td width="154" class="nav_td">
+							<a href='keytask_mapping.php' target='main'>
+								<?php echo $index_menu['shortkeymap'] ?>							</a>									</td>
+					</tr>
+					
+					<tr id='camer_alarm'>
+						<td width="50" align="center" class="nav_td">
+							<a href='camer_alarm.php' target='main'>
+								<img src="<?php echo $syestem_image_path['alarm_map']; ?>" alt="" width="26" height="26"></a>				
+						</td>
+						<td width="154" class="nav_td">
+							<a href='camer_alarm.php' target='main'>
+								<?php echo $index_menu['camer_alarm'] ?>							</a>									</td>
+				</tr>
+				
+				<tr id='alarm_media'>
+						<td width="50" align="center" class="nav_td">
+							<a  href='alarm_event_media.php' target='main'>
+								<img src="<?php echo $syestem_image_path['alarm_map']; ?>" alt="" width="26" height="26"></a>				
+						</td>
+						<td width="154" class="nav_td">
+							<a  href='alarm_event_media.php' target='main'>
+								<?php echo $index_menu['alarm_media'] ?>							</a>									</td>
+			</tr>	
+				<!--
+					<tr>
+						<td width="50" align="center" class="nav_td">
+							<a title="<?php echo $index_menu['shortkeymap'] ?>" href='shurt_keymapping.php' target='main'>
+								<img src="<?php echo $syestem_image_path['Terminal_amplifier']; ?>" alt="" width="26" height="26"></a>				
+						</td>
+						<td width="154" class="nav_td">
+							<a title="<?php echo $index_menu['shortkeymap'] ?>" href='shurt_keymapping.php' target='main'>
+								<?php echo $index_menu['shortkeymap'] ?>							</a>									</td>
+					</tr>
+					<tr>
+					
+						<td width="50" align="center" class="nav_td">
+							<a  onClick="getmapping();" target='main'>
+								<img src="<?php echo $syestem_image_path['remote_task']; ?>" alt="" width="26" height="26"></a>						</td>
+						<td width="154" class="nav_td">
+							<a onClick="getmapping();" target='main'>
+								<?php echo $index_menu['map_task'] ?></a>  
+							<script language="javascript">
+							function getmapping()
+							{
+								alert("<?php echo $index_menu['Server_taskno'] ?>");
+							}
+							</script>						</td>
+					</tr>
+						-->	
+						<tr>
+						<td width="50" align="center" class="nav_td">
+							<a href='map_topologies.php' target='main'>
+								<img src="<?php echo $syestem_image_path['remote_task']; ?>" alt="" width="26" height="26"></a>
+						</td>
+						<td width="154" class="nav_td">
+							<a href='map_topologies.php' target='main'>
+								<?php echo $index_menu['map_task'] ?>
+							</a>  
+						</td>
+					</tr>
+					<!--
+					<tr id='user_manager'>
+						<td width="50" align="center" class="nav_td">
+							<a href='powercontrol.php' target='main'>
+								<img src="<?php echo $syestem_image_path['Terminal_amplifier']; ?>" alt="" width="26" height="26"/></a>
+						</td>
+						<td width="154" nowrap="NOWRAP" class="nav_td">
+							<a href='powercontrol.php' target='main'>
+								<?php echo $index_menu['powercontrol'] ?>
+							</a>
+						</td>
+					</tr>
+					-->
+			  </table>
+			</div> 
+		</ul>
+	</dd>
+	</dl>
+      </div> 
+	  	 <div id="menu_nav_bottom"></div>  
+	  	 <div id="menu_offline_top"><img src="skin/images/frame/menu_cl_top.gif"></div>
+	
+        <div id="menu_offline_center"> 
+		
+		<dl class='bitem'>
+		<dt onClick='showHide("items6_1")' style="text-align:left; padding-left:14px;">
+			<span onMouseOver="javasript:this.style.color='#FC0'" onMouseOut="javascript:this.style.color='#fff'" style="color:#FFF">
+				<?php echo $index_menu['offlinemanager'] ?>
+			</span>
+		</dt>
+		
+		<dd style='display:block;background:url(../images/frame/menu_cl_center_bg.gif)' class='sitem' id='items6_1'>
+			<ul class='sitemu'>  
+				<div style=" padding:0px; margin:0px">
+				<table width="160px" border="0" cellpadding="0" id='sitemoffline' cellspacing="0" style="margin-bottom:8px">  
+					
+					<tr id='offline_music'>     
+						<td width="50" align="center" class="nav_td">  
+							<a  href='offlinemusicmanager.php' target='main'>
+								<img src="<?php echo $syestem_image_path['group_manager']; ?>" alt="" width="26" height="26"/></a>
+						</td>
+						
+						<td width="154" align="left" nowrap="nowrap" class="nav_td">
+							<a href='offlinemusicmanager.php' target='main'>
+								<?php echo $index_menu['terminalofflinemanager'] ?>
+							</a>
+						</td>
+					</tr>
+					<script src="skin/js/frame/set_server_time.js" type="text/javascript" language="javascript"></script>
+					<tr id='set_offline_music'>  
+					   
+						<td width="50" align="center" class="nav_td">  
+						
+							<a  href='set_offlinemusic.php' target='main'>
+								<img src="<?php echo $syestem_image_path['alarm_map']; ?>" alt="" width="26" height="26"/></a>
+						</td>
+						
+						<td width="154" align="left" nowrap="nowrap" class="nav_td">
+							<a href='set_offlinemusic.php' target='main'>
+								<?php echo $index_menu['musicofflinemanager'] ?>
+							</a>
+						</td>
+
+					</tr>
+					
+					<tr id='set_offline'> 
+						<td width="50" align="center" class="nav_td">  
+							<a href="displayofflinemanager.php" target="main">
+								<img src="<?php echo $syestem_image_path['Terminal_amplifier']; ?>" alt="" width="26" height="26"/></a>
+						</td>
+						
+						<td width="154" align="left" nowrap="nowrap" class="nav_td">
+							<a title="<?php echo $index_menu['offlinetask'] ?>" href="displayofflinemanager.php" target="main">
+								<?php echo $index_menu['offlinetask'] ?>
+							</a>
+						</td>
+					</tr>
+
+
+					<tr id='set_offlinetask'>
+						<td width="50" align="center" class="nav_td">
+							<a href='set_offlinetask.php' target='main'>
+								<img src="<?php echo $syestem_image_path['Terminal_amplifier']; ?>" alt="" width="26" height="26"></a>				
+						</td>
+						<td width="154" class="nav_td">
+							<a href='set_offlinetask.php' target='main'>
+								<?php echo $index_menu['yunguangbotask'] ?>							</a>									</td>
+					</tr>
+			
+				</table>
+				
+				</div>
+			</ul>
+		</dd>
+	</dl>
+   </div> 
+   
+   <!--
+    <div id="menu_nav_bottom"></div>  
+	  <div id="menu_offline_top"><img src="skin/images/frame/menu_cl_top.gif"></div>
+	
+        <div id="menu_offline_center"> 
+		
+		<dl class='bitem'>
+		
+		<dt onClick='showHide("items6_1")' style="text-align:left; padding-left:14px;">
+			<span onMouseOver="javasript:this.style.color='#FC0'" onMouseOut="javascript:this.style.color='#fff'" style="color:#FFF">
+				<?php echo $index_menu['camer'] ?>
+			</span>
+		</dt>
+		
+		<dd style='display:block;background:url(../images/frame/menu_cl_center_bg.gif)' class='sitem' id='items6_1'>
+			<ul class='sitemu'>  
+				<div style=" padding:0px; margin:0px">
+				<table width="160px" border="0" cellpadding="0" id='sitemoffline' cellspacing="0" style="margin-bottom:8px">  
+					
+					<tr>     
+						<td width="50" align="center" class="nav_td">  
+							<a  href='camer_play.php' target='main'>
+								<img src="<?php echo $syestem_image_path['group_manager']; ?>" alt="" width="26" height="26"/></a>
+						</td>
+						
+						<td width="154" align="left" nowrap="nowrap" class="nav_td">
+							<a href='camer_play.php' target='main'>
+								<?php echo $index_menu['camer_play'] ?>
+							</a>
+						</td>
+					</tr>
+					<script src="skin/js/frame/set_server_time.js" type="text/javascript" language="javascript"></script>
+					<tr>  
+						<td width="50" align="center" class="nav_td">  
+							<a  href='set_offlinemusic.php' target='main'>
+								<img src="<?php echo $syestem_image_path['alarm_map']; ?>" alt="" width="26" height="26"/></a>
+						</td>
+						
+						<td width="154" align="left" nowrap="nowrap" class="nav_td">
+							<a href='set_offlinemusic.php' target='main'>
+								<?php echo $index_menu['musicofflinemanager'] ?>
+							</a>
+						</td>
+
+					</tr>
+					
+					<tr> 
+						<td width="50" align="center" class="nav_td">  
+							<a href="set_offline.php" target="main">
+								<img src="<?php echo $syestem_image_path['Terminal_amplifier']; ?>" alt="" width="26" height="26"/></a>
+						</td>
+						
+						<td width="154" align="left" nowrap="nowrap" class="nav_td">
+							<a title="<?php echo $index_menu['offlinetask'] ?>" href="displayofflinemanager.php" target="main">
+								<?php echo $index_menu['offlinetask'] ?>
+							</a>
+						</td>
+					</tr>
+			
+				</table>
+				
+				</div>
+			</ul>
+		</dd>
+	</dl>
+   </div> 
+   -->
+    <div id="menu_nav_bottom"></div>
+      <!-- Item 1 End -->
+      <!-- Item 2 Strat -->
+    <div id="menu_nav_top"><img src="skin/images/frame/menu_cl_top.gif"></div>
+    <div id="menu_nav_center"> 
+	<dl class='bitem' >
+		<dt onClick='showHide("items2_1")' style="text-align:left; padding-left:14px; color:#FFF">
+			<span onMouseOver="javasript:this.style.color='#FC0'" onMouseOut="javascript:this.style.color='#fff'" style="color:#FFF">
+				<?php echo $index_menu['Task_management'] ?>
+			</span>
+		</dt>
+		<dd style='display:block; background:url(../images/frame/menu_cl_center_bg.gif)' class='sitem' id='items2_1'>
+			<ul class='sitemu'>
+			<div >          
+				<table width="180" border="0" cellpadding="0" cellspacing="0"  style="margin-bottom:8px">
+					<tr id='bell_manager'>
+						<td width="50" align="center" class="nav_td">
+							<a  href='bellmanager.php' target='main'>
+								<img src="<?php echo $syestem_image_path['bell_scheme']; ?>" alt="" width="26" height="26"></a>
+						</td>
+						<td width="154" nowrap="nowrap" class="nav_td">
+							<a  href='bellmanager.php' target='main'>
+								<?php echo $index_menu['Bell_Solution'] ?>
+							</a>
+						</td>
+					</tr>
+					<tr id='display_file_manager'>
+						<td width="50" align="center" class="nav_td">
+							<a href='displayfilemanager.php' target='main'>
+								<img src="<?php echo $syestem_image_path['media_file_broadcast']; ?>" alt="" width="26" height="26"></a>
+						</td>
+						<td width="154" class="nav_td">
+							<a href='displayfilemanager.php' target='main'>
+								<?php echo $index_menu['Document_broadcast'] ?>
+							</a>
+						</td>
+					</tr>
+					<tr id='adm_manager'>
+						<td width="50" align="center" class="nav_td">
+							<a href='admmanager.php' target='main'>
+								<img src="<?php echo $syestem_image_path['collect_broadcast_manager']; ?>" alt="" width="26" height="26"></a>
+						</td>
+						<td width="154" class="nav_td">
+							<a href='admmanager.php' target='main'>
+								<?php echo $index_menu['Collection_management'] ?>
+							</a>
+						</td>
+					</tr>
+					<!--
+					<tr>
+						<td width="50" align="center" class="nav_td">
+							<a href='telBroadManager.php' target='main'>
+								<img src="<?php echo $syestem_image_path['phone_collect_broadcast']; ?>" alt="" width="26" height="26"></a>
+						</td>
+						<td width="154" class="nav_td">
+							<a href='telBroadManager.php' target='main'>
+								<?php echo $index_menu['Telephone collection'] ?>
+							</a>
+						</td>
+					</tr>
+					-->
+					
+					<tr id='terminal_functionplay'>
+						<td width="50" align="center" class="nav_td">
+							<a href='terminalfunctionplay.php' target='main'>
+								<img src="<?php echo $syestem_image_path['Terminal_amplifier'] ?>" alt="" width="26" height="26"></a>
+						</td>
+						<td width="154" class="nav_td">
+							<a  href='terminalfunctionplay.php' target='main'>
+								<?php echo $index_menu['Terminal_Amplifier'] ?>
+							</a>
+						</td>
+					</tr>
+					<tr id='webradio_manager'>
+						<td width="50" align="center" class="nav_td">
+							<a href='WebRadio.php' target='main'>
+								<img src="<?php echo $syestem_image_path['Terminal_amplifier']; ?>" alt="" width="26" height="26"></a>
+						</td>
+						<td width="154" class="nav_td">
+							<a href='WebRadio.php' target='main'>
+								<?php echo $index_menu['Web_Radio'] ?>
+							</a>
+						</td>
+					</tr>
+						<tr id='tts_manager'>
+						<td width="50" align="center" class="nav_td">
+							<a href='displayttsmanager.php' target='main'>
+								<img src="<?php echo $syestem_image_path['media_file_broadcast']; ?>" alt="" width="26" height="26"></a>
+						</td>
+						<td width="154" class="nav_td">
+							<a href='displayttsmanager.php' target='main'>
+								<?php echo $index_menu['tts_Manager'] ?>
+							</a>
+						</td>
+					</tr>
+				
+				<!--
+					<tr>
+						<td width="50" align="center" class="nav_td">
+							<a title="" href='chezhangmangager.php' target='main'>
+								<img src="<?php echo $syestem_image_path['Terminal_amplifier']; ?>" alt="" width="26" height="26"></a>
+						</td>
+						<td width="154" class="nav_td">
+							<a title="" href='chezhangmangager.php' target='main'>
+								<?php echo $index_menu['Stop_Manager'] ?>
+							</a>
+						</td>
+					</tr>
+			
+							-->
+					<tr>
+						<td width="50" align="center" class="nav_td">
+							<a href='Browse_system_task.php' target='main'>
+								<img src="<?php echo $syestem_image_path['search_task_image'] ?>" alt="" width="26" height="26"></a>
+						</td>
+						
+						<td width="154" class="nav_td">
+							<a href='Browse_system_task.php' target='main' title="<?php echo $index_menu['View_system_tasks']; ?>">
+								<?php echo $index_menu['System_tasks']; ?>
+							</a>
+						</td>
+					</tr>
+				
+					<tr id='display_file_manager'>
+						<td width="50" align="center" class="nav_td">
+							<a href='leddisplaymanager.php' target='main'>
+								<img src="<?php echo $syestem_image_path['media_file_broadcast']; ?>" alt="" width="26" height="26"></a>
+						</td>
+						<td width="154" class="nav_td">
+							<a href='leddisplaymanager.php' target='main'>
+								<?php echo $index_menu['Ledplay'] ?>
+							</a>
+						</td>
+					</tr>
+					<!--
+					<tr id='display_file_manager'>
+						<td width="50" align="center" class="nav_td">
+							<a href='videodisplaymanager.php' target='main'>
+								<img src="<?php echo $syestem_image_path['Terminal_amplifier']; ?>" alt="" width="26" height="26"></a>
+						</td>
+						<td width="154" class="nav_td">
+							<a href='videodisplaymanager.php' target='main'>
+								<?php echo $index_menu['video_play'] ?>
+							</a>
+						</td>
+					</tr>
+					-->
+					<tr id='brown_manager'>
+						<td width="50" align="center" class="nav_td">
+							<a   href='displaybrownmanager.php' target='main'>
+								<img src="<?php echo $syestem_image_path['search_task_image'] ?>" alt="" width="26" height="26"></a>
+						</td>
+						<td width="154" class="nav_td">
+							<a  href='displaybrownmanager.php' target='main'>
+								<?php echo $index_menu['View_tasks']; ?>
+								<!--
+								<?php echo $index_menu['Terminal_Amplifier'] ?>
+								-->
+							</a>
+						</td>
+					</tr>
+						<tr id="get_holiday_manager">
+						<td width="50" align="center" class="nav_td">
+							<a  href='displayholidaymanager.php' target='main'>
+								<img src="<?php echo $syestem_image_path['Terminal_amplifier'] ?>" alt="" width="26" height="26"></a>
+						</td>
+						<td width="154" class="nav_td">
+							<a href='displayholidaymanager.php' target='main'>
+								<?php echo $index_menu['holiday_Manager']; ?>
+								<!--
+								<?php echo $index_menu['Terminal_Amplifier'] ?>
+								-->
+							</a>
+						</td>
+					</tr>
+				</tr>
+			<tr id="get_enable_manager">
+				<td width="50" align="center" class="nav_td">
+					<a  href='displayenablemanager.php' target='main'>
+						<img src="<?php echo $syestem_image_path['media_file_broadcast'] ?>" alt="" width="26" height="26"></a>
+				</td>
+				<td width="154" class="nav_td">
+					<a href='displayenablemanager.php' target='main'>
+						<?php echo $index_menu['enable_Manager']; ?>
+					
+					</a>
+				</td>
+			</tr>
+				<!--	<tr id="get_centercontrol_manager">
+						<td width="50" align="center" class="nav_td">
+							<a  title="<?php echo $index_menu['centercontrol']; ?>" href='centerctrmanager.php' target='main'>
+								<img src="<?php echo $syestem_image_path['search_task_image'] ?>" alt="" width="26" height="26"></a>
+						</td>
+						<td width="154" class="nav_td">
+							<a title="<?php echo $index_menu['centercontrol']; ?>" href='centerctrmanager.php' target='main'>
+								<?php echo $index_menu['centercontrol']; ?>
+							</a>
+						</td>
+					</tr> -->
+			  </table>	  
+			</div> 
+			<script language="javascript">
+				var getadmin="<?php echo $_SESSION['admin_id']?>";
+				
+				if(getadmin!="administrator")
+				{
+				document.getElementById("get_holiday_manager").style.display="none";
+				document.getElementById("menu_offline_top").style.display="none";
+				document.getElementById("menu_offline_center").style.display="none";
+				}
+				</script>  
+			</ul>
+		</dd>
+	</dl>
+    </div> 
+    <div id="menu_nav_bottom"></div>
+      <!-- Item 2 End -->
+      <!-- Item 3 Strat -->
+      <div id="menu_nav_top"><img src="skin/images/frame/menu_cl_top.gif"></div>
+        <div id="menu_nav_center"> 
+		<dl class='bitem' >
+		<dt onClick='showHide("items3_1")' style="text-align:left; padding-left:14px; color:#FFF">
+			<span onMouseOver="javasript:this.style.color='#FC0'" onMouseOut="javascript:this.style.color='#fff'" style="color:#FFF">
+				<?php echo $index_menu['zhaoshen_Management'] ?>
+			</span>
+		</dt>
+		<dd style='display:block;background:url(../images/frame/menu_cl_center_bg.gif)' class='sitem' id='items3_1'>
+			<ul class='sitemu'>
+			<table width="160px" border="0" cellpadding="0" cellspacing="0" style="margin-bottom:8px">
+				<tr id='user_manager'>
+					<td width="50" align="center" class="nav_td">
+						<a href='zhaoshendevice.php' target='main'>
+							<img src="<?php echo $syestem_image_path['Terminal_amplifier']; ?>" alt="" width="26" height="26"/></a>
+					</td>
+					<td width="154" nowrap="NOWRAP" class="nav_td">
+						<a href='zhaoshendevice.php' target='main'>
+							<?php echo $index_menu['shenchang_device'] ?>
+						</a>
+					</td>
+				</tr>
+				<tr id='user_manager'>
+					<td width="50" align="center" class="nav_td">
+						<a href='zhaoshenmanager.php' target='main'>
+							<img src="<?php echo $syestem_image_path['Terminal_amplifier']; ?>" alt="" width="26" height="26"/></a>
+					</td>
+					<td width="154" nowrap="NOWRAP" class="nav_td">
+						<a href='zhaoshenmanager.php' target='main'>
+							<?php echo $index_menu['shenchang_group'] ?>
+						</a>
+					</td>
+				</tr>
+				<tr id='usergroup_manager'>
+					<td width="50" align="center" class="nav_td">
+							<a href='zhaoshentaskmanager.php' target='main'>
+								<img src="<?php echo $syestem_image_path['group_manager']; ?>" alt="" width="26" height="26"></a>
+					</td>
+					<td width="154"  class="nav_td">
+						<a href='zhaoshentaskmanager.php' target='main'><?php echo $index_menu['shenchang_task'] ?></a> 
+					</td>
+				</tr>
+			</table>                      
+			</ul>
+		</dd>
+	</dl>
+     </div> 
+		 <div id="menu_nav_bottom"></div>
+		 <!-- Item 2 End -->
+		 <!-- Item 3 Strat -->
+		 <div id="menu_nav_top"><img src="skin/images/frame/menu_cl_top.gif"></div>
+			 <div id="menu_nav_center"> 
+	 <dl class='bitem' >
+	 <dt onClick='showHide("items3_1")' style="text-align:left; padding-left:14px; color:#FFF">
+		 <span onMouseOver="javasript:this.style.color='#FC0'" onMouseOut="javascript:this.style.color='#fff'" style="color:#FFF">
+			 <?php echo $index_menu['ai_Management'] ?>
+		 </span>
+	 </dt>
+	 <dd style='display:block;background:url(../images/frame/menu_cl_center_bg.gif)' class='sitem' id='items3_1'>
+		 <ul class='sitemu'>
+		 <table width="160px" border="0" cellpadding="0" cellspacing="0" style="margin-bottom:8px">
+			 <tr id='user_manager'>
+				 <td width="50" align="center" class="nav_td">
+					 <a href='aimanager.php' target='main'>
+						 <img src="<?php echo $syestem_image_path['Terminal_amplifier']; ?>" alt="" width="26" height="26"/></a>
+				 </td>
+				 <td width="154" nowrap="NOWRAP" class="nav_td">
+					 <a href='aimanager.php' target='main'>
+						 <?php echo $index_menu['ai_people'] ?>
+					 </a>
+				 </td>
+			 </tr>
+			 <tr id='user_manager'>
+				 <td width="50" align="center" class="nav_td">
+					 <a href='ai_peopleplay.php' target='main'>
+						 <img src="<?php echo $syestem_image_path['Terminal_amplifier']; ?>" alt="" width="26" height="26"/></a>
+				 </td>
+				 <td width="154" nowrap="NOWRAP" class="nav_td">
+					 <a href='ai_peopleplay.php' target='main'>
+						 <?php echo $index_menu['ai_peopleplay'] ?>
+					 </a>
+				 </td>
+			 </tr>
+		 </table>                      
+		 </ul>
+	 </dd>
+ </dl>
+		</div> 
+	    <div id="menu_nav_bottom"></div>
+      <!-- Item 2 End -->
+      <!-- Item 3 Strat -->
+      <div id="menu_nav_top"><img src="skin/images/frame/menu_cl_top.gif"></div>
+        <div id="menu_nav_center"> 
+		<dl class='bitem' >
+		<dt onClick='showHide("items8_1")' style="text-align:left; padding-left:14px; color:#FFF">
+			<span onMouseOver="javasript:this.style.color='#FC0'" onMouseOut="javascript:this.style.color='#fff'" style="color:#FFF">
+				<?php echo $index_menu['User_Management'] ?>
+			</span>
+		</dt>
+		<dd style='display:block;background:url(../images/frame/menu_cl_center_bg.gif)' class='sitem' id='items8_1'>
+			<ul class='sitemu'>
+			<table width="160px" border="0" cellpadding="0" cellspacing="0" style="margin-bottom:8px">
+				<tr id='user_manager'>
+					<td width="50" align="center" class="nav_td">
+						<a href='usermanager.php' target='main'>
+							<img src="<?php echo $syestem_image_path['user_manager']; ?>" alt="" width="26" height="26"/></a>
+					</td>
+					<td width="154" nowrap="NOWRAP" class="nav_td">
+						<a href='usermanager.php' target='main'>
+							<?php echo $index_menu['Managing_Users'] ?>
+						</a>
+					</td>
+				</tr>
+				<tr id='usergroup_manager'>
+					<td width="50" align="center" class="nav_td">
+							<a href='usergroupmanager.php' target='main'>
+								<img src="<?php echo $syestem_image_path['group_manager']; ?>" alt="" width="26" height="26"></a>
+					</td>
+					<td width="154"  class="nav_td">
+						<a href='usergroupmanager.php' target='main'><?php echo $index_menu['Group_Management'] ?></a> 
+					</td>
+				</tr>
+				<tr id='upgrade_manager'>
+					<td width="50" align="center" class="nav_td">
+							<a href='terminalupgrade.php' target='main'>
+								<img src="<?php echo $syestem_image_path['alarm_map']; ?>" alt="" width="26" height="26"></a>
+					</td>
+					<td width="154"  class="nav_td">
+						<a href='terminalupgrade.php' target='main'><?php echo $index_menu['terminalupgrade'] ?></a> 
+					</td>
+				</tr>
+	
+			</table>                      
+			</ul>
+		</dd>
+	</dl>
+     </div> 
+    <div id="menu_nav_bottom"></div>
+      <!-- Item 3 End -->
+      <!-- Item 4 Strat -->
+      <div id="menu_nav_top"><img src="skin/images/frame/menu_cl_top.gif"></div>
+      <div id="menu_nav_center"> 
+		<dl class='bitem'>
+		<dt onClick='showHide("items5_1")' style="text-align:left; padding-left:14px; color:#FFF">
+			<span onMouseOver="javasript:this.style.color='#FC0'" onMouseOut="javascript:this.style.color='#fff'" style="color:#FFF">
+				<?php echo $index_menu['Log_Management'] ?>
+			</span>
+		</dt>
+		<dd style='display:block; background:url(../images/frame/menu_cl_center_bg.gif)' class='sitem' id='items5_1'>
+			<ul class='sitemu'>
+				<table width="160px" border="0" cellpadding="0" cellspacing="0" style="margin-bottom:8px">
+					<tr id='log_manager'>
+						<td width="50" align="center"  class="nav_td">
+							<a href='logmanager.php' target='main'>
+								<img src="<?php echo $syestem_image_path['lookup_log']; ?>" alt="" width="26" height="26"></a>
+						</td>
+						<td width="154" nowrap="nowrap" class="nav_td">
+							<a href='logmanager.php' target='main'>
+								<?php echo $index_menu['View_Log']; ?>
+							</a>		  
+						</td>
+					</tr>
+					<tr id='tasklog_manager'>
+						<td width="50" align="center"  class="nav_td">
+							<a href='tasklogmanager.php' target='main'>
+								<img src="<?php echo $syestem_image_path['lookup_log']; ?>" alt="" width="26" height="26"></a>
+						</td>
+						<td width="154" nowrap="nowrap" class="nav_td">
+							<a href='tasklogmanager.php' target='main' charset="gb2312">
+								<?php echo $index_menu['tasklog']; ?>
+							</a>		  
+						</td>
+					</tr>
+				
+					<tr id='regist_manager'>
+						<td width="50" align="center"  class="nav_td">
+							<a href='regist_server.php' target='main'>
+								<img src="<?php echo $syestem_image_path['regist_task_image']; ?>" alt="" width="26" height="26"></a>
+						</td>
+						<td width="154" nowrap="nowrap" class="nav_td">
+							<a href='regist_server.php' target='main'>
+								<?php echo $index_menu['Regist_add_tasks'];?>
+							</a>		  
+						</td>
+					</tr>
+
+			  </table>                                   
+			</ul>
+		</dd>
+	</dl>
+     </div> 
+    <div id="menu_nav_bottom"></div>
+      <!-- Item 4 End -->
+   </div>
+   	<script language="javascript">
+		var registerflag="<?php echo $_SESSION['registerflag']?>";
+		if(registerflag==1||registerflag==2)
+		{
+			
+		}
+		else
+		{
+			document.getElementById("set_backup").style.display="none";
+			document.getElementById("terminal_area").style.display="none";
+			document.getElementById("dir_area").style.display="none";
+			document.getElementById("task_mapping").style.display="none";
+			document.getElementById("keytask_mapping").style.display="none";
+			document.getElementById("camer_alarm").style.display="none";
+			document.getElementById("alarm_media").style.display="none";
+		//	document.getElementById("offline_music").style.display="none";
+		//	document.getElementById("set_offline_music").style.display="none";
+		//	document.getElementById("set_offline").style.display="none";
+			document.getElementById("webradio_manager").style.display="none";
+			document.getElementById("tts_manager").style.display="none";
+			document.getElementById("get_holiday_manager").style.display="none";
+			document.getElementById("menu_offline_top").style.display="none";
+			document.getElementById("menu_offline_center").style.display="none";
+			document.getElementById("usergroup_manager").style.display="none";	
+		}
+		
+		
+		
+	</script>
+    </td>
+  </tr>
+  <tr><td><img src="skin/images/frame/menu_bottom1.gif"></td></tr>
+</table>
+</body>
+</html>

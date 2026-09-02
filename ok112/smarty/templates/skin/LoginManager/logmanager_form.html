@@ -1,0 +1,83 @@
+<form name="form2">
+    <td><table width="98%" border="0" cellpadding="2" cellspacing="1" bgcolor="#D1DDAA" align="center" style="margin-top:8px">
+    <tr align='center' bgcolor=""#E7E7E7"" height="24" >   
+    <td width="5%"><strong>选择</strong></td>                 	
+		<td width="20%"><strong>用户名</strong></td>    
+		<td width="20%"><strong>更改操作</strong></td>          
+		<td width="20%"><strong>IP地址</strong></td>         
+		<td width="20%"><strong>修改时间</strong></td>   	
+		<td width="15%"><strong>操作</strong></td>   	
+    </tr>         
+    <{section name=loop loop=$info}>        
+      <tr align='center' bgcolor="#FFFFFF" onMouseMove="javascript:this.bgColor='#FCFDEE';" onMouseOut="javascript:this.bgColor='#FFFFFF';" height="22" >                	
+      	<td width="5%"><input name="id" type="checkbox" id="id" value="<{$info[loop].id}>" class="np"></td>         
+				<td width="20%">	<strong style="color:#009900"><{$info[loop].user}></strong> </td>
+				<td width="20%">	<strong style="color:#009900"><{$info[loop].operate}></strong> </td>
+				<td width="20%">	<strong style="color:#009900"><{$info[loop].ip}></strong> </td>
+				<td width="20%">	<strong style="color:#009900"><{$info[loop].time}></strong> </td>
+				
+				<{if $admin_id =="administrator"}>              
+				<td width="15%">
+				<strong style="color:#009900"><a href=do.php?act=filedel_msg&id=<{$info[loop].id}>\">删除</a>
+				</strong></td>
+				
+				<{else}>
+				<td width="15%">
+				<strong style="color:#009900">	</strong>
+				</td>
+				<{/if}>          
+			</tr>         
+    <{/section}>
+    <tr bgcolor="#FAFAF1">
+		<td height="28" colspan="10">
+			&nbsp;
+			<a href="javascript:selAll()" class="coolbg">全选</a>&nbsp;
+			<a href="javascript:noSelAll()" class="coolbg">取消</a>&nbsp;
+			<a href="javascript:delterminal()" class="coolbg">删除</a>		
+		</td>
+	  </tr>
+    </table></td>
+  </tr>
+  </form>
+  <tr>
+    <td><div class="yahoo2" align="center"><{$pagestr}></div></td>
+  </tr>
+  
+  <!--  搜索表单  -->
+<form name='form3' action='' method='get'>
+<input type='hidden' name='dopost' value='' />
+<table width='98%'  border='0' cellpadding='1' cellspacing='1' bgcolor='#CBD8AC' align="center" style="margin-top:8px">
+  <tr bgcolor='#EEF4EA'>
+    <td background='skin/images/wbg.gif' align='center'>
+      <table border='0' cellpadding='0' cellspacing='0'>
+        <tr>
+          <td width='90' align='center'>搜索条件：</td>
+          <td width='160'>
+          <select name='cid' style='width:150'>
+          <option value='0'>选择类型...</option>
+          	<option value='1'>名称</option>
+          </select>
+        </td>
+        <td width='70'>
+          关键字：
+        </td>
+        <td width='160'>
+          	<input type='text' name='keyword' value='' style='width:150px' />
+        </td>
+        <td width='110'>
+    		<select name='orderby' style='width:80px'>
+            <option value='id'>排序...</option>
+            <option value='pubdate'>发布时间</option>
+      	</select>
+        </td>
+        <td>
+          <input name="imageField" type="image" src="skin/images/frame/search.gif" width="45" height="20" border="0" class="np" />
+        </td>
+       </tr>
+      </table>
+    </td>
+  </tr>
+</table>
+</form>
+
+

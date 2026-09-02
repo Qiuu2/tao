@@ -1,0 +1,106 @@
+<html>
+<head>
+<META http-equiv=Content-Type content="text/html; charset=utf-8">
+<title>SetTerminalMapping</title>
+<style type="text/css">
+
+.button{BORDER-RIGHT: #000000 1px solid; BORDER-TOP: #000000 1px solid; COLOR: #ffffff; FONT-SIZE: 9px; BACKGROUND: #1E97D2 url(images/input.gif); BORDER-LEFT: #000000 1px solid; BORDER-BOTTOM: #000000 1px solid; FONT-FAMILY: "Verdana", "TAHOMA", "MS Shell Dlg", "sans-serif", "宋体"
+}
+.bjys{
+	color: #F4F4F4;
+	background-color: #F4F4F4;
+}
+.scrolltable { border:1px solid #cbcbcb; overflow:auto; height:99%; width: 99%; align:center ;margin-bottom:2px ;}
+
+</style>
+
+<script language="javascript">
+var get_i=0;
+function isNumber( s )
+{
+    var regu = "^[0-9]+$";
+    var re = new RegExp(regu);
+    if (s.search(re) != -1) 
+    {
+        return true;
+    }
+    else 
+    {
+        return false;
+    }
+}
+function trim(str)
+{   
+    return str.replace(/(^\s*)|(\s*$)/ig, "");   
+}
+function isChinaOrNumbOrLett( s )
+{
+	var regu = "^[0-9a-zA-Z\u4e00-\u9fa5]+$"; 
+	var re = new RegExp(regu); 
+	if (re.test(s)) 
+	{ 
+		return true; 
+	}
+	else
+	{
+		return false; 
+	} 
+}
+function isNull( str )
+{ 
+ if ( str == "" )
+ return true; 
+ var regu = "^[ ]+$"; 
+ var re = new RegExp(regu); 
+ return re.test(str); 
+} 
+//验证表单 
+function checkform()
+{
+	
+	return true;
+}
+
+//验证表单 
+function checkform()
+{
+	
+	return true;
+}
+
+
+</script>
+</head>
+<body>
+<form name="setkeyform" action="upload_https.php" method="post" onSubmit="return checkform();" enctype="multipart/form-data" class="terminal_form_to_body">
+<table width="1010px" align="center" border="0" cellpadding="0px" cellspacing="0"  class="terminal_table_border">
+	<tr>
+		<td>
+			<table align="center" border="0" cellpadding="0px" cellspacing="0">
+				<tr>
+					<td>
+						<img src="<{$set_shotcut.terminalupgrade}>"/>
+						<input type="hidden"  id="terminalnum" name="terminalnum" value=""/>
+						<input type="hidden"  id="terminalids" name="terminalids" value=""/>
+					</td>
+				</tr>
+			</table>
+		</td>
+	</tr>
+	<tr>
+		<td>
+			<table align="center" border="0" cellpadding="5px" cellspacing="0" style="font-size:12px;font-family:Georgia, 'Times New Roman', Times, serif, '宋体'">
+				<tr height="70px">
+					<td width="180" align="right" ><{$set_shotcut.upgrade_file|capitalize}>:</td>
+					<td width="420" align="left">
+					<input type="file" name="file" id="file" /><input type="submit" name="<{$set_shotcut.upgrade|capitalize}>" value="<{$set_shotcut.upgrade|capitalize}>" />
+				  </td>
+				</tr>
+				</table>
+		</td>
+	</tr>
+</table>
+</form>
+<{include file="language/`$language`_foot.php"}>
+</body>
+</html>

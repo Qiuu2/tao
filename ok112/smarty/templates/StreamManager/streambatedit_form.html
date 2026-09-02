@@ -1,0 +1,68 @@
+<form name="frmSearch2" method="post" action="do.php?act=streambatedit_msg&id=<{$streamid}>" onsubmit="return checkform();" classs= "terminal_form_to_body">
+<table width="600px" border="0" align="center" cellpadding="0" cellspacing="0" class="terminal_table_border">
+	<tr>
+	<td>
+		<table width="100%" border="0" align="center" cellpadding="0" cellspacing="0">
+			<tr>
+				<td>
+			
+					<img src="<{$stream_modify.create_stream_image}>"/>
+				</td>
+			</tr>
+		</table>
+	</td>
+	</tr>
+	
+	<tr>
+	<td>
+		<table width="100%" border="0" align="center" cellpadding="5" cellspacing="0">
+			<tr>
+				<td width="150" align="right" nowrap="nowrap"><{$stream_modify.Zone_Name|capitalize}></td>
+				<td width="450">
+					<input title="<{$stream_modify.Create_Zonetask|capitalize}>" type="text" value="<{$streaminfo.streamname}>" name="streamname" maxlength="8" id="streamname"  class="terminal_input_font"/>
+					<span id="streamname_text" class="terminal_star">*</span>
+				</td>
+			</tr>
+			
+			<tr>
+				<td width="150" align="right" nowrap="nowrap"><{$stream_modify.Description|capitalize}></td>
+				<td width="450">
+					<input title="<{$stream_create.Create_Zonetask|capitalize}>" type="text" value="<{$streaminfo.info}>" name="description" maxlength="8" id="description"  class="terminal_input_font"/>
+				</td>
+			</tr>
+			
+			<tr>
+				<td width="150" align="right" valign="top" nowrap="nowrap"><{$stream_modify.Select_Terminal|capitalize}></td>
+				<td width="450">
+					<div id="terminaltree" name="terminaltree" style="width:80%; height:200px;background-color:#f5f5f5;border:1px solid Silver;"/>
+					<input type="hidden"  id="selectedterminal" name="selectedterminal" value=""/>
+					<!--在此保存媒体列表的值-->
+					<script language="javascript">
+						var treedata = "<{$termianllist}>";
+						tree3=new dhtmlXTreeObject("terminaltree","100%","100%",0);
+						tree3.setSkin('dhx_skyblue');
+						tree3.setImagePath("smarty/templates/BellManager/codebase/csh_bluebooks/");
+						tree3.enableCheckBoxes(1);
+						tree3.enableThreeStateCheckboxes(true);
+						tree3.loadXMLString(treedata);
+					</script>
+					<script>
+						<{foreach from=$terminal_id item=id}>
+							tree3.setCheck("<{$id}>",true);
+						<{/foreach}>
+					</script>
+				</td>
+			</tr>
+			<tr>
+				<td></td>
+				<td>
+					<input type="submit" name="submit" id="submit" value="<{$stream_modify.Sumbit|capitalize}>" class="terminal_button"/>
+					&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+					<input name="reset" type="reset" id="reset" value="<{$stream_modify.Cancel|capitalize}>" class="terminal_button"/>
+				</td>
+			</tr>
+			</table> 
+		</td>
+	</tr>
+</table>
+</form> 

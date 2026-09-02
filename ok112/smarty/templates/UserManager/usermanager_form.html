@@ -1,0 +1,305 @@
+
+<form name="form2" class="terminal_form_to_body">
+<table width="98%" border="0" cellpadding="2" cellspacing="1" align="center">
+	<tr align='center' class="terminal_table_row_bg">   
+		<td width="8%"><{$user_manager.Selection|capitalize}></td>                 	
+		<td width="15%"><{$user_manager.User_Name|capitalize}></td>  
+		<td width="10%"><{$user_manager.user_state|capitalize}></td>      
+		<td width="10%"><{$user_manager.User_Group}></td> 
+		<td width="15%"><{$user_manager.Description}></td>  
+		<td width="10%"><{$user_manager.userterminal}></td>   
+		<td width="10%"><{$user_manager.erweima}></td>     
+		       	
+	</tr> 
+	<tr></tr>
+<{if $info|@count neq 0}>  
+	<{section name=loop loop=$info}>   
+		<tr align='center' >          	
+			<td>
+				<{if $is_right == 1 || $admin_id == "administrator"}>
+					<input name="id" type="checkbox" id="id" value="<{$info[loop].id}>" class="np">	
+				<{else}>
+					<{$smarty.section.loop.index+1+$start}>
+				<{/if}>	 
+			</td>
+			<td nowrap="nowrap">
+				<{$info[loop].username}> 
+			</td> 
+			<td nowrap="nowrap">
+				<{if $info[loop].enable==1}>
+				<span style="color:#ff0000;">
+					<{$user_manager.enable|capitalize}>●</span>
+				<{else}>
+					<{$user_manager.disable|capitalize}>
+				<{/if}>	 
+			</td> 
+			<td nowrap="nowrap"> 
+				<{$info[loop].groupname}> 
+			</td> 	
+			<td nowrap="nowrap"> 
+				<{$info[loop].info}> 
+			</td> 
+			<td nowrap="nowrap">
+			<a name="link_view" id="link_view" href="view_user_terminal.php?id=<{$info[loop].id}>">
+				<{$user_manager.browseterminal|capitalize}>
+			</a>
+		</td> 	
+		<td nowrap="nowrap">
+			<a name="erweima" id="erweima" href="#"   onmousemove="mouse_click_position(event,<{$info[loop].id}>)" onmouseout="mouse_out(event)">
+				<{$user_manager.weima|capitalize}>
+			</a>
+		</td> 	        		
+		</tr>        
+	<{/section}>
+<{else}>
+<tr align='center' >
+<td colspan="4"><strong><{$Revise.No_data}></strong></td>
+</tr>
+<{/if}>
+	<tr style="background-color: #FFFFFF;">
+		<td colspan="4">
+			<a title="<{$user_manager.Select_All_user}>" href="javascript:selAll(0)" name="all" id="all">
+				<{$user_manager.Select_All}>
+			</a>&nbsp;
+			
+			<a title="<{$user_manager.Cancel_all_user}>" href="javascript:noSelAll(0)" name="cancel" id="cancel">
+				<{$user_manager.Cancel}>
+			</a>&nbsp;
+			<a title="<{$user_manager.Enable_User}>" href="javascript:EnableUser()"  name="enableuser" id="enableuser">
+				<{$user_manager.Enable_User}>
+			</a>&nbsp;
+			<a title="<{$user_manager.Disable_User}>" href="javascript:DisableUser()" name="disableuser" id="disableuser">
+				<{$user_manager.Disable_User}>
+			</a>&nbsp;
+			
+			<a title="<{$user_manager.Add_user}>" href='useradd.php' target='main' name="add" id="add">
+				<{$user_manager.Add_User}>
+			</a>&nbsp;
+			
+			<a title="<{$user_manager.Update_user}>" href="javascript:usermodify()" name="modify" id="modify" target='main'>
+				<{$user_manager.Modify_User}>
+			</a>&nbsp;
+			
+			<a title="<{$user_manager.Delete_user}>" href="javascript:delUser()" name="delete" id="delete">
+				<{$user_manager.Delete_User}>
+			</a>&nbsp;
+			
+			<!--
+			<a title="<{$user_manager.user_terminal}>" href="javascript:view_user_terminal()" name="userterminal" id="userterminal">
+				<{$user_manager.User_Terminal}>
+			</a>
+			-->
+		<script language="javascript">
+	var get_user_right = "<{$is_right}>";
+
+	if(get_user_right == 1)
+	{
+		//什么也不做
+	}
+	else
+	{
+		var get_a_objects = document.getElementsByTagName("a");
+		for(var i=0; i<get_a_objects.length; i++)
+		{
+			get_a_objects[i].href = "javascript:void(0);";
+			get_a_objects[i].onclick = null;
+			get_a_objects[i].style.color="#787878";
+		//	get_a_objects[i].disabled = true;
+		}
+	}
+	
+	
+
+		
+</script>
+		</td>
+	</tr>
+</table>
+
+<div class="link_style" style="margin-top:10px; margin-bottom:15px; margin-right:auto; margin-left:auto;" align="center"><{$pagestr}></div>
+
+<!--  搜索表单  -->
+<form name='form3' action='usermanager.php' method='get'>
+<input type='hidden' name='dopost' value='' />
+<table class="middle" width='98%'  border='0' cellpadding='1' cellspacing='1'  align="center">
+  <tr>
+    <td align='center'>
+		<table border='0' cellpadding='0' cellspacing='0'>
+			<tr>
+				<td width='90' align='center'><{$Searchform.Search_conditions}></td>
+				<td width='160'>
+					<select name='searchkey' id="searchkey">
+					<option  value="" selected="selected"><{$Searchform.Select_type}></option>
+					<option value="username"><{$Searchform.User_Name}></option>
+					</select>
+				</td>
+				
+				<td width='70'><{$Searchform.Keyword}></td>
+				
+				<td width='160'>
+					<input name='searchvalue' type='text' id="searchvalue" style='width:150px' value='' />        
+				</td>
+				
+				<td width='110'>
+					<select name='searchsequence' id="searchsequence">
+					<option value="" selected="selected"><{$Searchform.Sort}></option>
+					<option value="id"><{$Searchform.Serial_number}></option>
+					</select>        
+				</td>
+				
+				<td>
+				<input name="imageField" type="image" src="<{$user_manager.search_image}>" style="width:45px; height:20px; border-bottom-width:0px;"/>
+				</td>
+			</tr>
+		</table>
+    </td>
+  </tr>
+</table>
+</form>
+<div id="qrcod"></div>
+<div id="er_weima" class="r-displayVolume">
+ <iframe style="position:absolute;width:200px;height:200px;left:0px; top:0px;filter:alpha(opacity=0);-moz-opacity:0; border:0;z-index:-1"></iframe>
+<div style="position:absolute;border:0;width:200; left:0px; top:0px; height:200px;z-index:100">
+
+	<table border="0" cellpadding="10" cellspacing="0" width="200" height="200" style="background-color:#EEFFEE">
+		<tr>
+			<td nowrap="nowrap" align="center">
+			<div id="qrcodes"></div>
+
+			</td>
+			</tr>
+		
+		
+	</table>
+</div>
+</div>
+
+<script language="javascript">
+var registerflag="<{$registerflag}>";
+if(registerflag==1||registerflag==2)
+{
+	
+}
+else
+{
+document.getElementById("add").style.display="none";	
+	document.getElementById("delete").style.display="none";	
+
+}
+
+var xmlhttps=null; 
+
+//new QRCode(document.getElementById("qrcode"), "http://www.runoob.com");  // 设置要生成二维码的链接
+
+
+var qrcode = new QRCode(document.getElementById("qrcodes"), {
+	width : 190,
+	height : 190
+});
+
+function makeCode (elText) {		
+	
+	qrcode.makeCode(elText);
+}
+
+
+	function get_mouse_coordinates(event)
+	{
+	   var eve = event||window.event;
+	   if(eve.pageX)
+	   {
+	
+		return {x:eve.pageX,y:eve.pageY};
+	   }
+	   else
+	   {
+	
+		return {
+					x:eve.clientX+document.body.scrollLeft - document.body.clientLeft,
+					y:eve.clientY+document.body.scrollTop - document.body.clientTop
+				};
+	   }
+	}
+	
+	function get_div_obj(str_id)
+	{
+		return document.getElementById(str_id);   
+	}
+
+function trim(str)
+{   
+    return str.replace(/(^\s*)|(\s*$)/ig, "");   
+}
+
+function createXMLHttpRequest()
+{ 
+	if(window.ActiveXObject)
+	{ 
+		xmlhttps = new ActiveXObject("microsoft.XMLHTTP"); 
+	} 
+	else if(window.XMLHttpRequest)
+	{ 
+		xmlhttps = new XMLHttpRequest(); 
+	}
+	else
+	{
+		alert('Not Support AJAX');
+	}
+} 
+
+
+function ajax_set_erweima(url)
+{
+   createXMLHttpRequest();
+   xmlhttps.open( "get",url, true );
+   xmlhttps.onreadystatechange = function()
+   {
+	
+      if( xmlhttps.readyState == 4 )
+      {
+		
+         if( xmlhttps.status == 200 )
+         {
+		// document.getElementById("qrcod").innerText = trim(xmlhttps.responseText);
+				
+			qrcode.clear(); // 清除代码
+			makeCode(trim(xmlhttps.responseText));	
+		}
+      }
+   }
+    xmlhttps.setRequestHeader( "If-Modified-Since", "0");
+	xmlhttps.send(null);
+}
+	
+	function mouse_click_position(event,id)
+	{
+		if(document.all)
+		{
+			window.event.cancelBubble = true;   
+		}
+		else
+		{
+			event.stopPropagation();
+		}
+		var mouse_obj_xy = get_mouse_coordinates(event);
+		get_div_obj('er_weima').style.left = mouse_obj_xy.x-250+'px';
+		get_div_obj('er_weima').style.top = mouse_obj_xy.y+'px';
+		get_div_obj('er_weima').style.display = "block";
+		var url = "set_er_weima.php?id="+id+"";
+		ajax_set_erweima(url);
+		
+	}
+	
+	function mouse_out(event)
+	{
+		if(document.getElementById('er_weima').style.display == "block")
+		{
+			document.getElementById('er_weima').style.display = "none";
+		}
+	
+	}
+
+
+
+
+</script>

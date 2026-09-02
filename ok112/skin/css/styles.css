@@ -1,0 +1,39 @@
+.show{
+ width:1900px;
+ height:800px;
+
+}
+.left{
+ width:252px;
+ height:800px;
+ float:left;
+
+}
+.right{
+ width:1645px;
+ height:800px;
+ float:left;
+
+
+}
+
+.replay-date2 {
+    height: 26px;
+    margin-top: 6px;
+    margin-left: 3px;
+}
+
+.replay-date2 input {
+    border: 1px solid #bbb;
+    height: 18px;
+    width: 102px;
+    _width: 110px;
+    _padding-top: 6px;
+}
+
+.coco{
+	height: 26px;
+    margin-top: 6px;
+    margin-left: 5px;
+
+}

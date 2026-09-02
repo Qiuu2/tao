@@ -1,0 +1,1547 @@
+<html>
+<head>
+<META http-equiv=Content-Type content="text/html; charset=utf-8">
+<title>modifyTerminalFunctionPlay</title>
+
+<link href="skin/css/main_page_style.css" rel="stylesheet" type="text/css" />
+
+<!--时间代码开始-->
+<style>
+/*想要改输入日历控件的样子就改下面的CSS样式就可以了*/
+.header
+{
+	font-weight: bold;
+	font-weight: bold;
+	color: #000000;
+	background:#C2DEED;
+	height: 25px;
+	padding-left: 10px;
+	font-family: Arial, Tahoma;
+	font-size: 12px;
+}
+.header td
+{
+   padding-left: 10px;
+}
+.header a
+{
+   color: #154BA0;
+}
+.header input
+{
+   background:none;
+   vertical-align: middle;
+   height: 16px;
+}
+.category
+{
+   font: 12px Arial, Tahoma;
+   font: 11px Arial, Tahoma;
+   color: #92A05A;
+   height:20px;
+   background-color: #FFFFD9;
+}
+.category td
+{
+   border-bottom: 1px solid #DEDEB8;
+}
+.expire, .expire a:link, .expire a:visited
+{
+   color: #999999;
+}
+.default, .default a:link, .default a:visited
+{
+   color: #000000;
+}
+.checked, .checked a:link, .checked a:visited
+{
+   color: #FF0000;
+}
+.today, .today a:link, .today a:visited
+{
+   color: #00BB00;
+}
+#calendar_year
+{
+   display: none;
+   line-height: 130%;
+   background: #FFFFFF;
+   position: absolute;
+   z-index: 10;
+}
+#calendar_year .col
+{
+   float: left;
+   background: #FFFFFF;
+   margin-left: 1px;
+   border: 1px solid #86B9D6;
+   padding: 4px;
+}
+#calendar_month
+{
+   display: none;
+   background: #FFFFFF;
+   line-height: 130%;
+   border: 1px solid #86B9D6;
+   padding: 4px;
+   position: absolute;
+   z-index: 11;
+}
+.tableborder
+{
+   background: white;
+   border: 1px solid #86B9D6;
+}
+#year, #month
+{
+   padding-right:10px;
+   background:url(onbottom.gif) no-repeat center right;
+}/*图片路径可以改成自己的*/
+/*Date*/
+</style>
+<script>
+//这段脚本如果你的页面里有，就可以去掉它们了
+var ie =navigator.appName=="Microsoft Internet Explorer"?true:false;
+function $(objID)
+{
+	return document.getElementById(objID);
+}
+</script>
+<!--添加文件列表开始-->
+<link href="smarty/templates/BellManager/codebase/dhtmlxtree.css" rel="stylesheet" type="text/css">
+<script language="JavaScript" src="smarty/templates/BellManager/codebase/dhtmlxtree.js" type"text/JavaScript"></script>	
+<script language="JavaScript" src="smarty/templates/BellManager/codebase/dhtmlxcommon.js" type"text/JavaScript"></script>
+	
+	<script src="skin/js/frame/analysis_tree_terminal_group_string.js"></script>
+	<script  src="smarty/templates/ajax/get_terminaltype.js" ></script>
+<!--修改脚本2010/5/6-->
+<SCRIPT language=javascript> 
+function isNull( str )
+{
+	if ( str == "" || str==null) 
+	return true;
+	var regu = "^[ ]+$";
+	var re = new RegExp(regu);
+	return re.test(str);
+}
+function isLett(s)
+{
+	var regu = "^[0-9a-zA-Z]+$"; 
+	var re = new RegExp(regu); 
+	if (re.test(s)) 
+	{ 
+		return true; 
+	}
+	else
+	{ 
+		return false; 
+	} 
+} 
+function isChinaOrNumbOrLett(s)
+{ 
+	var regu = "^[0-9a-zA-Z\u4e00-\u9fa5]+$"; 
+	var re = new RegExp(regu); 
+	if (re.test(s)) 
+	{ 
+		return true; 
+	}
+	else
+	{ 
+		return false; 
+	} 
+} 
+
+function isNumber( s )
+{ 
+	var regu = "^[0-9]+$"; 
+	var re = new RegExp(regu); 
+	if (s.search(re) != -1) 
+	{ 
+		return true; 
+	}
+	else 
+	{ 
+		return false; 
+	} 
+} 
+
+function trim(str)
+{
+   str=str.replace(/(^\s*)|(\s*$)/g,""); 
+   return str;
+}
+//验证表单 
+function checkform()
+{
+/*
+var taskcommands = document.getElementById('systemcommand');
+
+	if(taskcommands.options[taskcommands.selectedIndex].value==1)
+	{
+	document.getElementById('task_text').innerHTML="<font class='terminal_star'><{$terminal_function_modify.select_broadcast_task|capitalize}></font>";
+		document.getElementById('systemcommand').focus();
+		return false;
+	
+	}
+	else if(taskcommands.options[taskcommands.selectedIndex].value==12)
+{
+		if(!isLett(document.getElementsByName('taskcommand')[1].value))
+		{
+			document.getElementById('taskcommandse').innerHTML="<font style='color:red;font-size:180%;'>*</font>";
+			document.getElementById('taskcommandse').focus();
+			return false;
+		
+		}
+}
+else if(taskcommands.options[taskcommands.selectedIndex].value==13)
+{
+
+	if(!isLett(document.getElementsByName('parameters')[1].value))
+		{
+			document.getElementById('parametersse').innerHTML="<font style='color:red;font-size:180%;'>*</font>";
+			document.getElementById('parametersse').focus();
+			return false;
+		
+		}
+}
+*/
+	//验证任务名
+	if(isNull(document.getElementById('taskname').value))
+	{
+		document.getElementById('taskNameText').innerHTML="<font class='terminal_star'><{$terminal_function_modify.enter_task_name|capitalize}></font>";
+		document.getElementById('taskname').focus();
+		return false;
+	}
+	else
+	{
+		if(!isChinaOrNumbOrLett(document.getElementById('taskname').value))
+		{
+			document.getElementById('taskNameText').innerHTML="<font class='terminal_star'><{$terminal_function_modify.letter_number_Chinese|capitalize}></font>";
+			document.getElementById('taskname').select();
+			return false;
+		}
+	}
+//	document.getElementById('taskNameText').innerHTML="<font class='terminal_star'></font>";
+
+	/*
+	//验证播放时长
+	document.getElementById("timelength").value=(document.getElementById("lenghtHour").value)*60*60+(document.getElementById("lenghtMin").value)*60+(document.getElementById("lenghtSenc").value)*1;
+	if(document.getElementById('timelength').value==0)
+	{
+		document.getElementById('timelength_s').innerHTML="<font class='terminal_star'><{$terminal_function_modify.not_zero|capitalize}></font>";
+		document.getElementById('lenghtHour').focus();
+		return false;
+	}
+	document.getElementById('timelength_s').innerHTML="<font class='terminal_star'></font>";
+	*/
+	//获取执行时间
+	document.getElementById("playtime").value=document.getElementById("starthour").value+":"+document.getElementById("startmin").value+":"+document.getElementById("startsenc").value;
+
+	//验证开始时间和结束时间
+	if(document.getElementById('startdate').value>document.getElementById('enddate').value)
+	{
+		document.getElementById('timedatecompare').innerHTML="<font class='terminal_star'><{$terminal_function_modify.smaller_than_end_date|capitalize}></font>";
+		document.getElementById('enddate').select();
+		return false;
+	}
+	document.getElementById('timedatecompare').innerHTML="<font class='terminal_star'></font>";
+	//验证执行模式
+	var obj = document.getElementById('exemodel')
+	var strnum="";
+	if(obj.options[obj.selectedIndex].value==2)
+	{
+		for(var i=0;i<document.getElementsByName('week').length;i++)
+		{
+			if(document.getElementsByName('week')[i].checked)
+			{
+				if(strnum=="")
+				{
+					strnum+=1;
+				}
+				else
+				{
+					strnum+=","+1;
+				}
+			}
+			else
+			{
+				if(strnum=="")
+				{
+					strnum+=0;
+				}
+				else
+				{
+					strnum+=","+0;
+				}
+			}
+		} 
+		var temp = strnum.split(",");
+		var flag = 0;
+		for(var i=0;i<temp.length;i++)
+		{
+			if(temp[i]=="1")
+			{
+				var flag =1;
+			}
+		}
+		if(flag==0)
+		{
+			document.getElementById('exemodel_text').innerHTML="<font class='terminal_star'><{$terminal_function_modify.select_the_date|capitalize}></font>";
+			document.getElementById('exemodel').focus();
+			return false;
+		}
+		document.getElementById('hiddenweek').value = trim(strnum); 
+	}
+	//document.getElementById('exeModel_text').innerHTML="<font class='terminal_star'></font>";
+	//验证终端是否有值
+	var str = trim(tree3.getAllChecked());
+	
+	analysis_tree_terminal_group_string(str);
+	
+	document.getElementById('analysis_tree_group_string').value = trim(analysis_tree_group_string.toString()); 
+	
+	analysis_tree_group_string = new Array();
+	//var strarray=str.split(",");
+	//var temp=0;
+	//var storearray=new Array();
+	//for(var i=0;i<strarray.length;i++)
+	//{
+	//	if(isNumber(strarray[i]))
+	//	{
+	//		storearray[temp]=strarray[i];
+	//		temp++;
+	//	}
+	//	continue;
+	//}
+	//document.getElementById('terminallistvalue').value=trim(storearray.toString());
+	document.getElementById('terminallistvalue').value = trim(analysis_tree_terminal_string.toString());
+	
+	analysis_tree_terminal_string = new Array();
+	document.getElementById('startdates').value=document.getElementById('startdate').value;
+	document.getElementById('enddates').value=document.getElementById('enddate').value;
+/*
+	if(isNull(document.getElementById('terminallistvalue').value))
+	{
+		alert("<{$terminal_function_modify.select_terminals_tasks|capitalize}>");
+		return false;
+	}
+	*/
+	return true;
+}
+</script>
+<script language="javascript">
+var rownum=0;
+function displayweek(obj)
+{
+	var table = document.getElementById("timetable");
+	if(obj.options[obj.selectedIndex ].value==2)
+	{
+		var newRow = table.insertRow(-1);
+		rownum = newRow.rowIndex;
+		newRow.style.textAlign = "center";
+		var newcell = newRow.insertCell();
+		newcell.colSpan = 2;
+		newcell.innerHTML ="<div class=\"bell_div\"><input type=\"checkbox\" value=\"1\" id=\"week\" name=\"week\"/><{$terminal_function_modify.Sunday|capitalize}><input type=\"checkbox\" value=\"1\" id=\"week\" name=\"week\"/><{$terminal_function_modify.Monday|capitalize}><input type=\"checkbox\" value=\"1\" id=\"week\" name=\"week\"/><{$terminal_function_modify.Tuesday|capitalize}><input type=\"checkbox\" value=\"1\" id=\"week\" name=\"week\"/><{$terminal_function_modify.Wednesday|capitalize}><input type=\"checkbox\" value=\"1\" id=\"week\" name=\"week\"/><{$terminal_function_modify.Thursday|capitalize}><input type=\"checkbox\" value=\"1\" id=\"week\" name=\"week\"/><{$terminal_function_modify.Friday|capitalize}><input type=\"checkbox\" value=\"1\" id=\"week\" name=\"week\"/><{$terminal_function_modify.Saturday|capitalize}>";
+		
+		document.getElementById('startdate').disabled = false;
+		document.getElementById('enddate').disabled = false;
+		document.getElementById('starthour').disabled = false;
+		document.getElementById('startmin').disabled = false;
+		document.getElementById('startsenc').disabled = false;
+	}
+	else if(obj.options[obj.selectedIndex ].value==1)
+	{
+		if(rownum!=0)
+		{
+			table.deleteRow(rownum);
+			rownum = 0;
+		}
+		
+		document.getElementById('startdate').disabled = false;
+		document.getElementById('enddate').disabled = false;
+		document.getElementById('starthour').disabled = false;
+		document.getElementById('startmin').disabled = false;
+		document.getElementById('startsenc').disabled = false;
+	}
+	else if(obj.options[obj.selectedIndex ].value==3)
+	{
+		if(rownum!=0)
+		{
+			table.deleteRow(rownum);
+			rownum = 0;
+		}
+		document.getElementById('startdate').disabled = true;
+		document.getElementById('enddate').disabled = true;
+		document.getElementById('starthour').disabled = true;
+		document.getElementById('startmin').disabled = true;
+		document.getElementById('startsenc').disabled = true;
+	}
+}
+var rownumtask=0;
+function displaytask(obj)
+{
+	var table = document.getElementById("systemtask");
+	if(obj.options[obj.selectedIndex ].value==12)
+	{
+		document.getElementById('terminallist').style.visibility = "visible";
+	}
+	else if(obj.options[obj.selectedIndex ].value==13)
+	{
+		document.getElementById('terminallist').style.visibility = "hidden";
+	}
+	return;
+	var table = document.getElementById("systemtask");
+	if(obj.options[obj.selectedIndex].value==12)
+	{
+		if(rownumtask!=0)
+		{
+			table.deleteRow(rownumtask);
+			rownumtask = 0;
+		}
+		var newRow = table.insertRow(-1);
+		rownumtask = newRow.rowIndex;
+		newRow.style.textAlign = "center";
+		var newcell = newRow.insertCell(0);
+		newcell.colSpan = 2;
+		newcell.innerHTML ="<input type=\"text\" value=\"<{$taskinfo.cmdargs}>\" align=\"left\" size=\"60\" id=\"taskcommand\" name=\"taskcommand\"/><span class=\"terminal_star\" id=\"taskcommandse\" name=\"taskcommandse\">*</span>";
+	}
+	else if(obj.options[obj.selectedIndex ].value==1)
+	{
+		if(rownumtask!=0)
+		{
+			table.deleteRow(rownumtask);
+			rownumtask = 0;
+		}
+	}
+	else if(obj.options[obj.selectedIndex ].value==13)
+	{
+		if(rownumtask!=0)
+		{
+			table.deleteRow(rownumtask);
+			rownumtask = 0;
+		}
+		var newRow = table.insertRow(-1);
+		rownumtask = newRow.rowIndex;
+		newRow.style.textAlign = "center";
+		var newcell = newRow.insertCell(0);
+		newcell.colSpan = 2;
+		newcell.innerHTML ="<input type=\"text\" value=\"<{$taskinfo.cmdargs}>\" align=\"left\" size=\"60\" id=\"parameters\" name=\"parameters\"/><span class=\"terminal_star\" id=\"parametersse\" name=\"parametersse\">*</span>";
+	}
+}
+</script>
+</head>
+<body>
+<form name="frmSearch2" method="post" action="do.php?act=modifysystem_msg&taskid=<{$taskid}>" onSubmit="return checkform();" class="terminal_form_to_body">
+  <table width="780" border="0" align="center" cellpadding="0" cellspacing="0"  class="terminal_table_border">
+    <tr>
+      <td colspan="2" align="left" valign="middle">
+	  	<img src="<{$terminal_function_modify.system_function_modify_image}>"/>
+	  </td>
+    </tr>
+	
+    <tr>
+      <td align="left" width="50%" valign="top" class="fileadm_frame_border">
+	  
+	  <table width="100%" border="0" cellspacing="0" cellpadding="0">
+          <tr>
+            <td colspan="2" class="fileadm_table_title"><{$terminal_function_modify.Task_attribute|capitalize}></td>
+          </tr>
+		  
+          <tr>
+            <td nowrap class="belll_table_col_rightalign"><{$terminal_function_modify.Task_Name|capitalize}></td>
+            <td nowrap class="bell_talbe_col_leftalign">
+				<input title="<{$terminal_function_modify.Task_Name_task|capitalize}>" class="terminal_input_font" name="taskname" type="text" id="taskname" value="<{$taskinfo.taskname}>">
+				<span class="terminal_star" id="taskNameText">*</span>
+				<script>
+					if( <{$flag}> == 1 )
+					{
+						document.getElementById('taskname').disabled = true;
+					}
+				</script>
+            </td>
+          </tr>
+          
+		  
+		  
+		  
+		  
+		   <tr>
+		   
+		  	<td  nowrap class="belll_table_col_rightalign">
+				<{$terminal_function_modify.Task_level}>
+			</td>
+		  
+		  	<td nowrap class="bell_talbe_col_leftalign">
+			
+			<select title="<{$terminal_function_modify.Task_level_task|capitalize}>" name="task_priority_text" id="task_priority_text" style="width:50px;">
+				<option value="0">0</option>
+				<option value="1">1</option>
+				<option value="2">2</option>
+				<option value="3">3</option>
+				<option value="4">4</option>
+				<option value="5">5</option>
+				<option value="6">6</option>
+				<option value="7">7</option>
+				<option value="8">8</option>
+				<option value="9">9</option>
+			</select>
+			
+			<script language="javascript">
+
+				var handle_task_priority_value = '<{$taskinfo.priority}>';
+					
+				handle_task_priority_value = handle_task_priority_value.substr(handle_task_priority_value.length-1,1);
+				
+				var modify_media_file_select_priority_obj = document.getElementById('task_priority_text');
+				
+				for(var priority_index =0; priority_index < modify_media_file_select_priority_obj.options.length; priority_index++)
+				{
+					if(modify_media_file_select_priority_obj.options[priority_index].value == handle_task_priority_value)
+					{
+						modify_media_file_select_priority_obj.options[priority_index].selected = true;
+						
+						break;
+					}
+				}
+			
+			</script>
+			<!--添加优先级开始-->	
+			
+			<!--				
+			
+			<div class="" >
+			
+			<img src="skin/images/frame/priority_left1.gif" id="left_image" class="task_left_image" onClick="Lower_priority_tasks()"/>
+			
+			<input type="text" value="" name="task_priority_text" id="task_priority_text" class="task_priority_input" readonly="true"/>
+			
+			<script language="javascript">
+			
+				var handle_task_priority_value = '<{$taskinfo.priority}>';
+				
+				handle_task_priority_value = handle_task_priority_value.substr(handle_task_priority_value.length-1,1);
+				
+				document.getElementById('task_priority_text').value = handle_task_priority_value;
+			
+			</script>
+			
+			<img src="skin/images/frame/priority_right.gif" id="right_image" class="task_right_image" onClick="Increase_task_priority()"/>
+			
+			</div>
+			
+			<script src="skin/js/frame/change_task_priority.js"></script>
+			
+			-->
+			
+			<!--添加优先级结束-->	
+			<div id="s1">
+					
+				</div>
+			</td>
+			
+		  </tr>
+		  
+		  
+		  
+		  <!--
+		  <tr>
+            <td nowrap class="belll_table_col_rightalign"><{$terminal_function_modify.Duration|capitalize}></td>
+            <td nowrap class="bell_talbe_col_leftalign">
+			<select title="<{$terminal_function_modify.Start_playtimelengthtask|capitalize}>" class="terminal_select_style" name="lenghtHour" id="lenghtHour" style="width:53px;">
+				<script>
+					for(var i=0;i<=23;i++)
+					{
+						if(i<10)
+						{
+							document.write("<option value="+"0"+i+">"+"0"+i+"</option>");
+						}
+						else
+						{
+							document.write("<option value="+i+">"+i+"</option>");
+						}
+					}
+				</script>
+			</select>
+              <{$terminal_function_modify.Hour|capitalize}>
+              <select title="<{$terminal_function_modify.Start_playtimelengthtask|capitalize}>" class="terminal_select_style" name="lenghtMin" id="lenghtMin" style="width:53px;">
+                <script>
+					for(var i=0;i<=59;i++)
+					{
+						if(i<10)
+						{
+							document.write("<option value="+"0"+i+">"+"0"+i+"</option>");
+						}
+						else
+						{
+							document.write("<option value="+i+">"+i+"</option>");
+						}
+					}
+				</script>
+              </select>
+              <{$terminal_function_modify.Minute|capitalize}>
+              <select title="<{$terminal_function_modify.Start_playtimelengthtask|capitalize}>" class="terminal_select_style" name="lenghtSenc" id="lenghtSenc" style="width:53px;">
+                <script>
+					for(var i=0;i<=59;i++)
+					{
+						if(i<10)
+						{
+							document.write("<option value="+"0"+i+">"+"0"+i+"</option>");
+						}
+						else
+						{
+							document.write("<option value="+i+">"+i+"</option>");
+						}
+					}
+				</script>
+              </select>
+              <{$terminal_function_modify.Second|capitalize}>
+              <input title="<{$terminal_function_modify.Start_playtimelengthtask|capitalize}>" name="timelength" type="text" id="timelength" readonly="readonly" value="0" style="display:none" >
+				<script>
+					 var getstr = "<{$taskinfo.timelength}>";
+					 var objdate = new Date();
+					 objdate.setTime(getstr*1000);
+					 var gettime = objdate.toGMTString().split(" ");
+					 gettime = gettime[4].split(":");//只是投机的做法
+					 document.getElementById("lenghtHour").value = gettime[0];
+					 document.getElementById("lenghtMin").value = gettime[1];
+					 document.getElementById("lenghtSenc").value = gettime[2];
+				</script>
+              <span class="terminal_star" id="timelength_s">*</span> 
+			  </td>
+          </tr>-->
+          <tr>
+            <td nowrap class="belll_table_col_rightalign"><{$terminal_function_modify.Play_time|capitalize}></td>
+            <td nowrap class="bell_talbe_col_leftalign">
+				<select title="<{$terminal_function_modify.Start_playtimetask|capitalize}>" class="terminal_select_style" name="starthour" id="starthour" style="width:53px;">
+				<script>
+				for(var i=0;i<=23;i++)
+				{
+					if(i<10)
+					{
+						document.write("<option value="+"0"+i+">"+"0"+i+"</option>");
+					}
+					else
+					{
+						document.write("<option value="+i+">"+i+"</option>");
+					}
+				}
+				</script>
+				</select>
+				<{$terminal_function_modify.Hour|capitalize}>
+
+				<select title="<{$terminal_function_modify.Start_playtimetask|capitalize}>" class="terminal_select_style" name="startmin" id="startmin" style="width:53px;">
+				<script>
+				for(var i=0;i<=59;i++)
+				{
+					if(i<10)
+					{
+						document.write("<option value="+"0"+i+">"+"0"+i+"</option>");
+					}
+					else
+					{
+						document.write("<option value="+i+">"+i+"</option>");
+					}
+				}
+				</script>
+				</select>
+				<{$terminal_function_modify.Minute|capitalize}>
+
+				<select title="<{$terminal_function_modify.Start_playtimetask|capitalize}>" class="terminal_select_style" name="startsenc" id="startsenc" style="width:53px;">
+				<script>
+				for(var i=0;i<=59;i++)
+				{
+					if(i<10)
+					{
+						document.write("<option value="+"0"+i+">"+"0"+i+"</option>");
+					}
+					else
+					{
+						document.write("<option value="+i+">"+i+"</option>");
+					}
+				}
+				</script>
+				</select>
+				<{$terminal_function_modify.Second|capitalize}>
+				
+				<input title="<{$terminal_function_modify.Start_playtimetask|capitalize}>" name="playtime" type="text" id="playtime" readonly="readonly" value="00:00:00"  style="display:none;" >
+				<span  class="prompt" id="playtime_text"></span>
+				<script>
+					var getstr = "<{$taskinfo.playtime}>";
+					var gettime = getstr.split(":");
+					document.getElementById("starthour").value = gettime[0];
+					document.getElementById("startmin").value = gettime[1];
+					document.getElementById("startsenc").value = gettime[2];
+				</script>
+            </td>
+          </tr>
+		  
+		  
+		  
+		  
+		  
+		  
+		  
+		  
+		  
+		  
+      </table></td>
+      <td width="50%" align="left" valign="top" class="fileadm_frame_border">
+	  
+	  <table id="timetable" name="timetable" width="100%" border="0" cellspacing="0" cellpadding="0">
+          <tr>
+            <td colspan="2" class="fileadm_table_title"><{$terminal_function_modify.Run_time|capitalize}></td>
+          </tr>
+          <tr>
+            <td nowrap class="belll_table_col_rightalign"><{$terminal_function_modify.Start_date|capitalize}></td>
+            <td nowrap class="bell_talbe_col_leftalign">
+
+                <!--添加日期-->
+                <input title="<{$terminal_function_modify.Start_Datetask|capitalize}>" class="bell_input_style" name="startdate" id="startdate" type="text" value="<{$taskinfo.startdate}>" size="14" readonly="readonly" onClick="showcalendar(event, this);" onFocus="showcalendar(event, this);if(this.value=='0000-00-00')this.value=''" />
+            </td>
+          </tr>
+          <tr>
+            <td class="belll_table_col_rightalign"><{$terminal_function_modify.End_date|capitalize}></td>
+            <td nowrap class="bell_talbe_col_leftalign">
+			<input title="<{$terminal_function_modify.End_Datetask|capitalize}>" class="bell_input_style" name="enddate" id="enddate"  type="text" value="<{$taskinfo.enddate}>" size="14" readonly="readonly" onClick="showcalendar(event, this);" onFocus="showcalendar(event, this);if(this.value=='0000-00-00')this.value=''" />
+                <span class="terminal_star" id="timedatecompare">*</span> 
+			</td>
+          </tr>
+          <tr>
+            <td class="belll_table_col_rightalign"><{$terminal_function_modify.Run_mode|capitalize}></td>
+            <td nowrap class="bell_talbe_col_leftalign">
+				<select title="<{$terminal_function_modify.Run_modetask|capitalize}>" class="colors" name="exemodel" id="exemodel" onChange="displayweek(this)">
+					<option value="1"><{$terminal_function_modify.Every_day|capitalize}></option>
+					<option value="2"><{$terminal_function_modify.Every_week|capitalize}></option>
+					<option value="3"><{$terminal_function_modify.Manual|capitalize}></option>
+				</select>
+                <span class="terminal_star" id="exemodel_text"></span>
+                <input type="hidden" id="hiddenweek" name="hiddenweek" value=""/>
+				
+            </td>
+          </tr>
+      </table>
+	  <table id="systemtask" name="systemtask" width="100%" border="0" cellspacing="0" cellpadding="0">
+		  <tr>
+		  <td class="belll_table_col_rightalign"><{$terminal_function_modify.system_task|capitalize}></td>
+		  <td nowrap class="bell_talbe_col_leftalign">
+		  <select title="<{$terminal_function_modify.systemcommand_task|capitalize}>" class="terminal_select_style" name="systemcommand" id="systemcommand" onChange="displaytask(this)">
+                <option value="1"><{$terminal_function_modify.task_type|capitalize}></option>
+				<option value="12"><{$terminal_function_modify.system_parameters|capitalize}></option>
+                <option value="13"><{$terminal_function_modify.task_command|capitalize}></option>
+            </select>
+			<span class="task_star" id="task_text">*</span>
+		
+			<input type="hidden" id="startdates" name="startdates" value=""/>
+			<input type="hidden" id="enddates" name="enddates" value=""/>
+
+			<input type="hidden" id="hiddentask" name="hiddentask" value=""/>
+			<input type="hidden" id="taskcommand" name="taskcommand" value=""/>
+			<input type="hidden" id="parameters" name="parameters" value=""/>
+		  </td>
+		  </tr>
+		  </table>
+	  </td>
+    </tr>
+    <input type="hidden" name="taskType" value="taskcommand"/>
+    <tr>
+      <td colspan="2" align="left" valign="top">
+	  <div class="fileadm_left_div"><{$terminal_function_modify.Terminal_list|capitalize}></div>
+    <div id="terminallist" name="terminallist" class="bell_tree" style="overflow-y:auto;overflow-x:auto;"></div>
+    <input type="hidden"  id="terminallistvalue" name="terminallistvalue" value=""/>
+		<input type="hidden"  id="get_terst" name="get_terst" value=""/>
+		<input type="hidden"  id="get_id" name="get_id" value=""/>
+		<input type="hidden"  id="get_inid" name="get_inid" value=""/>
+		<input type="hidden"  id="get_noid" name="get_noid" value=""/>
+		<input type="hidden"  id="get_terminal" name="get_terminal" value=""/>
+		<input type="hidden" id="analysis_tree_group_string" name="analysis_tree_group_string" value=""/>
+		<script language="javascript">
+			var obj = document.getElementById('systemcommand');
+			for(var i=1;i<=obj.options.length;i++)
+			{
+				if(<{$taskinfo.cmd}>!=0)
+				{
+				//	obj.options[1].selected = "true";
+				//	displaytask(obj);
+				}
+				else if("<{$taskinfo.cmdargs}>"!=""||"<{$taskinfo.cmdargs}>"!=null)
+				{
+					if(<{$taskinfo.tasktype}>==12)
+					{
+						obj.options[1].selected = "true";
+						document.getElementById('terminallist').style.visibility = "visible";
+					}
+					else if(<{$taskinfo.tasktype}>==13)
+					{
+						obj.options[2].selected = "true";
+						document.getElementById('terminallist').style.visibility = "hidden";
+					}
+					displaytask(obj);	
+				}
+			}
+		</script>
+          <!--在此保存媒体列表的值-->
+			<script language="javascript">
+					var te = 0;
+					var get_noid="";
+					var states = 0;
+					var get_terst ="";
+					var get_inid ="";
+					var get_id ="";
+					var get_position ="";
+					var get_position2 ="";
+					var treeItemText = "";
+					var x=200;
+					var y=280;
+					var get_text2=trim("<{$terminal_function_modify.amplifier|capitalize}>");
+					var get_text3 = new RegExp(get_text2);
+					var get_amplifier = trim("<{$terminal_function_modify.lead|capitalize}>");
+					var get_amplifier2 = new RegExp(get_amplifier);
+					var terminal = trim("<{$terminal_function_modify.terminal|capitalize}>");
+					var terminal2 = new RegExp(terminal);
+					 function mouseMove(ev) 
+					{ 
+						ev= ev || window.event; 
+						var mousePos = mouseCoords(ev); 
+						x=mousePos.x;
+						y=mousePos.y;
+					} 
+					
+					function mouseCoords(ev) 
+					{ 
+						if(ev.pageX || ev.pageY){ 
+						return {x:ev.pageX, y:ev.pageY}; 
+						} 
+					}
+					function toncheck(id, state) 
+					{
+					 te = id;
+				     var get_ids="";
+                 
+					
+					  //var get_text2 = "IP功放";
+					 
+					  treeItemText = tree3.getItemText(id);
+					  //var get_amplifier = "IP前置";
+					 
+					if(id.length==8||id.length==9||id.length==10)
+					{
+						if(state==0)
+						{
+						 get_noid=get_noid+(te+"|");
+						
+						 }
+						 else
+						 {
+						 get_noid = get_noid.replace(te+"|","");
+						 }
+					 document.getElementById('get_noid').value = trim(get_noid.toString());
+					}
+					else
+					{
+					
+					
+					 
+					 if(state ==1)
+					 {
+					 
+					    document.getElementById('lead').style.display = "none";
+						
+						  get_id = get_id.replace(te+"|","");
+					//   document.getElementById('get_id').value = trim(get_id.toString()); 
+				
+				
+					   
+						
+						get_inid+=te+'|';
+						var position =new Array;
+						var position2 =new Array;
+						var position3 =new Array;
+						for(z=0;z<get_inid.length;z++)
+						{
+						//alert(z);
+						if(get_inid.substring(z,z+2)=="::")
+						{
+						
+						
+						position=z+2;
+						
+						
+						
+						}
+						if(get_inid.substring(z,z+1)=="|")
+						{
+						position2=z;
+						if(position2-position==1)
+						{
+					     position3+=0;
+						 }
+						 else
+						 {
+						position3+=position2-position;
+						}
+						}
+						
+						}
+						get_position =position3;
+					
+							//alert(get_position);
+							//document.getElementById('get_inid').value = trim(get_inid.toString());
+						
+						//alert(document.getElementById('get_inid').value);	
+						
+					//  alert(get_inid.split("stream_"));
+					 }
+					 else if(state==0)
+					 {
+						var get_te="";
+						  document.getElementById('lead').style.display = "none";
+						get_id+=te+"|";
+						//document.getElementById('terminal').style.display = "none";
+					 
+					 for(i=0;i<get_position.length;)
+						{
+						get_te =te.substring(10).length;
+					 //   alert(get_te);
+						if(get_te ==1)
+						{
+						get_te =0;
+						}
+                       
+						if(get_position.substring(i,i+1)==get_te)
+						{
+						var get_ids =  get_position.substring(i,i+1);
+							
+						get_position = get_position.replace(get_ids,"");
+						
+						}
+						  i+=1;  
+					}
+					//	get_id +=te;
+					document.getElementById('get_id').value = trim(get_id.toString());
+					//alert(get_id);
+						 get_inid = get_inid.replace(te+'|',"");
+					  // document.getElementById('get_inid').value = trim(get_inid.toString()); 
+					
+				
+					 }
+					  }
+			 var str_text=new Array();
+				  str_text=id.split("::");
+				 var strs_text ="";
+				for (var i=1;i<2 ;i++ )   
+    			{   
+      			 strs_text=str_text[i]; 
+			
+				var url = "get_terminaltype.php?id="+strs_text+"";
+				
+				
+				
+   				}
+				getchannelvalue(url);
+               
+			 if((channelnum>1))
+				{
+					if(state == 1)
+					 {
+					  if(channelnum%2==0 &&channelnum!=0)
+				 {
+				 	display();
+					if(navigator.appName.indexOf("Explorer") > -1)   
+					{
+						var mouse_obj_xy = get_mouse_coordinates();
+						get_div_obj('lead').style.left = mouse_obj_xy.x+120;
+						get_div_obj('lead').style.top = mouse_obj_xy.y-20;
+						get_div_obj('lead').style.display = "block";
+					}
+				else
+					{
+						document.onclick = mouseMove;
+						get_div_obj('lead').style.left = x+120+'px';
+						get_div_obj('lead').style.top = y-20+'px';
+						get_div_obj('lead').style.display = "block";
+					}
+					}
+							<{section name=terminal loop=$terminalid}>
+						var b="";
+						b="<{$terminalid[terminal].area}>";
+						if(id.search(<{$terminalid[terminal].terminal_id}>)!=-1)
+						{
+                         
+							for(var a=0;a<16;a++)
+							{
+								if(b.charAt(a)=="1")
+								{
+								
+								document.getElementsByName('lead2')[a].checked = true;
+								
+								}
+								else
+								{
+		
+								}
+							}
+						}
+
+						<{/section}>
+					
+						
+					
+					     states = state ;
+						
+						get_terst+=te+'|';
+						
+						
+				 }
+				 else if(state==0)
+				 {
+			       get_terst = get_inid.replace(te+'|',"");
+			     
+				// alert(get_terminal);
+				   if(document.getElementById('lead').style.display == "block")
+					{
+						document.getElementById('lead').style.display = "none";
+
+					}
+				
+					
+				  states = state ;
+				 // alert(get_terminal);
+				  var bit_position =new Array;
+				  var bit_position2 =new Array;
+				  var bit_position3 =new Array;
+				 for(z=0;z<get_terminal.length;z++)
+				 {
+					   if(get_terminal.substring(z,z+2)=="::")
+						{
+						bit_position=z+2;
+						
+						
+						}
+						if(get_terminal.substring(z,z+1)=="|")
+						{
+						
+						bit_position2=z;
+					
+					
+						bit_position3+=bit_position2-bit_position;
+	
+						}
+					
+				
+				 }
+			     var te_len="";
+				 var get_te="";
+				 var te_len2="";
+				 //  alert(bit_position3);
+				get_te="["+te+"|";
+					  
+				for(l=0;l<get_terminal.length;)
+				{	
+				//	alert(l);
+						
+						for(i=0;i<bit_position3.length;)
+						{
+							
+						  //  alert(get_te);
+						 	te_len = bit_position3.substring(i,i+1);
+					
+							te_len2 =get_terminal.substring(l,l+12+parseInt(te_len));
+						
+							if(get_terminal.substring(l,l+12+parseInt(te_len))==get_te)
+							{
+						   
+								
+								var get_terminals =  get_terminal.substring(l,l+12+parseInt(te_len)+12);
+								
+								get_terminal = get_terminal.replace(get_terminals,"");
+								 document.getElementById('get_terminal').value = trim(get_terminal.toString());
+								 
+								l = get_terminal.length;
+								break;
+							}
+							i+=1;
+						}
+						for(j =0;j<get_terminal.length-l;j++)
+						{
+							//alert(get_terminal.substring(l+j,l+j+1));
+					    	if(get_terminal.substring(l+j,l+j+1)==']')
+							{
+								l+=j+1;
+								break;
+							}
+						}
+						if(j>=get_terminal.length-l)
+							break;
+				}
+
+
+				 } 
+				
+			  
+				 }
+
+			};
+					
+
+			var get_terminal="";
+			function set_task_volume_prepose()
+			{
+            
+			   var get_prepose ="";
+			
+	                var getItem=te;
+				
+					if(getItem==null||getItem=="")
+					{
+						//alert(states);
+						alert("<{$terminal_function_modify.select_broadcast_task|capitalize}>");
+						return void(0);
+					}
+					else
+					{
+						if(window.confirm("<{$terminal_function_modify.suspending_task|capitalize}>"))
+						{
+							
+								for(i=0;i<document.getElementsByName('lead2').length;i++)
+								{
+									   if(document.getElementsByName('lead2')[i].checked)
+									   {
+										  if(get_prepose=="")
+											{
+												get_prepose+=1;
+											}
+											else
+											{
+												get_prepose+=","+1;
+											}
+											
+		
+									   }
+									   else
+									   {
+									   if(get_prepose=="")
+											{
+												get_prepose+=0;
+											}
+											else
+											{
+												get_prepose+=","+0;
+											}
+									   }
+								 }
+							if(16-document.getElementsByName('lead2').length>0)
+						{
+							for(i=0;i<16-document.getElementsByName('lead2').length;i++)
+							{
+								get_prepose+=","+0;
+							}
+						}
+						var get_ter = [[getItem]+'|'+[get_prepose]];
+								 
+					 get_terminal = get_terminal +'['+ [[getItem]+'|'+[get_prepose]] +']';
+				    // alert(get_ter);
+						 //  alert(get_terst);
+							//alert(get_terminal);
+                   
+				      
+					
+
+                          document.getElementById('get_terminal').value = trim(get_terminal.toString());
+				
+						   document.getElementById('lead').style.display = "none";
+							
+											
+					
+						}
+					}
+			
+			
+             };
+		
+				
+		 function disappear_volume_div_prepose()
+				{
+					if(document.getElementById('lead').style.display == "block")
+					{
+						document.getElementById('lead').style.display = "none";
+					}
+				
+				};
+				 
+					//var set_task_amplifier2="";
+				//    set_task_amplifier2 =tree3.getSelectedItemId();
+                 // alert(tree3.getSelectedItemId());
+				 var area1 ="";
+				var terminallist = "<{$terminalist}>";
+				tree3=new dhtmlXTreeObject("terminallist","100%","100%",0);
+				tree3.setSkin('dhx_skyblue');
+				tree3.setImagePath("smarty/templates/BellManager/codebase/csh_bluebooks/");
+				tree3.enableCheckBoxes(1);
+				tree3.enableThreeStateCheckboxes(true);
+				   tree3.setOnCheckHandler(toncheck);
+				tree3.loadXMLString(terminallist);
+				
+				<{section name=terminal loop=$terminalid}>
+				
+					tree3.setCheck(merge_tree_terminal_group_string('<{$terminalid[terminal].group_id}>','<{$terminalid[terminal].terminal_id}>'),true);
+				<{/section}>
+			</script>
+	
+      </td>
+    </tr>
+    <tr>
+      <td height="28" colspan="2" align="center" valign="middle">
+	 
+		<input title="<{$terminal_function_modify.submit_task|capitalize}>" name="Submit" type="submit" class="terminal_button" value="<{$terminal_function_modify.Sumbit|capitalize}>"/>
+		&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+		<!--
+		<input name="reset" type="reset" class="terminal_button" id="reset" value="<{$terminal_function_modify.Cancel|capitalize}>"/>
+     -->
+	  </td>
+    </tr>
+  </table>
+  	
+    <script language="javascript">
+
+var row3=0;
+function display()
+{
+   
+	var get_tables = document.getElementById("get_areas");
+    
+	for(var get_num = get_tables.rows.length-1;get_num>=0;get_num--)
+	{
+	
+	   get_tables.deleteRow(get_num);
+	   
+	}  
+	
+	var get_newRow;
+	var get_newcell;
+	var getcell="";
+    var row;
+	var i=0;
+		get_newRow = get_tables.insertRow(row);
+		get_newRow.style.textAlign = "left";
+		for( i=0;i<channelnum;i++)
+		{
+			switch(i)
+			{
+				case 0:
+				getcell+="<input type=\"checkbox\" value=\"1\" id=\"lead2\" name=\"lead2\"/><{$terminal_function_modify.zone_1|capitalize}>";
+				break;
+				case 1:
+				getcell+="&nbsp;&nbsp;&nbsp;&nbsp;<input type=\"checkbox\" value=\"1\" id=\"lead2\" name=\"lead2\"/><{$terminal_function_modify.zone_2|capitalize}>";
+				break;
+				case 2:
+				getcell+="<input type=\"checkbox\" value=\"1\" id=\"lead2\" name=\"lead2\"/><{$terminal_function_modify.zone_3|capitalize}>";
+				break;
+				case 3:
+				getcell+="&nbsp;&nbsp;&nbsp;&nbsp;<input type=\"checkbox\" value=\"1\" id=\"lead2\" name=\"lead2\"/><{$terminal_function_modify.zone_4|capitalize}>";
+				break;
+				case 4:
+				getcell+="<input type=\"checkbox\" value=\"1\" id=\"lead2\" name=\"lead2\"/><{$terminal_function_modify.zone_5|capitalize}>";
+				break;
+				case 5:
+				getcell+="&nbsp;&nbsp;&nbsp;&nbsp;<input type=\"checkbox\" value=\"1\" id=\"lead2\" name=\"lead2\"/><{$terminal_function_modify.zone_6|capitalize}>";
+				break;
+				case 6:
+				getcell+="<input type=\"checkbox\" value=\"1\" id=\"lead2\" name=\"lead2\"/><{$terminal_function_modify.zone_7|capitalize}>";
+				break;
+				case 7:
+				getcell+="&nbsp;&nbsp;&nbsp;&nbsp;<input type=\"checkbox\" value=\"1\" id=\"lead2\" name=\"lead2\"/><{$terminal_function_modify.zone_8|capitalize}>";
+				break;
+				case 8:
+				getcell+="<input type=\"checkbox\" value=\"1\" id=\"lead2\" name=\"lead2\"/><{$terminal_function_modify.zone_9|capitalize}>";
+				break;
+				case 9:
+				getcell+="&nbsp;&nbsp;&nbsp;&nbsp;<input type=\"checkbox\" value=\"1\" id=\"lead2\" name=\"lead2\"/><{$terminal_function_modify.zone_10|capitalize}>";
+				break;
+				case 10:
+				getcell+="<input type=\"checkbox\" value=\"1\" id=\"lead2\" name=\"lead2\"/><{$terminal_function_modify.zone_11|capitalize}>";
+				break;
+				case 11:
+				getcell+="<input type=\"checkbox\" value=\"1\" id=\"lead2\" name=\"lead2\"/><{$terminal_function_modify.zone_12|capitalize}>";
+				break;
+				case 12:
+				getcell+="<input type=\"checkbox\" value=\"1\" id=\"lead2\" name=\"lead2\"/><{$terminal_function_modify.zone_13|capitalize}>";
+				break;
+				case 13:
+				getcell+="<input type=\"checkbox\" value=\"1\" id=\"lead2\" name=\"lead2\"/><{$terminal_function_modify.zone_14|capitalize}>";
+				break;
+				case 14:
+				getcell+="<input type=\"checkbox\" value=\"1\" id=\"lead2\" name=\"lead2\"/><{$terminal_function_modify.zone_15|capitalize}>";
+				break;
+				case 15:
+				getcell+="<input type=\"checkbox\" value=\"1\" id=\"lead2\" name=\"lead2\"/><{$terminal_function_modify.zone_16|capitalize}>";
+				break;
+			
+			}
+			if(i%2!=0)
+				getcell+="\n";
+		}
+		if(i==channelnum)
+		getcell+="&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<input type=\"button\" value=\"<{$terminal_function_modify.Sumbit|capitalize}>\"  onclick=\"set_task_volume_prepose();\"class=\"bell_button_style\"><input type=\"button\" value=\"<{$terminal_function_modify.Cancel|capitalize}>\"  onclick=\"disappear_volume_div_prepose();\"class=\"bell_button_style\">";
+		get_newRow.insertCell(0).innerHTML=getcell;
+
+}
+  </script>
+ <div id="lead" class="r-displayVolume">
+	<table border="0" cellpadding="0" cellspacing="0" width="170" height="10" style="background-color:#EEFFEE" id="get_areas">
+
+	</table>
+</div>
+</form>
+<script  src="skin/js/frame/set_volume2.js"></script>
+<{include file="language/`$language`_foot.php"}> 
+</body>
+
+<!--显示内容-->
+<script>
+/*
+var getsystem = "<{$taskinfo.cmd}>";
+var gettaskcommand = "<{$taskinfo.cmdargs}>";
+var objtask = document.getElementById('systemcommand');
+if(getsystem!=0)
+{
+objtask.options[2].selected = true;
+}
+if(gettaskcommand!=0)
+{
+objtask.options[3].selected = true;
+}
+*/
+var getstr = "<{$taskinfo.exemodel}>";
+var count = 0;
+var count_i = 0;
+var obj = document.getElementById('exemodel');
+
+for(var i=0;i<getstr.length;i++)
+{
+	 if(getstr.charAt(i)=="1")
+	 {
+		count++;
+	 }
+	if(count == 7)
+	{
+		obj.options[0].selected = true;
+	}
+	if(getstr.charAt(i)=="0")
+	{
+		count_i++;
+	}
+	if(count_i == 7)
+	{
+		obj.options[2].selected = true;
+		document.getElementById('starthour').disabled = true;
+		document.getElementById('startmin').disabled = true;
+		document.getElementById('startsenc').disabled = true;
+		document.getElementById('startdate').disabled = true;
+		document.getElementById('enddate').disabled = true;
+	}
+}
+if(count != 7 && count_i != 7)
+{
+	obj.options[1].selected = true;
+	displayweek(obj);
+	for(var i=0;i<getstr.length;i++)
+	{
+		if(getstr.charAt(i)=="1")
+		{
+			document.getElementsByName('week')[i].checked = true;
+		}
+	}
+}
+</script>
+
+</html>
+
+
+<!--添加时间-->
+<script language="javascript">
+var controlid = null;
+var currdate = null;
+var startdate = null;
+var enddate  = null;
+var yy = null;
+var mm = null;
+var hh = null;
+var ii = null;
+var currday = null;
+var addtime = false;
+var today = new Date();
+var lastcheckedyear = false;
+var lastcheckedmonth = false;
+
+function _cancelBubble(event) {
+	e = event ? event : window.event ;
+	if(ie) {
+		e.cancelBubble = true;
+	} else {
+		e.stopPropagation();
+	}
+}
+
+function getposition(obj) {
+	var r = new Array();
+	r['x'] = obj.offsetLeft;
+	r['y'] = obj.offsetTop;
+	while(obj = obj.offsetParent) {
+		r['x'] += obj.offsetLeft;
+		r['y'] += obj.offsetTop;
+	}
+	return r;
+}
+
+function loadcalendar() {
+	s = '';
+	s += '<div id="calendar" style="display:none; position:absolute; z-index:9;" onclick="_cancelBubble(event)">';
+	if (ie)
+	{
+		s += '<iframe width="200" height="160" src="about:blank" style="position: absolute;z-index:-1;"></iframe>';
+	}
+	s += '<div style="width: 200px;"><table class="tableborder" cellspacing="0" cellpadding="0" width="100%" style="text-align: center">';
+	s += '<tr align="center" class="header"><td class="header"><a href="#" onclick="refreshcalendar(yy, mm-1);return false" title="<{$terminal_function_modify.lastmonth|capitalize}>">&lt;&lt;</a></td><td colspan="5" style="text-align: center" class="header"><a href="#" onclick="showdiv(\'year\');_cancelBubble(event);return false" title="<{$terminal_function_modify.pleaseclickyear|capitalize}>" id="year"></a>&nbsp; - &nbsp;<a id="month" title="<{$terminal_function_modify.pleaseclickmonth|capitalize}>" href="#" onclick="showdiv(\'month\');_cancelBubble(event);return false"></a></td><td class="header"><A href="#" onclick="refreshcalendar(yy, mm+1);return false" title="<{$terminal_function_modify.nextmonth|capitalize}>">&gt;&gt;</A></td></tr>';
+	s += '<tr class="category"><td><{$terminal_function_modify.day|capitalize}></td><td><{$terminal_function_modify.one|capitalize}></td><td><{$terminal_function_modify.two|capitalize}></td><td><{$terminal_function_modify.three|capitalize}></td><td><{$terminal_function_modify.four|capitalize}></td><td><{$terminal_function_modify.five|capitalize}></td><td><{$terminal_function_modify.six|capitalize}></td></tr>';
+	for(var i = 0; i < 6; i++) {
+		s += '<tr class="altbg2">';
+		for(var j = 1; j <= 7; j++)
+			s += "<td id=d" + (i * 7 + j) + " height=\"19\">0</td>";
+		s += "</tr>";
+	}
+	//s += '<tr id="hourminute"><td colspan="7" align="center"><input type="text" size="1" value="" id="hour" onKeyUp=\'this.value=this.value > 23 ? 23 : zerofill(this.value);controlid.value=controlid.value.replace(/\\d+(\:\\d+)/ig, this.value+"$1")\'> <{$terminal_function_modify.point|capitalize}> <input type="text" size="1" value="" id="minute" onKeyUp=\'this.value=this.value > 59 ? 59 : zerofill(this.value);controlid.value=controlid.value.replace(/(\\d+\:)\\d+/ig, "$1"+this.value)\'> <{$terminal_function_modify.part|capitalize}></td></tr>';
+	s += '</table></div></div>';
+	s += '<div id="calendar_year" onclick="_cancelBubble(event)"><div class="col">';
+	for(var k = 1930; k <= 2019; k++) {
+		s += k != 1930 && k % 10 == 0 ? '</div><div class="col">' : '';
+		s += '<a href="#" onclick="refreshcalendar(' + k + ', mm);$(\'calendar_year\').style.display=\'none\';return false"><span' + (today.getFullYear() == k ? ' class="today"' : '') + ' id="calendar_year_' + k + '">' + k + '</span></a><br />';
+	}
+	s += '</div></div>';
+	s += '<div id="calendar_month" onclick="_cancelBubble(event)">';
+	for(var k = 1; k <= 12; k++) {
+		s += '<a href="#" onclick="refreshcalendar(yy, ' + (k - 1) + ');$(\'calendar_month\').style.display=\'none\';return false"><span' + (today.getMonth()+1 == k ? ' class="today"' : '') + ' id="calendar_month_' + k + '">' + k + ( k < 10 ? '&nbsp;' : '') + ' <{$terminal_function_modify.month|capitalize}></span></a><br />';
+	}
+	s += '</div>';
+
+	var nElement = document.createElement("div");
+	nElement.innerHTML=s;
+	document.getElementsByTagName("body")[0].appendChild(nElement);
+
+	document.onclick = function(event) {
+		$('calendar').style.display = 'none';
+		$('calendar_year').style.display = 'none';
+		$('calendar_month').style.display = 'none';
+	}
+	$('calendar').onclick = function(event) {
+		_cancelBubble(event);
+		$('calendar_year').style.display = 'none';
+		$('calendar_month').style.display = 'none';
+	}
+}
+
+function parsedate(s) {
+	/(\d+)\-(\d+)\-(\d+)\s*(\d*):?(\d*)/.exec(s);
+	var m1 = (RegExp.$1 && RegExp.$1 > 1899 && RegExp.$1 < 2101) ? parseFloat(RegExp.$1) : today.getFullYear();
+	var m2 = (RegExp.$2 && (RegExp.$2 > 0 && RegExp.$2 < 13)) ? parseFloat(RegExp.$2) : today.getMonth() + 1;
+	var m3 = (RegExp.$3 && (RegExp.$3 > 0 && RegExp.$3 < 32)) ? parseFloat(RegExp.$3) : today.getDate();
+	var m4 = (RegExp.$4 && (RegExp.$4 > -1 && RegExp.$4 < 24)) ? parseFloat(RegExp.$4) : 0;
+	var m5 = (RegExp.$5 && (RegExp.$5 > -1 && RegExp.$5 < 60)) ? parseFloat(RegExp.$5) : 0;
+	/(\d+)\-(\d+)\-(\d+)\s*(\d*):?(\d*)/.exec("0000-00-00 00\:00");
+	return new Date(m1, m2 - 1, m3, m4, m5);
+}
+
+function settime(d) {
+	$('calendar').style.display = 'none';
+	controlid.value = yy + "-" + zerofill(mm + 1) + "-" + zerofill(d) + (addtime ? ' ' + zerofill($('hour').value) + ':' + zerofill($('minute').value) : '');
+}
+
+function showcalendar(event,controlid1, addtime1, startdate1, enddate1) {
+	controlid = controlid1;
+	addtime = addtime1;
+	startdate = startdate1 ? parsedate(startdate1) : false;
+	enddate = enddate1 ? parsedate(enddate1) : false;
+	currday = controlid.value ? parsedate(controlid.value) : today;
+	hh = currday.getHours();
+	ii = currday.getMinutes();
+	var p = getposition(controlid);
+	$('calendar').style.display = 'block';
+	$('calendar').style.left = p['x']+'px';
+	$('calendar').style.top	= (p['y'] + 20)+'px';
+	_cancelBubble(event);
+	refreshcalendar(currday.getFullYear(), currday.getMonth());
+	if(lastcheckedyear != false) {
+		$('calendar_year_' + lastcheckedyear).className = 'default';
+		$('calendar_year_' + today.getFullYear()).className = 'today';
+	}
+	if(lastcheckedmonth != false) {
+		$('calendar_month_' + lastcheckedmonth).className = 'default';
+		$('calendar_month_' + (today.getMonth() + 1)).className = 'today';
+	}
+	$('calendar_year_' + currday.getFullYear()).className = 'checked';
+	$('calendar_month_' + (currday.getMonth() + 1)).className = 'checked';
+	$('hourminute').style.display = addtime ? '' : 'none';
+	lastcheckedyear = currday.getFullYear();
+	lastcheckedmonth = currday.getMonth() + 1;
+}
+
+function refreshcalendar(y, m) {
+	var x = new Date(y, m, 1);
+	var mv = x.getDay();
+	var d = x.getDate();
+	var dd = null;
+	yy = x.getFullYear();
+	mm = x.getMonth();
+	$("year").innerHTML = yy;
+	$("month").innerHTML = mm + 1 > 9  ? (mm + 1) : '0' + (mm + 1);
+
+	for(var i = 1; i <= mv; i++) {
+		dd = $("d" + i);
+		dd.innerHTML = "&nbsp;";
+		dd.className = "";
+	}
+
+	while(x.getMonth() == mm) {
+		dd = $("d" + (d + mv));
+		dd.innerHTML = '<a href="###" onclick="settime(' + d + ');return false">' + d + '</a>';
+		if(x.getTime() < today.getTime() || (enddate && x.getTime() > enddate.getTime()) || (startdate && x.getTime() < startdate.getTime())) {
+			dd.className = 'expire';
+		} else {
+			dd.className = 'default';
+		}
+		if(x.getFullYear() == today.getFullYear() && x.getMonth() == today.getMonth() && x.getDate() == today.getDate()) {
+			dd.className = 'today';
+			dd.firstChild.title = '<{$terminal_function_modify.today|capitalize}>';
+		}
+		if(x.getFullYear() == currday.getFullYear() && x.getMonth() == currday.getMonth() && x.getDate() == currday.getDate()) {
+			dd.className = 'checked';
+		}
+		x.setDate(++d);
+	}
+
+	while(d + mv <= 42) {
+		dd = $("d" + (d + mv));
+		dd.innerHTML = "&nbsp;";
+		d++;
+	}
+
+	if(addtime) {
+		$('hour').value = zerofill(hh);
+		$('minute').value = zerofill(ii);
+	}
+}
+
+function showdiv(id) {
+
+	var p = getposition($(id));
+	$('calendar_' + id).style.left = p['x']+'px';
+	$('calendar_' + id).style.top = (p['y'] + 16)+'px';
+	$('calendar_' + id).style.display = 'block';
+}
+
+function zerofill(s) {
+	var s = parseFloat(s.toString().replace(/(^[\s0]+)|(\s+$)/g, ''));
+	s = isNaN(s) ? 0 : s;
+	return (s < 10 ? '0' : '') + s.toString();
+}
+loadcalendar();
+    </script>

@@ -1,0 +1,4370 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "title": "Swagger Petstore",
+        "license": {
+            "name": "Apache 2.0",
+            "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
+        },
+        "version": "1.0.0"
+    },
+    "host": "192.168.7.50:99",
+    "basePath": "/api",
+    "schemes": [
+        "http"
+    ],
+    "consumes": [
+        "application/json"
+    ],
+    "produces": [
+        "application/json"
+    ],
+    "paths": {
+        "/authorizations": {
+            "post": {
+                "tags": [
+                    "authorations"
+                ],
+                "description": "创建token",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "description": "创建token",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/authorations"
+                        }
+                    }
+                ],
+                "responses": {
+                    "default": {
+                        "description": "successful operation"
+                    }
+                }
+            }
+        },
+        "/authorizations/current": {
+            "post": {
+                "tags": [
+                    "authorations"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "description": "刷新token,授权value以Bearer开头",
+                "security": [
+                    {
+                        "api_key": []
+                    }
+                ],
+                "responses": {
+                    "default": {
+                        "description": "successful operation"
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "authorations"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "description": "删除token,授权value以Bearer开头",
+                "security": [
+                    {
+                        "api_key": []
+                    }
+                ],
+                "responses": {
+                    "default": {
+                        "description": "successful operation"
+                    }
+                }
+            }
+        },
+        "/authorizations/commonmediainfo": {
+            "post": {
+                "tags": [
+                    "authorations"
+                ],
+                "operationId": "upload_File",
+                "description": "上传媒体",
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "mediafile",
+                        "in": "formData",
+                        "description": "上传媒体",
+                        "required": true,
+                        "type": "file"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "successful operation"
+                    }
+                }
+            }
+        },
+        "/server/servername": {
+            "post": {
+                "tags": [
+                    "server"
+                ],
+                "description": "更新服务器名称,授权value以Bearer开头",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "description": "更新服务器基本参数信息",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/servername"
+                        }
+                    }
+                ],
+                "security": [
+                    {
+                        "api_key": []
+                    }
+                ],
+                "responses": {
+                    "default": {
+                        "description": "successful operation"
+                    }
+                }
+            }
+        },
+        "/server/serverstate": {
+            "get": {
+                "tags": [
+                    "server"
+                ],
+                "description": "获取服务器基本参数信息,授权value以Bearer开头",
+                "produces": [
+                    "application/json"
+                ],
+                "security": [
+                    {
+                        "api_key": []
+                    }
+                ],
+                "responses": {
+                    "default": {
+                        "description": "successful operation"
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "server"
+                ],
+                "description": "更新服务器基本参数信息,更新后服务器会重启,以便同步数据,授权value以Bearer开头",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "description": "更新服务器基本参数信息",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/serverinfo"
+                        }
+                    }
+                ],
+                "security": [
+                    {
+                        "api_key": []
+                    }
+                ],
+                "responses": {
+                    "default": {
+                        "description": "successful operation"
+                    }
+                }
+            }
+        },
+        "/server/time": {
+            "get": {
+                "tags": [
+                    "server"
+                ],
+                "description": "获取服务器时间,授权value以Bearer开头",
+                "produces": [
+                    "application/json"
+                ],
+                "security": [
+                    {
+                        "api_key": []
+                    }
+                ],
+                "responses": {
+                    "default": {
+                        "description": "successful operation"
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "server"
+                ],
+                "description": "更新服务器时间,授权value以Bearer开头",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "description": "更新服务器时间",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/servertimeset"
+                        }
+                    }
+                ],
+                "security": [
+                    {
+                        "api_key": []
+                    }
+                ],
+                "responses": {
+                    "default": {
+                        "description": "successful operation"
+                    }
+                }
+            }
+        },
+        "/server/backup": {
+            "get": {
+                "tags": [
+                    "server"
+                ],
+                "description": "获取备份信息,授权value以Bearer开头",
+                "produces": [
+                    "application/json"
+                ],
+                "security": [
+                    {
+                        "api_key": []
+                    }
+                ],
+                "responses": {
+                    "default": {
+                        "description": "successful operation"
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "server"
+                ],
+                "description": "设置服务器备份,授权value以Bearer开头",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "description": "设置服务器备份",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/serverbackup"
+                        }
+                    }
+                ],
+                "security": [
+                    {
+                        "api_key": []
+                    }
+                ],
+                "responses": {
+                    "default": {
+                        "description": "successful operation"
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "server"
+                ],
+                "description": "删除服务器备份,授权value以Bearer开头",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "description": "删除服务器备份",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/serverbackup"
+                        }
+                    }
+                ],
+                "security": [
+                    {
+                        "api_key": []
+                    }
+                ],
+                "responses": {
+                    "default": {
+                        "description": "successful operation"
+                    }
+                }
+            }
+        },
+        "/server/restore": {
+            "post": {
+                "tags": [
+                    "server"
+                ],
+                "description": "还原服务器备份,授权value以Bearer开头",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "description": "还原服务器备份",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/serverbackup"
+                        }
+                    }
+                ],
+                "security": [
+                    {
+                        "api_key": []
+                    }
+                ],
+                "responses": {
+                    "default": {
+                        "description": "successful operation"
+                    }
+                }
+            }
+        },
+        "/terminal/terminalinfo": {
+            "get": {
+                "tags": [
+                    "terminal"
+                ],
+                "description": "获取终端信息,授权value以Bearer开头",
+                "produces": [
+                    "application/json"
+                ],
+                "security": [
+                    {
+                        "api_key": []
+                    }
+                ],
+                "responses": {
+                    "default": {
+                        "description": "successful operation"
+                    }
+                }
+            }
+        },
+        "/terminal/terminaldo/{type}": {
+            "get": {
+                "tags": [
+                    "terminal"
+                ],
+                "description": "获得寻呼,对讲,点播终端信息,type=1为寻呼,type=2为对讲,type=3为点播,授权value以Bearer开头",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "type",
+                        "in": "path",
+                        "description": "操作标志",
+                        "required": true,
+                        "type": "integer",
+                        "format": "int32"
+                    }
+                ],
+                "security": [
+                    {
+                        "api_key": []
+                    }
+                ],
+                "responses": {
+                    "default": {
+                        "description": "successful operation"
+                    }
+                }
+            }
+        },
+        "/terminal/singleterminal/{id}": {
+            "post": {
+                "tags": [
+                    "terminal"
+                ],
+                "description": "获得单个终端信息,授权value以Bearer开头",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "终端id",
+                        "required": true,
+                        "type": "string"
+                    }
+                ],
+                "security": [
+                    {
+                        "api_key": []
+                    }
+                ],
+                "responses": {
+                    "default": {
+                        "description": "successful operation"
+                    }
+                }
+            }
+        },
+        "/terminal/enable/{id}": {
+            "post": {
+                "tags": [
+                    "terminal"
+                ],
+                "description": "启用,授权value以Bearer开头",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "终端id,多个id用，号隔开（例 1,2,3)",
+                        "required": true,
+                        "type": "string"
+                    }
+                ],
+                "security": [
+                    {
+                        "api_key": []
+                    }
+                ],
+                "responses": {
+                    "default": {
+                        "description": "successful operation"
+                    }
+                }
+            }
+        },
+        "/terminal/disable/{id}": {
+            "post": {
+                "tags": [
+                    "terminal"
+                ],
+                "description": "停用,授权value以Bearer开头",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "终端id,多个id用，号隔开（例 1,2,3)",
+                        "required": true,
+                        "type": "string"
+                    }
+                ],
+                "security": [
+                    {
+                        "api_key": []
+                    }
+                ],
+                "responses": {
+                    "default": {
+                        "description": "successful operation"
+                    }
+                }
+            }
+        },
+        "/terminal/speechen/{id}": {
+            "post": {
+                "tags": [
+                    "terminal"
+                ],
+                "description": "启用/停用终端对讲,授权value以Bearer开头",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "终端id,多个id用，号隔开（例 1,2,3)",
+                        "required": true,
+                        "type": "string"
+                    }
+                ],
+                "security": [
+                    {
+                        "api_key": []
+                    }
+                ],
+                "responses": {
+                    "default": {
+                        "description": "successful operation"
+                    }
+                }
+            }
+        },
+        "/terminal/speechdis/{id}": {
+            "post": {
+                "tags": [
+                    "terminal"
+                ],
+                "description": "启用/停用终端对讲,授权value以Bearer开头",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "终端id,多个id用，号隔开（例 1,2,3)",
+                        "required": true,
+                        "type": "string"
+                    }
+                ],
+                "security": [
+                    {
+                        "api_key": []
+                    }
+                ],
+                "responses": {
+                    "default": {
+                        "description": "successful operation"
+                    }
+                }
+            }
+        },
+        "/terminal/terminaldelete/{id}": {
+            "delete": {
+                "tags": [
+                    "terminal"
+                ],
+                "description": "删除终端,授权value以Bearer开头",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "删除终端,多个id用，号隔开（例 1,2,3)",
+                        "required": true,
+                        "type": "string"
+                    }
+                ],
+                "security": [
+                    {
+                        "api_key": []
+                    }
+                ],
+                "responses": {
+                    "default": {
+                        "description": "successful operation"
+                    }
+                }
+            }
+        },
+        "/terminal/downloadfile/{id}": {
+            "get": {
+                "tags": [
+                    "terminal"
+                ],
+                "description": "获取终端升级文件",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "终端id",
+                        "required": true,
+                        "type": "integer",
+                        "format": "int32"
+                    }
+                ],
+                "security": [
+                    {
+                        "api_key": []
+                    }
+                ],
+                "responses": {
+                    "default": {
+                        "description": "successful operation"
+                    }
+                }
+            }
+        },
+        "/terminal/shortcutkey/{terminalid}": {
+            "get": {
+                "tags": [
+                    "terminal"
+                ],
+                "description": "获取快捷键,授权value以Bearer开头",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "terminalid",
+                        "in": "path",
+                        "description": "获取快捷键",
+                        "required": true,
+                        "type": "integer",
+                        "format": "int32"
+                    }
+                ],
+                "security": [
+                    {
+                        "api_key": []
+                    }
+                ],
+                "responses": {
+                    "default": {
+                        "description": "successful operation"
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "terminal"
+                ],
+                "description": "设置快捷键,授权value以Bearer开头",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "terminalid",
+                        "in": "path",
+                        "description": "设置快捷键",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "description": "设置快捷键",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/terminalkey"
+                        }
+                    }
+                ],
+                "security": [
+                    {
+                        "api_key": []
+                    }
+                ],
+                "responses": {
+                    "default": {
+                        "description": "successful operation"
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "terminal"
+                ],
+                "description": "删除快捷键,授权value以Bearer开头",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "terminalid",
+                        "in": "path",
+                        "description": "删除快捷键",
+                        "required": true,
+                        "type": "string"
+                    }
+                ],
+                "security": [
+                    {
+                        "api_key": []
+                    }
+                ],
+                "responses": {
+                    "default": {
+                        "description": "successful operation"
+                    }
+                }
+            }
+        },
+        "/terminal/shortcutkeyterminal/{id}": {
+            "get": {
+                "tags": [
+                    "terminal"
+                ],
+                "description": "获取快捷键终端,授权value以Bearer开头",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "获取快捷键终端",
+                        "required": true,
+                        "type": "string"
+                    }
+                ],
+                "security": [
+                    {
+                        "api_key": []
+                    }
+                ],
+                "responses": {
+                    "default": {
+                        "description": "successful operation"
+                    }
+                }
+            }
+        },
+        "/terminal/terminalxunhu": {
+            "get": {
+                "tags": [
+                    "terminal"
+                ],
+                "description": "获取授权寻呼信息,授权value以Bearer开头",
+                "produces": [
+                    "application/json"
+                ],
+                "security": [
+                    {
+                        "api_key": []
+                    }
+                ],
+                "responses": {
+                    "default": {
+                        "description": "successful operation"
+                    }
+                }
+            }
+        },
+        "/terminal/shortcutkeyterminal": {
+            "post": {
+                "tags": [
+                    "terminal"
+                ],
+                "description": "设置快捷键终端,授权value以Bearer开头",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "description": "设置快捷键终端",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/eventterminal"
+                        }
+                    }
+                ],
+                "security": [
+                    {
+                        "api_key": []
+                    }
+                ],
+                "responses": {
+                    "default": {
+                        "description": "successful operation"
+                    }
+                }
+            }
+        },
+        "/terminal/terminalinstancy/{id}": {
+            "post": {
+                "tags": [
+                    "terminal"
+                ],
+                "description": "设置终端急救,授权value以Bearer开头",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "终端id,多个id用，号隔开（例 1,2,3)",
+                        "required": true,
+                        "type": "integer",
+                        "format": "int32"
+                    }
+                ],
+                "security": [
+                    {
+                        "api_key": []
+                    }
+                ],
+                "responses": {
+                    "default": {
+                        "description": "successful operation"
+                    }
+                }
+            }
+        },
+        "/terminal/terminaldisinstancy/{id}": {
+            "post": {
+                "tags": [
+                    "terminal"
+                ],
+                "description": "取消终端急救,授权value以Bearer开头",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "终端id,多个id用，号隔开（例 1,2,3)",
+                        "required": true,
+                        "type": "integer",
+                        "format": "int32"
+                    }
+                ],
+                "security": [
+                    {
+                        "api_key": []
+                    }
+                ],
+                "responses": {
+                    "default": {
+                        "description": "successful operation"
+                    }
+                }
+            }
+        },
+        "/terminal/terminalpasswd/{id}": {
+            "post": {
+                "tags": [
+                    "terminal"
+                ],
+                "description": "设置终端密码,授权value以Bearer开头",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "终端id,多个id用，号隔开（例 1,2,3)",
+                        "required": true,
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "description": "设置终端密码",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/terminalpasswd"
+                        }
+                    }
+                ],
+                "security": [
+                    {
+                        "api_key": []
+                    }
+                ],
+                "responses": {
+                    "default": {
+                        "description": "successful operation"
+                    }
+                }
+            }
+        },
+        "/terminal/terminalquicktask": {
+            "post": {
+                "tags": [
+                    "terminal"
+                ],
+                "description": "获得快捷任务(isinstancy值为类型，20表示广播任务，21表示文字语音任务),授权value以Bearer开头",
+                "produces": [
+                    "application/json"
+                ],
+                "security": [
+                    {
+                        "api_key": []
+                    }
+                ],
+                "responses": {
+                    "default": {
+                        "description": "successful operation"
+                    }
+                }
+            }
+        },
+        "/terminal/terzone": {
+            "get": {
+                "tags": [
+                    "terminal"
+                ],
+                "description": "获得终端分区,授权value以Bearer开头",
+                "produces": [
+                    "application/json"
+                ],
+                "security": [
+                    {
+                        "api_key": []
+                    }
+                ],
+                "responses": {
+                    "default": {
+                        "description": "successful operation"
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "terminal"
+                ],
+                "description": "设置终端分区,授权value以Bearer开头",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "description": "设置终端分区",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/zone"
+                        }
+                    }
+                ],
+                "security": [
+                    {
+                        "api_key": []
+                    }
+                ],
+                "responses": {
+                    "default": {
+                        "description": "successful operation"
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "terminal"
+                ],
+                "description": "删除终端分区,授权value以Bearer开头",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "description": "删除终端分区",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/eventid"
+                        }
+                    }
+                ],
+                "security": [
+                    {
+                        "api_key": []
+                    }
+                ],
+                "responses": {
+                    "default": {
+                        "description": "successful operation"
+                    }
+                }
+            }
+        },
+        "/terminal/zoneterminal/{id}": {
+            "get": {
+                "tags": [
+                    "terminal"
+                ],
+                "description": "获得分区终端,授权value以Bearer开头",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "分区id",
+                        "required": true,
+                        "type": "integer",
+                        "format": "int32"
+                    }
+                ],
+                "security": [
+                    {
+                        "api_key": []
+                    }
+                ],
+                "responses": {
+                    "default": {
+                        "description": "successful operation"
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "terminal"
+                ],
+                "description": "删除分区终端,授权value以Bearer开头",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "分区id",
+                        "required": true,
+                        "type": "integer",
+                        "format": "int32"
+                    }
+                ],
+                "security": [
+                    {
+                        "api_key": []
+                    }
+                ],
+                "responses": {
+                    "default": {
+                        "description": "successful operation"
+                    }
+                }
+            }
+        },
+        "/terminal/zoneterminal": {
+            "post": {
+                "tags": [
+                    "terminal"
+                ],
+                "description": "设置分区终端,授权value以Bearer开头",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "description": "设置分区终端",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/eventterminal"
+                        }
+                    }
+                ],
+                "security": [
+                    {
+                        "api_key": []
+                    }
+                ],
+                "responses": {
+                    "default": {
+                        "description": "successful operation"
+                    }
+                }
+            }
+        },
+        "/terminal/mediainfo": {
+            "get": {
+                "tags": [
+                    "terminal"
+                ],
+                "description": "获得媒体信息,授权value以Bearer开头",
+                "produces": [
+                    "application/json"
+                ],
+                "security": [
+                    {
+                        "api_key": []
+                    }
+                ],
+                "responses": {
+                    "default": {
+                        "description": "successful operation"
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "terminal"
+                ],
+                "operationId": "uploadFile",
+                "description": "上传媒体,授权value以Bearer开头",
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "mediafile",
+                        "in": "formData",
+                        "description": "上传媒体",
+                        "required": true,
+                        "type": "file"
+                    },
+                    {
+                        "name": "folderid",
+                        "in": "query",
+                        "description": "媒体文件夹id",
+                        "required": true,
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "successful operation"
+                    }
+                },
+                "security": [
+                    {
+                        "api_key": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "terminal"
+                ],
+                "description": "删除媒体,授权value以Bearer开头",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "description": "删除媒体",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/eventid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "successful operation"
+                    }
+                },
+                "security": [
+                    {
+                        "api_key": []
+                    }
+                ]
+            }
+        },
+        "/terminal/mediainfo/{folderid}": {
+            "get": {
+                "tags": [
+                    "terminal"
+                ],
+                "description": "获取不同文件夹类型的媒体,授权value以Bearer开头",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "folderid",
+                        "in": "path",
+                        "description": "文件夹id",
+                        "required": true,
+                        "type": "integer",
+                        "format": "int32"
+                    }
+                ],
+                "security": [
+                    {
+                        "api_key": []
+                    }
+                ],
+                "responses": {
+                    "default": {
+                        "description": "successful operation"
+                    }
+                }
+            }
+        },
+        "/terminal/mediafolderinfo": {
+            "get": {
+                "tags": [
+                    "terminal"
+                ],
+                "description": "获得媒体文件夹信息,授权value以Bearer开头",
+                "produces": [
+                    "application/json"
+                ],
+                "security": [
+                    {
+                        "api_key": []
+                    }
+                ],
+                "responses": {
+                    "default": {
+                        "description": "successful operation"
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "terminal"
+                ],
+                "description": "添加媒体文件夹,授权value以Bearer开头",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "description": "添加媒体文件夹",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/mediafolder"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "successful operation"
+                    }
+                },
+                "security": [
+                    {
+                        "api_key": []
+                    }
+                ]
+            },
+            "put": {
+                "tags": [
+                    "terminal"
+                ],
+                "description": "更新媒体文件夹,授权value以Bearer开头",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "description": "更新媒体文件夹",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/mediafolderup"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "successful operation"
+                    }
+                },
+                "security": [
+                    {
+                        "api_key": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "terminal"
+                ],
+                "description": "删除媒体文件夹,授权value以Bearer开头",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "description": "删除媒体文件夹",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/singleid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "successful operation"
+                    }
+                },
+                "security": [
+                    {
+                        "api_key": []
+                    }
+                ]
+            }
+        },
+        "/terminal/alarmmap": {
+            "get": {
+                "tags": [
+                    "terminal"
+                ],
+                "description": "获得报警映射信息,授权value以Bearer开头",
+                "produces": [
+                    "application/json"
+                ],
+                "security": [
+                    {
+                        "api_key": []
+                    }
+                ],
+                "responses": {
+                    "default": {
+                        "description": "successful operation"
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "terminal"
+                ],
+                "description": "设置报警映射信息,授权value以Bearer开头",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "description": "设置报警映射信息",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/alarmmap"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "successful operation"
+                    }
+                },
+                "security": [
+                    {
+                        "api_key": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "terminal"
+                ],
+                "description": "删除报警映射信息,授权value以Bearer开头",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "description": "删除报警映射信息",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/eventid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "successful operation"
+                    }
+                },
+                "security": [
+                    {
+                        "api_key": []
+                    }
+                ]
+            }
+        },
+        "/terminal/alarmzone": {
+            "get": {
+                "tags": [
+                    "terminal"
+                ],
+                "description": "获得报警分区,授权value以Bearer开头",
+                "produces": [
+                    "application/json"
+                ],
+                "security": [
+                    {
+                        "api_key": []
+                    }
+                ],
+                "responses": {
+                    "default": {
+                        "description": "successful operation"
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "terminal"
+                ],
+                "description": "设置报警分区,授权value以Bearer开头",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "description": "设置报警分区",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/zone"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "successful operation"
+                    }
+                },
+                "security": [
+                    {
+                        "api_key": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "terminal"
+                ],
+                "description": "删除报警分区,授权value以Bearer开头",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "description": "删除报警分区",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/eventid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "successful operation"
+                    }
+                },
+                "security": [
+                    {
+                        "api_key": []
+                    }
+                ]
+            }
+        },
+        "/terminal/alarmzoneterminal": {
+            "post": {
+                "tags": [
+                    "terminal"
+                ],
+                "description": "设置报警分区终端,授权value以Bearer开头",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "description": "设置报警分区终端",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/eventterminal"
+                        }
+                    }
+                ],
+                "security": [
+                    {
+                        "api_key": []
+                    }
+                ],
+                "responses": {
+                    "default": {
+                        "description": "successful operation"
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "terminal"
+                ],
+                "description": "删除报警分区终端,授权value以Bearer开头",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "description": "删除报警分区终端",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/singleid"
+                        }
+                    }
+                ],
+                "security": [
+                    {
+                        "api_key": []
+                    }
+                ],
+                "responses": {
+                    "default": {
+                        "description": "successful operation"
+                    }
+                }
+            }
+        },
+        "/terminal/alarmzoneterminal/{id}": {
+            "get": {
+                "tags": [
+                    "terminal"
+                ],
+                "description": "获得报警分区终端,授权value以Bearer开头",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "报警分区id",
+                        "required": true,
+                        "type": "integer",
+                        "format": "int32"
+                    }
+                ],
+                "security": [
+                    {
+                        "api_key": []
+                    }
+                ],
+                "responses": {
+                    "default": {
+                        "description": "successful operation"
+                    }
+                }
+            }
+        },
+        "/terminal/remotectrlmapp": {
+            "get": {
+                "tags": [
+                    "terminal"
+                ],
+                "description": "获得遥控任务,授权value以Bearer开头",
+                "produces": [
+                    "application/json"
+                ],
+                "security": [
+                    {
+                        "api_key": []
+                    }
+                ],
+                "responses": {
+                    "default": {
+                        "description": "successful operation"
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "terminal"
+                ],
+                "description": "设置遥控任务,授权value以Bearer开头",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "description": "设置遥控任务",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/remotectrl"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "successful operation"
+                    }
+                },
+                "security": [
+                    {
+                        "api_key": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "terminal"
+                ],
+                "description": "删除遥控任务,授权value以Bearer开头",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "description": "删除遥控任务",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/eventid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "successful operation"
+                    }
+                },
+                "security": [
+                    {
+                        "api_key": []
+                    }
+                ]
+            }
+        },
+        "/terminal/terminalprogress": {
+            "post": {
+                "tags": [
+                    "terminal"
+                ],
+                "description": "终端升级进度（0-100）,授权value以Bearer开头",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "description": "终端升级进度（0-100）",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/idprogress"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "successful operation"
+                    }
+                },
+                "security": [
+                    {
+                        "api_key": []
+                    }
+                ]
+            }
+        },
+        "/terminal/urgentplay": {
+            "post": {
+                "tags": [
+                    "terminal"
+                ],
+                "description": "应急播放,授权value以Bearer开头",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "channelid",
+                        "in": "query",
+                        "description": "应急类型（0：地震，1：火灾，2：空袭，3：暴力）",
+                        "required": true,
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    {
+                        "name": "terminalid",
+                        "in": "query",
+                        "description": "本终端id",
+                        "required": true,
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    {
+                        "name": "isstop",
+                        "in": "query",
+                        "description": "执行停止（0：执行，1：停止）",
+                        "required": true,
+                        "type": "integer",
+                        "format": "int32"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "successful operation"
+                    }
+                },
+                "security": [
+                    {
+                        "api_key": []
+                    }
+                ]
+            }
+        },
+        "/task/sechinfo": {
+            "get": {
+                "tags": [
+                    "task"
+                ],
+                "description": "获得方案信息,授权value以Bearer开头",
+                "produces": [
+                    "application/json"
+                ],
+                "security": [
+                    {
+                        "api_key": []
+                    }
+                ],
+                "responses": {
+                    "default": {
+                        "description": "successful operation"
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "task"
+                ],
+                "description": "复制方案,授权value以Bearer开头",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "description": "复制方案",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/copysche"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "successful operation"
+                    }
+                },
+                "security": [
+                    {
+                        "api_key": []
+                    }
+                ]
+            }
+        },
+        "/task/sechenableordisable": {
+            "post": {
+                "tags": [
+                    "task"
+                ],
+                "description": "启用或停用方案, 0启用,1停用,授权value以Bearer开头",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "description": "启用或停用方案,0启用,1停用",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/operateinfo"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "successful operation"
+                    }
+                },
+                "security": [
+                    {
+                        "api_key": []
+                    }
+                ]
+            }
+        },
+        "/task/sechetaskinfo": {
+            "post": {
+                "tags": [
+                    "task"
+                ],
+                "description": "获得方案任务信息,授权value以Bearer开头",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "description": "通过方案名称获得方案任务信息",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/singlename"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "successful operation"
+                    }
+                },
+                "security": [
+                    {
+                        "api_key": []
+                    }
+                ]
+            }
+        },
+        "/task/sechetask": {
+            "post": {
+                "tags": [
+                    "task"
+                ],
+                "description": "设置方案任务,授权value以Bearer开头",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "description": "设置方案任务",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/taskinfo"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "successful operation"
+                    }
+                },
+                "security": [
+                    {
+                        "api_key": []
+                    }
+                ]
+            },
+            "put": {
+                "tags": [
+                    "task"
+                ],
+                "description": "更新方案任务,授权value以Bearer开头",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "description": "更新方案任务",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/taskinfo"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "successful operation"
+                    }
+                },
+                "security": [
+                    {
+                        "api_key": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "task"
+                ],
+                "description": "删除方案任务,授权value以Bearer开头",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "description": "删除任务",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/singleid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "successful operation"
+                    }
+                },
+                "security": [
+                    {
+                        "api_key": []
+                    }
+                ]
+            }
+        },
+        "/task/taskinfo/{id}": {
+            "get": {
+                "tags": [
+                    "task"
+                ],
+                "description": "获得任务信息(singleid 1-作息 2-文件 3-采播  5-功放,10-网络电台,17-tts语音),授权value以Bearer开头",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "获得任务信息 (singleid 1-作息 2-文件 3-采播 5-功放,10-网络电台,17-tts语音)",
+                        "required": true,
+                        "type": "string"
+                    }
+                ],
+                "security": [
+                    {
+                        "api_key": []
+                    }
+                ],
+                "responses": {
+                    "default": {
+                        "description": "successful operation"
+                    }
+                }
+            }
+        },
+        "/task/taskinfo": {
+            "post": {
+                "tags": [
+                    "task"
+                ],
+                "description": "设置任务,授权value以Bearer开头",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "description": "设置任务",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/taskinfo"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "successful operation"
+                    }
+                },
+                "security": [
+                    {
+                        "api_key": []
+                    }
+                ]
+            },
+            "put": {
+                "tags": [
+                    "task"
+                ],
+                "description": "更新任务,授权value以Bearer开头",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "description": "更新任务",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/taskinfo"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "successful operation"
+                    }
+                },
+                "security": [
+                    {
+                        "api_key": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "task"
+                ],
+                "description": "删除任务,授权value以Bearer开头",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "description": "删除任务",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/singleid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "successful operation"
+                    }
+                },
+                "security": [
+                    {
+                        "api_key": []
+                    }
+                ]
+            }
+        },
+        "/task/taskvolume": {
+            "post": {
+                "tags": [
+                    "task"
+                ],
+                "description": "设置任务音量,范围1-100,授权value以Bearer开头",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "description": "设置任务音量,state 范围1-100",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/operateflag"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "successful operation"
+                    }
+                },
+                "security": [
+                    {
+                        "api_key": []
+                    }
+                ]
+            }
+        },
+        "/task/taskdoorno": {
+            "post": {
+                "tags": [
+                    "task"
+                ],
+                "description": "设置任务启用与停用,0为启用，1为停用,授权value以Bearer开头",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "description": "设置任务启用与停用,state 0为启用，1为停用",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/operateflag"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "successful operation"
+                    }
+                },
+                "security": [
+                    {
+                        "api_key": []
+                    }
+                ]
+            }
+        },
+        "/task/taskenordis": {
+            "post": {
+                "tags": [
+                    "task"
+                ],
+                "description": "设置任务执行与停止,state 1为执行，0为停止,授权value以Bearer开头",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "description": "设置任务执行与停止,state 1为执行，0为停止",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/operateflag"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "successful operation"
+                    }
+                },
+                "security": [
+                    {
+                        "api_key": []
+                    }
+                ]
+            }
+        },
+        "/task/taskurgent": {
+            "post": {
+                "tags": [
+                    "task"
+                ],
+                "description": "设置文件广播任务紧急与不紧急,state 1为紧急，0为不紧急(只对文件广播任务有效),授权value以Bearer开头",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "description": "设置文件广播任务紧急与不紧急,state 1为紧急，0为不紧急(只对文件广播任务有效)",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/operateflag"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "successful operation"
+                    }
+                },
+                "security": [
+                    {
+                        "api_key": []
+                    }
+                ]
+            }
+        },
+        "/task/taskterminal/{taskid}": {
+            "get": {
+                "tags": [
+                    "task"
+                ],
+                "description": "获得任务终端",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "taskid",
+                        "in": "path",
+                        "description": "跟据任务id获得任务终端",
+                        "required": true,
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "successful operation"
+                    }
+                },
+                "security": [
+                    {
+                        "api_key": []
+                    }
+                ]
+            }
+        },
+        "/task/taskterminal": {
+            "post": {
+                "tags": [
+                    "task"
+                ],
+                "description": "设置任务终端",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "description": "跟据任务id设置任务终端",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/taskterminal"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "successful operation"
+                    }
+                },
+                "security": [
+                    {
+                        "api_key": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "task"
+                ],
+                "description": "删除任务终端",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "description": "删除任务终端",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/singleid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "successful operation"
+                    }
+                },
+                "security": [
+                    {
+                        "api_key": []
+                    }
+                ]
+            }
+        },
+        "/task/taskmusic/{taskid}": {
+            "get": {
+                "tags": [
+                    "task"
+                ],
+                "description": "获得任务媒体",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "taskid",
+                        "in": "path",
+                        "description": "跟据任务id获得任务媒体",
+                        "required": true,
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "successful operation"
+                    }
+                },
+                "security": [
+                    {
+                        "api_key": []
+                    }
+                ]
+            }
+        },
+        "/task/taskmusic": {
+            "post": {
+                "tags": [
+                    "task"
+                ],
+                "description": "设置任务媒体",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "description": "跟据任务id设置任务媒体",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/taskmedia"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "successful operation"
+                    }
+                },
+                "security": [
+                    {
+                        "api_key": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "task"
+                ],
+                "description": "删除任务媒体",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "description": "删除任务媒体",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/singleid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "successful operation"
+                    }
+                },
+                "security": [
+                    {
+                        "api_key": []
+                    }
+                ]
+            }
+        },
+        "/task/enxunhu": {
+            "post": {
+                "tags": [
+                    "task"
+                ],
+                "description": "启用寻呼",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "description": "启用寻呼",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/singleid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "successful operation"
+                    }
+                },
+                "security": [
+                    {
+                        "api_key": []
+                    }
+                ]
+            }
+        },
+        "/task/stopxunhu": {
+            "post": {
+                "tags": [
+                    "task"
+                ],
+                "description": "停止寻呼",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "description": "停止寻呼",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/singleid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "successful operation"
+                    }
+                },
+                "security": [
+                    {
+                        "api_key": []
+                    }
+                ]
+            }
+        },
+        "/task/addxunhu": {
+            "post": {
+                "tags": [
+                    "task"
+                ],
+                "description": "添加寻呼",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "description": "添加寻呼",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/addxunhu"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "successful operation"
+                    }
+                },
+                "security": [
+                    {
+                        "api_key": []
+                    }
+                ]
+            }
+        },
+        "/task/ttstaskinfo": {
+            "post": {
+                "tags": [
+                    "task"
+                ],
+                "description": "设置tts任务,授权value以Bearer开头",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "description": "设置tts任务",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/ttstaskinfo"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "successful operation"
+                    }
+                },
+                "security": [
+                    {
+                        "api_key": []
+                    }
+                ]
+            },
+            "put": {
+                "tags": [
+                    "task"
+                ],
+                "description": "更新tts任务,授权value以Bearer开头",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "description": "更新tts任务",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/ttstaskinfo"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "successful operation"
+                    }
+                },
+                "security": [
+                    {
+                        "api_key": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "task"
+                ],
+                "description": "删除tts任务,授权value以Bearer开头",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "description": "删除任务",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/singleid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "successful operation"
+                    }
+                },
+                "security": [
+                    {
+                        "api_key": []
+                    }
+                ]
+            }
+        },
+        "/task/addtempttstaskmedia": {
+            "post": {
+                "tags": [
+                    "task"
+                ],
+                "operationId": "uploadFiletts",
+                "description": "上传临时tts媒体,授权value以Bearer开头",
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "mediafile",
+                        "in": "formData",
+                        "description": "上传临时tts媒体",
+                        "required": true,
+                        "type": "file"
+                    },
+                    {
+                        "name": "taskid",
+                        "in": "query",
+                        "description": "任务id",
+                        "required": true,
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    {
+                        "name": "speed",
+                        "in": "query",
+                        "description": "播放速率",
+                        "required": true,
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    {
+                        "name": "male",
+                        "in": "query",
+                        "description": "男声或女声（0，1）",
+                        "required": true,
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    {
+                        "name": "volume",
+                        "in": "query",
+                        "description": "音量（0-100）",
+                        "required": true,
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    {
+                        "name": "taskname",
+                        "in": "query",
+                        "description": "任务名称",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "name": "sort",
+                        "in": "query",
+                        "description": "媒体播放序号,0开始",
+                        "required": true,
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    {
+                        "name": "content",
+                        "in": "query",
+                        "description": "内容",
+                        "required": true,
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "successful operation"
+                    }
+                },
+                "security": [
+                    {
+                        "api_key": []
+                    }
+                ]
+            }
+        },
+        "/task/addtempttstask": {
+            "post": {
+                "tags": [
+                    "task"
+                ],
+                "description": "设置临时tts任务",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "description": "添加临时tts任务",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/addtempttstask"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "successful operation"
+                    }
+                },
+                "security": [
+                    {
+                        "api_key": []
+                    }
+                ]
+            }
+        },
+        "/task/gettempttstask": {
+            "post": {
+                "tags": [
+                    "task"
+                ],
+                "description": "获得临时tts任务",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "description": "获得临时tts任务",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/gettempttstask"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "successful operation"
+                    }
+                },
+                "security": [
+                    {
+                        "api_key": []
+                    }
+                ]
+            }
+        },
+        "/task/deltemptts": {
+            "delete": {
+                "tags": [
+                    "task"
+                ],
+                "description": "删除临时tts任务,授权value以Bearer开头",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "description": "删除临时tts任务",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/eventid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "successful operation"
+                    }
+                },
+                "security": [
+                    {
+                        "api_key": []
+                    }
+                ]
+            }
+        },
+        "/task/stoptemptask": {
+            "post": {
+                "tags": [
+                    "task"
+                ],
+                "description": "停止临时任务,授权value以Bearer开头",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "description": "停止临时任务",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/eventid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "successful operation"
+                    }
+                },
+                "security": [
+                    {
+                        "api_key": []
+                    }
+                ]
+            }
+        },
+        "/task/uploadmediaplay": {
+            "post": {
+                "tags": [
+                    "task"
+                ],
+                "operationId": "uploadmedia",
+                "description": "上传媒体",
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "mediafiles",
+                        "in": "formData",
+                        "description": "上传媒体",
+                        "required": true,
+                        "type": "file"
+                    },
+                    {
+                        "name": "volume",
+                        "in": "query",
+                        "description": "音量（0-100）",
+                        "required": true,
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    {
+                        "name": "playtype",
+                        "in": "query",
+                        "description": "播放类型（1为时长，2为次数）",
+                        "required": true,
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    {
+                        "name": "playlength",
+                        "in": "query",
+                        "description": "播放时长,(单位：秒)",
+                        "required": true,
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    {
+                        "name": "playpriority",
+                        "in": "query",
+                        "description": "播放优先级,(10-109)",
+                        "required": true,
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    {
+                        "name": "terminalcount",
+                        "in": "query",
+                        "description": "终端数量,(1-256)",
+                        "required": true,
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    {
+                        "name": "terminalids",
+                        "in": "query",
+                        "description": "终端id(多个id用逗号隔开，例：1，3，4)",
+                        "required": true,
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "successful operation"
+                    }
+                },
+                "security": [
+                    {
+                        "api_key": []
+                    }
+                ]
+            }
+        },
+        "/task/addtemptask": {
+            "post": {
+                "tags": [
+                    "task"
+                ],
+                "description": "添加临时任务,授权value以Bearer开头",
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "volume",
+                        "in": "query",
+                        "description": "音量（0-100）",
+                        "required": true,
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    {
+                        "name": "playtype",
+                        "in": "query",
+                        "description": "播放类型（1为时长，2为次数）",
+                        "required": true,
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    {
+                        "name": "playlength",
+                        "in": "query",
+                        "description": "播放时长,(单位：秒)",
+                        "required": true,
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    {
+                        "name": "playpriority",
+                        "in": "query",
+                        "description": "播放优先级,(10-109)",
+                        "required": true,
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    {
+                        "name": "mediacount",
+                        "in": "query",
+                        "description": "媒体数量,(1-64)",
+                        "required": true,
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    {
+                        "name": "mediaids",
+                        "in": "query",
+                        "description": "媒体id(多个id用逗号隔开，例：1，3，4)",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "name": "terminalcount",
+                        "in": "query",
+                        "description": "终端数量,(1-256)",
+                        "required": true,
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    {
+                        "name": "terminalids",
+                        "in": "query",
+                        "description": "终端id(多个id用逗号隔开，例：1，3，4)",
+                        "required": true,
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "successful operation"
+                    }
+                },
+                "security": [
+                    {
+                        "api_key": []
+                    }
+                ]
+            }
+        },
+        "/task/addttstemptask": {
+            "post": {
+                "tags": [
+                    "task"
+                ],
+                "description": "添加tts临时任务,授权value以Bearer开头",
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "hostid",
+                        "in": "query",
+                        "description": "主机id（0为自带tts终端）",
+                        "required": true,
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    {
+                        "name": "volume",
+                        "in": "query",
+                        "description": "音量（0-100）",
+                        "required": true,
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    {
+                        "name": "playlength",
+                        "in": "query",
+                        "description": "播放时长,(单位：次数)",
+                        "required": true,
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    {
+                        "name": "playpriority",
+                        "in": "query",
+                        "description": "播放优先级,(10-109)",
+                        "required": true,
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    {
+                        "name": "terminalcount",
+                        "in": "query",
+                        "description": "终端数量,(1-256)",
+                        "required": true,
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    {
+                        "name": "terminalids",
+                        "in": "query",
+                        "description": "终端id(最大256个终端id,多个id用逗号隔开，例：1，3，4)",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "name": "speed",
+                        "in": "query",
+                        "description": "播放速率(0-9)",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "name": "male",
+                        "in": "query",
+                        "description": "男声和女声(0为男声，1为女声)",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "name": "text",
+                        "in": "query",
+                        "description": "播放内容（最大256字节）",
+                        "required": true,
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "successful operation"
+                    }
+                },
+                "security": [
+                    {
+                        "api_key": []
+                    }
+                ]
+            }
+        },
+        "/user/userinfo": {
+            "get": {
+                "tags": [
+                    "user"
+                ],
+                "description": "获得用户",
+                "produces": [
+                    "application/json"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "successful operation"
+                    }
+                },
+                "security": [
+                    {
+                        "api_key": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "user"
+                ],
+                "description": "设置用户",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "description": "添加用户",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/userinfo"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "successful operation"
+                    }
+                },
+                "security": [
+                    {
+                        "api_key": []
+                    }
+                ]
+            },
+            "put": {
+                "tags": [
+                    "user"
+                ],
+                "description": "更新用户",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "description": "更新用户",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/userinfo"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "successful operation"
+                    }
+                },
+                "security": [
+                    {
+                        "api_key": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "user"
+                ],
+                "description": "删除用户",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "description": "删除用户,singleid为用户id",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/singleid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "successful operation"
+                    }
+                },
+                "security": [
+                    {
+                        "api_key": []
+                    }
+                ]
+            }
+        },
+        "/user/terminal/{id}": {
+            "get": {
+                "tags": [
+                    "user"
+                ],
+                "description": "获得终端",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "获取用户选中的终端,id为用户id",
+                        "required": true,
+                        "type": "string"
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "successful operation"
+                    }
+                },
+                "security": [
+                    {
+                        "api_key": []
+                    }
+                ]
+            }
+        },
+        "/user/terminal": {
+            "post": {
+                "tags": [
+                    "user"
+                ],
+                "description": "设置用户终端",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "description": "获取用户选中的终端,singleid为用户id",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/userterminal"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "successful operation"
+                    }
+                },
+                "security": [
+                    {
+                        "api_key": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "user"
+                ],
+                "description": "删除终端",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "description": "删除用户终端,singleid为用户id",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/singleid"
+                        }
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "successful operation"
+                    }
+                },
+                "security": [
+                    {
+                        "api_key": []
+                    }
+                ]
+            }
+        },
+        "/user/usergroupinfo": {
+            "get": {
+                "tags": [
+                    "user"
+                ],
+                "description": "获得用户组信息",
+                "produces": [
+                    "application/json"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "successful operation"
+                    }
+                },
+                "security": [
+                    {
+                        "api_key": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "user"
+                ],
+                "description": "添加用户组信息",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "description": "添加用户组信息",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/usergroupinfo"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "successful operation"
+                    }
+                },
+                "security": [
+                    {
+                        "api_key": []
+                    }
+                ]
+            },
+            "put": {
+                "tags": [
+                    "user"
+                ],
+                "description": "更新用户组信息",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "description": "更新用户组信息",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/usergroupinfo"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "successful operation"
+                    }
+                },
+                "security": [
+                    {
+                        "api_key": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "user"
+                ],
+                "description": "删除用户组信息",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "description": "删除用户组信息",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/eventid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "successful operation"
+                    }
+                },
+                "security": [
+                    {
+                        "api_key": []
+                    }
+                ]
+            }
+        },
+        "/log/loginfo": {
+            "get": {
+                "tags": [
+                    "log"
+                ],
+                "description": "获得所有日志信息",
+                "produces": [
+                    "application/json"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "successful operation"
+                    }
+                },
+                "security": [
+                    {
+                        "api_key": []
+                    }
+                ]
+            }
+        },
+        "/log/registinfo": {
+            "get": {
+                "tags": [
+                    "log"
+                ],
+                "description": "获得机器码",
+                "produces": [
+                    "application/json"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "successful operation"
+                    }
+                },
+                "security": [
+                    {
+                        "api_key": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "log"
+                ],
+                "description": "注册服务器",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "description": "注册服务器",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/code"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "successful operation"
+                    }
+                },
+                "security": [
+                    {
+                        "api_key": []
+                    }
+                ]
+            }
+        }
+    },
+    "definitions": {
+        "authorations": {
+            "properties": {
+                "username": {
+                    "type": "string"
+                },
+                "userpwd": {
+                    "type": "string"
+                }
+            },
+            "type": "object",
+            "xml": {
+                "name": "authorations"
+            }
+        },
+        "servername": {
+            "properties": {
+                "name": {
+                    "type": "string"
+                }
+            },
+            "type": "object",
+            "xml": {
+                "name": "authorations"
+            }
+        },
+        "serverinfo": {
+            "properties": {
+                "ip": {
+                    "description": "服务器ip",
+                    "type": "string",
+                    "format": "ip",
+                    "default": "192.168.2.50"
+                },
+                "gateway": {
+                    "description": "网关",
+                    "type": "string",
+                    "format": "ip",
+                    "default": "192.168.1.1"
+                },
+                "port": {
+                    "description": "数据端口号",
+                    "type": "integer",
+                    "format": "int32",
+                    "default": 8090
+                },
+                "udpport": {
+                    "description": "控制端口号",
+                    "type": "integer",
+                    "format": "int32",
+                    "default": 8888
+                }
+            },
+            "type": "object",
+            "xml": {
+                "name": "serverinfo"
+            }
+        },
+        "servertimeset": {
+            "properties": {
+                "year": {
+                    "description": "年",
+                    "type": "integer",
+                    "format": "int32",
+                    "default": 2017
+                },
+                "month": {
+                    "description": "月",
+                    "type": "integer",
+                    "format": "int32",
+                    "default": 6
+                },
+                "day": {
+                    "description": "日",
+                    "type": "integer",
+                    "format": "int32",
+                    "default": 7
+                },
+                "hour": {
+                    "description": "时",
+                    "type": "integer",
+                    "format": "int32",
+                    "default": 12
+                },
+                "min": {
+                    "description": "分",
+                    "type": "integer",
+                    "format": "int32",
+                    "default": 20
+                },
+                "sec": {
+                    "description": "秒",
+                    "type": "integer",
+                    "format": "int32",
+                    "default": 20
+                }
+            },
+            "type": "object",
+            "xml": {
+                "name": "authorations"
+            }
+        },
+        "serverbackup": {
+            "properties": {
+                "backupname": {
+                    "type": "string"
+                }
+            },
+            "type": "object",
+            "xml": {
+                "name": "authorations"
+            }
+        },
+        "eventid": {
+            "properties": {
+                "id": {
+                    "description": "id,多个id用，号隔开（例：1，2，3）",
+                    "type": "string"
+                }
+            },
+            "type": "object",
+            "xml": {
+                "name": "authorations"
+            }
+        },
+        "singleid": {
+            "properties": {
+                "id": {
+                    "description": "单个事件id或终端id",
+                    "type": "integer",
+                    "format": "int32"
+                }
+            },
+            "type": "object",
+            "xml": {
+                "name": "authorations"
+            }
+        },
+        "terminalkey": {
+            "properties": {
+                "shortcutkey": {
+                    "description": "快捷键号码",
+                    "type": "integer",
+                    "format": "int32"
+                },
+                "name": {
+                    "description": "快捷键名称",
+                    "type": "string"
+                }
+            },
+            "type": "object",
+            "xml": {
+                "name": "authorations"
+            }
+        },
+        "eventterminal": {
+            "properties": {
+                "id": {
+                    "description": "事件id",
+                    "type": "integer",
+                    "format": "int32"
+                },
+                "zone": {
+                    "description": "事件分区",
+                    "type": "integer",
+                    "format": "int32"
+                },
+                "terminalid": {
+                    "description": "终端id",
+                    "type": "integer",
+                    "format": "int32"
+                },
+                "terminalzone": {
+                    "description": "终端分区",
+                    "type": "integer",
+                    "format": "int32"
+                }
+            },
+            "type": "object",
+            "xml": {
+                "name": "authorations"
+            }
+        },
+        "terminalpasswd": {
+            "properties": {
+                "terminalpasswd": {
+                    "type": "string"
+                }
+            },
+            "type": "object",
+            "xml": {
+                "name": "authorations"
+            }
+        },
+        "zone": {
+            "properties": {
+                "id": {
+                    "description": "分区id",
+                    "type": "integer",
+                    "format": "int32"
+                },
+                "zonename": {
+                    "description": "分区名称",
+                    "type": "string"
+                },
+                "demo": {
+                    "description": "分区描述",
+                    "type": "string"
+                }
+            },
+            "type": "object",
+            "xml": {
+                "name": "authorations"
+            }
+        },
+        "alarmmap": {
+            "properties": {
+                "channel": {
+                    "description": "通道",
+                    "type": "integer",
+                    "format": "int32"
+                },
+                "hostid": {
+                    "description": "主机id",
+                    "type": "integer",
+                    "format": "int32"
+                },
+                "mediaid": {
+                    "description": "媒体id",
+                    "type": "integer",
+                    "format": "int32"
+                },
+                "zoneid": {
+                    "description": "分区id",
+                    "type": "integer",
+                    "format": "int32"
+                },
+                "mappingname": {
+                    "description": "映射名称",
+                    "type": "string"
+                }
+            },
+            "type": "object",
+            "xml": {
+                "name": "authorations"
+            }
+        },
+        "remotectrl": {
+            "properties": {
+                "taskid": {
+                    "description": "需要遥控的任务id",
+                    "type": "integer",
+                    "format": "int32"
+                },
+                "button": {
+                    "description": "按键",
+                    "type": "integer",
+                    "format": "int32"
+                },
+                "name": {
+                    "description": "映射名称",
+                    "type": "string"
+                }
+            },
+            "type": "object",
+            "xml": {
+                "name": "authorations"
+            }
+        },
+        "copysche": {
+            "properties": {
+                "fromtaskname": {
+                    "description": "源任务名称",
+                    "type": "string"
+                },
+                "totaskname": {
+                    "description": "目标任务名称",
+                    "type": "string"
+                }
+            },
+            "type": "object",
+            "xml": {
+                "name": "authorations"
+            }
+        },
+        "singlename": {
+            "properties": {
+                "name": {
+                    "description": "事件名称",
+                    "type": "string"
+                }
+            },
+            "type": "object",
+            "xml": {
+                "name": "authorations"
+            }
+        },
+        "addxunhu": {
+            "properties": {
+                "taskid": {
+                    "description": "添加寻呼id",
+                    "type": "integer",
+                    "format": "int32"
+                },
+                "id": {
+                    "description": "初寻呼id",
+                    "type": "string"
+                }
+            },
+            "type": "object",
+            "xml": {
+                "name": "authorations"
+            }
+        },
+        "mediafolder": {
+            "properties": {
+                "folderid": {
+                    "description": "文件夹id",
+                    "type": "integer",
+                    "format": "int32"
+                },
+                "parentid": {
+                    "description": "父文件夹id",
+                    "type": "integer",
+                    "format": "int32"
+                },
+                "foldername": {
+                    "description": "文件夹名称",
+                    "type": "string"
+                }
+            },
+            "type": "object",
+            "xml": {
+                "name": "authorations"
+            }
+        },
+        "idprogress": {
+            "properties": {
+                "id": {
+                    "description": "终端id",
+                    "type": "integer",
+                    "format": "int32"
+                },
+                "progress": {
+                    "description": "下载进度",
+                    "type": "integer",
+                    "format": "int32"
+                }
+            },
+            "type": "object",
+            "xml": {
+                "name": "authorations"
+            }
+        },
+        "mediafolderup": {
+            "properties": {
+                "folderid": {
+                    "description": "文件夹id",
+                    "type": "integer",
+                    "format": "int32"
+                },
+                "foldername": {
+                    "description": "文件夹名称",
+                    "type": "string"
+                }
+            },
+            "type": "object",
+            "xml": {
+                "name": "authorations"
+            }
+        },
+        "operateinfo": {
+            "properties": {
+                "sechename": {
+                    "description": "方案名称",
+                    "type": "string"
+                },
+                "state": {
+                    "description": "方案变量，存储具体操作",
+                    "type": "integer",
+                    "format": "int32"
+                }
+            },
+            "type": "object",
+            "xml": {
+                "name": "authorations"
+            }
+        },
+        "operateflag": {
+            "properties": {
+                "id": {
+                    "description": "任务id(多个任务id用,号隔开。例 1，2，3)",
+                    "type": "string"
+                },
+                "state": {
+                    "description": "任务变量，存储具体操作",
+                    "type": "integer",
+                    "format": "int32"
+                }
+            },
+            "type": "object",
+            "xml": {
+                "name": "authorations"
+            }
+        },
+        "taskinfo": {
+            "properties": {
+                "taskid": {
+                    "description": "任务id,添加任务时id不填",
+                    "type": "string"
+                },
+                "prepower": {
+                    "description": "预开电源,以秒为单位",
+                    "type": "integer",
+                    "format": "int32"
+                },
+                "level": {
+                    "description": "任务级别,为用户级别*10+默认级别(例：1*10+2)",
+                    "type": "integer",
+                    "format": "int32"
+                },
+                "volume": {
+                    "description": "音量（1-100）",
+                    "type": "integer",
+                    "format": "int32"
+                },
+                "priority": {
+                    "description": "优先级",
+                    "type": "integer",
+                    "format": "int32"
+                },
+                "datasendmodel": {
+                    "description": "数据发送模式(1组播0单播)",
+                    "type": "integer",
+                    "format": "int32"
+                },
+                "startdate": {
+                    "description": "开始日期",
+                    "type": "string",
+                    "format": "date"
+                },
+                "enddate": {
+                    "description": "结束日期",
+                    "type": "string",
+                    "format": "date"
+                },
+                "execmode": {
+                    "description": "执行模式",
+                    "type": "integer",
+                    "format": "int32"
+                },
+                "tasktype": {
+                    "description": "任务类型1-作息 2-文件 3-采播 4-电话 5-功放,10-网络电台,17-文字语音",
+                    "type": "integer",
+                    "format": "int32"
+                },
+                "taskname": {
+                    "description": "任务名称",
+                    "type": "string"
+                },
+                "starttime": {
+                    "description": "开始时间",
+                    "type": "string",
+                    "default": "11:20:20"
+                },
+                "timelength": {
+                    "description": "播放时长(时长类型为0时，时长为xx-xx-xx xx:xx:xx,时长类型为1时,时长为次数,为次数对作息方案，文件广播有效)",
+                    "type": "string"
+                },
+                "timelengthtype": {
+                    "description": "时长类型",
+                    "type": "string"
+                },
+                "israndomplay": {
+                    "description": "播放模式,0表示随机1表示顺序,文件广播时有效",
+                    "type": "integer",
+                    "format": "int32"
+                },
+                "medianame": {
+                    "description": "媒体名称,(作息方案时有效）",
+                    "type": "string"
+                },
+                "sechename": {
+                    "description": "方案名称,只有作息方案任务时需要填写",
+                    "type": "string"
+                },
+                "cmd": {
+                    "description": "采播时是采播终端id,网络电台时是电台通道(1,2),采播和网络电台时有效",
+                    "type": "integer",
+                    "format": "int32"
+                },
+                "cmdargs": {
+                    "description": "采播时是通道(1-4),网络电台时是电台地址,采播和网络电台时时有效",
+                    "type": "string"
+                },
+                "bandrate": {
+                    "description": "比特率,采播时有效,(8kbp/s,16kbp/s,32kbp/s,64kbp/s)",
+                    "type": "integer",
+                    "format": "int32"
+                },
+                "liveterminalid": {
+                    "description": "采样终端id,采播时有效,(8kbp/s,16kbp/s,32kbp/s,64kbp/s)",
+                    "type": "integer",
+                    "format": "int32"
+                },
+                "liveterminalname": {
+                    "description": "采样终端名称,(采播任务时有效）",
+                    "type": "string"
+                },
+                "samplerate": {
+                    "description": "采样率,采播时有效(8000Hz,11025Hz,16000Hz,44100Hz,48000Hz,64000Hz,96000Hz)",
+                    "type": "integer",
+                    "format": "int32"
+                },
+                "caiboprepower": {
+                    "description": "采播预开电源，对采播任务有效)",
+                    "type": "integer",
+                    "format": "int32"
+                }
+            },
+            "type": "object",
+            "xml": {
+                "name": "authorations"
+            }
+        },
+        "ttstaskinfo": {
+            "properties": {
+                "taskid": {
+                    "description": "任务id,添加任务时id不填",
+                    "type": "string"
+                },
+                "prepower": {
+                    "description": "预开电源,以秒为单位",
+                    "type": "integer",
+                    "format": "int32"
+                },
+                "level": {
+                    "description": "任务级别,为用户级别*10+默认级别(例：1*10+2)",
+                    "type": "integer",
+                    "format": "int32"
+                },
+                "volume": {
+                    "description": "音量（1-100）",
+                    "type": "integer",
+                    "format": "int32"
+                },
+                "priority": {
+                    "description": "优先级",
+                    "type": "integer",
+                    "format": "int32"
+                },
+                "datasendmodel": {
+                    "description": "数据发送模式(1组播0单播)",
+                    "type": "integer",
+                    "format": "int32"
+                },
+                "startdate": {
+                    "description": "开始日期",
+                    "type": "string",
+                    "format": "date"
+                },
+                "enddate": {
+                    "description": "结束日期",
+                    "type": "string",
+                    "format": "date"
+                },
+                "execmode": {
+                    "description": "执行模式",
+                    "type": "integer",
+                    "format": "int32"
+                },
+                "tasktype": {
+                    "description": "任务类型1-作息 2-文件 3-采播 4-电话 5-功放,10-网络电台,17-文字语音",
+                    "type": "integer",
+                    "format": "int32"
+                },
+                "taskname": {
+                    "description": "任务名称",
+                    "type": "string"
+                },
+                "starttime": {
+                    "description": "开始时间",
+                    "type": "string",
+                    "default": "11:20:20"
+                },
+                "timelength": {
+                    "description": "播放时长(时长类型为0时，时长为xx-xx-xx xx:xx:xx,时长类型为1时,时长为次数,为次数对作息方案，文件广播有效)",
+                    "type": "string"
+                },
+                "timelengthtype": {
+                    "description": "时长类型(文字语音时长为次数1)",
+                    "type": "string"
+                },
+                "israndomplay": {
+                    "description": "播放模式,0表示随机1表示顺序,文件广播时有效",
+                    "type": "integer",
+                    "format": "int32"
+                },
+                "cmd": {
+                    "description": "tts主机id",
+                    "type": "integer",
+                    "format": "int32"
+                },
+                "male": {
+                    "description": "0为女声，1为男声",
+                    "type": "integer",
+                    "format": "int32"
+                },
+                "speed": {
+                    "description": "播放速率(0-10)",
+                    "type": "integer",
+                    "format": "int32"
+                },
+                "content": {
+                    "description": "播放文字语音内容",
+                    "type": "string"
+                }
+            },
+            "type": "object",
+            "xml": {
+                "name": "authorations"
+            }
+        },
+        "tempttstask": {
+            "properties": {
+                "taskid": {
+                    "description": "任务tts终端id",
+                    "type": "integer",
+                    "format": "int32"
+                },
+                "type": {
+                    "description": "tts临时任务类型",
+                    "type": "integer",
+                    "format": "int32"
+                },
+                "name": {
+                    "description": "tts任务名称",
+                    "type": "string"
+                },
+                "timelength": {
+                    "description": "播放时长(时长类型为0时，时长为xx-xx-xx xx:xx:xx,时长类型为2时,时长为次数)",
+                    "type": "string"
+                },
+                "timelengthtype": {
+                    "description": "时长类型(文字语音时长为次数2)",
+                    "type": "string"
+                },
+                "volume": {
+                    "description": "播放音量",
+                    "type": "integer",
+                    "format": "int32"
+                },
+                "priority": {
+                    "description": "优先级",
+                    "type": "integer",
+                    "format": "int32"
+                },
+                "mediacount": {
+                    "description": "选中媒体数",
+                    "type": "integer",
+                    "format": "int32"
+                },
+                "terminalcount": {
+                    "description": "选中终端数",
+                    "type": "integer",
+                    "format": "int32"
+                }
+            },
+            "type": "object",
+            "xml": {
+                "name": "authorations"
+            }
+        },
+        "addtempttstask": {
+            "properties": {
+                "taskname": {
+                    "description": "tts任务名称",
+                    "type": "string"
+                },
+                "timelength": {
+                    "description": "播放时长(时长类型为0时，时长为xx-xx-xx xx:xx:xx,时长类型为1时,时长为次数)",
+                    "type": "string"
+                },
+                "timelengthtype": {
+                    "description": "时长类型(文字语音时长类型为次数2)",
+                    "type": "string"
+                },
+                "volume": {
+                    "description": "播放音量",
+                    "type": "integer",
+                    "format": "int32"
+                },
+                "priority": {
+                    "description": "优先级",
+                    "type": "integer",
+                    "format": "int32"
+                },
+                "createtime": {
+                    "description": "任务创建时间",
+                    "type": "string",
+                    "format": "date-time"
+                }
+            },
+            "type": "object",
+            "xml": {
+                "name": "authorations"
+            }
+        },
+        "gettempttstask": {
+            "properties": {
+                "createtime": {
+                    "description": "任务创建时间.格式（****-**-** **:**:**）",
+                    "type": "string",
+                    "format": "date-time"
+                },
+                "upordown": {
+                    "description": "获取创建时间之前或之后（0 or 1)",
+                    "type": "integer",
+                    "format": "int32"
+                },
+                "number": {
+                    "description": "获取个数",
+                    "type": "integer",
+                    "format": "int32"
+                }
+            },
+            "type": "object",
+            "xml": {
+                "name": "authorations"
+            }
+        },
+        "taskterminal": {
+            "properties": {
+                "id": {
+                    "description": "单个任务id",
+                    "type": "integer",
+                    "format": "int32"
+                },
+                "terminalid": {
+                    "description": "终端id",
+                    "type": "integer",
+                    "format": "int32"
+                },
+                "area": {
+                    "description": "分区,默认二进制为11111111,十进制整型为255,为全开，多个分区用,分开",
+                    "type": "integer",
+                    "format": "int32"
+                },
+                "groupid": {
+                    "description": "分组id",
+                    "type": "integer",
+                    "format": "int32"
+                }
+            },
+            "type": "object",
+            "xml": {
+                "name": "authorations"
+            }
+        },
+        "taskmedia": {
+            "properties": {
+                "id": {
+                    "description": "单个任务id",
+                    "type": "integer",
+                    "format": "int32"
+                },
+                "mediaid": {
+                    "description": "媒体id",
+                    "type": "integer",
+                    "format": "int32"
+                }
+            },
+            "type": "object",
+            "xml": {
+                "name": "authorations"
+            }
+        },
+        "userinfo": {
+            "properties": {
+                "userid": {
+                    "description": "用户id,(添加用户时不填）",
+                    "type": "integer",
+                    "format": "int32"
+                },
+                "groupid": {
+                    "description": "用户组id",
+                    "type": "integer",
+                    "format": "int32"
+                },
+                "name": {
+                    "description": "用户名称",
+                    "type": "string"
+                },
+                "password": {
+                    "description": "用户名",
+                    "type": "string"
+                },
+                "description": {
+                    "description": "用户描述",
+                    "type": "string"
+                },
+                "groupname": {
+                    "description": "用户分组名称",
+                    "type": "string"
+                },
+                "accusedid": {
+                    "description": "用户分控权限，1电脑分控，2监控分控",
+                    "type": "string"
+                },
+                "group": {
+                    "description": "用户组",
+                    "type": "integer",
+                    "format": "int32"
+                }
+            },
+            "type": "object",
+            "xml": {
+                "name": "authorations"
+            }
+        },
+        "userterminal": {
+            "properties": {
+                "userid": {
+                    "description": "用户id,(添加用户时不填）",
+                    "type": "integer",
+                    "format": "int32"
+                },
+                "terminalid": {
+                    "description": "终端id",
+                    "type": "integer",
+                    "format": "int32"
+                },
+                "zone": {
+                    "description": "分区",
+                    "type": "integer",
+                    "format": "int32"
+                }
+            },
+            "type": "object",
+            "xml": {
+                "name": "authorations"
+            }
+        },
+        "usergroupinfo": {
+            "properties": {
+                "id": {
+                    "description": "用户组id,(添加用户组时不填）",
+                    "type": "integer",
+                    "format": "int32"
+                },
+                "priority": {
+                    "description": "优先级",
+                    "type": "integer",
+                    "format": "int32"
+                },
+                "right": {
+                    "description": "用户组权限",
+                    "type": "integer",
+                    "format": "int32"
+                },
+                "groupname": {
+                    "description": "组名",
+                    "type": "string"
+                },
+                "description": {
+                    "description": "描述",
+                    "type": "string"
+                }
+            },
+            "type": "object",
+            "xml": {
+                "name": "authorations"
+            }
+        },
+        "code": {
+            "properties": {
+                "code": {
+                    "description": "注册码",
+                    "type": "string"
+                }
+            },
+            "type": "object",
+            "xml": {
+                "name": "authorations"
+            }
+        }
+    },
+    "securityDefinitions": {
+        "api_key": {
+            "type": "apiKey",
+            "name": "Authorization",
+            "in": "header"
+        }
+    },
+    "tags": [
+        {
+            "name": "authorations",
+            "description": "授权"
+        },
+        {
+            "name": "server",
+            "description": "服务器管理"
+        },
+        {
+            "name": "terminal",
+            "description": "资源管理"
+        },
+        {
+            "name": "task",
+            "description": "任务管理"
+        },
+        {
+            "name": "user",
+            "description": "用户管理"
+        },
+        {
+            "name": "log",
+            "description": "日志管理"
+        }
+    ],
+    "externalDocs": {
+        "description": "Find out more about Swagger",
+        "url": "http://swagger.io"
+    }
+}

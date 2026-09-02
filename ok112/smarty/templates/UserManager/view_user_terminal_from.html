@@ -1,0 +1,186 @@
+<form name="form2" class="terminal_form_to_body">
+ <table width="98%" border="0" cellpadding="2" cellspacing="1" align="center"> 
+	<tr align='center' class="terminal_table_row_bg">
+	
+		<td width="7%" nowrap><{$user_terminal.No|capitalize}></td>  
+		        	
+		<td width="15%" nowrap><{$user_terminal.Terminal_Name|capitalize}></td> 
+		
+	<!--	<td width="10%" nowrap><{$user_terminal.Zone|capitalize}></td>  -->
+		   
+		<td width="13%" nowrap><{$user_terminal.Terminal_Type|capitalize}></td>   
+
+		<td width="8%" nowrap><{$user_terminal.Network_Status|capitalize}></td>  
+		
+		<td width="8%" nowrap><{$user_terminal.Device_Status|capitalize}></td>	
+		          	    
+		<td width="8%" nowrap><{$user_terminal.Task_Status|capitalize}></td>
+		
+		<td width="8%" nowrap><{$user_terminal.IP_Address|capitalize}></td>
+		
+    </tr>  
+	<tr></tr>
+<{if $info|@count neq 0}> 
+<{section name=loop loop=$info}>            
+	<tr align="center"  class="fileadm_font_style">
+		<td nowrap="nowrap">
+			<{if ($is_right == 1 || $admin_id == "administrator") && $group_id != 1}>
+				<input name="id" type="checkbox" id="id" value="<{$info[loop].id}>">
+			<{else}>
+				<{$smarty.section.loop.index+1+$start}>
+			<{/if}>
+		</td>		
+		<td nowrap="nowrap"><{$info[loop].terminalname}></td> 
+		
+	<!--	<td nowrap="nowrap">
+		<{if $info[loop].groupid != 0}>
+		<{assign var="count" value="0"}>
+			<{section name=stream loop=$stream_info}>	
+				<{if $stream_info[stream].streamid == $info[loop].groupid}>
+					<{$stream_info[stream].name}>
+				<{/if}>
+			<{/section}>
+		<{else}>
+			 <{$user_terminal.No_Zone|capitalize}>
+		<{/if}>
+		</td>
+		  -->  
+		<td nowrap="nowrap">
+			<{section name=type loop=$type_info}>
+				<{if $type_info[type].id eq $info[loop].typeid}>
+				
+						<script language="javascript">
+								document.write(chinese_big5_english("<{$language}>","<{$type_info[type].name}>"));	
+							</script>	
+				<{/if}>
+			<{/section}>
+		</td> 
+		            	
+		<td nowrap="nowrap">
+			<{if $info[loop].netstate == 1}>
+				<{$user_terminal.Connect|capitalize}>
+			<{elseif $info[loop].netstate == 0}>
+				<{$user_terminal.Disconnect|capitalize}>
+			<{/if}>
+		</td> 
+		
+		<td nowrap="nowrap">
+		<{if $info[loop].netstate==0}>
+			<{$user_terminal.Disconnect|capitalize}>
+		<{elseif $info[loop].netstate==1 && $info[loop].devicestate==0}>
+			<{$user_terminal.Idle|capitalize}>
+		<{elseif $info[loop].netstate==1 && $info[loop].devicestate==1}>
+			<{$user_terminal.Run|capitalize}>
+		<{/if}>
+		</td>   
+		
+		<td nowrap="nowrap">
+		
+			<{if $info[loop].netstate==0}>
+					<{$user_terminal.Disconnect|capitalize}>
+				<{elseif $info[loop].netstate==1 && $info[loop].taskstate == 0}>
+					<{$user_terminal.Ready|capitalize}>
+				<{elseif $info[loop].netstate==1 && $info[loop].taskstate == 1}>
+					<{$user_terminal.Timing_Play|capitalize}>
+				<{elseif $info[loop].netstate==1 && $info[loop].taskstate == 2}>
+					<{$user_terminal.On_Talkback|capitalize}>
+				<{elseif $info[loop].netstate==1 && $info[loop].taskstate == 3}>
+					<{$user_terminal.AOD|capitalize}>
+				<{elseif $info[loop].netstate==1 && $info[loop].taskstate == 4}>
+					<{$user_terminal.Selected_Play|capitalize}>
+				<{elseif $info[loop].netstate==1 && $info[loop].taskstate == 5}>
+					<{$user_terminal.Paging|capitalize}>
+				<{elseif $info[loop].netstate==1 && $info[loop].taskstate == 6}>
+					<{$user_terminal.Talkback_Ready|capitalize}>
+				<{elseif $info[loop].netstate==1 && $info[loop].taskstate == 7}>
+					<{$user_terminal.Local_Amplifying|capitalize}>
+				<{elseif $info[loop].netstate==1 && $info[loop].taskstate == 8}>
+					<{$user_terminal.Play_from_USB|capitalize}>
+				<{elseif $info[loop].netstate==1 && $info[loop].taskstate == 9}>
+					<{$user_terminal.Request_Talkback|capitalize}>
+				<{elseif $info[loop].netstate==1 && $info[loop].taskstate == 10}>
+					<{$user_terminal.Requested_Talkback|capitalize}>
+				<{elseif $info[loop].netstate==1 && $info[loop].taskstate == 11}>
+					<{$user_terminal.Paging_Play|capitalize}>
+				<{elseif $info[loop].netstate==1 && $info[loop].taskstate == 12}>
+					<{$user_terminal.Timing_Play|capitalize}>
+				<{elseif $info[loop].netstate==1 && $info[loop].taskstate == 25}>
+					<{$user_terminal.ttsplay|capitalize}>
+			<{/if}>
+		</td>
+		
+		<td nowrap="nowrap">
+			<{$info[loop].ip}>
+		</td>
+	</tr>   
+<{/section}>  
+<{else}>
+<tr class="tablestyle" style="text-align:center" >
+<td colspan="8"><strong style="font-size:12px;"><{$Revise.No_data}></font></strong></td>
+</tr>
+<{/if}>        
+ <!--   <tr>
+	<script src="smarty/templates/UserAccessControl/CheckUserRights.js" type="text/javascript" language="javascript"></script>
+	<{if $group_id != 1}>
+		<td colspan="8" class="tablestyle">
+			<a href="javascript:selAll(0)"><{$Filetaskmanager.Select_All}></a>
+				&nbsp;
+			<a href="javascript:noSelAll(0)"><{$Filetaskmanager.Cancel}></a>
+				&nbsp;
+			<a href="javascript:cancel_user_terminal('<{$user_id}>')"><{$Filetaskmanager.Delete}></a>
+		</td>
+	<{/if}>
+	
+	</tr>
+	<script>
+		rights_control(<{$is_right}>,"<{$is_admin}>","link_view","link_look");
+	</script>-->
+  </table>
+</form>
+<table border="0" width="100%" align="center">
+	<tr>
+		<td width="50%"></td>
+		<td nowrap="nowrap">
+    		<div class="link_style"><{$pagestr}></div>
+		</td>
+		<td width="50%"></td>
+	</tr>
+</table>
+<!--  搜索表单  -->
+<form method="get" name="searchform" action="">
+<input type='hidden' name='dopost' value='' />
+<table width='98%'  border='0' cellpadding='1' cellspacing='1' align="center">
+  <tr>
+    <td background='skin/images/wbg.gif' align='center'>
+      <table border='0' cellpadding='0' cellspacing='0' class="fileadm_font_style">
+        <tr>
+          <td width='90' align='center'><{$Searchform.Search_conditions}></td>
+          <td width='160'>
+          <select name='searchkey' id="searchkey">
+            <option value=""><{$Searchform.Select_type}></option>
+            <option value="terminalname"><{$Searchform.Terminal_name}></option>
+          </select>
+        </td>
+        <td width='70'>
+          <{$Searchform.Keyword}>
+        </td>
+        <td width='160'>
+          	<input name='searchvalue' type='text' id="searchvalue" style='width:150px' value='' />
+        </td>
+        <td width='110'>
+    		<select name='searchsequence' id="searchsequence">
+    		  <option value=""><{$Searchform.Sort}></option>
+    		  <option value="id"><{$Searchform.Serial_number}></option>
+      	    </select>
+        </td>
+        <td>
+          <input name="imageField" type="image" src="skin/images/frame/search.gif" width="45px" height="20px" border="0px"/>
+        </td>
+       </tr>
+      </table>
+    </td>
+  </tr>
+</table>
+</form>
+</body>
+</html>

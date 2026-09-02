@@ -1,0 +1,97 @@
+---- g_noiseudp Matches (107 in 1 files) ----
+Udpcontrol.c: TerminalClassCtrl_t g_noiseudp[NOISEDEVICE_COUNT] =
+Udpcontrol.c:    if(( g_noiseudp[NOISEDEVICE_CLIENT].serverfd = socket (AF_INET,SOCK_DGRAM,0)) < 0 )
+Udpcontrol.c:    g_noiseudp[NOISEDEVICE_UDP].port = NOSE_PORT;
+Udpcontrol.c:    g_noiseudp[NOISEDEVICE_UDP].serverfd  = socket(AF_INET, SOCK_DGRAM, 0);
+Udpcontrol.c:    if( g_noiseudp[NOISEDEVICE_UDP].serverfd  < 0)
+Udpcontrol.c:        printf("socket :%d  is error:%s\n",  g_noiseudp[NOISEDEVICE_UDP].serverfd, strerror(errno));
+Udpcontrol.c:    localaddr.sin_port = htons(g_noiseudp[NOISEDEVICE_UDP].port);
+Udpcontrol.c:    DEBUG("%d ok\n", g_noiseudp[NOISEDEVICE_UDP].serverfd);
+Udpcontrol.c:    if(bind(g_noiseudp[NOISEDEVICE_UDP].serverfd, (struct sockaddr *)&localaddr, sizeof(struct sockaddr)) == -1)
+Udpcontrol.c:        printf("binds %d port:%d , error:%s\n", g_noiseudp[NOISEDEVICE_UDP].serverfd, (g_noiseudp[NOISEDEVICE_UDP].port), strerror(errno));
+Udpcontrol.c:	 close( g_noiseudp[NOISEDEVICE_UDP].serverfd );
+Udpcontrol.c:	 g_noiseudp[NOISEDEVICE_UDP].serverfd =-1;
+Udpcontrol.c:    DEBUG("%d port:%d is ok\n", g_noiseudp[NOISEDEVICE_UDP].serverfd,(g_noiseudp[NOISEDEVICE_UDP].port));
+Udpcontrol.c:    return  g_noiseudp[NOISEDEVICE_UDP].serverfd ;	
+Udpcontrol.c:    g_noiseudp[NOISEDEVICE_UDP2].port = NOSE_PORT2;
+Udpcontrol.c:    g_noiseudp[NOISEDEVICE_UDP2].serverfd  = socket(AF_INET, SOCK_DGRAM, 0);
+Udpcontrol.c:    if( g_noiseudp[NOISEDEVICE_UDP2].serverfd  < 0)
+Udpcontrol.c:        printf("socket :%d  is error:%s\n",  g_noiseudp[NOISEDEVICE_UDP2].serverfd, strerror(errno));
+Udpcontrol.c:    localaddr.sin_port = htons(g_noiseudp[NOISEDEVICE_UDP2].port);
+Udpcontrol.c:    if(bind(g_noiseudp[NOISEDEVICE_UDP2].serverfd, (struct sockaddr *)&localaddr, sizeof(struct sockaddr)) == -1)
+Udpcontrol.c:        printf("bind2 %d port:%d , error:%s\n", g_noiseudp[NOISEDEVICE_UDP2].serverfd, (g_noiseudp[NOISEDEVICE_UDP2].port), strerror(errno));
+Udpcontrol.c:	 close( g_noiseudp[NOISEDEVICE_UDP2].serverfd );
+Udpcontrol.c:	 g_noiseudp[NOISEDEVICE_UDP2].serverfd =-1;
+Udpcontrol.c:    DEBUG("port:%d is ok\n", (g_noiseudp[NOISEDEVICE_UDP2].port));
+Udpcontrol.c:    return  g_noiseudp[NOISEDEVICE_UDP2].serverfd ;	
+Udpcontrol.c:    g_noiseudp[NOISEDEVICE_UDP3].port = NOSE_PORT3;
+Udpcontrol.c:    g_noiseudp[NOISEDEVICE_UDP3].serverfd  = socket(AF_INET, SOCK_DGRAM, 0);
+Udpcontrol.c:    if( g_noiseudp[NOISEDEVICE_UDP3].serverfd  < 0)
+Udpcontrol.c:        printf("socket :%d  is error:%s\n",  g_noiseudp[NOISEDEVICE_UDP3].serverfd, strerror(errno));
+Udpcontrol.c:    localaddr.sin_port = htons(g_noiseudp[NOISEDEVICE_UDP3].port);
+Udpcontrol.c:    if(bind(g_noiseudp[NOISEDEVICE_UDP3].serverfd, (struct sockaddr *)&localaddr, sizeof(struct sockaddr)) == -1)
+Udpcontrol.c:        printf("bind3 %d port:%d , error:%s\n", g_noiseudp[NOISEDEVICE_UDP3].serverfd, (g_noiseudp[NOISEDEVICE_UDP3].port), strerror(errno));
+Udpcontrol.c:	 close( g_noiseudp[NOISEDEVICE_UDP3].serverfd );
+Udpcontrol.c:	 g_noiseudp[NOISEDEVICE_UDP3].serverfd =-1;
+Udpcontrol.c:    DEBUG("port:%d is ok\n", (g_noiseudp[NOISEDEVICE_UDP3].port));
+Udpcontrol.c:    return  g_noiseudp[NOISEDEVICE_UDP3].serverfd ;	
+Udpcontrol.c:    g_noiseudp[NOISEDEVICE_UDP4].port = NOSE_PORT4;
+Udpcontrol.c:    g_noiseudp[NOISEDEVICE_UDP4].serverfd  = socket(AF_INET, SOCK_DGRAM, 0);
+Udpcontrol.c:    if( g_noiseudp[NOISEDEVICE_UDP4].serverfd  < 0)
+Udpcontrol.c:        printf("socket :%d  is error:%s\n",  g_noiseudp[NOISEDEVICE_UDP4].serverfd, strerror(errno));
+Udpcontrol.c:    localaddr.sin_port = htons(g_noiseudp[NOISEDEVICE_UDP4].port);
+Udpcontrol.c:    if(bind(g_noiseudp[NOISEDEVICE_UDP4].serverfd, (struct sockaddr *)&localaddr, sizeof(struct sockaddr)) == -1)
+Udpcontrol.c:        printf("bind4 %d port:%d , error:%s\n", g_noiseudp[NOISEDEVICE_UDP4].serverfd, (g_noiseudp[NOISEDEVICE_UDP4].port), strerror(errno));
+Udpcontrol.c:	 close( g_noiseudp[NOISEDEVICE_UDP4].serverfd );
+Udpcontrol.c:	 g_noiseudp[NOISEDEVICE_UDP4].serverfd =-1;
+Udpcontrol.c:    DEBUG("port:%d is ok\n", (g_noiseudp[NOISEDEVICE_UDP4].port));
+Udpcontrol.c:    return  g_noiseudp[NOISEDEVICE_UDP4].serverfd ;	
+Udpcontrol.c:    if(g_noiseudp[sendport-1].serverfd<= 0)
+Udpcontrol.c:        if(noiseudp_open_socket((void *)g_noiseudp[sendport-1].port) == SDK_FAILURE)
+Udpcontrol.c:    localaddr.sin_addr.s_addr =inet_addr(g_noiseudp[sendport-1].ip);
+Udpcontrol.c:    localaddr.sin_port = htons(g_noiseudp[sendport-1].port);
+Udpcontrol.c:    ret =  sendto(g_noiseudp[sendport-1].serverfd, buffer, len , 0, (struct sockaddr*)&localaddr, sizeof(localaddr));
+Udpcontrol.c:        printf("send datato:%d,%d,%s ,len=%d,%d  failure:%s\n",  g_noiseudp[sendport-1].serverfd, g_noiseudp[sendport-1].port,g_noiseudp[sendport-1].ip,len,ret, strerror(errno));                  
+Udpcontrol.c:    DEBUG(" send %d,ip=%s, data :%d, to %d:%d\n", g_noiseudp[sendport-1].serverfd,g_noiseudp[sendport-1].ip, len,  g_noiseudp[sendport-1].port,   localaddr.sin_port);    
+Udpcontrol.c:	strcpy(g_noiseudp[config->devinfo[sendnum].sendport-1].ip,config->devinfo[sendnum].deviceip);
+Udpcontrol.c:    if(g_noiseudp[NOISEDEVICE_CLIENT].serverfd<= 0)
+Udpcontrol.c:	      if((g_noiseudp[NOISEDEVICE_CLIENT].serverfd = socket (AF_INET,SOCK_DGRAM,0)) < 0 )
+Udpcontrol.c:    ret = sendto(g_noiseudp[NOISEDEVICE_CLIENT].serverfd, psendmesg, size, 0, (struct sockaddr *)&sndsockaddr, sizeof(sndsockaddr));
+Udpcontrol.c:   	 g_noiseudp[NOISEDEVICE_CLIENT].serverfd=-1;
+Udpcontrol.c:	close( g_noiseudp[NOISEDEVICE_CLIENT].serverfd);		
+Udpcontrol.c:	int fd = g_noiseudp[NOISEDEVICE_UDP].serverfd;
+Udpcontrol.c:	  if( g_noiseudp[NOISEDEVICE_UDP].serverfd  <= 0)
+Udpcontrol.c:	   	 g_noiseudp[NOISEDEVICE_UDP].serverfd = -1;
+Udpcontrol.c:		close(g_noiseudp[NOISEDEVICE_UDP].serverfd);		
+Udpcontrol.c:		g_noiseudp[NOISEDEVICE_UDP].serverfd = -1;
+Udpcontrol.c:	int fd = g_noiseudp[NOISEDEVICE_UDP2].serverfd;
+Udpcontrol.c:	  if( g_noiseudp[NOISEDEVICE_UDP2].serverfd  <= 0)
+Udpcontrol.c:	   	 g_noiseudp[NOISEDEVICE_UDP2].serverfd = -1;
+Udpcontrol.c:		close(g_noiseudp[NOISEDEVICE_UDP2].serverfd);		
+Udpcontrol.c:		g_noiseudp[NOISEDEVICE_UDP2].serverfd = -1;
+Udpcontrol.c:	int fd = g_noiseudp[NOISEDEVICE_UDP3].serverfd;
+Udpcontrol.c:	  if( g_noiseudp[NOISEDEVICE_UDP3].serverfd  <= 0)
+Udpcontrol.c:	   	 g_noiseudp[NOISEDEVICE_UDP3].serverfd = -1;
+Udpcontrol.c:		close(g_noiseudp[NOISEDEVICE_UDP3].serverfd);		
+Udpcontrol.c:		g_noiseudp[NOISEDEVICE_UDP3].serverfd = -1;
+Udpcontrol.c:	int fd = g_noiseudp[NOISEDEVICE_UDP4].serverfd;
+Udpcontrol.c:	  if( g_noiseudp[NOISEDEVICE_UDP4].serverfd  <= 0)
+Udpcontrol.c:	   	 g_noiseudp[NOISEDEVICE_UDP4].serverfd = -1;
+Udpcontrol.c:		close(g_noiseudp[NOISEDEVICE_UDP4].serverfd);		
+Udpcontrol.c:		g_noiseudp[NOISEDEVICE_UDP4].serverfd = -1;
+Udpcontrol.c:				if(g_noiseudp[i].serverfd <= 0)
+Udpcontrol.c:					g_noiseudp[i].serverfd = g_noiseudp[i].openFunction(NULL);
+Udpcontrol.c:					if(SDK_FAILURE == g_noiseudp[i].serverfd)
+Udpcontrol.c:							g_noiseudp[i].name,
+Udpcontrol.c:							g_noiseudp[i].ip,
+Udpcontrol.c:							g_noiseudp[i].port);	   
+Udpcontrol.c:				FD_SET(g_noiseudp[i].serverfd, &socketFds);
+Udpcontrol.c:		        	n = MAX(n, g_noiseudp[i].serverfd);			
+Udpcontrol.c:				if((g_noiseudp[i].serverfd > 0)
+Udpcontrol.c:				&&(FD_ISSET(g_noiseudp[i].serverfd, &socketFds)))
+Udpcontrol.c:					g_noiseudp[i].recvFunction(NULL);				
+Udpcontrol.c:			g_noiseudp[i].serverfd = g_noiseudp[i].openFunction(NULL);
+Udpcontrol.c:			if(SDK_FAILURE == g_noiseudp[i].serverfd)
+Udpcontrol.c:					g_noiseudp[i].name,
+Udpcontrol.c:					g_noiseudp[i].ip,
+Udpcontrol.c:					g_noiseudp[i].port);	   	    	               

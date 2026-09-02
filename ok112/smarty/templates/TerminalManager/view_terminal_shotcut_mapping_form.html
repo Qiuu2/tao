@@ -1,0 +1,103 @@
+<form name="form2" class="terminal_form_to_body">
+<table width="98%" border="0" cellpadding="2" cellspacing="1"  align="center">
+	<tr align='center' class="terminal_table_row_bg">   
+		<td width="7%" nowrap="nowrap"><{$Termianl_manager_Options}></td>                 	
+		<td width="15%" nowrap="nowrap"><{$Termianl_manager_Terminal_name}></td>    
+		<td width="15%" nowrap="nowrap"><{$Termianl_manager_Shortcut_Name}></td>          
+		<td width="7%" nowrap="nowrap"><{$Termianl_manager_Shortcut}></td>  
+		<td width="7%" nowrap="nowrap"><{$Termianl_manager_Map_Terminal}></td>  
+		<td width="7%" nowrap="nowrap"><{$Termianl_manager_Operate}></td>
+	</tr> 
+	<tr></tr>
+	<{if $terminal_info|@count neq 0}>        
+		<{section name=loop loop=$terminal_info}>    
+		  <tr align='center' class="terminal_per_row" >             	
+			<td nowrap="nowrap">
+				<{$smarty.section.loop.index+1 + $start}>
+			</td>	
+			<td nowrap="nowrap"><{$terminal_info[loop].terminalname}></td>	
+			
+			 <td nowrap="nowrap"><{$terminal_info[loop].name}></td> 
+					 
+			 <td nowrap="nowrap">
+			  <{if $terminal_info[loop].key == 30}>
+			
+				<{$Termianl_choutout}>
+				
+				<{elseif $terminal_info[loop].key == 0}>
+				<{$all_choutout}>
+				<{else}>
+				 <{$terminal_info[loop].key}>
+				 <{/if}>
+			 
+			 
+			</td>
+	
+			 <td nowrap="nowrap">
+			 	<a href="javascript:view_terminal('<{$terminal_info[loop].id}>')"><{$Termianl_manager_View_Terminal}></a></td>
+			 <td nowrap="nowrap">
+			 <a href="javascript:modifyshotcut('<{$terminal_info[loop].id}>&terminal_id=<{$terminal_id}>&typeid=<{$gettype}>')">
+			<{if $gettype ==33 || $gettype ==44 }>			
+			<{$terminal_manager.Instancy_modify_Termial|capitalize}>
+			<{else}>
+			<{$terminal_manager.modify_Shortcut_Key|capitalize}>
+			<{/if}>
+			</a>&nbsp;
+				<a href="javascript:del_terminal_shotcut('<{$terminal_info[loop].id}>&terminal_id=<{$terminal_id}>&typeid=<{$gettype}>')"><{$Termianl_manager_Delete_Map}></a>
+			 </td>	
+		  </tr>         
+		<{/section}>
+	<{else}>
+	
+	<tr class="tablestyle" >
+		<td colspan="6" style="text-align:center"><strong><{$Revise.No_data}></strong></td>
+	</tr>
+	<{/if}>
+<tr style="background-color: #FFFFFF;">
+	<td colspan="6" style="text-align:left">
+	<script language="javascript">
+
+	</script>
+	<a href="javascript:setshotcut()">
+	
+		<{if $gettype ==33 || $gettype ==44 || $gettype ==38}>			
+		<{$terminal_manager.Instancy_Add_Termial|capitalize}>
+		<{else}>
+		<{$terminal_manager.Set_Shortcut_Key|capitalize}>
+		<{/if}>
+		</a>&nbsp;
+	</td>
+	
+</tr>
+</table>
+		<script src="smarty/templates/UserAccessControl/CheckUserRights.js" type="text/javascript" language="javascript"></script>			
+		<script>rights_control(<{$is_right}>,"<{$is_admin}>","link_view");</script>
+</form>
+
+<table align="center"><tr><td><div class="link_style" align="center"><{$pagestr}></div></td></tr></table>
+
+
+<{if $user_rights ==1}>
+<!--什么也不做-->
+<{elseif $user_rights ==2}>
+<script>
+	var input_objs = document.getElementsByName('id');
+	for(var i=0; i< input_objs.length; i++)
+	{
+		input_objs[i].disabled = true;
+	}
+	for(var i=0; i< input_objs.length; i++)
+	{
+		<{section name=ter_id loop=$user_terminal}>
+		if(input_objs[i].value == "<{$user_terminal[ter_id]}>")
+		{
+			input_objs[i].disabled = false;
+		}
+		<{/section}>
+	}
+	document.getElementById('select_all_yes').style.display = 'none';
+	document.getElementById('select_all_no').style.display = 'none';
+</script>
+<{elseif $user_rights ==0}>
+<!--什么也不做-->
+<{/if}>

@@ -1,0 +1,218 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>DisplayTaskTerminal</title>
+
+<link href="skin/css/main_page_style.css" rel="stylesheet" type="text/css" />
+<style>
+ 
+	/* 奇数行样式 */
+	tr:nth-child(odd) {
+		background-color: #ffffff;
+	}
+	
+	/* 偶数行样式 */
+	tr:nth-child(even) {
+		background-color: #c1cfe0;
+	}
+</style>
+<script language="javascript">
+function chinese_big5_english(curr_language,txt_msg)
+{
+    if(curr_language == "big5")
+    {
+        switch(txt_msg)
+        {
+            case "共享媒体库":
+            txt_msg= "共享媒體庫";
+            break;
+            case "铃声媒体库":
+            txt_msg= "鈴聲媒體庫";
+            break;
+            case "点播媒体库":
+            txt_msg= "點播媒體庫";
+            break;
+            case "报警媒体库":
+            txt_msg= "報警媒體庫";
+            break;
+            case "录音媒体库":
+            txt_msg= "錄音媒體庫";
+            break;
+
+            case "服务器":
+            txt_msg= "服務器";
+            break;
+            case "普通IP终端":
+            txt_msg= "普通IP終端";
+            break;
+            case "话筒":
+            txt_msg= "話筒";
+            break;
+            case "双向寻呼终端":
+            txt_msg= "雙向尋呼終端";
+            break;
+            case "IP前置":
+            txt_msg= "IP前置";
+            break;
+            
+            case "IP功放":
+            txt_msg= "IP功放";
+            break;
+            case "电源管理器":
+            txt_msg= "電源管理器";
+            break;
+            case "报警主机":
+            txt_msg= "報警主機";
+            break;
+            case "采样终端":
+            txt_msg= "採樣終端";
+            break;
+            case "普通电脑":
+            txt_msg= "普通電腦";
+            break;
+        }
+    }
+    else if(curr_language == "chinese") 
+    {
+        //不做处理
+    }
+    else if(curr_language == "english")
+    {
+        switch(txt_msg)
+        {
+            case "共享媒体库":
+            txt_msg= "Sharing Media";
+            break;
+            case "铃声媒体库":
+            txt_msg= "Ring Music";
+            break;
+            case "点播媒体库":
+            txt_msg= "AOD Media";
+            break;
+            case "报警媒体库":
+            txt_msg= "Alarm Media";
+            break;
+            case "录音媒体库":
+            txt_msg= "Recording Media";
+            break;
+            case "语音合成媒体库":
+            $txt_msg= "tts media";
+            break;
+            case "服务器":
+            txt_msg= "Server";
+            break;
+            case "普通IP终端":
+            txt_msg= "IP Tterminal";
+            break;
+            case "话筒":
+            txt_msg= "Microphone";
+            break;
+            case "双向寻呼终端":
+            txt_msg= "Paging Terminal";
+            break;
+            case "IP前置":
+            txt_msg= "IP Pre-amplifier";
+            break;
+            
+            case "IP功放":
+            txt_msg= "IP Amplifier";
+            break;
+            case "电源管理器":
+            txt_msg= "Power Controller";
+            break;
+            case "报警主机":
+            txt_msg= "Emergency Centre";
+            break;
+            case "采样终端":
+            txt_msg= "Sampling Terminal";
+            break;
+            case "普通电脑":
+            txt_msg= "Computer";
+            break;
+				case "一体化音箱":
+            txt_msg= "Integrated Speakers";
+            break;
+			case "分控软件":
+            txt_msg= "subcontrol software";
+            break;
+			case "一键寻呼终端":
+            txt_msg= "one-click paging terminal";
+            break;
+			case "分控前置":
+            txt_msg= "subcontrol front";
+            break;
+			case "背景音乐":
+            txt_msg= "background music";
+            break;
+			case "事话接口":
+            txt_msg= "telephone interface";
+            break;
+			case "手机终端":
+            txt_msg= "moblie terminal";
+            break;
+			case "9970分控工作站":
+            txt_msg= "subcontrol workstation";
+            break;
+			case "透传终端":
+            txt_msg= "transparent terminal";
+            break;
+			case "普通IP终端":
+            txt_msg= "ordinary ip terminal";
+            break;
+			case "监控主机":
+            txt_msg= "monitor host";
+            break;
+			case "TTS主机":
+            txt_msg= "TTS host";
+            break;
+			case "离线终端":
+            txt_msg= "offline terminal";
+            break;
+			case "简版网络功放":
+            txt_msg= "simple network amplifier";
+            break;
+			case "简版采样终端":
+            txt_msg= "simple sampling terminal";
+            break;
+			case "网络调音台":
+            txt_msg= "network mixer";
+            break;
+			case "线阵音柱":
+            txt_msg= "network audio collector";
+            break;
+			case "网络调音台":
+            txt_msg= "network mixer";
+            break;
+			case "网络音频采集器":
+            txt_msg= "network audio collector";
+            break;
+			case "网络音频采集器":
+            txt_msg= "network audio collector";
+            break;
+			case "网络前置":
+            txt_msg= "network preposition";
+            break;
+			case "网络分区前置":
+            txt_msg= "network area preposition";
+            break;
+			case "网络功放":
+            txt_msg= "network amplifier";
+            break;
+			case "简版网络前置":
+            txt_msg= "simple network preposition";
+            break;
+			case "寻呼终端":
+            txt_msg= "paging terminal";
+            break;
+        }
+    }
+return txt_msg;
+}
+</script>
+</head>
+<body>	
+<{include file="BellManager/displayonetaskterminal_form.html"}> 
+<{include file="language/`$language`_foot.php"}> 
+</body>
+</html>

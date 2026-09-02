@@ -1,0 +1,250 @@
+<form name="form2" class="terminal_form_to_body">
+ <td>
+  <div id="divTest" style="width:100%;overflow-x:hidden;overflow-y:scroll">
+ <table width="98%" border="0" cellpadding="2" cellspacing="1"  align="center" id="displayttable" >
+
+ <thead>
+    <tr align='center' class="terminal_table_row_bg">   
+		<th width="3%" nowrap="nowrap">
+			ID
+		</th> 
+		<th width="10%" nowrap="nowrap">
+			<{$stream_manager.Select|capitalize}>
+		</th> 
+		<th width="15%" nowrap="nowrap" onclick="sortTable('displayttable', 1)" class="sort_data_table_sequence">
+			<{$stream_manager.aideviceid|capitalize}>↑↓
+	  </th>     
+		<th width="15%" nowrap="nowrap" onclick="sortTable('displayttable', 2)" class="sort_data_table_sequence">
+			<{$stream_manager.banji_name|capitalize}>↑↓
+	  </th> 
+		<th width="15%" nowrap="nowrap" onclick="sortTable('displayttable', 3)" class="sort_data_table_sequence">
+			<{$stream_manager.ai_name|capitalize}>↑↓
+	  </th>        
+		<th width="10%" nowrap="nowrap">
+			<{$stream_manager.aicard|capitalize}>↑↓
+			</th> 
+			<th width="10%" nowrap="nowrap">
+				<{$stream_manager.aidevice_ip|capitalize}>↑↓
+				</th> 	
+		<th width="10%" nowrap="nowrap">
+			<{$stream_manager.boyname|capitalize}>
+		</th>      
+    </tr>
+    
+</thead>
+<tbody>
+<{if $info|@count neq 0}>   
+	<{section name=loop loop=$info}>           		
+	<tr align='center' class="terminal_per_row">   
+	      <td nowrap="nowrap">
+			<{$info[loop].id}>
+			</td>     	
+		<td nowrap="nowrap">
+		<input name="id" type="checkbox" id="id" value="<{$info[loop].idsubid}>" class="np">
+		</td>
+		<td nowrap="nowrap" name="shibiedeviceid" id="shibiedeviceid"><{$info[loop].shibiedeviceid}></td>
+		<td nowrap="nowrap"><{$info[loop].deviceaddr}></td>
+		<td nowrap="nowrap"><{$info[loop].peoplename}></td>
+		<td nowrap="nowrap"><{$info[loop].peopleidcard}></td>  
+		<td nowrap="nowrap"><{$info[loop].deviceip}></td> 
+		<td nowrap="nowrap"><{$info[loop].boyname1}>,<{$info[loop].boyname2}>,<{$info[loop].boyname3}></td>
+	</tr>
+	<{/section}>
+<{else}>
+<tr align='center' class="tablestyle">
+<td colspan="5"><strong><{$Revise.No_data}></strong></td>
+</tr>
+<{/if}>
+</tbody>  
+ </table>
+</div>
+ <script language="javascript">
+ var xmlhttp=null; 
+ function createXMLHttpRequest()
+{ 
+	if(window.ActiveXObject)
+	{ 
+		xmlhttp = new ActiveXObject("microsoft.XMLHTTP"); 
+	} 
+	else if(window.XMLHttpRequest)
+	{ 
+		xmlhttp = new XMLHttpRequest(); 
+	}
+	else
+	{
+		alert('Not Support AJAX');
+	}
+} 
+
+ function trim(str)
+{
+   str=str.replace(/(^\s*)|(\s*$)/g,""); 
+   return str;
+}
+  var get_id_dbvalue;
+function ajax_set_db_value()
+{
+
+   createXMLHttpRequest();
+   xmlhttp.open( "get","get_db_value.php?type=1",false );
+   xmlhttp.onreadystatechange = function()
+   {
+
+ 	if(xmlhttp.readyState == 4 )
+      {		
+         if( xmlhttp.status == 200 )
+         {
+			 get_id_dbvalue=trim(xmlhttp.responseText);		
+		 }
+	}
+   }
+    xmlhttp.setRequestHeader( "If-Modified-Since", "0");
+	xmlhttp.send(null);
+	return get_id_dbvalue;
+}
+
+
+
+ function getdbvalue()
+ {
+ 	var string_arrays2,j=0;
+	 var table = document.getElementById('displayttable');
+	var tbody = table.tBodies[0];
+	var rows = tbody.rows; 
+	ajax_set_db_value();
+	
+
+		var string_arrays = get_id_dbvalue.split("#");
+		var id;
+		for (var i=0; i<rows.length; i++ ) 
+		{
+			id= trim(rows[i].cells[0].innerHTML);
+		
+			for(j=0;j<string_arrays.length;j++)
+			{
+				string_arrays2=string_arrays[j].split("-");
+		
+	
+				if(id==string_arrays2[0])
+				{	
+				rows[i].cells[5].innerHTML=string_arrays2[1];
+				}
+			
+			}
+		
+		}
+ 
+ }
+ 
+ window.onload = function ()
+ {
+ 	
+// getdbvalue();
+ 
+  window.setInterval("getdbvalue()", 1000);
+ 
+ 
+ }
+ 
+ 
+var obj =document.getElementById("divTest").offsetHeight; 
+ if(obj>=600)
+ {
+ 	document.getElementById("divTest").style.height=600+"px"; 
+ }
+ else
+ {
+  	document.getElementById("divTest").style.height=document.getElementById( "divTest").offsetHeight;
+ }
+ var objwidth = document.getElementById( "divTest").offsetWidth;
+if(objwidth<=1000)
+ {
+ 	document.getElementById("divTest").style.width=1000+"px"; 
+ }
+ else
+ {
+  document.getElementById("divTest").style.width=document.getElementById( "divTest").offsetWidth;
+ }
+</script> 
+<table width="98%" border="0" cellpadding="2" cellspacing="1"  align="center" id="tabledo">
+	<tr class="bgcolors1">
+		<td height="28" colspan="5">
+			<a  href="javascript:selAll(0)"><{$stream_manager.Select_All|capitalize}></a>&nbsp;
+			<a  href="javascript:noSelAll(0)"><{$stream_manager.Cancel|capitalize}></a>&nbsp;
+			<a href="ap_people_add.php?shibiedeviceid=<{$shibiedeviceid}>" target='main'><{$stream_manager.addpeople|capitalize}></a>&nbsp;
+			<a  href="javascript:modifyStream()"><{$stream_manager.modifypeople|capitalize}></a>&nbsp;
+			<a  href="javascript:delStream()"><{$stream_manager.delpeople|capitalize}></a>&nbsp;
+			<a  name="creatfolder" href="javascript:addfolder(this,'<{$shibiedeviceid}>')" >
+				<{$stream_manager.addfolder|capitalize}>
+			</a>&nbsp;
+			<a   href="javascript:modifyfolder(this,'<{$shibiedeviceid}>')" >
+					<{$stream_manager.modifyfolder|capitalize}>
+			</a>&nbsp;
+			<a   href="javascript:delfolder(this,'<{$shibiedeviceid}>')" >
+					<{$stream_manager.delfolder|capitalize}>
+			</a>&nbsp;
+		</td>
+	</tr>	
+ </table>
+	</td>
+  </tr>
+  <tr>
+    <td><div class="link_style" align="center"><{$pagestr}></div></td>
+  </tr>
+<!--  搜索表单  -->
+<form name='form3' action='' method='get'>
+<input type='hidden' name='dopost' value='' />
+<table width='98%'  border='0' cellpadding='1' cellspacing='1' class="middle" align="center" style="margin-top:8px">
+  <tr>
+    <td background='skin/images/wbg.gif' align='center'>
+      <table border='0' cellpadding='0' cellspacing='0'>
+        <tr>
+			<td width='90' align='center'><{$Searchform.Search_conditions}></td>
+			<td width='160'>
+				<select class="colors" name='searchkey' id="searchkey">
+					<option value=''><{$Searchform.Select_type}></option>
+					<option value='name'><{$Searchform.Regional_Name}> </option>
+				</select>
+			</td>
+			<td width='70'>
+				<{$Searchform.Keyword}>        
+			</td>
+			<td width='160'>
+				<input class="colors" type='text' name='keyvalue' id="keyvalue" value='' />       
+			</td>
+			
+			<td width='110'>
+				<select class="colors" name='orderby' id="orderby">
+					<option value=''><{$Searchform.Sort}></option>
+					<option value='name'><{$Searchform.Stream_name}></option>
+				</select>        
+			</td>
+			
+			<td>
+				<input name="imageField" type="image" src="<{$stream_manager.search_image}>" width="45" height="20" border="0" class="np" />
+			</td>
+       </tr>
+      </table>
+    </td>
+  </tr>
+</table>
+</form>
+
+<script>
+	var get_user_right = "<{$is_right}>";
+	if(get_user_right == 1)
+	{
+		//什么也不做
+	}
+	else
+	{
+		var get_a_objects = document.getElementsByTagName("a");
+		for(var i=0; i<get_a_objects.length; i++)
+		{
+			get_a_objects[i].href = "javascript:void(0);";
+			get_a_objects[i].onclick = null;
+			get_a_objects[i].style.color="#787878";
+		//	get_a_objects[i].disabled = true;
+		}
+	}
+</script>

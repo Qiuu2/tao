@@ -1,0 +1,445 @@
+<form name="form2" class="terminal_form_to_body" style="width:100%">
+<tbody>
+<div id="divTest" style="width:100%;overflow-x:hidden;overflow-y:scroll">
+<table width="98%" border="0" cellpadding="2" cellspacing="1"  align="center" id= "tasklist" style="font-size:12px">
+	<thead> 
+    <tr align='center' class="terminal_table_row_bg">
+	
+		<th width="5%" nowrap>
+			<{$task_manager.Select|capitalize}>
+		</th>       	
+		<th width="8%" nowrap onclick="sortTable('tasklist', 1,'1')" class="sort_data_table_sequence">
+			<{$task_manager.zhaoshen_Task|capitalize}>↑↓
+		</th> 
+		
+		<th width="8%" nowrap onclick="sortTable('tasklist', 2,'1')" class="sort_data_table_sequence">
+			<{$task_manager.Play_Cycle|capitalize}>↑↓
+		</th>  
+		   
+		<th width="8%" nowrap onclick="sortTable('tasklist', 3,'1')" class="sort_data_table_sequence">
+			<{$task_manager.Start_Date|capitalize}>↑↓
+		</th>   
+
+		<th width="8%" nowrap onclick="sortTable('tasklist', 4,'1')" class="sort_data_table_sequence">
+			<{$task_manager.End_Date|capitalize}>↑↓
+		</th>  
+		
+		<th width="5%" nowrap onclick="sortTable('tasklist', 5,'1')" class="sort_data_table_sequence">
+			<{$task_manager.Run_Time|capitalize}>↑↓
+		</th>	
+		          	    
+		<th width="5%" nowrap onclick="sortTable('tasklist', 6,'1')" class="sort_data_table_sequence"><{$task_manager.Duration|capitalize}>↑↓</th>
+		
+		<th width="5%" nowrap onclick="sortTable('tasklist', 7,'1')" class="sort_data_table_sequence">
+			<{$task_manager.Status|capitalize}>↑↓
+		</th>
+		
+		<th width="5%" nowrap onclick="sortTable('tasklist', 8,'1')" class="sort_data_table_sequence" ><{$task_manager.Play_Mode|capitalize}>↑↓</th>
+		
+		<th width="5%" nowrap onclick="sortTable('tasklist', 9,'1')" class="sort_data_table_sequence" ><{$task_manager.Volume|capitalize}>↑↓</th>    
+		
+		<th width="5%" nowrap onclick="sortTable('tasklist', 10,'1')" class="sort_data_table_sequence" ><{$task_manager.Task_level|capitalize}>↑↓</th>  
+		<th width="5%" nowrap onclick="sortTable('tasklist', 11,'1')" class="sort_data_table_sequence" ><{$task_manager.belonguser|capitalize}>↑↓</th>  
+		<th width="10%" nowrap onclick="sortTable('tasklist', 12,'1')" class="sort_data_table_sequence" ><{$task_manager.On_Playing|capitalize}>↑↓</th>
+		<th width="8%" nowrap><{$task_manager.Terminal_Attribute|capitalize}></th> 
+    </tr>  
+  </thead>
+	<tbody>
+	<{if $info|@count neq 0}> 
+	<{section name=loop loop=$info}>            
+	<tr align="center" >
+		<td nowrap="nowrap">
+			<{if $is_right == 1 || $admin_id == "administrator"}>
+				<input name="id" type="checkbox" id="id" value="<{$info[loop].taskid}>">
+			<{else}>
+				<{$smarty.section.loop.index+1+$start}>
+			<{/if}>
+		</td>		
+		<td nowrap="nowrap">
+			<label title="<{$info[loop].taskname}>"><{$info[loop].taskname|truncate:30:".."}></label>
+		</td> 
+		
+		<td nowrap="nowrap">
+			<{if $info[loop].tasktype eq 7}>
+				<span style="color:#FF0000" id="emergency_mark" name="emergency_mark"><{$task_manager.Emergency_Broadcast}></span>
+				
+			<{elseif $info[loop].tasktype eq 25}>
+			
+				<{if $info[loop].exemodel eq "0000000"}>
+				
+				<{$task_manager.Manual|capitalize}>
+				
+				<{elseif $info[loop].exemodel neq "0000000"}>
+				
+					<script language="javascript">document.write(getdayofweek("<{$info[loop].exemodel}>"))</script> 
+				
+				<{/if}>
+			<{/if}>
+		</td>
+		    
+		<td nowrap="nowrap"><{$info[loop].startdate}> </td>              	
+		<td nowrap="nowrap"><{$info[loop].enddate}> </td> 
+		
+		<td nowrap="nowrap"><{$info[loop].playtime}> </td>   
+		
+		<td nowrap="nowrap">
+		
+		
+				<script language="javascript">
+				var gethour;
+				var getmin;
+				var getsen;
+				var gettime=<{$info[loop].timelength}>;
+				var gettimetype=<{$info[loop].timelengthtype}>;
+				if(gettimetype==1)
+				{
+					gethour=parseInt(gettime/3600);
+					getmin=parseInt((gettime-gethour*3600)/60);
+					getsen=gettime-gethour*3600-getmin*60;
+					if(gethour>0)
+						document.write(gethour,'<{$Filetaskmanager.hour}>');
+					if(getmin>0)
+						document.write(getmin,'<{$Filetaskmanager.min}>');
+					if(getsen>0)
+						document.write(getsen,'<{$Filetaskmanager.sec}>');
+				}
+			else
+				document.write(gettime,'<{$Filetaskmanager.Times}>');
+				</script>
+		</td>
+		
+		<td nowrap="nowrap">
+			<{if $info[loop].state == 0 and $info[loop].projectstate == 0}>	
+			<span style="color:#ff0000;">
+				<{$Filetaskmanager.Enable}>●</span>
+			<{elseif $info[loop].state == 0 and $info[loop].projectstate == 1}>	
+				<{$Filetaskmanager.Disable}>
+			<{elseif $info[loop].state == 3}> 
+				<span style="color:#0f6b24;">       
+				<{$Filetaskmanager.Execution}> </span> 
+			<{elseif $info[loop].state == 2}> 
+			<span style="color:#0f6b24;">  
+				<{$Filetaskmanager.Pause}> </span>
+			<{elseif $info[loop].state == 1}>
+				<span style="color:#0f6b24;">  
+				<{$Filetaskmanager.Execution}> </span>
+			<{elseif $info[loop].state == 4}>
+				<span style="color:#0f6b24;">  
+				<{$Filetaskmanager.pauses}></span> 
+			<{/if}> 
+		</td>
+		
+		<td nowrap="nowrap">
+			<{if $info[loop].israndomplay == 0}> 
+				<{$Filetaskmanager.Order}>
+			<{else $info[loop].israndomplay == 1}>      
+				<{$Filetaskmanager.Random}>  
+			<{/if}>  
+		</td>
+		
+		<td nowrap="nowrap">
+			<{$info[loop].defaultvolume}>
+		</td>
+
+
+		<td nowrap="nowrap">
+			<{$info[loop].priority}>
+		</td>
+	<td nowrap="nowrap">
+			<{$info[loop].username}>
+		</td>
+
+
+		<td nowrap="nowrap">
+		  <{section name=media loop=$medialist}>
+			  <{if $info[loop].playfileid == $medialist[media].id}>
+				 <label title="<{$medialist[media].name}>"> 
+				 	<{$medialist[media].name|truncate:15:"..."}>
+				 </label>		  	  
+			  <{/if}>
+		  <{/section}>
+		</td>
+
+		<td nowrap="nowrap">
+			<a  name="link_view" id="link_view" href="soundstaskdisplayterminal.php?term_id=<{$info[loop].taskid}>">
+				<{$task_manager.Terminal|capitalize}>
+			</a>
+
+			<a  name="link_look" id="link_look" href="displaymedia.php?id=<{$info[loop].taskid}>">
+				<{$task_manager.Media|capitalize}>
+			</a> 
+		</td>
+	</tr>
+<{/section}>
+<{else}>
+<tr class="tablestyle" style="text-align:center" >
+	<td colspan="12">
+		<strong style="font-size:12px;"><{$task_manager.No_Record|capitalize}></font></strong>
+	</td>
+</tr>
+<{/if}>
+</table>
+</div>
+</tbody>
+<table cellpadding="0" cellspacing="0">
+<tr>
+<script src="smarty/templates/UserAccessControl/CheckUserRights.js" type="text/javascript" language="javascript"></script>
+	<td colspan="12" class="tablestyle">
+		<a title="<{$task_manager.Select_Alltask|capitalize}>" href="javascript:selAll(0)" >
+			<{$task_manager.Select_All|capitalize}>
+		</a>&nbsp;
+		
+		<a title="<{$task_manager.noSelect_Alltask|capitalize}>" href="javascript:noSelAll(0)" >
+			<{$task_manager.Cancel|capitalize}>
+		</a>&nbsp;
+		
+		<a title="<{$task_manager.Solution_runtask|capitalize}>" href="javascript:startFileTask()" >
+			<{$task_manager.Run|capitalize}>
+		</a>&nbsp;
+		
+		<a title="<{$task_manager.Solution_pausetask|capitalize}>" href="javascript:stopFileTask()" >
+			<{$task_manager.Pause|capitalize}>
+		</a>&nbsp;
+	
+		<!--启用文件广播-->
+		<a title="<{$task_manager.Solution_enabletask|capitalize}>" href="javascript:start_file_task()" >
+			<{$task_manager.Enable|capitalize}>
+		</a>&nbsp;
+		<!--停用文件广播-->
+		<a title="<{$task_manager.Solution_disabletask|capitalize}>" href="javascript:stop_file_task()" >
+			<{$task_manager.Disable|capitalize}>
+		</a>&nbsp;
+		
+		<a title="<{$task_manager.Add_taskplay|capitalize}>" href="zhaoshengtaskadd.php?userid=<{$userid}>" target='_self' >
+			<{$task_manager.Add|capitalize}>
+		</a>&nbsp;
+		
+		<a title="<{$task_manager.Modify_taskplay|capitalize}>" href="javascript:modifyFileTask()" >
+			<{$task_manager.Modify|capitalize}>
+		</a>&nbsp;
+		
+		<a title="<{$task_manager.Delete_taskplay|capitalize}>" href="javascript:delTask()" >
+			<{$task_manager.Delete|capitalize}>
+		</a>&nbsp;
+		<a title="<{$task_manager.defaultvolume|capitalize}>" href="javascript:void(0)" id="volume_handle" onclick="mouse_click_position(event)">
+			<{$task_manager.defaultvolume|capitalize}>
+		</a>
+		<a  href="javascript:enabledefaultvolume()" >
+			<{$task_manager.enabledefaultvolume|capitalize}>
+		</a>&nbsp;
+	</td>
+</tr>
+</table>
+</form>
+<table border="0" width="100%" align="center">
+	<tr>
+		<td width="50%"></td>
+		<td nowrap="nowrap">
+    		<div class="link_style"><{$pagestr}></div>
+		</td>
+		<td width="50%"></td>
+	</tr>
+</table>
+<!--  搜索表单  -->
+
+<form style="z-index:-1;" name='form3' action="taskmanager.php?id=<{$get_task_id}>" method='post'>
+
+<input type='hidden' name='dopost' value='' />
+
+<table width='98%'  border='0' cellpadding='1' cellspacing='1' align="center">
+  <tr>
+    <td background='skin/images/wbg.gif' align='center'>
+      <table border='0' cellpadding='0' cellspacing='0' class="fileadm_font_style">
+        <tr>
+          <td width='90' align='center'><{$Searchform.Search_conditions}></td>
+          <td width='160'>
+          <select name='searchkey' id="searchkey">
+            <option value=""><{$Searchform.Select_type}></option>
+            <option value="taskname"><{$Searchform.Task_name}></option>
+            <option value="playtime"><{$Searchform.Execution_time}></option>
+          </select>
+        </td>
+        <td width='70'>
+          <{$Searchform.Keyword}>
+        </td>
+        <td width='160'>
+          	<input name='searchvalue' type='text' id="searchvalue" style='width:150px' value='' />
+        </td>
+        <td width='110'>
+    		<select name='searchsequence' id="searchsequence">
+    		  <option value=""><{$Searchform.Sort}></option>
+    		  <option value="playtime"><{$Searchform.Time}></option>
+      	    </select>
+        </td>
+        <td>
+          <input name="imageField" type="image" src="<{$task_manager.search_image}>" width="45px" height="20px" border="0px"/>
+        </td>
+       </tr>
+      </table>
+    </td>
+  </tr>
+</table>
+
+</form>
+
+<!--修改声音-->
+ <script type="text/javascript" src="skin/js/frame/jquery.min.js"></script>
+ <script type="text/javascript" src="skin/js/frame/rating.min.js"></script>
+
+<div id="change_volume" class="r-displayVolume">
+ <iframe style="position:absolute; width:145;height:105px;left:0px; top:0px;filter:alpha(opacity=0);-moz-opacity:0; border:0;z-index:-1"></iframe>
+<div style="position:absolute;border:0;width:150; left:0px; top:0px; height:110px;z-index:100">
+
+	<table border="0" cellpadding="0" cellspacing="0" width="150" style="background-color:#EEFFEE">
+			<tr>
+			<td nowrap="nowrap" align="center">
+			&nbsp;&nbsp;  <{$task_manager.volumedb|capitalize}>0-<{$task_manager.dbvalue|capitalize}><input  name="db_value0" id="db_value0" align="left" value="<{$db_value0}>" type="Text" size="2">
+			</td>
+			</tr>
+			<tr>
+			<td nowrap="nowrap" align="center">
+			&nbsp;	<{$task_manager.volumedb|capitalize}>20-<{$task_manager.dbvalue|capitalize}><input  name="db_value1" id="db_value1" align="left" value="<{$db_value1}>" type="Text" size="2">
+			</td>
+			</tr>
+			<tr>
+			<td nowrap="nowrap" align="center">
+			&nbsp;	<{$task_manager.volumedb|capitalize}>40-<{$task_manager.dbvalue|capitalize}><input  name="db_value2" id="db_value2" align="left" value="<{$db_value2}>" type="Text" size="2">
+			</td>
+			</tr>
+			<tr>
+			<td nowrap="nowrap" align="center">
+			&nbsp;	<{$task_manager.volumedb|capitalize}>60-<{$task_manager.dbvalue|capitalize}><input  name="db_value3" id="db_value3" align="left" value="<{$db_value3}>" type="Text" size="2">
+			</td>
+			</tr>
+			<tr>
+			<td nowrap="nowrap" align="center">
+			&nbsp;	<{$task_manager.volumedb|capitalize}>80-<{$task_manager.dbvalue|capitalize}><input  name="db_value4" id="db_value4" align="left" value="<{$db_value4}>" type="Text" size="2">
+			</td>
+			</tr>
+			<tr>
+			<td nowrap="nowrap" align="center">
+				<{$task_manager.volumedb|capitalize}>100-<{$task_manager.dbvalue|capitalize}><input  name="db_value5" id="db_value5" align="left" value="<{$db_value5}>" type="Text" size="2">
+			</td>
+			</tr>
+		<tr>
+			<td nowrap="nowrap" align="center">
+				<a href="javascript:void(0)" onclick="set_task_volume()"> 
+					<{$task_manager.Sumbit|capitalize}>
+				</a>
+				&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+				<a href="javascript:void(0)" onclick="disappear_volume_div()"> 
+					<{$task_manager.Cancel|capitalize}>
+				</a>
+			</td>
+		</tr>	
+	</table>
+</div>
+</div>
+ 
+<script language="javascript">
+
+var hidden_display = true;//默认隐藏
+var xmlhttp=null; 
+
+function createXMLHttpRequest()
+{ 
+	if(window.ActiveXObject)
+	{ 
+		xmlhttp = new ActiveXObject("microsoft.XMLHTTP"); 
+	} 
+	else if(window.XMLHttpRequest)
+	{ 
+		xmlhttp = new XMLHttpRequest(); 
+	}
+	else
+	{
+		alert('Not Supported AJAX');
+	}
+} 
+
+function ajax_set_task_volume(set_volume_server,db_value0,db_value1,db_value2,db_value3,db_value4,db_value5,task_id)
+{
+   createXMLHttpRequest();
+   
+  
+   xmlhttp.open( "get","set_task_volume_server.php?tasktype="+set_volume_server+"&db_value0="+db_value0+"&db_value1="+db_value1+"&db_value2="+db_value2+"&db_value3="+db_value3+"&db_value4="+db_value4+"&db_value5="+db_value5+"&task_id="+task_id+"",true );
+   
+   xmlhttp.onreadystatechange = function()
+   {
+      if( xmlhttp.readyState == 4 )
+      {
+         if( xmlhttp.status == 200 )
+         {
+            if( xmlhttp.responseText == 0)
+            {
+				 if("<{$language}>"=="english")
+					alert("fail");
+				else
+				alert('失败');
+            }
+			else if(xmlhttp.responseText == 1)
+			{
+			 if("<{$language}>"=="english")
+					alert("success");
+				else
+				alert('成功');
+				
+				get_div_obj('change_volume').style.display = "none";
+				
+				self.location.reload();
+			}
+         }
+		 else
+		 {
+		  	if("<{$language}>"=="english")
+				alert("fail");
+			else
+				alert('访问失败');	 
+		 }
+      }
+   }
+    xmlhttp.setRequestHeader( "If-Modified-Since", "0");
+	xmlhttp.send(null);
+}
+
+function get_mouse_coordinates(event)
+{
+   var eve = event||window.event;
+   if(eve.pageX)
+   {
+
+    return {x:eve.pageX,y:eve.pageY};
+   }
+   else
+   {
+
+    return {
+                x:eve.clientX+document.body.scrollLeft - document.body.clientLeft,
+                y:eve.clientY+document.body.scrollTop - document.body.clientTop
+            };
+   }
+}
+function get_div_obj(str_id)
+{
+ 	return document.getElementById(str_id);   
+}
+
+function mouse_click_position(event)
+{
+    if(document.all)
+    {
+        window.event.cancelBubble = true;   
+    }
+    else
+    {
+        event.stopPropagation();
+    }
+    var mouse_obj_xy = get_mouse_coordinates(event);
+    get_div_obj('change_volume').style.left = mouse_obj_xy.x+20+'px';
+    get_div_obj('change_volume').style.top = mouse_obj_xy.y+'px';
+	get_div_obj('change_volume').style.display = "block";
+}
+
+</script>
+</body>
+</html>

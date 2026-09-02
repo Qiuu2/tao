@@ -1,0 +1,54 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>view_terminal_shotcut</title>
+<link href="skin/css/main_page_style.css" rel="stylesheet" type="text/css"/>
+<style>
+ 
+	/* 奇数行样式 */
+	tr:nth-child(odd) {
+		background-color: #ffffff;
+	}
+	
+	/* 偶数行样式 */
+	tr:nth-child(even) {
+		background-color: #c1cfe0;
+	}
+</style>
+<script type="text/javascript">
+function view_terminal(str)
+{
+	window.location.href = "displayterminal.php?key_id="+str+"";
+}
+function setshotcut()
+{
+	var getterminalid = <{$terminal_id}>;
+	
+	window.location.href = "setterminalkeyoption.php?id="+getterminalid+"&getact="+ <{$getact}>;
+}
+
+function modifyshotcut(str)
+{
+
+	window.location.href = "modifyterminalkeyoption.php?id="+str+"&getact=" + <{$getact}>;
+}
+
+function del_terminal_shotcut(str)
+{
+	if(window.confirm("<{$Termianl_manager_OK_delete}>"))
+	{
+		window.location.href = "do.php?act=del_terminal_shotcut&id="+str+"&flagdo=" + <{$getact}>;
+	}
+	else
+	{
+		return void(0);
+	}
+}
+</script>
+</head>
+<body>
+<{include file="TerminalManager/view_terminal_shotcut_mapping_form.html"}> 
+<{include file="language/`$language`_foot.php"}> 
+</body>
+</html>

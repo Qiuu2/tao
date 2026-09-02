@@ -1,0 +1,71 @@
+<form action="do.php?act=foldermodify_msg&id=<{$id}>" method="post" name="fileForm" onSubmit="return checkform();" class="terminal_form_to_body">
+
+		<table width="500" border="0" align="center" cellpadding="0" cellspacing="0" class="terminal_table_border">	
+		  <tr>
+			<td colspan="2">
+				<table border="0" align="center" cellpadding="0" cellspacing="0">
+					<tr>
+						<td>
+							<img src="<{$modify_folder.modify_folder_image}>"/>
+						</td>
+					</tr>
+				</table>
+			</td>
+		  </tr>
+		  
+		  <tr>
+		  	<td>
+				<table border="0" align="center" cellpadding="5" cellspacing="0" style="margin-top:10px;">
+				
+				  <tr class="bgcolors1">
+				
+					<td width="25%" height="" align="right"><{$modify_folder.Folder_name}></td>
+					
+					<td width="50%" height="" align="left" valign="middle">     	
+						<input class="terminal_input_font" name="folderName" type="text" id="folderName" value="">		
+						<span id="folderName_s" class="terminal_star">*</span>	
+						
+						<script language="javascript">
+							document.getElementById('folderName').value = chinese_big5_english("<{$chinese_big5_english}>","<{$folder_info.name}>");
+						</script>
+									
+					</td>			 
+				  </tr>	 
+				 <!-- <tr class="bgcolors1">       
+					<td width="25%" align="right"><{$modify_folder.Share}></td>
+					<td width="50%" height="" align="left" valign="middle">
+						<input name="isOrNoShare" type="checkbox" id="isOrNoShare" value="1"/>
+						<script>
+							var is_share = "<{$folder_info.priority}>";
+							
+							var folder_id = "<{$id}>";
+							
+							if( (is_share == "1") )
+							{
+								document.getElementById('isOrNoShare').checked  = true;
+								if( folder_id=="0" )
+								{
+									document.getElementById('isOrNoShare').disabled = true;
+								}
+							}
+							else
+							{
+								document.getElementById('isOrNoShare').checked  = false;
+							}
+						</script>
+					</td>
+				  </tr>
+				-->
+				  <tr class="bgcolors1">
+					<td align="center" colspan="2">
+						<input name="Submit" type="submit" class="terminal_button" value="<{$modify_folder.Modify}>"/>
+						&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+						<input name="reset" type="reset" class="terminal_button" id="reset" value="<{$modify_folder.Cancel}>" />
+					</td>
+				  
+				  </tr>
+				</table>
+			   </td>
+			</tr>
+		</table>
+</form>

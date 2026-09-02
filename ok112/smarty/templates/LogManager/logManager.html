@@ -1,0 +1,127 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>stream manager</title>
+
+<link href="skin/css/main_page_style.css" rel="stylesheet" type="text/css" />
+<style>
+ 
+	/* 奇数行样式 */
+	tr:nth-child(odd) {
+		background-color: #ffffff;
+	}
+	
+	/* 偶数行样式 */
+	tr:nth-child(even) {
+		background-color: #c1cfe0;
+	}
+</style>
+<script type="text/javascript">
+
+//获得选中文件的文件名
+function getCheckboxItem()
+{
+	var allSel="";
+	if(document.form2.id.checked)
+	{
+		allSel=document.form2.id.value;
+		if(allSel==undefined)
+		{
+			allSel="";
+		}
+	}
+	for(i=0;i<document.form2.id.length;i++)
+	{
+		if(document.form2.id[i].checked)
+		{
+			if(allSel=="")
+				allSel=document.form2.id[i].value;
+			else
+				allSel=allSel+","+document.form2.id[i].value;
+		}
+	}
+	return allSel;
+}
+
+//获得选中其中一个的id
+function getOneItem()
+{
+	var allSel="";
+	if(document.form2.id.value) return document.form2.id.value;
+	for(i=0;i<document.form2.id.length;i++)
+	{
+		if(document.form2.id[i].checked)
+		{
+				allSel = document.form2.id[i].value;
+				break;
+		}
+	}
+	return allSel;
+}
+function selAll(aid)
+{
+	if(aid==0)
+	{
+		document.form2.id.checked=true;	
+	}
+	for(i=0;i<document.form2.id.length;i++)
+	{
+		if(!document.form2.id[i].checked)
+		{
+			document.form2.id[i].checked=true;
+		}
+	}
+}
+function noSelAll(aid)
+{
+	if(aid==0)
+	{
+		document.form2.id.checked=false;	
+	}
+	for(i=0;i<document.form2.id.length;i++)
+	{
+		if(document.form2.id[i].checked)
+		{
+			document.form2.id[i].checked=false;
+		}
+	}
+}
+//任务日志
+
+//删除终端分区--2010/4/1张艳宇添加
+function delLog()
+{
+/*
+	var qstr=getCheckboxItem();
+	if(qstr==null||qstr=="")
+	{
+		alert("<{$log_manager.select_Log|capitalize}>");
+		return void(0);	
+	}
+	else
+	{
+		if(!window.confirm("<{$log_manager.confirm_deleting|capitalize}>"))
+		{
+				return void(0);
+		}	
+		else
+		{
+				location="do.php?act=logdel_msg&id=("+qstr+")";
+		}
+	}
+	*/
+	if(window.confirm("<{$log_manager.confirm_deleting|capitalize}>"))
+		{
+				location="do.php?act=logdel_msg";
+		}	
+	
+}
+
+</script>
+</head>
+<body>
+<{include file="LogManager/logmanager_form.html"}>
+<{include file="language/`$language`_foot.php"}>  
+</body>
+</html>

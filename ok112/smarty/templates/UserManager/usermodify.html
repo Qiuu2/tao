@@ -1,0 +1,490 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>ModifyUser</title>
+
+<link href="skin/css/main_page_style.css" rel="stylesheet" type="text/css" />
+
+<link href="smarty/templates/BellManager/codebase/dhtmlxtree.css" rel="stylesheet" type="text/css">
+<script language="JavaScript" src="smarty/templates/BellManager/codebase/dhtmlxtree.js" type"text/JavaScript"></script>	
+<script language="JavaScript" src="smarty/templates/BellManager/codebase/dhtmlxcommon.js" type"text/JavaScript"></script>
+<script src="skin/js/frame/analysis_tree_terminal_group_string.js"></script>
+<script  src="smarty/templates/ajax/get_terminaltype.js" ></script>
+<style>
+.divnew
+{   
+    filter: Alpha(Opacity=10, FinishOpacity=10, Style=1, StartX=0, StartY=0, FinishX=0, FinishY=0);
+	text-align: center;
+	vertical-align: middle;
+	background-color: #666666;
+	border: 1px solid #D4D0C8;
+	visibility: visible;
+	position: absolute;
+}
+.display_purview
+{
+    position:absolute;
+    border:1px solid RGB(98, 98, 255);
+    display:none;
+    background-color:#ffffff;
+}
+</style>
+<script type="text/javascript">
+function isNull( str )
+{
+	if ( str == "" || str==null) 
+	return true;
+	var regu = "^[ ]+$";
+	var re = new RegExp(regu);
+	return re.test(str);
+}
+function isNumberOrLetter( s )
+{
+    var regu = "^[0-9a-zA-Z]+$"; 
+    var re = new RegExp(regu); 
+    if (re.test(s)) 
+    { 
+        return true; 
+    }
+    else
+    { 
+        return false; 
+    } 
+} 
+
+function isChinaOrNumbOrLett(s)
+{ 
+	var regu = "^[0-9a-zA-Z\u4e00-\u9fa5]+$"; 
+	var re = new RegExp(regu); 
+	if (re.test(s)) 
+	{ 
+		return true; 
+	}
+	else
+	{ 
+		return false; 
+	} 
+} 
+function trim(str)
+{
+   str=str.replace(/(^\s*)|(\s*$)/g,""); 
+   return str;
+}
+function isNumber( s )
+{
+   var regu = "^[0-9]+$";
+   var re = new RegExp(regu);
+   if (s.search(re) != -1)
+   {
+      return true;
+   }
+   else
+   {
+      return false;
+   }
+}
+
+function checkform()
+{
+	//验证用户
+	if(isNull(document.getElementById('username').value))
+	{
+		document.getElementById('username_s').innerHTML="<font class='terminal_star'><{$user_modify.enter_user_name|capitalize}></font>";
+		document.formadd.username.focus();
+		return false;
+	}
+	else
+	{
+		if(!isChinaOrNumbOrLett(document.getElementById('username').value))
+		{
+			document.getElementById('username_s').innerHTML="<font class='terminal_star'><{$user_modify.letter_number_Chinese|capitalize}></font>";
+			document.formadd.username.focus();
+			return false;
+		}
+	}
+	document.getElementById('username_s').innerHTML="<font class='terminal_star'></font>";
+	//验证选择组
+	if(isNull(document.getElementById('usergroup').value))
+	{
+		document.getElementById('usergroup_txt').innerHTML = "<font class='terminal_star'><{$user_modify.select_groups|capitalize}></font>";
+		document.getElementById('usergroup').focus();
+		return false;
+	}
+	document.getElementById('usergroup_txt').innerHTML = "<font class='terminal_star'></font>";
+	//验证密码
+
+	var getfuzhamima=<{$FUZA_PASS}>;
+
+	if(getfuzhamima!=0)
+	{
+			var pwdRegex = new RegExp('(?=.*[0-9])(?=.*[A-Z])(?=.*[a-z])(?=.*[^a-zA-Z0-9]).{8,30}');	
+			if (!pwdRegex.test(document.formadd.newpwd.value)) {
+			
+					document.getElementById('newpwd_s').innerHTML="<font color='#ff0000'><{$user_add.password_noerror|capitalize}></font>";
+			
+					document.formadd.newpwd.focus();
+					return false;
+			}
+			document.getElementById('confirmpwd_s').innerHTML="<font class='terminal_star'></font>";
+
+			if (!pwdRegex.test(document.formadd.confirmpwd.value)) {
+			
+			document.getElementById('confirmpwd_s').innerHTML="<font color='#ff0000'><{$user_add.password_noerror|capitalize}></font>";
+
+			document.formadd.confirmpwd.focus();
+			return false;
+		}
+}
+else
+{
+	if(isNull(document.formadd.newpwd.value))
+	{
+		document.getElementById('newpwd_s').innerHTML="<font class='terminal_star'><{$user_modify.enter_password|capitalize}></font>";
+		document.formadd.newpwd.focus();
+		return false;
+	}
+	else
+	{
+		if(document.formadd.newpwd.value.length<6)
+		{
+			document.getElementById('newpwd_s').innerHTML="<font class='terminal_star'><{$user_modify.length_less_than|capitalize}></font>";
+			document.formadd.newpwd.focus();
+			return false;
+		}
+		else if(!isChinaOrNumbOrLett(document.formadd.newpwd.value))
+		{
+			document.getElementById('newpwd_s').innerHTML="<font class='terminal_star'><{$user_modify.letters_numbers|capitalize}></font>";
+			document.formadd.newpwd.focus();
+			return false;
+		}
+	}
+	document.getElementById('newpwd_s').innerHTML="<font class='terminal_star'></font>";
+	//验证 确认密码
+	if(isNull(document.formadd.confirmpwd.value))
+	{
+		document.getElementById('confirmpwd_s').innerHTML="<font class='terminal_star'><{$user_modify.enter_password_again|capitalize}></font>";
+		document.formadd.confirmpwd.focus();
+		return false;
+	}
+	else
+	{
+		if(document.formadd.confirmpwd.value.length<6)
+		{
+			document.getElementById('confirmpwd_s').innerHTML="<font class='terminal_star'><{$user_modify.length_less_than|capitalize}></font>";
+			document.formadd.confirmpwd.focus();
+			return false;
+		}
+		else if(!isChinaOrNumbOrLett(document.formadd.confirmpwd.value))
+		{
+			document.getElementById('confirmpwd_s').innerHTML="<font class='terminal_star'><{$user_modify.letters_numbers|capitalize}></font>";
+			document.formadd.confirmpwd.focus();
+			return false;
+		}
+	}
+}
+if(getfuzhamima!=0)
+{	
+	var pwdRegex = new RegExp('(?=.*[0-9])(?=.*[A-Z])(?=.*[a-z])(?=.*[^a-zA-Z0-9]).{8,30}');	
+	if (!pwdRegex.test(document.formadd.newpwd.value)) {
+	
+			document.getElementById('newpwd_s').innerHTML="<font color='#ff0000'><{$user_modify.password_noerror|capitalize}></font>";
+	
+			document.formadd.newpwd.focus();
+			return false;
+	}
+	document.getElementById('confirmpwd_s').innerHTML="<font class='terminal_star'></font>";
+
+	if (!pwdRegex.test(document.formadd.confirmpwd.value)) {
+		
+		document.getElementById('confirmpwd_s').innerHTML="<font color='#ff0000'><{$user_modify.password_noerror|capitalize}></font>";
+
+		document.formadd.confirmpwd.focus();
+		return false;
+	}
+}
+	document.getElementById('confirmpwd_s').innerHTML="<font class='terminal_star'></font>";
+	//验证两密码是否相同
+	if(document.formadd.confirmpwd.value!=document.formadd.newpwd.value)
+	{
+		document.getElementById('confirmpwd_s').innerHTML="<font class='terminal_star'><{$user_modify.password_different|capitalize}></font>";
+		return false;
+	}
+	document.getElementById('confirmpwd_s').innerHTML="<font class='terminal_star'></font>";
+	//验证终端（有终端权限、必须必须选择终端）
+	//if( (document.getElementById('new_div').style.visibility == "hidden") && (trim(document.getElementById('usergroup').value) != "1") )
+	//{
+		var str=trim(tree2.getAllChecked());
+
+		analysis_tree_terminal_group_string(str);
+
+
+document.getElementById('analysis_tree_group_string').value = trim(analysis_tree_group_string.toString()); 
+
+analysis_tree_group_string = new Array();
+
+document.getElementById('terminal_id').value = trim(analysis_tree_terminal_string.toString());
+
+analysis_tree_terminal_string = new Array();
+/*
+		var strarray=str.split(",");
+		var temp=0;
+		var storearray=new Array();
+		for(var i=0;i<strarray.length;i++)
+		{
+			if(isNumber(strarray[i]))
+			{
+				storearray[temp]=strarray[i];
+				temp++;
+			}
+			continue;
+		}
+		document.getElementById('terminal_id').value = trim(storearray.toString());
+	*/
+		if(isNull(document.getElementById('terminal_id').value))
+		{
+			alert("<{$user_modify.add_user_terminals|capitalize}>");
+			return false;
+		}
+	//}
+	return true;
+}
+</script>
+
+<script>
+/****************************************
+	关联文件is_user_terminal.php
+	判断是否有终端管理权限
+****************************************/
+var xmlhttp=null; 
+var xmlstr = null;
+function createXMLHttpRequest()
+{ 
+	if(window.ActiveXObject)
+	{ 
+		xmlhttp = new ActiveXObject("microsoft.XMLHTTP"); 
+	} 
+	else if(window.XMLHttpRequest)
+	{ 
+		xmlhttp = new XMLHttpRequest(); 
+	}
+	else
+	{
+		alert("NOT Support AJAX");
+	}
+}
+ 
+function is_user_terminal(obj)
+{
+	createXMLHttpRequest();
+	var url = "is_user_terminal.php?folderid="+obj.value+"";
+	xmlhttp.open("get", url, false);
+	xmlhttp.onreadystatechange = function()
+	{
+	  if( xmlhttp.readyState == 4 )
+	  {
+		 if( xmlhttp.status == 200 )
+		 {
+		   if( xmlhttp.responseText == 0 )
+		   {
+		  	 document.getElementById('new_div').style.visibility = "visible";
+			 if(tree2.getAllChecked() != "" || tree2.getAllChecked() != null)
+			 {
+			 	var checks_id = tree2.getAllChecked().split(",");
+				for(var i= 0; i<checks_id.length; i++)
+				{
+					tree2.setCheck(checks_id[i],false);
+				}
+			 }
+		   }
+		   else if( xmlhttp.responseText == 1 )
+		   {
+		   		document.getElementById('new_div').style.visibility = "hidden";
+		   }
+		   else if( xmlhttp.responseText == 2 )
+		   {
+		   		document.getElementById('new_div').style.visibility = "hidden";
+				var get_all_subitem = tree2.getAllChildless();
+				var get_all_subarray = get_all_subitem.split(",");
+				for(var i=0; i<get_all_subarray.length; i++)
+				{
+					tree2.setCheck(get_all_subarray[i],true);
+				}
+		   }
+		 }
+	  }
+	}
+	xmlhttp.setRequestHeader( "If-Modified-Since", "0");
+	xmlhttp.send(null);
+}
+function get_X(obj)
+{
+   var ParentObj=obj;
+   var left=obj.offsetLeft;
+   while(ParentObj=ParentObj.offsetParent)
+   {
+      left+=ParentObj.offsetLeft;
+   }
+   return left;
+}
+function get_Y(obj)
+{
+   var ParentObj=obj;
+   var top=obj.offsetTop;
+   while(ParentObj=ParentObj.offsetParent)
+   {
+      top+=ParentObj.offsetTop;
+   }
+   return top;
+}
+function create_div()
+{
+	var div_obj = document.getElementById('treeofbox');
+	var parent_div = div_obj.parentNode;
+	var objdiv = document.createElement("DIV");
+	objdiv.id = "new_div";
+	objdiv.name = "new_div";
+	objdiv.style.top = get_Y(div_obj);
+	objdiv.style.left = get_X(div_obj);
+	objdiv.className = "divnew";
+	objdiv.style.visibility = "visible";
+	objdiv.style.width = div_obj.offsetWidth;
+	objdiv.style.height = div_obj.offsetHeight;
+	//objdiv.innerHTML = "没有权限";
+	parent_div.appendChild(objdiv);
+}
+
+function renew_move_position()
+{
+	var div_obj = document.getElementById('new_div');
+	var is_visiable = div_obj.style.visibility;
+	var div_parent = div_obj.parentNode;
+	div_parent.removeChild(div_obj);
+	create_div();
+	var new_obj = document.getElementById('new_div');
+	new_obj.style.visibility = is_visiable;
+}
+
+//获取组中的权限信息
+function get_group_purview(sel_value)
+{
+	createXMLHttpRequest();
+	var url = "get_group_purview.php?group_id="+sel_value+"";
+	xmlhttp.open("get", url, false);
+	xmlhttp.onreadystatechange = function()
+	{
+	  if( xmlhttp.readyState == 4 )
+	  {
+		 if( xmlhttp.status == 200 )
+		 {
+		  	document.getElementById('display_purview_div').innerHTML = xmlhttp.responseText;
+		 }
+	  }
+	}
+	xmlhttp.setRequestHeader( "If-Modified-Since", "0");
+	xmlhttp.send(null);
+}
+//弹出窗口、单击其它地方消失
+var hidden_display = true;//默认隐藏
+
+function get_mouse_coordinates(event)
+{
+   var eve = event||window.event;
+   if(eve.pageX)
+   {
+    return {x:eve.pageX,y:eve.pageY};
+   }
+   else
+   {
+    return {
+                x:eve.clientX+document.body.scrollLeft - document.body.clientLeft,
+                y:eve.clientY+document.body.scrollTop - document.body.clientTop
+            };
+   }
+}
+function get_div_obj(str_id)
+{
+ 	return document.getElementById(str_id);   
+}
+function mouse_click_position(event)
+{
+    if(document.all)
+    {
+     window.event.cancelBubble = true;   
+    }
+    else
+    {
+        event.stopPropagation();
+    }
+    var mouse_obj_xy = get_mouse_coordinates(event);
+	
+	var m = document.getElementById("usergroup")
+	var w = 0;
+	var h = 0;
+	
+	while(m.offsetParent)
+	{
+		w += m.offsetLeft;
+		h += m.offsetTop;
+		m = m.offsetParent;
+	}
+	
+    document.getElementById('display_purview_div').style.left = w;
+    document.getElementById('display_purview_div').style.top = h+20;
+    document.getElementById('display_purview_div').style.display = "block";
+	
+//	document.getElementById('display_purview_div').style.left = mouse_obj_xy.x+15;
+//  document.getElementById('display_purview_div').style.top = mouse_obj_xy.y;
+//  document.getElementById('display_purview_div').style.display = "block";
+}
+
+function mouse_out_disapper()
+{
+    hidden_display = true;
+}
+
+function mounse_over_apper()
+{
+    hidden_display = false;
+}
+
+function hidden_div(str_id)
+{
+ var div_obj = get_div_obj(str_id);
+ 
+ div_obj.style.display = "none";
+}
+
+function body_click_hidden(str_id)
+{
+    var obj_div = get_div_obj(str_id);
+
+    if(hidden_display && obj_div.style.display=="block")
+    {
+        hidden_div(str_id);
+    }
+}
+
+function confirm_modify_usr_password(obj)
+{
+	var new_passwd_obj = document.getElementById('newpwd');
+	
+	var conf_passwd_obj = document.getElementById('confirmpwd');
+	
+	new_passwd_obj.value = "";
+	
+	conf_passwd_obj.value = "";
+	
+	new_passwd_obj.readOnly = false;
+	
+	conf_passwd_obj.readOnly = false;
+	
+	obj.removeNode(obj);
+}
+</script>
+</head>
+<body onload="" onresize="renew_move_position();" onclick="body_click_hidden('display_purview_div')">
+	<{include file="UserManager/usermodify_form.html"}>
+	<{include file="language/`$language`_foot.php"}> 
+</body>
+</html>

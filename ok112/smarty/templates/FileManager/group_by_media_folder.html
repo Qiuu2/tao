@@ -1,0 +1,599 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>FileManager</title>
+<link rel="stylesheet" type="text/css" href="skin/css/main_page_style.css" />
+<style>
+ 
+
+	
+	/* 奇数行样式 */
+	tr:nth-child(odd) {
+		background-color: #ffffff;
+	}
+	
+	/* 偶数行样式 */
+	tr:nth-child(even) {
+		background-color: #c1cfe0;
+	}
+</style>
+<script type="text/javascript">
+function getCheckboxItem()
+{
+	var allSel="";
+	if(document.form2.id.checked)
+	{
+	 	allSel=document.form2.id.value;
+		if(allSel==undefined)
+		{
+			allSel="";
+		}
+	 }
+	for(i=0;i<document.form2.id.length;i++)
+	{
+		if(document.form2.id[i].checked)
+		{
+			if(allSel=="")
+				allSel=document.form2.id[i].value;
+			else
+				allSel=allSel+","+document.form2.id[i].value;
+		}
+	}
+	return allSel;
+}
+
+function getOneItem()
+{
+	var folder_id = "";
+	var obj = document.getElementsByName('id');
+	for(var i= 0; i<obj.length; i++ )
+	{
+		if(obj[i].checked == true)
+		{
+			if(isNull(folder_id))
+			{
+				folder_id = obj[i].value;
+			}
+			else
+			{
+				folder_id +=","+obj[i].value;
+			}
+			
+		}
+	}
+	
+	return folder_id;
+}
+
+function selAll(aid)
+{
+	if(aid==0)
+	{
+		document.form2.id.checked=true;
+	}
+	for(i=0;i<document.form2.id.length;i++)
+	{
+		if(!document.form2.id[i].checked)
+		{
+			document.form2.id[i].checked=true;
+		}
+	}
+}
+function noSelAll(aid)
+{
+	if(aid==0)
+	{
+		document.form2.id.checked=false;
+	}
+	for(i=0;i<document.form2.id.length;i++)
+	{
+		if(document.form2.id[i].checked)
+		{
+			document.form2.id[i].checked=false;
+		}
+	}
+}
+function delfile()
+{
+	var getItem=getCheckboxItem();
+	
+	if(getItem==""||getItem==null)
+	{
+		if(<{$get_folder_id}>==""||<{$get_folder_id}>==null)
+		{
+			alert("<{$file_manager.select_folder|capitalize}>");
+			return void(0);
+		}
+		if(window.confirm("<{$file_manager.confirm_alldeleting|capitalize}>"))
+		{
+			window.location="do.php?act=delallfiletask_msg&fordid="+<{$get_folder_id}>;
+		}
+		else
+		{
+			return void(0);
+		}
+	}
+	else
+	{
+		if(window.confirm("<{$file_manager.confirm_deleting|capitalize}>"))
+		{
+			window.location="do.php?act=delfiletask_msg&id="+getItem+"";
+		}
+		else
+		{
+			return void(0);
+		}
+	}
+
+}
+
+function get_mouse_coordinates(event)
+{
+   var eve = event||window.event;
+   if(eve.pageX)
+   {
+
+    return {x:eve.pageX,y:eve.pageY};
+   }
+   else
+   {
+
+    return {
+                x:eve.clientX+document.body.scrollLeft - document.body.clientLeft,
+                y:eve.clientY+document.body.scrollTop - document.body.clientTop
+           };
+   }
+}
+function get_div_obj(str_id)
+{
+ 	return document.getElementById(str_id);   
+}
+
+function disappear_task_div()
+{
+	if(document.getElementById('copytask').style.display == "block")
+	{
+		document.getElementById('copytask').style.display = "none";
+	}
+}
+
+var hidden_display = true;//默认隐藏
+var xmlhttp=null; 
+
+function createXMLHttpRequest()
+{ 
+	if(window.ActiveXObject)
+	{ 
+		xmlhttp = new ActiveXObject("microsoft.XMLHTTP"); 
+	} 
+	else if(window.XMLHttpRequest)
+	{ 
+		xmlhttp = new XMLHttpRequest(); 
+	}
+	else
+	{
+		alert('Not Support AJAX');
+	}
+} 
+
+function ajax_set_task_copy(getinitid,getmediaid)
+{
+   createXMLHttpRequest();
+	 var getterminalid=0;
+   xmlhttp.open( "get","getterminalid.php?getterminalid="+getterminalid+"&getinitid="+getinitid+"&getmediaid="+getmediaid,true );
+   xmlhttp.onreadystatechange = function()
+   {
+      if( xmlhttp.readyState == 4 )
+      {
+         if( xmlhttp.status == 200 )
+         {
+			
+					alert("<{$file_manager.success}>");
+					self.location.reload();
+					get_div_obj('copytask').style.display = "none";
+				}
+      }
+   }
+  xmlhttp.setRequestHeader( "If-Modified-Since", "0");
+	xmlhttp.send(null);
+}
+
+function set_terminal(event)
+{
+
+	var obj_arr = document.getElementsByName('id');
+	
+	var count = 0;
+	
+	var terminal_id = "";
+	
+    for (var i=0; i<obj_arr.length; i++)
+    {
+		if(obj_arr[i].checked  == true)
+		{
+			count ++;
+			
+			terminal_id = obj_arr[i].value;
+		}
+    }
+	if(count > 1 || count < 1)
+	{
+		alert('<{$file_manager.selectonlyone|capitalize}>');
+		
+		return void(0);
+	}
+	if(count == 1)
+	{
+		document.getElementById('get_initid').value =terminal_id; 
+		 if(document.all)
+		{
+			window.event.cancelBubble = true;   
+		}
+		else
+		{
+			event.stopPropagation();
+		}
+		var mouse_obj_xy = get_mouse_coordinates(event);
+		get_div_obj('copytask').style.left = mouse_obj_xy.x+'px';
+		get_div_obj('copytask').style.top = mouse_obj_xy.y-50+'px';
+		get_div_obj('copytask').style.display = "block";	
+	}
+	
+}
+
+
+
+//涓嬭浇濯掍綋
+function download_file(file_name,get_name,get_typeid)
+{
+	window.location.href = "./download_media_file.php?file_name="+file_name+"&get_name="+get_name+"&get_typeid="+get_typeid;
+}
+//鑾峰彇妗嗘灦涓彉閲忕殑鍊?
+
+ function get_next_frame_var(obj,get_folder_id)
+ {
+ 	if(get_folder_id==0)
+	{
+		alert("<{$file_manager.select_upload_folder|capitalize}>");
+		return void(0);
+	}
+	else
+	{
+		if(<{$model}>==2)
+		{
+			alert("<{$file_manager.The_alave_error|capitalize}>");
+			return void(0);
+		}
+	 	else
+		{
+		window.location = "fileadd.php?folder_id="+get_folder_id+"";
+		}
+	}
+	
+
+ } 
+function delfolder(obj,get_folder_id)
+{   
+	if(!window.confirm("<{$file_manager.confirm_deleting|capitalize}>"))
+	{
+		return void(0);
+	}	
+	else
+	{
+		location="do.php?act=folderdel_msg&id="+get_folder_id+"";
+	}
+	//window.location ="do.php?act=folderdel_msg&id="+get_folder_id+"";
+}
+
+function modifyfolder(obj,get_folder_id)
+{
+	window.location.href="filefoldermodiry.php?id="+get_folder_id+"";
+}
+function isNull( str )
+{
+	if ( str == "" || str==null) 
+	return true;
+	var regu = "^[ ]+$";
+	var re = new RegExp(regu);
+	return re.test(str);
+}
+function isNumber( s )
+{ 
+	var regu = "^[0-9]+$"; 
+	var re = new RegExp(regu); 
+	if (s.search(re) != -1) 
+	{ 
+		return true; 
+	}
+	else 
+	{ 
+		return false; 
+	} 
+}
+
+function set_media_copy()
+{
+	var getinitid=document.getElementById('get_initid').value;
+
+	var getmediaid=document.getElementById('mediaid').value;
+	if(isNull(getmediaid))
+	{
+		alert("<{$file_manager.meidiaerror|capitalize}>");
+
+		return false;
+	}
+	if(isNumber(getmediaid))
+	{
+		ajax_set_task_copy(getinitid,getmediaid);
+		return true;
+	}
+else
+	{
+		alert("<{$file_manager.terminaliderror|capitalize}>");
+
+		return false;
+	}
+}
+
+
+</script>
+</head>
+<body>
+<form name="form2" id="form2" class="terminal_form_to_body"  style="width:100%">
+<tbody>
+<table width="98%" border="0" cellpadding="2" cellspacing="1"  align="center" style="font-size:12px">
+<thead>
+	 <tr align='center' class="terminal_table_row_bg">
+	
+		<th width="8%"><{$file_manager.Selection|capitalize}></th>     		             	
+		<th width="15%"><{$file_manager.Name|capitalize}></th>    
+		<th width="8%"><{$file_manager.Size|capitalize}>
+		<!--
+		(<{if $getsize gte 1024}>
+					<{math equation ="x / 1024" x=$getsize format="%.2f"}>M
+				<{else}>
+					<{$getsize}>K				
+				<{/if}>
+		)
+		-->
+		</th>          
+		<th width="8%"><{$file_manager.Format|capitalize}></th>
+		<th width="8%"><{$file_manager.Bit_rate|capitalize}></th>
+		
+		<th width="8%"><{$file_manager.Play_Length|capitalize}></th>
+			
+		<th width="8%"><{$file_manager.Listen|capitalize}></th>
+	
+	</tr> 
+	  </thead>
+<{if $info|@count neq 0}>	
+	<{section name=loop loop=$info}>
+		<tr align='center' >
+			<td nowrap="nowrap">
+			<{if $is_right == 1 || $admin_id == "administrator"}>
+				<input name="id" type="checkbox" id="id" value="<{$info[loop].id}>" class="np"/>
+				<{$info[loop].id}>
+			<{else}>
+				<{$smarty.section.loop.index+1+$start}>
+			<{/if}>
+			</td>	
+			<td nowrap="nowrap">	
+				<{$info[loop].name}>
+			</td>
+			
+			<td nowrap="nowrap">
+				
+				<{if $info[loop].size gte 1024}>
+					<{math equation ="x / 1024" x=$info[loop].size format="%.2f"}>M
+				<{else}>
+					<{$info[loop].size}>K				
+				<{/if}>
+
+			</td>
+					
+			<td nowrap="nowrap">
+				<{$info[loop].typeid}>
+			</td>
+			<td nowrap="nowrap">
+				<{if $info[loop].bitrate gte 1000000}>
+					<{math equation ="x / 1000000" x=$info[loop].bitrate}>Mbps
+				<{elseif $info[loop].bitrate gte 1000}>
+					<{math equation ="x / 1000" x=$info[loop].bitrate}>kbps
+				<{else}>
+					<{$info[loop].bitrate}>bps
+				<{/if}>
+			</td>
+			
+			<td>
+				<script language="javascript">
+					var timelen=<{$info[loop].timelength}>;
+					var getmin=parseInt(timelen/60);
+					var getsec=parseInt(timelen%60);
+					document.write(getmin+"<{$file_manager.minutes|capitalize}>"+getsec+"<{$file_manager.second|capitalize}>");
+				</script>
+			</td>
+		
+			<td id="listen_download" >
+			<a title="<{$file_manager.file_listenmusic}>"  id="shiting" name="shiting" href="#" onclick="window.open('try_listenning.php?id=<{$info[loop].id}>				','_blank','height=65,width=300,status=no,toolbar=no,location=no')">
+			<{$file_manager.file_listen}>	
+			</a>
+			<a title="<{$file_manager.file_downloadmusic}>" id="xiazai" name="xiazai" href="javascript:download_file('<{$info[loop].filename}>','<{$info[loop].name}>','<{$info[loop].typeid}>')">
+			<{$file_manager.file_download}>
+			</a>
+			</td>
+		
+			</tr>
+	<{/section}>
+<{else}>
+	<tr align='center' class="tablestyle">
+		<td colspan="6" height="30"><strong><{$file_manager.No_data|capitalize}></strong></td>
+	</tr>
+<{/if}>
+<script src="smarty/templates/UserAccessControl/CheckUserRights.js" type="text/javascript" ></script>
+
+<tr style="background-color: #FFFFFF;">
+	
+		<td colspan="6">
+			<a title="<{$file_manager.Select_allmediadata|capitalize}>" id="allsel" name="allsel" href="javascript:selAll(0)" >
+				<{$file_manager.Select_all|capitalize}>
+			</a>&nbsp;&nbsp;&nbsp;
+			
+			<a title="<{$file_manager.noSelect_allmediadata|capitalize}>" id="nosel" name="nosel" href="javascript:noSelAll(0)" >
+				<{$file_manager.Cancel|capitalize}>
+			</a>&nbsp;&nbsp;&nbsp;
+			
+			<a href="javascript:get_next_frame_var(this,'<{$get_folder_id}>')" target='mediafile' >
+				<{$file_manager.Upload_Media|capitalize}>
+			</a>&nbsp;&nbsp;&nbsp;
+			
+			<a title="<{$file_manager.del_selectmedia|capitalize}>" id="delsel" name="delsel" href="javascript:delfile()" >
+				<{$file_manager.Delete|capitalize}>
+			</a>&nbsp;&nbsp;&nbsp;
+			
+			<a title="<{$file_manager.Create_subfolder|capitalize}>" href="javascript:addfolder(this,'<{$get_folder_id}>')" class="coolbg" >
+			<{$file_manager.Create_folder}>	
+			</a>&nbsp;&nbsp;&nbsp;
+			
+			<a title="<{$file_manager.Revise_subfolder|capitalize}>" href="javascript:modifyfolder(this,'<{$get_folder_id}>')" class="coolbg" >
+				<{$file_manager.Revise_folder}>	
+			</a>&nbsp;&nbsp;&nbsp;
+			
+			<a title="<{$file_manager.del_subfolder|capitalize}>" href="javascript:delfolder(this,'<{$get_folder_id}>')" class="coolbg" >
+			<{$file_manager.Delete_folder}>	
+			</a>&nbsp;&nbsp;&nbsp;
+			<a title="<{$file_manager.setterminal|capitalize}>" href="javascript:void(0)"  id="setcopytask" onclick="set_terminal(event)">
+				<{$file_manager.setterminal}>
+			</a>&nbsp;&nbsp;&nbsp;
+		<!--	<a title="<{$file_manager.Voice_media|capitalize}>" href="trainmedia.php?folderid=<{$get_folder_id}>" class="coolbg" >
+			<{$file_manager.Voice_media}>	
+			</a>&nbsp;&nbsp;&nbsp;	
+		-->	
+		<input type="hidden"  id="get_initid" name="get_initid" value=""/>
+		</td>
+	</tr>
+</table>
+
+<div id="copytask" class="r-displayVolume">
+ <iframe style="position:absolute; width:150;height:110px;left:0px; top:0px;filter:alpha(opacity=0);-moz-opacity:0;border:0;z-index:-1"></iframe>
+<div style="position:absolute;border:0;width:150; left:0px; top:0px; height:110px;z-index:100">
+	<table border="0" cellpadding="10" cellspacing="0" width="150" style="background-color:#EEFFEE">
+		
+		<tr>
+			<td nowrap="nowrap" align="right">
+			<{$file_manager.media_id|capitalize}>
+			<input title="<{$file_manager.media_id|capitalize}>" class="terminal_input_font" name="mediaid" type="text" id="mediaid"/>
+			</td>
+			</tr>
+		<tr>
+			<td nowrap="nowrap" align="center">
+				<a href="javascript:void(0)" onclick="set_media_copy()"> 
+					<{$file_manager.Sumbit|capitalize}>
+				</a>
+				&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+				<a href="javascript:void(0)" onclick="disappear_task_div()"> 
+					<{$file_manager.Cancel|capitalize}>
+				</a>
+			</td>
+		</tr>
+		
+	</table>
+</div>
+</div>
+
+
+<script language="javascript">
+
+function addfolder(obj,get_folder_id)
+{
+	var sign = <{$sign}>;
+	if(sign == 1)
+	{
+		window.location.href="filefolderadd.php?id="+get_folder_id+"";
+	}
+	else
+	{
+		alert('<{$file_manager.sign|capitalize}>');
+	}	
+}
+	rights_control(<{$is_right}>,"<{$admin_id}>");
+
+	if(<{$userinfoid}>==5)
+	{
+			var a_obj = document.getElementsByTagName("a");
+			for(var i=0; i<a_obj.length; i++)
+			{
+				if(a_obj[i].name == "shiting"||a_obj[i].name == "xiazai"||a_obj[i].name == "allsel"||a_obj[i].name == "nosel"||a_obj[i].name == "delsel")
+				{
+					continue;
+				}
+	
+				a_obj[i].href = "javascript:void(0)";
+				a_obj[i].onclick = null;
+				a_obj[i].style.color="#787878";
+			}
+	}
+
+</script>
+
+</tbody>
+</form>	
+<div class="link_style"><{$pagestr}></div>
+<!--  �� --> 
+<form name="form3" target="_self" action="media_file.php?id=<{$get_folder_id}>&userinfoid=<{$userinfoid}>" method="post">
+<table width='100%'  border='0' cellpadding='1' cellspacing='1' class="middle" align="center" style="margin-top:8px">
+  <tr>
+    <td background='skin/images/wbg.gif' align='center'>
+      <table border='0' cellpadding='0' cellspacing='0'>
+        <tr>
+          <td width='90' align='center'><{$Searchform.Search_conditions}></td>
+          <td width='160'>
+          <select class="colors" name='searchkey'  id="searchkey" style='width:150'>
+          	<option value=""><{$Searchform.Select_type}></option>
+          	<option value='name'><{$Searchform.Media_Name}></option>
+			<option value='typeid'><{$Searchform.Media_Types}></option>
+          </select>        
+		  </td>
+        <td width='70'>
+          <{$Searchform.Keyword}>        
+		</td>
+        <td width='160'>
+          	<input type='text' name='searchvalue' id="searchvalue" value='' style='width:150px' /> </td>
+        <td width='110'>
+			<select class="colors" name='orderby' id="orderby" style='width:80px'>
+			  <option value=''><{$Searchform.Sort}></option>
+			  <option value="size"><{$Searchform.Media_Size}></option>
+			</select>
+		</td>
+        <td>
+          <input name="imageField" type="image" src="<{$file_manager.search_image}>" width="45" height="20" border="0"/> 
+		</td>
+       </tr>
+      </table>
+    </td>
+  </tr>
+</table>
+</form>
+<script language="javascript">
+	var get_user_right = "<{$is_right}>";
+
+	if(get_user_right == 1)
+	{
+		//什么也不做
+	}
+	else
+	{
+		var get_a_objects = document.getElementsByTagName("a");
+		for(var i=0; i<get_a_objects.length; i++)
+		{
+			get_a_objects[i].href = "javascript:void(0);";
+			get_a_objects[i].onclick = null;
+			get_a_objects[i].style.color="#787878";
+		//	get_a_objects[i].disabled = true;
+		}
+	}
+</script>
+<{include file="language/`$language`_foot.php"}> 
+</body>
+</html>
+

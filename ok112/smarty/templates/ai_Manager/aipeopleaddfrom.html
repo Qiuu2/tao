@@ -1,0 +1,85 @@
+<form name="frmSearch2" method="post" action="do.php?act=renliandeviceadd_msg&shibiedeviceid=<{$shibiedeviceid}>" onSubmit="return checkform();" classs= "terminal_form_to_body">
+<table width="600px" border="0" align="center" cellpadding="0" cellspacing="0" class="terminal_table_border">
+	<tr>
+	<td>
+		<table width="100%" border="0" align="center" cellpadding="0" cellspacing="0">
+			<tr>
+				<td>
+						<img src="<{$stream_create.create_sounds_aidevice}>"/>
+				</td>
+			</tr>
+		</table>
+	</td>
+	</tr>
+	<tr>
+	<td>
+		<table width="100%" border="0" align="center" cellpadding="5" cellspacing="0">
+			<tr>
+				<td width="150" align="right" nowrap="nowrap"><{$stream_create.ai_peopleid|capitalize}></td>
+				<td width="450">
+					<input  type="text" value="" maxlength="18" name="peopleid" id="peopleid"  class="terminal_input_font"/>
+					<span id="peopleid_s" class="terminal_star"><{$stream_create.ai_peopleiddemo|capitalize}>*</span>
+				</td>
+			</tr>
+		
+			<tr>
+				<td width="150" align="right" nowrap="nowrap"><{$stream_create.device_ip|capitalize}></td>
+				<td width="450">
+					 <input class="terminal_input_font" name="deviceip" type="text" id="deviceip" value="" style="width:150px;"/>
+					 <span id="device_ips" class="terminal_star"><{$stream_create.ai_deviceipdemo|capitalize}>*</span>
+				  </td>
+				</td>
+			</tr>
+			<tr>
+				<td width="150" align="right" nowrap="nowrap"><{$stream_create.ainame|capitalize}></td>
+				<td width="450">
+					 <input class="terminal_input_font" name="peoplename" type="text" id="peoplename"  value="" style="width:150px;"/>
+					 <span id="device_names" class="terminal_star"><{$stream_create.ai_namedemo|capitalize}>*</span>
+				  </td>
+				</td>
+			</tr>
+			<tr>
+				<td width="150" align="right" nowrap="nowrap"><{$stream_create.banji_name|capitalize}></td>
+				<td width="450">
+					 <input class="terminal_input_font" name="deviceaddr" type="text" id="deviceaddr"  value="" style="width:150px;"/>
+					 <span id="device_names" class="terminal_star"><{$stream_create.banji_name|capitalize}>*</span>
+				  </td>
+				</td>
+			</tr>
+			<tr>
+				<td width="150" align="right" nowrap="nowrap"><{$stream_create.boyname1|capitalize}></td>
+				<td width="450">
+					 <input class="terminal_input_font" name="peoplesubboy1" type="text" id="peoplesubboy1"  value="" style="width:150px;"/>
+					 <span id="people_subboy1s" class="terminal_star"><{$stream_create.ai_namesubboy1|capitalize}>*</span>
+				  </td>
+				</td>
+			</tr>
+			<tr>
+				<td width="150" align="right" nowrap="nowrap"><{$stream_create.boyname2|capitalize}></td>
+				<td width="450">
+					 <input class="terminal_input_font" name="peoplesubboy2" type="text" id="peoplesubboy2"  value="" style="width:150px;"/>
+					 <span id="people_subboy2s" class="terminal_star"><{$stream_create.ai_namesubboy2|capitalize}>*</span>
+				  </td>
+				</td>
+			</tr>
+			<tr>
+				<td width="150" align="right" nowrap="nowrap"><{$stream_create.boyname3|capitalize}></td>
+				<td width="450">
+					 <input class="terminal_input_font" name="peoplesubboy3" type="text" id="peoplesubboy3"  value="" style="width:150px;"/>
+					 <span id="people_subboy3s" class="terminal_star"><{$stream_create.ai_namesubboy3|capitalize}>*</span>
+				  </td>
+				</td>
+			</tr>
+			<tr>
+				<td></td>
+				<td>
+					<input type="submit" name="submit" id="submit" value="<{$stream_create.Sumbit|capitalize}>" class="terminal_button"/>
+					&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+					<input name="reset" type="reset" id="reset" value="<{$stream_create.Cancel|capitalize}>" class="terminal_button"/>
+				</td>
+			</tr>
+			</table> 
+		</td>
+	</tr>
+</table>
+</form> 

@@ -1,0 +1,166 @@
+<html>
+<head>
+<title>listen</title>
+<meta http-equiv="Content-Type" content="application/octet-stream; charset=utf-8">
+
+<style type="text/css">
+div
+{
+	width:300px; 
+	height:10%; 
+	font-size:12px; 
+	font-family:Georgia, "Times New Roman", Times, serif, "宋体";
+	background-color:#336699;
+	text-align:center;
+	color:#FFFFFF;
+	float:none;
+}
+
+</style>
+
+<script>
+//预留
+function get_media_type()
+{
+   var OsObject = "";
+   if(navigator.userAgent.indexOf("MSIE")>0)
+   {
+
+   }
+   else
+   {
+		alert('Not support the browser');
+   }
+   if(isFirefox=navigator.userAgent.indexOf("Firefox")>0)
+   {
+      
+   }
+   else
+   {
+   		alert('Not support the browser');
+   }
+   if(isSafari=navigator.userAgent.indexOf("Safari")>0)
+   {
+     
+   }
+   else
+   {
+   		alert('Not support the browser');
+   }
+   if(isCamino=navigator.userAgent.indexOf("Camino")>0)
+   {
+    
+   }
+   else
+   {
+   		alert('Not support the browser');
+   }
+   if(isMozilla=navigator.userAgent.indexOf("Gecko/")>0)
+   {
+     
+   }
+   else
+   {
+   		alert('Not support the browser');
+   }
+}
+
+</script>
+
+</head>
+<body style="margin:0px; padding:0px;">
+
+<div>
+	<marquee id="flash_text" direction="right" loop="-1" scrolldelay="200" width="50%"><{$media_name}></marquee>
+</div>
+<{if $media_to_server_path eq ""}>
+<{else}>
+<a href="<{$media_to_server_path}>" style="font-size:12px;text-decoration:none">
+	<font style="color:#cccccc">Address:</font>
+	<font style="color:#cccccc;font-size:12px"><{$media_to_server_path|escape:"hex"|truncate:25}>&nbsp;</font>
+	<font style="color:#336699"><input type=button value=play onclick="javademo.DoPlay()"> </font>
+</a>
+<{/if}>
+
+<object id="player" height="364" width="260" classid="CLSID:6BF52A52-394A-11d3-B153-00C04F79FAA6">  
+   <param NAME="AutoStart" VALUE="1">  
+   <!--是否自动播放-->  
+   <param NAME="Balance" VALUE="1">  
+   <!--调整左右声道平衡,同上面旧播放器代码-->  
+   <param name="enabled" value="-1">  
+   <!--播放器是否可人为控制-->  
+   <param NAME="EnableContextMenu" VALUE="1">  
+   <!--是否启用上下文菜单
+   <param NAME="url" value="<{$media_to_server_path}>">  
+   -->  
+   <param name="SRC" value="<{$media_to_server_path}>"> 
+   <!--播放的文件地址-->  
+   <param NAME="PlayCount" VALUE="1">  
+   <!--播放次数控制,为整数-->  
+   <param name="rate" value="1">  
+   <!--播放速率控制,1为正常,允许小数,1.0-2.0-->  
+   <param name="currentPosition" value="0">  
+   <!--控件设置:当前位置-->  
+   <param name="currentMarker" value="0">  
+   <!--控件设置:当前标记-->  
+   <param name="defaultFrame" value="1">  
+   <!--显示默认框架-->  
+   <param name="invokeURLs" value="0">  
+   <!--脚本命令设置:是否调用URL-->  
+   <param name="baseURL" value="">  
+   <!--脚本命令设置:被调用的URL-->  
+   <param name="stretchToFit" value="0">  
+   <!--是否按比例伸展-->  
+   <param name="volume" value="50">  
+   <!--默认声音大小0%-100%,50则为50%-->  
+   <param name="mute" value="0">  
+   <!--是否静音-->  
+   <param name="uiMode" value="mini">  
+   <!--播放器显示模式:Full显示全部;mini最简化;None不显示播放控制,只显示视频窗口;invisible全部不显示-->  
+   <param name="windowlessVideo" value="0">  
+   <!--如果是0可以允许全屏,否则只能在窗口中查看-->  
+   <param name="fullScreen" value="0">  
+   <!--开始播放是否自动全屏-->  
+   <param name="enableErrorDialogs" value="-1">  
+   <!--是否启用错误提示报告-->  
+   <param name="SAMIStyle" value>  
+   <!--SAMI样式-->  
+   <param name="SAMILang" value>  
+   <!--SAMI语言-->  
+   <param name="SAMIFilename" value>  
+   <!--字幕ID-->  
+   </object>  
+
+<!--播放器部分
+<OBJECT id=czplayer onerror="alert('No installation Windows Media Player!')" 
+codeBase=http://activex.microsoft.com/activex/controls/mplayer/en/nsmp2inf.cab#Version=7.0
+type=application/x-oleobject height=80% width=100% align=top border=0 classid=CLSID:6BF52A52-394A-11d3-B153-00C04F79FAA6>
+<PARAM NAME="URL" VALUE="<{$media_to_server_path}>">
+<PARAM NAME="EnableTracker" VALUE="1">
+<PARAM NAME="uiMode" VALUE="full">
+
+<PARAM NAME="volume" VALUE="100">
+
+<embed onerror="alert('No installation Windows Media Player!')"  src="<{$media_to_server_path}>" 
+
+align="top" border="0" width="100%" height="90%" 
+
+type="application/x-mplayer2" 
+
+pluginspage="http://www.microsoft.com/isapi/redir.dll?prd=windows&amp;sbp=mediaplayer&amp;ar=media&amp;sba=plugin&amp;" 
+
+showcontrols="1" showpositioncontrols="0" showaudiocontrols="1" showtracker="1" 
+
+showdisplay="0" showstatusbar="1" autosize="0" showgotobar="0" 
+
+showcaptioning="0" autostart="1" autorewind="0" animationatstart="0" 
+
+transparentatstart="0" allowscan="1" enablecontextmenu="1" clicktoplay="0" 
+
+invokeurls="1" defaultframe="datawindow">  
+      
+</embed>
+</OBJECT>-->
+<!--播放器部分END-->
+</body>
+</html>

@@ -1,0 +1,40 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>LoginInterface</title>
+<link href="css.css" rel="stylesheet" type="text/css" />
+<script type="text/javascript">
+function checkform(){
+if(document.form1.username.value.length==0){
+document.getElementById('username_s').innerHTML="<font color='#ff0000'><b>请填写账户!</b></font>";
+document.form1.username.focus();
+return false;
+}else{
+	document.getElementById('username_s').innerHTML="";
+}
+if(document.form1.userpwd.value.length==0){
+document.getElementById('userpwd_s').innerHTML="<font color='#ff0000'><b>请填写密码!</b></font>";
+document.form1.userpwd.focus();
+return false;
+}else{
+	document.getElementById('userpwd_s').innerHTML="";
+}
+if(document.form1.checknum.value.length==0){
+document.getElementById('num_s').innerHTML="<font color='#ff0000'><b>请填写验证码!</b></font>";
+document.form1.checknum.focus();
+return false;
+}else{
+	document.getElementById('num_s').innerHTML="";
+}
+return true;
+}
+</script>
+</head>
+
+<body>
+
+<{include file="login_form.html"}> 
+<{include file="footer.html"}> 
+</body>
+</html>

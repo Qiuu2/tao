@@ -1,0 +1,576 @@
+<script language="javascript" src="skin/js/frame/public.js"></script>
+<table width="98%" border="0" cellpadding="2" cellspacing="1"  align="center" class="terminal_form_to_body">
+<tr align='center' class="terminal_table_row_bg">
+  <td width="5%"  nowrap="nowrap"><{$backup_restore.Number|capitalize}></td>
+  <td width="15%"  nowrap="nowrap"><{$backup_restore.File_name|capitalize}></td>
+  <td width="8%"  nowrap="nowrap"><{$backup_restore.File_Size|capitalize}></td>
+  <td width="8%"  nowrap="nowrap"><{$backup_restore.Backup_time|capitalize}></td>
+  <td width="5%"  nowrap="nowrap"><{$backup_restore.File_format|capitalize}></td>
+  <td width="5%"  nowrap="nowrap"><{$backup_restore.Operation|capitalize}></td>
+</tr>
+<{if $backup_files|@count neq 0}>
+	<{section name=file loop=$backup_files}>        
+	  <tr align='center' class="tablestyle" onmouseover="this.style.backgroundColor = '#EEEEFF'" onmouseout="this.style.backgroundColor = '#FFFFFF'"> 
+		<td>
+			<input type="radio" value="<{$backup_files[file].filename}>" id="id" name="id"/>
+		</td>
+		
+		<td>
+			<{$backup_files[file].filename}>
+		</td> 
+		 	
+		<td>
+			<{$backup_files[file].filesize}>
+		</td> 
+		
+		<td>
+			<{$backup_files[file].filetime}>
+		</td>
+		
+		<td>
+			<{$backup_files[file].filetype}><{$backup_restore.Package_file}>
+		</td>
+		
+		<td>
+			<a href="javascript:void(0)" onclick="del_backup_file('<{$backup_files[file].filename}>')"><{$backup_restore.Delete}></a>
+		</td>
+	  </tr>         
+	<{/section}>
+<{else}>
+
+<tr align='center' onmouseover="this.style.backgroundColor = '#EEEEFF'" onmouseout="this.style.backgroundColor = '#FFFFFF'">
+	<td colspan="6"><strong><{$Revise.No_data|capitalize}></strong></td>
+</tr>
+
+<{/if}>
+<tr>
+	<td colspan="6">
+		<a title="<{$backup_restore.backupdatetoserver|capitalize}>" href="javascript:void(0)" onclick="open_backup();">
+			<{$backup_restore.Data_backup|capitalize}>
+		</a>&nbsp;&nbsp;&nbsp;
+		<a title="<{$backup_restore.restoredatetoserver|capitalize}>" href="javascript:void(0)" onclick="restore_data();">
+			<{$backup_restore.Data_restore|capitalize}>
+		</a>&nbsp;&nbsp;&nbsp;
+		<a title="<{$backup_restore.backupdatetodown|capitalize}>" href="javascript:void(0)" onclick="downloadbackup();">
+			<{$backup_restore.Data_backup2|capitalize}>
+		</a>&nbsp;&nbsp;&nbsp;
+		
+		<a title="<{$backup_restore.restoredatetoup|capitalize}>" href="javascript:void(0)" onclick="restore_data2();">
+			<{$backup_restore.Data_restore2|capitalize}>
+		</a>&nbsp;&nbsp;&nbsp;
+	</td>
+</tr>
+</table>
+<!--备份数据-->
+<div id="light" class="backup_content">
+<iframe style="position:absolute; width:80%;height:50%;left:0px; top:0px;filter:alpha(opacity=0);-moz-opacity:0; border:0;z-index:-1"></iframe>
+<div style="position:absolute;border:0;width:80%; left:0px; top:0px; height:50%;z-index:100">
+
+<table width="80%" height="50%" border="0" align="center" cellpadding="5" cellspacing="0" class="backup_table">
+    <tr>
+        <td colspan="2" class="backup_title">
+            <{$backup_restore.Backup_data}>
+        </td>
+    </tr>
+	<tr>
+		<td colspan="2" nowrap="nowrap">
+			<span id="prompt" style="font-size:12px">
+				<{$backup_restore.Please_wait_being_backed_up}>
+				<img src=\'skin/images/frame/please_wait.gif\'/>
+			</span>
+		</td>
+	</tr>
+	
+	<tr>
+		<td colspan="2">
+			
+		</td>
+	</tr>
+	
+    <tr>
+        <td align='right' nowrap="nowrap">
+            <{$backup_restore.Backup_Name}>
+        </td>
+        <td align='left' nowrap="nowrap">
+            <input type="text" name="backup_name" id="backup_name"/>
+        </td>
+    </tr>
+    <tr>
+          <td colspan="2" align="center" nowrap="nowrap">
+            <input type="button" value="<{$backup_restore.Backup}>" class="backup_button" onclick="validate_backup_name('backup_name')"/>
+            	&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+            <input type="reset" value="<{$backup_restore.close}>" onclick="colose_backup();" class="backup_button"/>
+        </td>  
+    </tr>
+</table>
+</div>
+</div> 
+<div id="fade" class="backup_overlay"></div> 
+
+<div id="light2" class="backup_content">
+<iframe style="position:absolute; width:80%;height:50%;left:0px; top:0px;filter:alpha(opacity=0);-moz-opacity:0; border:0;z-index:-1"></iframe>
+<div style="position:absolute;border:0;width:80%; left:0px; top:0px; height:50%;z-index:100">
+
+<table width="80%" height="50%" border="0" align="center" cellpadding="5" cellspacing="0" class="backup_table">
+    <tr>
+        <td colspan="2" class="backup_title">
+            <{$backup_restore.Backup_data}>
+        </td>
+    </tr>
+	<tr>
+		<td colspan="2" nowrap="nowrap">
+			<span id="prompt2" style="font-size:12px">
+				<{$backup_restore.Please_wait_being_backed_up}>
+				<img src=\'skin/images/frame/please_wait.gif\'/>
+			</span>
+		</td>
+	</tr>
+	
+	<tr>
+		<td colspan="2">
+			
+		</td>
+	</tr>
+	
+    <tr>
+        <td align='right' nowrap="nowrap">
+            <{$backup_restore.Backup_Name}>
+        </td>
+        <td align='left' nowrap="nowrap">
+            <input type="text" name="backup_name2" id="backup_name2"/>
+        </td>
+    </tr>
+    <tr>
+          <td colspan="2" align="center" nowrap="nowrap">
+            <input type="button" value="<{$backup_restore.Backup}>" class="backup_button" onclick="validate_backup_name2('backup_name2')"/>
+            	&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+            <input type="reset" value="<{$backup_restore.close}>" onclick="colose_restore();" class="backup_button"/>
+        </td>  
+    </tr>
+</table>
+</div>
+</div> 
+<div id="fade2" class="backup_overlay"></div> 
+<!--还原数据-->
+<div id="restore_light" class="backup_content">
+<iframe style="position:absolute; width:80%;height:50%;left:0px; top:0px;filter:alpha(opacity=0);-moz-opacity:0; border:0;z-index:-1"></iframe>
+<div style="position:absolute;border:0;width:80%; left:0px; top:0px; height:50%;z-index:100">
+
+<table width="80%" height="50%" border="0" align="center" cellpadding="5" cellspacing="0" class="backup_table">
+    <tr>
+        <td colspan="2" class="backup_title">
+            <{$backup_restore.Restore_data}>
+        </td>
+    </tr>
+
+	<tr>
+		<td colspan="2" nowrap="nowrap">
+			<span id="prompt_restore" style="font-size:12px"></span>
+		</td>
+	</tr>
+	
+	<tr>
+		<td colspan="2">
+		</td>
+	</tr>
+</table>
+</div>
+</div> 
+<div id="restore_fade" class="backup_overlay"></div> 
+
+<div id="restore_light2" class="backup_content">
+<iframe style="position:absolute; width:80%;height:50%;left:0px; top:0px;filter:alpha(opacity=0);-moz-opacity:0; border:0;z-index:-1"></iframe>
+<div style="position:absolute;border:0;width:80%; left:0px; top:0px; height:50%;z-index:100">
+<!--
+<form  action="backup_restoreupload.php" method="post" enctype="multipart/form-data">
+-->
+<form  action="bell_manager_restore.php" method="post" enctype="multipart/form-data" onsubmit="return checkform();">
+<table width="80%" height="50%" border="0" align="center" cellpadding="5" cellspacing="0" class="backup_table">
+    <tr>
+        <td colspan="2" class="backup_title">
+            <{$backup_restore.restore_data}>
+        </td>
+    </tr>
+	<tr>
+		<td colspan="2" nowrap="nowrap">
+			<span id="prompt3" style="font-size:12px">
+				<{$backup_restore.restore_success}>
+				<img src=\'skin/images/frame/please_wait.gif\'/>
+			</span>
+		</td>
+	</tr>
+	
+	<tr>
+		<td colspan="2">
+			
+		</td>
+	</tr>
+	
+    <tr>
+        <td align='right' nowrap="nowrap">
+            <{$backup_restore.restore_name}>
+        </td>
+        <td align='left' nowrap="nowrap">
+            <input type="file" name="upfile" id="upfile"/>
+        </td>
+    </tr>
+    <tr>
+          <td colspan="2" align="center" nowrap="nowrap">
+            <input type="submit" name="submit" value="<{$backup_restore.Data_restore2}>" class="backup_button"/>
+            	&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+            <input type="reset" name="reset" value="<{$backup_restore.close}>" onclick="colose_restore2();" class="backup_button"/>
+        </td>  
+    </tr>
+</table>
+</form>
+</div> 
+</div>
+<div id="restore_fade2" class="backup_overlay"></div> 
+<script language="javascript">
+var str_temp_count = 0;//计数
+var temp_txt = "";//设置备份和还原
+var str_temp_txt = "";//保存字符
+
+var inver_time_handle = "";//返回句柄
+
+function animation_text_start()
+{
+
+   if(str_temp_count <= 300)
+   {
+		if(str_temp_txt.length>3)
+		{
+			str_temp_txt="";
+		}	
+	
+      str_temp_txt = str_temp_txt+".";
+      document.getElementById('prompt').innerHTML = temp_txt+""+str_temp_txt;
+      str_temp_count++;
+      inver_time_handle = setTimeout("animation_text_start()", 500);
+   }
+   else
+   {
+      str_temp_count = 0;
+	  str_temp_txt = "";
+	  document.getElementById('prompt').innerHTML = temp_txt;
+	 colose_backup();
+	 self.location.reload();
+   }
+}
+
+function animation_text_start1()
+{
+	if(str_temp_count <= 3)
+   {
+      str_temp_txt = str_temp_txt+".";
+      document.getElementById('prompt_restore').innerHTML = temp_txt+""+str_temp_txt;
+      str_temp_count++;
+      inver_time_handle = setTimeout("animation_text_start1()", 500);
+   }
+   else
+   {
+      str_temp_count = 0;
+	  str_temp_txt = "";
+	  document.getElementById('prompt_restore').innerHTML = temp_txt;
+   }
+}
+function animation_text_start2()
+{
+	if(str_temp_count <= 3)
+   {
+      str_temp_txt = str_temp_txt+".";
+      document.getElementById('prompt2').innerHTML = temp_txt+""+str_temp_txt;
+      str_temp_count++;
+      inver_time_handle = setTimeout("animation_text_start2()", 500);
+   }
+   else
+   {
+      str_temp_count = 0;
+	  str_temp_txt = "";
+	  document.getElementById('prompt2').innerHTML = temp_txt;
+   }
+}
+function open_backup()
+{
+	document.getElementById('backup_name').disabled = false;
+	document.getElementById('prompt').innerHTML = "<{$backup_restore.backup_name_default}>";
+    document.getElementById('light').style.display='block';
+    document.getElementById('fade').style.display='block';
+}
+function colose_backup()
+{
+    document.getElementById('light').style.display='none';
+    document.getElementById('fade').style.display='none';
+}
+
+//备份数据
+function backup_data(url)
+{
+	createXMLHttpRequest();
+	xmlhttp.open( "get",url, true );
+	xmlhttp.onreadystatechange = function()
+	{
+	  if( xmlhttp.readyState == 4 )
+	  {
+		 if( xmlhttp.status == 200 )
+		 {
+			str_temp_count=301;
+			switch(xmlhttp.responseText)
+			{
+				case "0":
+					document.getElementById('prompt').innerHTML = "<{$backup_restore.backup_failed|capitalize}>";
+					document.getElementById('backup_name').disabled = false;
+					clearInterval(inver_time_handle);
+				break;
+				case "1":
+					document.getElementById('prompt').innerHTML = "<{$backup_restore.Backup_success|capitalize}>";
+					document.getElementById('backup_name').disabled = false;
+					clearInterval(inver_time_handle);
+					self.location.reload();
+				break;
+				
+				case "2":
+					document.getElementById('prompt').innerHTML = "<{$backup_restore.same_name|capitalize}>";
+					document.getElementById('backup_name').disabled = false;
+					clearInterval(inver_time_handle);
+				break;
+				
+				case "3":
+					document.getElementById('prompt').innerHTML = "<{$backup_restore.Not_Data|capitalize}>";
+					document.getElementById('backup_name').disabled = false;
+					clearInterval(inver_time_handle);
+				break;
+			}
+		 }
+	  }
+	}
+	xmlhttp.setRequestHeader( "If-Modified-Since", "0");
+	xmlhttp.send(null);
+}
+
+
+function restore_data()
+{
+	var file_name = "";
+	try
+	{
+		var files_str = document.getElementsByName('id');
+		for(var i=0; i<files_str.length; i++)
+		{
+			if(files_str[i].checked)
+			{
+				file_name = trim(files_str[i].value);
+				break;
+			}
+		}
+	}
+	catch(e)
+	{
+		alert("<{$backup_restore.Not_Data|capitalize}>");
+		return void(0);
+	}
+	if(isNull(file_name))
+	{
+		alert('<{$backup_restore.select_files|capitalize}>');
+		return void(0);
+	}
+	if(window.confirm("<{$backup_restore.restore_backup}>"))
+	{
+		temp_txt = "<{$backup_restore.wait_Restoring|capitalize}>";
+		//animation_text_start1();
+		//open_restore();
+		url = "restore_backup_file.php?file_name="+file_name+"";
+		//url = "backup_restore_mysql.php?backup_name="+file_name+"&flag=2";
+		restore_backup_data(url);
+	}
+	else
+	{
+		return void(0);
+	}
+}
+
+//备份
+function test()
+{
+	window.location.href = "download_bellManager.php?backup_name=mediabackup";
+
+}
+
+
+function downloadbackup()
+{
+	var file_name = "";
+		try
+		{
+			var files_str = document.getElementsByName('id');
+			for(var i=0; i<files_str.length; i++)
+			{
+				if(files_str[i].checked)
+				{
+					file_name = trim(files_str[i].value);
+					break;
+				}
+			}
+		}
+		catch(e)
+		{
+			alert("<{$backup_restore.Not_Data|capitalize}>");
+			return void(0);
+		}
+		if(isNull(file_name))
+		{
+			alert('<{$backup_restore.select_files|capitalize}>');
+			return void(0);
+		}
+		if(window.confirm("<{$backup_restore.enterDownload_date}>"))
+		{
+			window.location.href = "download_bellManager.php?backup_name="+file_name+"";
+			
+		  var interval = window.setTimeout("test()","3000");
+
+		}
+		else
+		{
+			return void(0);
+		}
+}
+
+function trim(str)
+{
+   str=str.replace(/(^\s*)|(\s*$)/g,""); 
+   return str;
+}
+
+//还原数据
+function restore_backup_data(url)
+{
+	createXMLHttpRequest();
+	xmlhttp.open( "get",url, true );
+
+	xmlhttp.onreadystatechange = function()
+	{
+		if( xmlhttp.readyState == 4 )
+		{
+			if( xmlhttp.status == 200 )
+			{
+				switch(trim(xmlhttp.responseText))
+				{
+					case "0":
+						clearInterval(inver_time_handle);
+						alert("<{$backup_restore.restore_failed|capitalize}>");
+						colose_restore();
+					break;
+					
+					case "1":
+						clearInterval(inver_time_handle);
+						alert("<{$backup_restore.restore_success|capitalize}>");
+						colose_restore();
+					break;
+				}
+			}
+		}
+	}
+	
+	xmlhttp.setRequestHeader( "If-Modified-Since", "0");
+	xmlhttp.send(null);
+}
+
+//只能是数字和字母
+function validate_backup_name(input_str)
+{
+	
+	var input_obj = document.getElementById(input_str);
+	var str = trim(input_obj.value);
+	
+	var url = "";
+	
+	if(isNull(str))
+	{
+		var sign = window.confirm("<{$backup_restore.use_no_name|capitalize}>");
+		if(sign)
+		{
+			temp_txt = "<{$backup_restore.backuping|capitalize}>";
+			animation_text_start();
+			
+			url = "backup_restore_form.php?backup_name="+str+"";
+		
+			backup_data(url);
+
+			input_obj.disabled = true;
+		}
+		else
+		{
+			return void(0);
+		}
+	
+	}
+	else
+	{
+	/*	if(!isNumberOr_Letter(str))
+		{
+			document.getElementById('prompt').innerHTML = "<{$backup_restore.correct_name|capitalize}>";
+			return void(0);
+		}
+		else
+		{*/
+			temp_txt = "<{$backup_restore.backuping|capitalize}>";
+			animation_text_start();
+			var backup_name = str;
+		//	url = "backup_restore_mysql.php?backup_name="+str+"&flag=1";
+			url = "backup_restore_form.php?backup_name="+str+"";
+			backup_data(url);
+	
+			input_obj.disabled = true;
+			
+	//	}
+	}	
+}
+function colose_restore2()
+{
+	 document.getElementById('restore_light2').style.display='none';
+    document.getElementById('restore_fade2').style.display='none';
+}
+function restore_data2()
+{
+    document.getElementById('upfile').disabled = false;
+	document.getElementById('prompt3').innerHTML = "<{$backup_restore.correct_name}>";
+    document.getElementById('restore_light2').style.display='block';
+    document.getElementById('restore_fade2').style.display='block';
+}
+
+function checkform()
+{
+	var up_file=document.getElementById('upfile').value;
+	if(isNull(up_file))
+	{ 
+		return false;
+	}
+	if(up_file.indexOf(".tar")==-1)
+	{
+		alert("<{$backup_restore.error_geshi|capitalize}>");
+		return false;
+	}
+
+}
+
+
+</script>
+
+<script language="javascript">
+	var get_user_right = "<{$is_right}>";
+	if(get_user_right == 1)
+	{
+		//什么也不做
+	}
+	else
+	{
+		var get_a_objects = document.getElementsByTagName("a");
+		for(var i=0; i<get_a_objects.length; i++)
+		{
+			get_a_objects[i].href = "javascript:void(0);";
+			get_a_objects[i].onclick = null;
+			get_a_objects[i].style.color="#787878";
+		//	get_a_objects[i].disabled = true;
+		}
+	}
+</script>

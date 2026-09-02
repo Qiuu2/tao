@@ -1,0 +1,64 @@
+<table width="98%" border="0" cellpadding="2" cellspacing="1"  align="center" name="sorttable" id="sorttable" class="terminal_form_to_body">
+	<tr align='center' class="terminal_table_row_bg" height="22" >
+	  <td width="10%" align="center" valign="middle" nowrap="nowrap">
+	  	<{$display_alarm_terminal.Selection|capitalize}>
+	  </td>
+	  <td width="15%" align="center" valign="middle" nowrap="nowrap">
+	  	<{$display_alarm_terminal.Terminal_Name|capitalize}>
+	  </td>
+	  <td width="10%" align="center" valign="middle" nowrap="nowrap">
+	  	<{$display_alarm_terminal.Network_Status|capitalize}>
+	  </td>
+	  <td width="10%" align="center" valign="middle" nowrap="nowrap">
+	  	<{$display_alarm_terminal.Device_Status|capitalize}>
+	  </td>
+	  <td width="10%" align="center" valign="middle" nowrap="nowrap">
+	  	<{$display_alarm_terminal.Terminal_IP|capitalize}>
+	  </td>
+	  <td width="10%" align="center" valign="middle" nowrap="nowrap">
+	  	<{$display_alarm_terminal.Operation|capitalize}>
+	  </td>
+	</tr>
+<{if $info|@count neq 0}>
+ <{section name=loop loop=$info}>        
+      <tr align='center' onmouseover="this.style.backgroundColor ='#EEEEFF';" onmouseout="javascript:this.style.backgroundColor='#FFFFFF';"> 
+		<td>
+			<{$smarty.section.loop.index+1+$start}>
+			
+		</td>
+		<td><{$info[loop].terminalname}></td>  
+		<td>
+			<{if $info[loop].netstate == 1}>
+				<{$display_alarm_terminal.Connection}>
+			<{elseif $info[loop].netstate == 0}>
+				<{$display_alarm_terminal.Disconnect}>
+			<{/if}>
+		</td> 
+		 
+		<td>
+			<{if $info[loop].netstate == 0}>
+				<{$display_alarm_terminal.Disconnect}>
+			<{elseif $info[loop].taskstate == 0 && $info[loop].netstate == 1}>
+				<{$display_alarm_terminal.Idle|capitalize}>
+			<{elseif $info[loop].taskstate != 0 && $info[loop].netstate == 1}>
+				<{$display_alarm_terminal.Alarm|capitalize}>
+			<{/if}>	
+		</td>
+		<td><{$info[loop].ip}></td>
+		<td>
+			<a href="do.php?act=removealreaterminal&id=<{$info[loop].id}>&alarm_id=<{$alarm_id}>">
+				<{$display_alarm_terminal.Remove_terminal|capitalize}>
+			</a>
+		</td>
+      </tr>         
+    <{/section}>
+<{else}>
+<tr>
+	<td colspan="6" align="center" valign="middle">
+		<strong><{$display_alarm_terminal.No_record|capitalize}></strong>
+	</td>
+</tr>
+<{/if}>
+</table>
+
+<div class="link_style" style="margin-top:5px"><{$pagestr}></div>

@@ -1,0 +1,201 @@
+<html>
+<head>
+<META http-equiv=Content-Type content="text/html; charset=utf-8">
+<title>SetTerminalMapping</title>
+
+<link href="smarty/templates/BellManager/codebase/dhtmlxtree.css" rel="stylesheet" type="text/css">
+<script  src="smarty/templates/BellManager/codebase/dhtmlxcommon.js"></script>
+<script  src="smarty/templates/BellManager/codebase/dhtmlxtree.js"></script>
+<script src="skin/js/frame/analysis_tree_terminal_group_string.js"></script>
+	<script  src="smarty/templates/ajax/get_terminaltype.js" ></script>
+<link href="skin/css/main_page_style.css" rel="stylesheet" type="text/css">
+
+<script language="javascript">
+function isNumber( s )
+{
+    var regu = "^[0-9]+$";
+    var re = new RegExp(regu);
+    if (s.search(re) != -1) 
+    {
+        return true;
+    }
+    else 
+    {
+        return false;
+    }
+}
+function trim(str)
+{   
+    return str.replace(/(^\s*)|(\s*$)/ig, "");   
+}
+function isChinaOrNumbOrLett( s )
+{
+	var regu = "^[0-9a-zA-Z\u4e00-\u9fa5]+$"; 
+	var re = new RegExp(regu); 
+	if (re.test(s)) 
+	{ 
+		return true; 
+	}
+	else
+	{
+		return false; 
+	} 
+}
+function isChinaOrLett( s )
+{
+	var regu = "^[0-9a-zA-Z]+$"; 
+	var re = new RegExp(regu); 
+	if (re.test(s)) 
+	{ 
+		return true; 
+	}
+	else
+	{
+		return false; 
+	} 
+}
+
+function isNull( str )
+{ 
+ if ( str == "" )
+ return true; 
+ var regu = "^[ ]+$"; 
+ var re = new RegExp(regu); 
+ return re.test(str); 
+} 
+
+function isIP(strIP) 
+{ 
+	if (isNull(strIP)) 
+	return false; 
+	var re=/^(\d+)\.(\d+)\.(\d+)\.(\d+)$/g; 
+	if(re.test(strIP)) 
+	{ 
+		if(RegExp.$1 <256 & RegExp.$2<256 && RegExp.$3<256 && RegExp.$4<256)
+		return true; 
+	} 
+	return false; 
+} 
+
+function checkform()
+{	
+	//验证媒体文件是否有值
+	var str = trim(sel_item_seq.toString());
+	//alert(str);
+	var strarray=str.split(",");
+	var temp=0;
+	var storearray=new Array();
+	for(var i=0;i<strarray.length;i++)
+	{
+		if(isNumber(strarray[i]))
+		{
+			storearray[temp]=strarray[i];
+			temp++;
+		}
+		continue;
+	}
+
+	document.getElementById('listvalue').value=trim(storearray.toString());
+	if(isNull(document.getElementById('listvalue').value))
+	{
+		alert("<{$set_shotcut.select_media_files|capitalize}>");
+		return false;
+	}
+}
+</script>
+</head>
+<body>
+<form name="setkeyform" action="do.php?act=add_camer_alarmevent_msg" method="post" onSubmit="return checkform();" class="terminal_form_to_body">
+<table width="600px" align="center" border="0" cellpadding="0px" cellspacing="0"  class="terminal_table_border">
+	<tr>
+		<td>
+			<table align="center" border="0" cellpadding="0px" cellspacing="0">
+				<tr>
+					<td>
+						<img src="<{$set_shotcut.add_baojin}>"/>
+					</td>
+				</tr>
+			</table>
+		</td>
+	</tr>
+	<tr>
+		<td>
+			<table align="center" border="0" cellpadding="5px" cellspacing="0" style="font-size:12px;font-family:Georgia, 'Times New Roman', Times, serif, '宋体'">
+				<tr>
+					<td width="180" align="right" ><{$set_shotcut.camer_eventtype|capitalize}></td>
+					<td width="420" align="left">
+					 <select  class="terminal_select_style" name="eventtype" id="eventtype" style="width:165px;">
+            	     <option value="131585"><{$set_shotcut.cam_cross}></option>
+             	     <option value="131586"><{$set_shotcut.cam_enter}></option>
+					  <option value="131587"><{$set_shotcut.cam_leave}></option>
+             	     <option value="131588"><{$set_shotcut.cam_invade}></option>
+					  <option value="131589"><{$set_shotcut.cam_takeandplace}></option>
+             	     <option value="131590"><{$set_shotcut.cam_linger}></option>
+					  <option value="131591"><{$set_shotcut.cam_parking}></option>
+             	     <option value="131592"><{$set_shotcut.cam_fastmove}></option>
+					  <option value="131593"><{$set_shotcut.cam_cather}></option>
+             	     <option value="131594"><{$set_shotcut.cam_left}></option>
+					  <option value="131595"><{$set_shotcut.cam_take}></option>
+             	     <option value="1"><{$set_shotcut.cam_exp}></option>
+         	 		 </select>
+				  </td>
+				</tr>
+								 
+				<tr>
+					<td width="180" align="right" valign="top"><{$set_shotcut.select_media_files|capitalize}>
+				
+					</td>
+					<td width="420">
+						<div id="treeofbox" name="treeofbox"  style="width:100%; height:200px; overFlow-x:scroll;overFlow-y:scroll;background-color:#f5f5f5;border :1px solid Silver;"></div>
+                <input type="hidden"  id="listvalue" name="listvalue" value=""/>
+				<script language="javascript" src="skin/js/frame/select_item_sequence.js"></script>
+				<script language="javascript" defer="true">
+					var getmediafileid="";
+					function tonclick(id) {
+					
+					if(id.substring(0,4)=="dir_")
+					{
+						getmediafileid=id.replace("dir_","");
+					}
+	
+					};
+					var treedata = "<{$filelist}>";
+					tree2=new dhtmlXTreeObject("treeofbox","100%","100%",0);
+					tree2.setSkin('dhx_skyblue');
+					tree2.setImagePath("smarty/templates/BellManager/codebase/csh_bluebooks/");
+					tree2.enableCheckBoxes(1);
+					tree2.enableThreeStateCheckboxes(true);
+					//tree2.enableDragAndDrop(true);
+					tree2.setOnClickHandler(tonclick);
+					tree2.setOnCheckHandler(get_select_item_check);
+ 					tree2.loadXMLString(treedata);
+					
+					get_all_item_id = tree2.getAllChildless();
+					get_all_item_id = get_all_item_id.split(",");
+					for(var x=0; x<get_all_item_id.length; x++)
+					{
+						get_all_item_txt.push(tree2.getItemText(get_all_item_id[x]));
+					}
+				</script>
+			    
+				  </td>
+				</tr>
+				<tr>
+					<td width="180"></td>
+					<td width="420">
+						&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;			&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+						<input type="submit" name="submit" value="<{$set_shotcut.Sumbit|capitalize}>" class="terminal_button"/>
+	
+						
+				  </td>
+				</tr>
+			</table>
+		</td>
+	</tr>
+</table>
+ 
+
+</form>
+<{include file="language/`$language`_foot.php"}>
+</body>
+</html>

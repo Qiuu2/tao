@@ -1,0 +1,1040 @@
+<html>
+<head>
+
+<META http-equiv=Content-Type content="text/html; charset=utf-8">
+
+<title>AddBellTask</title>
+
+<link href="skin/css/main_page_style.css" rel="stylesheet" type="text/css" />
+
+<!--添加文件列表开始-->
+
+<!--导入树-->
+<link href="smarty/templates/BellManager/codebase/dhtmlxtree.css" rel="stylesheet" type="text/css">
+<script  src="smarty/templates/BellManager/codebase/dhtmlxtree.js"></script>
+<script  src="smarty/templates/BellManager/codebase/dhtmlxcommon.js"></script>
+
+
+<script  src="smarty/templates/ajax/get_terminaltype.js"></script>
+<script src="skin/js/frame/analysis_tree_terminal_group_string.js"></script>
+
+<style>
+/*想要改输入日历控件的样子就改下面的CSS样式就可以了*/
+.header
+{
+	font-weight: bold;
+	font-weight: bold;
+	color: #000000;
+	background:#C2DEED;
+	height: 25px;
+	padding-left: 10px;
+	font-family: Arial, Tahoma;
+	font-size: 12px;
+}
+.header td
+{
+   padding-left: 10px;
+}
+.header a
+{
+   color: #154BA0;
+}
+.header input
+{
+   background:none;
+   vertical-align: middle;
+   height: 16px;
+}
+.category
+{
+   font: 12px Arial, Tahoma;
+   font: 11px Arial, Tahoma;
+   color: #92A05A;
+   height:20px;
+   background-color: #FFFFD9;
+}
+.category td
+{
+   border-bottom: 1px solid #DEDEB8;
+}
+.expire, .expire a:link, .expire a:visited
+{
+   color: #999999;
+}
+.default, .default a:link, .default a:visited
+{
+   color: #000000;
+}
+.checked, .checked a:link, .checked a:visited
+{
+   color: #FF0000;
+}
+.today, .today a:link, .today a:visited
+{
+   color: #00BB00;
+}
+#calendar_year
+{
+   display: none;
+   line-height: 130%;
+   background: #FFFFFF;
+   position: absolute;
+   z-index: 10;
+}
+#calendar_year .col
+{
+   float: left;
+   background: #FFFFFF;
+   margin-left: 1px;
+   border: 1px solid #86B9D6;
+   padding: 4px;
+}
+#calendar_month
+{
+   display: none;
+   background: #FFFFFF;
+   line-height: 130%;
+   border: 1px solid #86B9D6;
+   padding: 4px;
+   position: absolute;
+   z-index: 11;
+}
+.tableborder
+{
+   background: white;
+   border: 1px solid #86B9D6;
+}
+#year, #month
+{
+   padding-right:10px;
+   background:url(onbottom.gif) no-repeat center right;
+}/*图片路径可以改成自己的*/
+
+ 
+  /* 奇数行样式 */
+  tr:nth-child(odd) {
+	  background-color: #f8f9fa;
+  }
+  
+  /* 偶数行样式 */
+  tr:nth-child(even) {
+	  background-color: #c1cfe0;
+  }
+
+
+/*Date*/
+</style>
+
+<script>
+//这段脚本如果你的页面里有，就可以去掉它们了
+var ie =navigator.appName=="Microsoft Internet Explorer"?true:false;
+function $(objID)
+{
+	return document.getElementById(objID);
+}
+
+
+</script>
+<!--时间代码结束-->
+<!--添加弹出时间-->
+<script>
+var str = "<iframe name='iframe' id='iframe' frameborder='0' scrolling='no' style='position:absolute;z-index:-1;margin:0px;width:200; height:80px;'></iframe>";
+document.writeln("<div id=\"_contents\" style=\"font-size: 12px; background-color:#cccccc; z-index:99; margin:0px; text-align:center; position:absolute; width:200px; height:80px;visibility:hidden\">");
+str += "<table width='100%' height = '100%' style='border: 1 solid #C2DEED; font-size: 12px;'><tr align='center' valign='middle'><td><select name=\"_hour\">";
+for (h = 0; h <= 9; h++) 
+{
+	str += "<option value=\"0" + h + "\">0" + h + "</option>";
+}
+for (h = 10; h <= 23; h++) 
+{
+	str += "<option value=\"" + h + "\">" + h + "</option>";
+}
+str += "</select>&nbsp;<{$add_bell_scheme.Hour|capitalize}>&nbsp;<select name=\"_minute\">";
+for (m = 0; m <= 9; m++) 
+{
+	str += "<option value=\"0" + m + "\">0" + m + "</option>";
+}
+for (m = 10; m <= 59; m++) 
+{
+	str += "<option value=\"" + m + "\">" + m + "</option>";
+}
+str += "</select>&nbsp;<{$add_bell_scheme.Minute|capitalize}>&nbsp;<select name=\"_second\">";
+for (s = 0; s <= 9; s++) 
+{
+	str += "<option value=\"0" + s + "\">0" + s + "</option>";
+}
+for (s = 10; s <= 59; s++) 
+{
+	str += "<option value=\"" + s + "\">" + s + "</option>";
+}
+str += "</select>&nbsp;<{$add_bell_scheme.Second|capitalize}>&nbsp;<p><input type=\"button\" onclick=\"_select()\" value=\"\<{$add_bell_scheme.Confirm|capitalize}>\" class=\"terminal_button\"/>&nbsp;&nbsp;<input type=\"button\" onclick=\"_cancel()\" value=\"<{$add_bell_scheme.Cancel|capitalize}>\" class=\"terminal_button\"/></td></tr></table></div>";
+document.writeln(str);
+var _fieldname;
+function Timeselect(tt) 
+{
+	_fieldname = tt;
+	var ttop = tt.offsetTop;   
+	var thei = tt.clientHeight;   
+	var tleft = tt.offsetLeft;   
+	while (tt = tt.offsetParent) 
+	{
+		ttop += tt.offsetTop;
+		tleft += tt.offsetLeft;
+	}
+	document.all._contents.style.top = ttop + thei + 4;
+	document.all._contents.style.left = tleft;
+	document.all._contents.style.visibility = "visible";
+}
+function _select() 
+{ //确定按钮触发的事件
+	_fieldname.value = document.all._hour.value + ":" + document.all._minute.value + ":" + document.all._second.value;
+	document.all._contents.style.visibility = "hidden";   
+
+}
+function _cancel()
+{ //取消按钮触发的事件
+	document.all._contents.style.visibility = "hidden";
+
+}
+
+document.getElementById("iframe").document.body.onload=function addGgColor()
+{
+	  iframe.document.body.style.backgroundColor="#cccccc";
+}
+</script>
+<script>
+var lenstr = "<iframe name='iframelen' id='iframelen' frameborder='0' scrolling='no' style='position:absolute;z-index:-1;margin:0px;width:260px; height:80px;'></iframe>";
+document.writeln("<div id=\"_lenthcontents\" style=\"font-size: 12px; background-color:#cccccc; z-index:98; margin:0px; text-align:center; position:absolute; width:260px; height:80px;visibility:hidden\">");
+lenstr += "<table width='100%' height = '100%' style='border: 1 solid #C2DEED;  font-size: 12px;'><tr><td align='center'><INPUT type=radio name='radio' onclick='_clickbt()' CHECKED></td><td><select name=\"_hourlen\">";
+for (h = 0; h <= 9; h++) 
+{
+	lenstr += "<option value=\"0" + h + "\">0" + h + "</option>";
+}
+for (h = 10; h <= 23; h++) 
+{
+	lenstr += "<option value=\"" + h + "\">" + h + "</option>";
+}
+lenstr += "</select>&nbsp; <{$add_bell_scheme.Hour|capitalize}> &nbsp;<select name=\"_minutelen\">";
+for (m = 0; m <= 9; m++) 
+{
+	lenstr += "<option value=\"0" + m + "\">0" + m + "</option>";
+}
+for (m = 10; m <= 59; m++) 
+{
+	lenstr += "<option value=\"" + m + "\">" + m + "</option>";
+}
+lenstr += "</select>&nbsp;<{$add_bell_scheme.Minute|capitalize}> &nbsp;<select name=\"_secondlen\">";
+for (s = 0; s <= 9; s++) 
+{
+	lenstr += "<option value=\"0" + s + "\">0" + s + "</option>";
+}
+for (s = 10; s <= 59; s++) 
+{
+	lenstr += "<option value=\"" + s + "\">" + s + "</option>";
+}
+lenstr += "</select> &nbsp; <{$add_bell_scheme.Second|capitalize}></td></tr><tr><td align='center'><INPUT type=radio name='radio' onclick='_clickbt()'></td>";
+
+lenstr += "</tr><tr><td align='center' colspan = 2><input type=\"button\" onclick=\"_lenselect()\" value=\"<{$add_bell_scheme.Confirm|capitalize}>\" style=\"font-size:12px\"/>&nbsp;&nbsp;<input type=\"button\" onclick=\"_lencancel()\" value=\"<{$add_bell_scheme.Cancel|capitalize}>\" style=\"font-size:12px\"/></td></tr></table></div>";
+document.writeln(lenstr);
+var _fieldname;
+function Playlenthselect(tt) 
+{
+	_fieldname = tt;
+	var ttop = tt.offsetTop;   
+	var thei = tt.clientHeight;   
+	var tleft = tt.offsetLeft;   
+	while (tt = tt.offsetParent) 
+	{
+		ttop += tt.offsetTop;
+		tleft += tt.offsetLeft;
+	}
+	document.all._lenthcontents.style.top = ttop + thei + 4;
+	document.all._lenthcontents.style.left = tleft;
+	document.all._contents.style.visibility = "hidden";
+	document.all._lenthcontents.style.visibility = "visible";
+}
+function _clickbt()
+{
+    if(document.all.radio[0].checked)
+    {
+        document.all._hourlen.disabled = false;
+        document.all._minutelen.disabled = false;
+        document.all._secondlen.disabled = false;
+        document.all._times.disabled = true;
+    }
+    else if(document.all.radio[1].checked)
+    {
+        document.all._hourlen.disabled = true;
+        document.all._minutelen.disabled = true;
+        document.all._secondlen.disabled = true;
+        document.all._times.disabled = false;
+    }
+}
+
+function _lenselect() 
+{ 
+    if(document.all.radio[0].checked)
+    {
+		
+        _fieldname.value = document.all._hourlen.value + ":" + document.all._minutelen.value + ":" + document.all._secondlen.value;
+    }
+    else if(document.all.radio[1].checked)
+    {
+		
+        _fieldname.value = document.all._times.value;
+    }
+    document.all._lenthcontents.style.visibility = "hidden"; 
+}
+function _lencancel()
+{
+	document.all._lenthcontents.style.visibility = "hidden";
+}
+
+document.getElementById("iframelen").document.body.onload=function addGgColor()
+{
+	  iframelen.document.body.style.backgroundColor="#fffffc";
+}
+</script>
+<!--验证代码-->
+<script>
+function isNull( str )
+{
+	if ( str == "" || str==null) 
+	return true;
+	var regu = "^[ ]+$";
+	var re = new RegExp(regu);
+	return re.test(str);
+}
+function isNumber( s )
+{ 
+	var regu = "^[0-9]+$"; 
+	var re = new RegExp(regu); 
+	if (s.search(re) != -1) 
+	{ 
+		return true; 
+	}
+	else 
+	{ 
+		return false; 
+	} 
+} 
+function isChinaOrNumbOrLett(s)
+{
+	var regu = "^[0-9a-zA-Z\u4e00-\u9fa5]+$"; 
+	var re = new RegExp(regu); 
+	if (re.test(s)) 
+	{ 
+		return true; 
+	}
+	else
+	{ 
+		return false; 
+	} 
+}
+function trim(str)
+{
+   str=str.replace(/(^\s*)|(\s*$)/g,""); 
+   return str;
+}
+
+</script>
+<!--导入ajax-->
+<script src="smarty/templates/ajax/putintobellinfo.js" type="text/javascript"></script>
+
+
+<!--
+	添加日期
+-->
+<script language="javascript">
+var controlid = null;
+var currdate = null;
+var startdate = null;
+var enddate  = null;
+var yy = null;
+var mm = null;
+var hh = null;
+var ii = null;
+var currday = null;
+var addtime = false;
+var today = new Date();
+var lastcheckedyear = false;
+var lastcheckedmonth = false;
+
+function _cancelBubble(event) 
+{
+	e = event ? event : window.event ;
+	if(ie) {
+		e.cancelBubble = true;
+	} else {
+		e.stopPropagation();
+	}
+}
+
+function getposition(obj) 
+{
+	var r = new Array();
+	r['x'] = obj.offsetLeft;
+	r['y'] = obj.offsetTop;
+	while(obj = obj.offsetParent) 
+	{
+		r['x'] += obj.offsetLeft;
+		r['y'] += obj.offsetTop;
+	}
+	return r;
+}
+
+function loadcalendar() 
+{
+	s = '';
+	s += '<div id="calendar" style="display:none; position:absolute; z-index:9;" onclick="_cancelBubble(event)">';
+	if (ie)
+	{
+		s += '<iframe width="200" height="160" src="about:blank" style="position: absolute;z-index:-1;"></iframe>';
+	}
+	s += '<div style="width: 200px;"><table class="tableborder" cellspacing="0" cellpadding="0" width="100%" style="text-align: center">';
+	s += '<tr align="center" class="header"><td class="header"><a href="#" onclick="refreshcalendar(yy, mm-1);return false" title="<{$add_bell_scheme.lastmonth|capitalize}>">&lt;&lt;</a></td><td colspan="5" style="text-align: center" class="header"><a href="#" onclick="showdiv(\'year\');_cancelBubble(event);return false" title="<{$add_bell_scheme.pleaseclickyear|capitalize}>" id="year"></a>&nbsp; - &nbsp;<a id="month" title="<{$add_bell_scheme.pleaseclickmonth|capitalize}>" href="#" onclick="showdiv(\'month\');_cancelBubble(event);return false"></a></td><td class="header"><A href="#" onclick="refreshcalendar(yy, mm+1);return false" title="<{$add_bell_scheme.nextmonth|capitalize}>">&gt;&gt;</A></td></tr>';
+	s += '<tr class="category"><td><{$add_bell_scheme.day|capitalize}></td><td><{$add_bell_scheme.one|capitalize}></td><td><{$add_bell_scheme.two|capitalize}></td><td><{$add_bell_scheme.three|capitalize}></td><td><{$add_bell_scheme.four|capitalize}></td><td><{$add_bell_scheme.five|capitalize}></td><td><{$add_bell_scheme.six|capitalize}></td></tr>';
+	for(var i = 0; i < 6; i++) 
+	{
+		s += '<tr class="altbg2">';
+		for(var j = 1; j <= 7; j++)
+			s += "<td id=d" + (i * 7 + j) + " height=\"19\">0</td>";
+		s += "</tr>";
+	}
+	s += '<tr class="colors" id="hourminute"><td colspan="7" align="center"><input type="text" size="1" value="" id="hour" onKeyUp=\'this.value=this.value > 23 ? 23 : zerofill(this.value);controlid.value=controlid.value.replace(/\\d+(\:\\d+)/ig, this.value+"$1")\'> <{$add_bell_scheme.point|capitalize}> <input type="text" size="1" value="" id="minute" onKeyUp=\'this.value=this.value > 59 ? 59 : zerofill(this.value);controlid.value=controlid.value.replace(/(\\d+\:)\\d+/ig, "$1"+this.value)\'> <{$add_bell_scheme.part|capitalize}></td></tr>';
+	s += '</table></div></div>';
+	s += '<div id="calendar_year" onclick="_cancelBubble(event)"><div class="col">';
+	for(var k = 2020; k <= 2049; k++) 
+	{
+		s += k != 2020 && k % 10 == 0 ? '</div><div class="col">' : '';
+		s += '<a href="#" onclick="refreshcalendar(' + k + ', mm);$(\'calendar_year\').style.display=\'none\';return false"><span' + (today.getFullYear() == k ? ' class="today"' : '') + ' id="calendar_year_' + k + '">' + k + '</span></a><br />';
+	}
+	s += '</div></div>';
+	s += '<div id="calendar_month" onclick="_cancelBubble(event)">';
+	for(var k = 1; k <= 12; k++) 
+	{
+		s += '<a href="#" onclick="refreshcalendar(yy, ' + (k - 1) + ');$(\'calendar_month\').style.display=\'none\';return false"><span' + (today.getMonth()+1 == k ? ' class="today"' : '') + ' id="calendar_month_' + k + '">' + k + ( k < 10 ? '&nbsp;' : '') + ' <{$add_bell_scheme.month|capitalize}></span></a><br />';
+	}
+	s += '</div>';
+
+	var nElement = document.createElement("div");
+	nElement.innerHTML=s;
+	document.getElementsByTagName("body")[0].appendChild(nElement);
+	document.onclick = function(event) 
+	{
+		$('calendar').style.display = 'none';
+		$('calendar_year').style.display = 'none';
+		$('calendar_month').style.display = 'none';
+	}
+	$('calendar').onclick = function(event) 
+	{
+		_cancelBubble(event);
+		$('calendar_year').style.display = 'none';
+		$('calendar_month').style.display = 'none';
+	}
+}
+
+function parsedate(s) 
+{
+	/(\d+)\-(\d+)\-(\d+)\s*(\d*):?(\d*)/.exec(s);
+	var m1 = (RegExp.$1 && RegExp.$1 > 1899 && RegExp.$1 < 2101) ? parseFloat(RegExp.$1) : today.getFullYear();
+	var m2 = (RegExp.$2 && (RegExp.$2 > 0 && RegExp.$2 < 13)) ? parseFloat(RegExp.$2) : today.getMonth() + 1;
+	var m3 = (RegExp.$3 && (RegExp.$3 > 0 && RegExp.$3 < 32)) ? parseFloat(RegExp.$3) : today.getDate();
+	var m4 = (RegExp.$4 && (RegExp.$4 > -1 && RegExp.$4 < 24)) ? parseFloat(RegExp.$4) : 0;
+	var m5 = (RegExp.$5 && (RegExp.$5 > -1 && RegExp.$5 < 60)) ? parseFloat(RegExp.$5) : 0;
+	/(\d+)\-(\d+)\-(\d+)\s*(\d*):?(\d*)/.exec("0000-00-00 00\:00");
+	return new Date(m1, m2 - 1, m3, m4, m5);
+}
+
+function settime(d) 
+{
+	$('calendar').style.display = 'none';
+	controlid.value = yy + "-" + zerofill(mm + 1) + "-" + zerofill(d) + (addtime ? ' ' + zerofill($('hour').value) + ':' + zerofill($('minute').value) : '');
+}
+
+function showcalendar(event,controlid1, addtime1, startdate1, enddate1) 
+{
+	controlid = controlid1;
+	addtime = addtime1;
+	startdate = startdate1 ? parsedate(startdate1) : false;
+	enddate = enddate1 ? parsedate(enddate1) : false;
+	currday = controlid.value ? parsedate(controlid.value) : today;
+	hh = currday.getHours();
+	ii = currday.getMinutes();
+	var p = getposition(controlid);
+	$('calendar').style.display = 'block';
+	$('calendar').style.left = p['x']+'px';
+	$('calendar').style.top	= (p['y'] + 20)+'px';
+	_cancelBubble(event);
+	refreshcalendar(currday.getFullYear(), currday.getMonth());
+	if(lastcheckedyear != false) {
+		$('calendar_year_' + lastcheckedyear).className = 'default';
+		$('calendar_year_' + today.getFullYear()).className = 'today';
+	}
+	if(lastcheckedmonth != false) {
+		$('calendar_month_' + lastcheckedmonth).className = 'default';
+		$('calendar_month_' + (today.getMonth() + 1)).className = 'today';
+	}
+	$('calendar_year_' + currday.getFullYear()).className = 'checked';
+	$('calendar_month_' + (currday.getMonth() + 1)).className = 'checked';
+	$('hourminute').style.display = addtime ? '' : 'none';
+	lastcheckedyear = currday.getFullYear();
+	lastcheckedmonth = currday.getMonth() + 1;
+}
+
+function refreshcalendar(y, m) 
+{
+	var x = new Date(y, m, 1);
+	var mv = x.getDay();
+	var d = x.getDate();
+	var dd = null;
+	yy = x.getFullYear();
+	mm = x.getMonth();
+	$("year").innerHTML = yy;
+	$("month").innerHTML = mm + 1 > 9  ? (mm + 1) : '0' + (mm + 1);
+
+	for(var i = 1; i <= mv; i++) 
+	{
+		dd = $("d" + i);
+		dd.innerHTML = "&nbsp;";
+		dd.className = "";
+	}
+
+	while(x.getMonth() == mm) 
+	{
+		dd = $("d" + (d + mv));
+		dd.innerHTML = '<a href="###" onclick="settime(' + d + ');return false">' + d + '</a>';
+		if(x.getTime() < today.getTime() || (enddate && x.getTime() > enddate.getTime()) || (startdate && x.getTime() < startdate.getTime())) {
+			dd.className = 'expire';
+		} else {
+			dd.className = 'default';
+		}
+		if(x.getFullYear() == today.getFullYear() && x.getMonth() == today.getMonth() && x.getDate() == today.getDate()) {
+			dd.className = 'today';
+			dd.firstChild.title = '<{$add_bell_scheme.today|capitalize}>';
+		}
+		if(x.getFullYear() == currday.getFullYear() && x.getMonth() == currday.getMonth() && x.getDate() == currday.getDate()) {
+			dd.className = 'checked';
+		}
+		x.setDate(++d);
+	}
+
+	while(d + mv <= 42) 
+	{
+		dd = $("d" + (d + mv));
+		dd.innerHTML = "&nbsp;";
+		d++;
+	}
+
+	if(addtime) 
+	{
+		$('hour').value = zerofill(hh);
+		$('minute').value = zerofill(ii);
+	}
+}
+
+function showdiv(id) 
+{
+
+	var p = getposition($(id));
+	$('calendar_' + id).style.left = p['x']+'px';
+	$('calendar_' + id).style.top = (p['y'] + 16)+'px';
+	$('calendar_' + id).style.display = 'block';
+}
+
+function zerofill(s) 
+{
+	var s = parseFloat(s.toString().replace(/(^[\s0]+)|(\s+$)/g, ''));
+	s = isNaN(s) ? 0 : s;
+	return (s < 10 ? '0' : '') + s.toString();
+}
+loadcalendar();
+</script>
+
+<!--对表单验证-->
+<SCRIPT language=javascript>
+function checkform()
+{
+	var getterminalid = trim(tree3.getAllChecked());
+	var count = 0;
+	var tempstore = new Array();
+	
+	var gettargetvalue = getterminalid.split(",");
+	
+	for(var i=0; i<gettargetvalue.length; i++)
+	{
+		if(isNumber(gettargetvalue[i]))
+		{
+			tempstore[count] = gettargetvalue[i];
+			count++;
+		}	
+	}
+	
+	document.getElementById('task_map_id').value = trim(tempstore.toString());
+
+	if(isNull(document.getElementById('task_map_id').value))
+	{
+		alert("<{$set_remote_map.select_task|capitalize}>");
+		return false;
+	}
+	
+}
+
+function getCheckboxItem()
+{
+	var allSel="";
+	if(document.bellform.id.checked)
+	{
+		allSel=document.bellform.id.value;
+		if(allSel==undefined)
+		allSel="";
+	}
+
+	for(i=0;i<document.bellform.id.length;i++)
+	{
+		if(document.bellform.id[i].checked)
+		{
+			if(allSel=="")
+				allSel=document.bellform.id[i].value;
+			else
+				allSel=allSel+","+document.bellform.id[i].value;
+		}
+	}
+	return allSel;
+}
+
+function selAll(aid)
+{
+	if(aid==0)
+	{
+		document.bellform.id.checked=true;
+	}
+	for(i=0;i<document.bellform.id.length;i++)
+	{
+		if(!document.bellform.id[i].checked)
+		{
+			document.bellform.id[i].checked=true;
+		}
+	}
+}
+function noSelAll(aid)
+{
+	document.bellform.id.checked=false;
+	
+	for(i=0;i<document.bellform.id.length;i++)
+	{
+		if(document.bellform.id[i].checked)
+		{
+			document.bellform.id[i].checked=false;
+		}
+	}
+}
+
+function enallselects()
+{
+	var radiotemp;
+	var radios;
+	var get_radio="";
+	var allSel="";
+	var getiddd = "<{$getid}>";
+	for(i=0;i<document.bellform.id.length;i++)
+	{
+		radiotemp=document.bellform.id[i].value;
+		if(allSel=="")
+			allSel=document.bellform.id[i].value;
+		else
+			allSel=allSel+","+document.bellform.id[i].value;
+
+		radios = document.getElementsByName(radiotemp);
+		radios[0].checked = true;
+		if(get_radio == "")
+				get_radio="0";
+			else
+			get_radio=get_radio+",0";
+		/*
+		if(radios[0].checked == true)
+		{
+			if(get_radio == "")
+				get_radio="0";
+			else
+			get_radio=get_radio+",0";	
+		}
+		else 
+		{
+			if(get_radio == "")
+				get_radio="1";
+			else
+			get_radio=get_radio+",1";
+		}
+		*/	
+	}
+	var getdate = document.getElementById('startdate').value;
+	var gethour = document.getElementById('starthour').value;
+	var getmin = document.getElementById('startmin').value;
+	var getsenc = document.getElementById('startsenc').value;
+
+	if(window.confirm("<{$add_bell_scheme.yesornodo}>") == false)
+		return void(0);
+	else
+		window.location.href = "do.php?act=modyesornoenable&get_radio="+get_radio+"&allSel="+allSel+"&startdate="+getdate+"&starthour="+gethour+"&startmin="+getmin+"&startsenc="+getsenc+"&getiddd="+getiddd;
+//	if(window.confirm("<{$server_manager.zhu_init_close}>") == false)
+	//	return void(0);
+	//else
+	//window.location.href = "do.php?act=serverclose_data&servermodel="+server_model+"&ip="+getip+"&subnetmaskip="+subnetmaskip+"&name="+servername+"&master_ip="+master_ip+"&slavename="+slavename+"&Slave_IP="+Slave_IP+"&mastersubnetmask="+mastersubnetmask+"&gateway="+gateway;
+}
+
+function tijiaoselects()
+{
+	var radiotemp;
+	var radios;
+	var get_radio="";
+	var allSel="";
+	var getid = getCheckboxItem();
+	var idarray=getid.split(",");
+	var getiddd = "<{$getid}>";
+	allSel=getid;
+	
+
+	
+	var strnum="";
+
+	
+		for(var i=0;i<document.bellform.week.length;i++)
+		{
+			if(document.bellform.week[i].checked)
+			{
+				if(strnum=="")
+				{
+					strnum+=1;
+				}
+				else
+				{
+					strnum+=","+1;
+				}
+			}
+			else
+			{
+				if(strnum=="")
+				{
+					strnum+=0;
+				}
+				else
+				{
+					strnum+=","+0;
+				}
+			}
+		}
+
+	  document.getElementById('hiddenweek').value = trim(strnum); 
+	  var bellName = "<{$sechoname}>";
+	if(window.confirm("<{$add_bell_scheme.yesornodo}>") == false)
+		return void(0);
+	else
+		window.location.href = "do.php?act=sechetime&get_radio="+document.getElementById('hiddenweek').value+"&allSel="+allSel+"&bellName="+bellName;
+
+}
+
+function disableselects()
+{
+	var radiotemp;
+	var radios;
+	var get_radio="";
+	var allSel="";
+	var getiddd = "<{$getid}>";
+	for(i=0;i<document.bellform.id.length;i++)
+	{
+		if(allSel=="")
+			allSel=document.bellform.id[i].value;
+		else
+			allSel=allSel+","+document.bellform.id[i].value;
+
+		radiotemp=document.bellform.id[i].value;
+		radios = document.getElementsByName(radiotemp);
+		radios[1].checked=true;
+		if(get_radio == "")
+				get_radio="1";
+		else
+			get_radio=get_radio+",1";	
+		/*
+		if(radios[0].checked == true)
+		{
+			if(get_radio == "")
+				get_radio="0";
+			else
+			get_radio=get_radio+",0";	
+		}
+		else 
+		{
+			if(get_radio == "")
+				get_radio="1";
+			else
+			get_radio=get_radio+"1";
+		}*/
+	}
+	var getdate = document.getElementById('startdate').value;
+	var gethour = document.getElementById('starthour').value;
+	var getmin = document.getElementById('startmin').value;
+	var getsenc = document.getElementById('startsenc').value;
+	if(window.confirm("<{$add_bell_scheme.yesornodo}>") == false)
+		return void(0);
+	else
+	window.location.href = "do.php?act=modyesornoenable&get_radio="+get_radio+"&allSel="+allSel+"&startdate="+getdate+"&starthour="+gethour+"&startmin="+getmin+"&startsenc="+getsenc+"&getiddd="+getiddd;
+
+}
+
+var taskidarray = "<{$enable_task.taskid}>";
+var enablestatus = "<{$enable_task.enstate}>";
+var strarray=taskidarray.split(",");
+
+var rownum=0;
+
+function getdayofweek(str)
+{
+   var dayofweek="";
+   var count = 0;
+   for(i=0;i<str.length;i++)
+   {
+        if(str.charAt(i)=="1")
+        {
+			count++;
+            switch(i)
+            {
+                case 0:
+				dayofweek+="<{$add_bell_scheme.Sunday}>";
+                break;
+                case 1:
+				dayofweek+="<{$add_bell_scheme.Monday}>";
+                break;
+                case 2:
+				dayofweek+="<{$add_bell_scheme.Tuesday}>";
+                break;
+                case 3:
+				dayofweek+="<{$add_bell_scheme.Wednesday}>";
+                break;
+                case 4:
+				dayofweek+="<{$add_bell_scheme.Thursday}>";
+                break;
+                case 5:
+				dayofweek+="<{$add_bell_scheme.Friday}>";
+                break;
+                case 6:
+                dayofweek+="<{$add_bell_scheme.Saturday}>";
+                break;
+				case 8:
+				dayofweek+="<{$add_bell_scheme.NextMonday}>";
+                break;
+				case 9:
+				dayofweek+="<{$add_bell_scheme.NextTuesday}>";
+                break;
+				case 10:
+				dayofweek+="<{$add_bell_scheme.NextWednesday}>";
+                break;
+				case 11:
+				dayofweek+="<{$add_bell_scheme.NextThursday}>";
+                break;
+				case 12:
+				dayofweek+="<{$add_bell_scheme.NextFriday}>";
+                break;
+				case 13:
+				dayofweek+="<{$add_bell_scheme.NextSaturday}>";
+                break;
+				case 14:
+				dayofweek+="<{$add_bell_scheme.NextSunday}>";
+                break;
+            }
+        }
+   }
+   if(count>6)
+   {
+   		return "<{$add_bell_scheme.every_day|capitalize}>";
+   }
+   return dayofweek;
+}
+
+</script>
+</head>
+<body>
+
+<form name="bellform" method="post" action="do.php?act=addenable" onSubmit="return checkform();" class="terminal_form_to_body">
+<table width="780" align="center" cellpadding="0" cellspacing="0" class="terminal_table_border">
+	<tr>
+	  <td colspan="2">
+		<img src="<{$add_bell_scheme.copysetime}>"/>
+	  </td>
+	</tr>
+	<tr>
+	<!--
+	  <tr>
+		<td  nowrap class="belll_table_col_rightalign">
+			<{$add_bell_scheme.enable_disable|capitalize}>
+		</td>
+		
+		<td nowrap class="bell_talbe_col_leftalign">
+			<select   name="enabledisable" id="enabledisable" style="width:69px;">
+                <option value="0"><{$add_bell_scheme.enables}></option>
+                <option value="1"><{$add_bell_scheme.disables}></option>
+            </select>
+		</td>
+	  </tr> -->	 
+		<tr  colspan="2" align="center">
+			<td nowrap class="belll_table_col_rightalign"><{$add_bell_scheme.Run_mode|capitalize}></td>
+			<td nowrap class="bell_talbe_col_leftalign">
+				<div class="bell_div"><input type="checkbox" value="1" id="week" name="week"/><{$add_bell_scheme.Sunday|capitalize}>
+					<input type="checkbox" value="1" id="week" name="week"/><{$add_bell_scheme.Monday|capitalize}>
+					<input type="checkbox" value="1" id="week" name="week"/><{$add_bell_scheme.Tuesday|capitalize}>
+					<input type="checkbox" value="1" id="week" name="week"/><{$add_bell_scheme.Wednesday|capitalize}>
+					<input type="checkbox" value="1" id="week" name="week"/><{$add_bell_scheme.Thursday|capitalize}>
+					<input type="checkbox" value="1" id="week" name="week"/><{$add_bell_scheme.Friday|capitalize}>
+					<input type="checkbox" value="1" id="week" name="week"/><{$add_bell_scheme.Saturday|capitalize}>
+		<!--添加日期-->
+		<!--
+		<input title="<{$add_bell_scheme.Start_Datetask|capitalize}>" class="bell_input_style" name="startdate" id="startdate" type="text" value="" size="14" readonly="readonly" onClick="showcalendar(event, this);" onFocus="showcalendar(event, this);if(this.value=='0000-00-00')this.value=''" />	
+			<{$add_bell_scheme.start_time|capitalize}>
+			<select  class="terminal_select_style" name="starthour" id="starthour" style="width:55px;">
+				<script>
+					for(var i=0;i<=23;i++)
+					{
+						var obj = new Date();
+						var gethours = obj.getHours();
+						if(i== gethours)
+						{
+							document.write("<option value='"+i+"' selected='selected'>"+i+"</option>");
+						}
+						else
+						{
+							document.write("<option value='"+i+"'>"+i+"</option>");
+						}
+					}
+				</script>
+			</select>
+			<{$add_bell_scheme.Hour|capitalize}>
+			<select class="terminal_select_style" name="startmin" id="startmin" style="width:55px;">
+			<script>
+				for(var i=0;i<=59;i++)
+				{
+					var obj = new Date();
+					var getminutes = obj.getMinutes();
+					if(i == getminutes)
+					{
+						document.write("<option value='"+i+"' selected='selected'>"+i+"</option>");
+					}
+					else
+					{
+						document.write("<option value='"+i+"'>"+i+"</option>");
+					}
+				}
+			</script>
+			</select>
+			<{$add_bell_scheme.Minute|capitalize}>
+			
+			<select class="terminal_select_style" name="startsenc" id="startsenc" style="width:55px;">
+			<script>
+			for(var i=0;i<=59;i++)
+			{
+				var obj = new Date();
+				var getsecond = obj.getSeconds();
+				if(i==getsecond)
+				{
+					document.write("<option value='"+i+"' >"+i+"</option>");
+				}
+				else
+				{
+					document.write("<option value='"+i+"'>"+i+"</option>");
+				}	 
+			}
+			</script>
+			</select>
+			<{$add_bell_scheme.Second|capitalize}>
+			<span class="terminal_star" id="timecompare_text">*</span>	
+			
+				<script>
+				document.getElementById('startdate').value = "<{$enable_task.startdate}>";
+
+				var gettimes = "<{$enable_task.starttime}>";
+				var gettime = gettimes.split(":");//只是投机的做法
+					
+					document.getElementById("starthour").value = Number(gettime[0]);
+					document.getElementById("startmin").value = Number(gettime[1]);
+					document.getElementById("startsenc").value = Number(gettime[2]);
+					
+			
+				</script>-->
+			</td>
+			
+		</tr>
+	</tr>
+	<tr>
+		<td width="180" align="right" valign="top" class="input_title" style="background-color: #FFFFFF;"><{$add_bell_scheme.Task_name|capitalize}></td>
+		<td width="420">
+			
+			<table width="98%" border="0" cellpadding="2" cellspacing="1"  align="center" id="tablebell">
+				<thead>
+			<tr align='center' class="terminal_table_row_bg">
+				<th width="10%" nowrap="nowrap">
+					<{$add_bell_scheme.Select|capitalize}></th>
+				<th width="25%" nowrap="nowrap" onclick="sortTable('tablebell', 1,'1')" class="sort_data_table_sequence">
+					<{$add_bell_scheme.Task_name|capitalize}>↑↓</th>
+				<th width="35%" nowrap="nowrap" onclick="sortTable('tablebell', 2,'1')" class="sort_data_table_sequence">
+					<{$add_bell_scheme.Run_mode|capitalize}>↑↓</th>
+			</tr>
+				</thead>
+				<tbody>
+			<{if $info|@count neq 0}>
+			 <{section name=loop loop=$info}>        
+				  <tr align='center'>
+					<td>
+						<{if $is_right == 1 || $admin_id == "administrator"}>
+						<input name="id" type="checkbox" id="id" value="<{$info[loop].taskid}>">
+							<{$smarty.section.loop.index+1+$start}>
+						<{else}>
+							<{$smarty.section.loop.index+1+$start}>
+						 <{/if}> 
+					</td>	
+					<td>
+						<label title="<{$info[loop].taskname}>">
+							<{$info[loop].taskname|truncate:28:"..."}>
+						</label>
+					</td> 
+					<td>
+						<{if $info[loop].exemodel == "0000000"}>
+						<{$add_bell_scheme.Manual}>
+					<{else}>
+						<script language="javascript">document.write(getdayofweek("<{$info[loop].exemodel}>"))</script>
+					<{/if}>
+				    </td>
+					
+				  </tr>         
+				<{/section}>	 
+			<{else}>
+			<tr align='center'>
+				<td colspan="7">
+					<strong><{$add_bell_scheme.No_Record|capitalize}></strong>
+				</td>
+			</tr>
+			<{/if}>	
+			</tbody>
+			</table>
+
+	  </td>
+	</tr>
+	<tr>
+	<td colspan="2" align="center" valign="middle">
+	
+	<div  style=" margin-top:5px; margin-bottom:5px; text-align:center; width:780px">
+		<input type="hidden"  id="hiddenweek"       name="hiddenweek" value=""/>
+		<input type="button" name="enallselect" value="<{$add_bell_scheme.selectalls|capitalize}>" id="enallselect" onclick="selAll(0)" class="server_restart_button"/>
+		<input type="button" name="disallselect" value="<{$add_bell_scheme.Cancel|capitalize}>" id="disallselect" onclick="noSelAll(0)" class="server_restart_button"/>
+		<input type="button" name="selecttijiao" value="<{$add_bell_scheme.Submit|capitalize}>" id="selecttijiao" onclick="tijiaoselects()" class="server_restart_button"/>	
+		<!--
+			<input title="<{$add_bell_scheme.submit_task|capitalize}>" id="Submit" name="Submit" type="submit" class="terminal_button" value="<{$add_bell_scheme.Submit|capitalize}>"/>
+			&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+			<input name="reset" type="reset" class="terminal_button" id="reset" value="<{$add_bell_scheme.Cancel|capitalize}>"/>
+		-->
+	</div>
+	</td>
+	</tr>
+ </table>
+</form>
+<{include file="language/`$language`_foot.php"}> 
+</body>
+</html>

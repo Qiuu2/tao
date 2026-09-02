@@ -1,0 +1,102 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>stream manager</title>
+
+<link href="skin/css/main_page_style.css" rel="stylesheet" type="text/css" />
+
+<!--导入树-->
+<link href="smarty/templates/BellManager/codebase/dhtmlxtree.css" rel="stylesheet" type="text/css">
+<script language="JavaScript" src="smarty/templates/BellManager/codebase/dhtmlxtree.js" type"text/JavaScript"></script>	
+<script language="JavaScript" src="smarty/templates/BellManager/codebase/dhtmlxcommon.js" type"text/JavaScript"></script>
+<script src="skin/js/frame/analysis_tree_terminal_group_string.js"></script>
+
+<script language="javascript">
+function isNumber( s )
+{ 
+	var regu = "^[0-9]+$"; 
+	var re = new RegExp(regu); 
+	if (s.search(re) != -1) 
+	{ 
+		return true; 
+	}
+	else 
+	{ 
+		return false; 
+	} 
+} 
+function trim(str)
+{
+   str=str.replace(/(^\s*)|(\s*$)/g,""); 
+   return str;
+}
+function isNull( str )
+{
+	if ( str == "" || str==null) 
+	return true;
+	var regu = "^[ ]+$";
+	var re = new RegExp(regu);
+	return re.test(str);
+}
+function isChinaOrNumbOrLett(s)
+{
+	var regu = "^[0-9a-zA-Z\u4e00-\u9fa5]+$"; 
+	var re = new RegExp(regu); 
+	if (re.test(s)) 
+	{ 
+		return true; 
+	}
+	else
+	{ 
+		return false; 
+	} 
+} 
+function checkform()
+{	
+	//验证组名
+	if(isNull(trim(document.getElementById('areaname').value)))
+	{
+		document.getElementById('areaname_s').innerHTML="<font class='terminal_star'><{$create_alarm_zone.enter_zone_name|capitalize}></font>";
+		document.getElementById('areaname').focus();
+		return false;
+	}
+	else
+	{
+		if(!isChinaOrNumbOrLett(trim(document.getElementById('areaname').value)))
+		{
+			document.getElementById('areaname_s').innerHTML="<font class='terminal_star'><{$create_alarm_zone.letter_number_Chinese|capitalize}></font>";
+			document.getElementById('areaname').focus();
+			return false;
+		}
+	}
+	document.getElementById('areaname_s').innerHTML="<font class='terminal_star'></font>";
+	//验证媒体文件是否为空
+	var str=trim(tree2.getAllChecked());
+	analysis_tree_terminal_group_string(str);
+	document.getElementById('analysis_tree_group_string').value = trim(analysis_tree_group_string.toString()); 
+
+	analysis_tree_group_string = new Array();
+
+	document.getElementById('alarmterminal').value = trim(analysis_tree_terminal_string.toString());
+
+	if(isNull(document.getElementById('alarmterminal').value))
+	{
+		if(window.confirm('<{$create_alarm_zone.terminal_or_not|capitalize}>'))
+		{
+			return true;
+		}
+		else
+		{
+			return false;
+		}
+	}
+}
+</script>
+</head>
+
+<body>
+<{include file="alarmmanager/alarmareaadd_form.html"}>
+<{include file="language/`$language`_foot.php"}> 
+</body>
+</html>

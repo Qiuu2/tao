@@ -1,0 +1,249 @@
+<html>
+<head>
+<META http-equiv=Content-Type content="text/html; charset=utf-8">
+<title>SetTaskMapping</title>
+<!--导入树-->
+<link href="smarty/templates/BellManager/codebase/dhtmlxtree.css" rel="stylesheet" type="text/css">
+<script  src="smarty/templates/BellManager/codebase/dhtmlxtree.js"></script>
+<script  src="smarty/templates/BellManager/codebase/dhtmlxcommon.js"></script>
+
+
+
+<link href="skin/css/main_page_style.css" rel="stylesheet" type="text/css">
+
+<style type="text/css">
+	.input_title
+	{
+		font-size:12px;
+		font-family:Georgia, "Times New Roman", Times, serif, "宋体";
+	}
+</style>
+
+<script language="javascript">
+function isNumber( s )
+{
+    var regu = "^[0-9]+$";
+    var re = new RegExp(regu);
+    if (s.search(re) != -1) 
+    {
+        return true;
+    }
+    else 
+    {
+        return false;
+    }
+}
+function trim(str)
+{   
+    return str.replace(/(^\s*)|(\s*$)/ig, "");   
+}
+function isChinaOrNumbOrLett( s )
+{
+	var regu = "^[0-9a-zA-Z\u4e00-\u9fa5]+$"; 
+
+	var re = new RegExp(regu); 
+	if (re.test(s)) 
+	{ 
+		return true; 
+	}
+	else
+	{
+		return false; 
+	} 
+} 
+
+function isNull( str )
+{ 
+ if ( str == "" )
+
+ return true; 
+
+ var regu = "^[ ]+$"; 
+
+ var re = new RegExp(regu); 
+
+ return re.test(str); 
+} 
+function checkform()
+{	//验证终端
+	var getterminalid = trim(tree3.getAllChecked());
+
+	var count = 0;
+
+	var tempstore = new Array();
+
+	var gettargetvalue = getterminalid.split(",");
+
+	for(var i=0; i<gettargetvalue.length; i++)
+	{
+
+			tempstore[count] = gettargetvalue[i];
+
+			count++;
+
+			if(count >1)
+			{
+				alert('<{$set_remote_map.select_one|capitalize}>');
+				
+				return false;
+			}
+		
+		continue;
+	}
+
+	document.getElementById('task_map_id').value = trim(tempstore.toString());
+
+	if(isNull(document.getElementById('task_map_id').value))
+	{
+		alert("<{$set_remote_map.select_task|capitalize}>");
+		return false;
+	}
+}
+</script>
+</head>
+<body >
+
+<form name="setkeyform" action="do.php?act=set_key_mapping_msg" method="post" onSubmit="return checkform();" class="terminal_form_to_body">
+<table width="600px" align="center" border="0" cellpadding="0" cellspacing="0"  class="terminal_table_border">
+	<tr height="50">
+		<td align="center" border="0" cellpadding="0" cellspacing="0">
+			<table>
+				<tr>
+					<td>
+						<img src="<{$set_remote_map.remote_key_image}>"/>
+					</td>
+				</tr>
+			</table>
+		</td>
+	</tr>
+	
+	<tr>
+		<td>
+			<table align="center" border="0" cellpadding="5" cellspacing="0">
+	
+				<tr>
+					<td width="180" align="right" valign="top" class="input_title"><{$set_remote_map.Map_Task|capitalize}></td>
+					<td width="420">
+					<input title="<{$set_remote_map.Map_Taskache|capitalize}>" type="hidden"  id="task_map_id" name="task_map_id" value=""/>
+					
+					<div id="treeofbox2" name="treeofbox2" style="width:80%; height:200px;background-color:#f5f5f5;border :1px solid Silver;"/> 
+						<script language="javascript">
+							var treedata = "<{$tree_info}>";
+							
+							tree3 = new dhtmlXTreeObject("treeofbox2","100%","100%",0);
+							
+							tree3.setSkin('dhx_skyblue');
+							
+							tree3.setImagePath("smarty/templates/BellManager/codebase/csh_bluebooks/");
+							
+							tree3.enableCheckBoxes(1);
+							
+							tree3.enableThreeStateCheckboxes(true);
+							
+							tree3.loadXMLString(treedata);
+						</script>
+				  </td>
+				</tr>
+			
+				<tr>
+					<td width="180">					</td>
+					<td width="420">
+						<input type="submit" name="submit" value="<{$set_remote_map.Sumbit|capitalize}>" class="terminal_button"/>
+						&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+						<input type="reset" name="reset" value="<{$set_remote_map.Cancel|capitalize}>" class="terminal_button"/>
+				  </td>
+				</tr>
+		  </table>
+		</td>
+	</tr>
+</table>
+</form>
+<{include file="language/`$language`_foot.php"}>
+</body>
+<script language="javascript">
+
+var xmlhttp=null; 
+
+function createXMLHttpRequest()
+{ 
+	if(window.ActiveXObject)
+	{ 
+		xmlhttp = new ActiveXObject("microsoft.XMLHTTP"); 
+	} 
+	else if(window.XMLHttpRequest)
+	{ 
+		xmlhttp = new XMLHttpRequest(); 
+	}
+	else
+	{
+		alert("NOT Support AJAX");
+	}
+} 
+function get_remote_task_id(url)
+{
+   createXMLHttpRequest();
+
+   xmlhttp.open( "get",url, true );
+
+   xmlhttp.onreadystatechange = function()
+   {
+      if( xmlhttp.readyState == 4 )
+      {
+         if( xmlhttp.status == 200 )
+         {
+           var remote_task_id = xmlhttp.responseText;
+		   
+		  // alert(remote_task_id);
+		   
+		   refresh_tree_options(remote_task_id);
+         }
+      }
+   }
+	xmlhttp.setRequestHeader( "If-Modified-Since", "0");
+
+	xmlhttp.send(null);
+}
+
+
+function get_change_remote_id(obj)
+{
+	var str_url = "";
+	
+	var get_key_id = obj.value;
+	
+	str_url = "get_remote_key_id.php?key_id="+get_key_id+"";
+	
+	get_remote_task_id(str_url);
+}
+
+function refresh_tree_options(task_id)
+{
+	var get_key_strid = tree3.getAllChecked();
+	
+	var get_key_array = get_key_strid.split(",");
+	
+	var get_key_id = "";
+	
+	for(var i=0; i<get_key_array.length; i++)
+	{
+		if(isNumber(get_key_array[i]))
+		{
+			get_key_id = get_key_array[i];
+			
+			break;
+		}
+	}
+	
+	if(get_key_id == "")
+	{
+		//什么也不做
+	}
+	else
+	{
+		tree3.setCheck(get_key_id,false);
+	}
+
+	tree3.setCheck(task_id,true);
+}
+</script>
+</html>

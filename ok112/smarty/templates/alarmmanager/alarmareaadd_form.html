@@ -1,0 +1,70 @@
+<form name="frmSearch2" method="post" action="do.php?act=areaadd_msg" onSubmit="return checkform();" class="terminal_form_to_body">
+	<table class="terminal_table_border"  width="600" border="0" align="center" cellpadding="0" cellspacing="0" >
+		<tr>
+			<td>
+			
+				<table  border="0" align="center" cellpadding="0" cellspacing="0">
+					<tr>
+						<td>
+							<img src="<{$create_alarm_zone.create_zone_image}>" />
+						</td>
+					</tr>
+				</table>
+	
+			</td>
+		</tr>
+		
+		<tr>
+			<td>
+				<table border="0" align="center" cellpadding="5" cellspacing="0">
+		
+					<tr>
+						<td width="180" align="right" nowrap="nowrap"><{$create_alarm_zone.Zone_name|capitalize}></td>
+						<td width="420"> 
+							<input title="<{$create_alarm_zone.Alarm_Zonetask|capitalize}>" class="terminal_input_font" name="areaname" maxlength="8" type="text" id="areaname" value=""/>
+							<span id="areaname_s" class="terminal_star">*</span>
+					  </td>
+					</tr>
+					
+					<tr>
+					  <td width="180" align="right" nowrap="nowrap">
+						<{$create_alarm_zone.Zone_description|capitalize}>
+					  </td>
+					  <td width="420"> 
+						 <input class="terminal_input_font" name="info" type="text" id="info" value=""/>
+					  </td>
+					</tr>
+				 <tr>
+					<td width="180" align="right" valign="top" nowrap="nowrap">
+						<{$create_alarm_zone.Terminal_selection|capitalize}>
+					</td>
+					<td width="420">
+					<div id="treeofbox" name="treeofbox" style="width:80%;height:200px;background-color:#f5f5f5;border :1px solid Silver;overflow-y:auto; text-align:left;"/>
+					  <input type="hidden"  id="alarmterminal" name="alarmterminal" value=""/>
+					<input type="hidden" id="analysis_tree_group_string" name="analysis_tree_group_string" value=""/>
+					  <script language="javascript">
+						var str = "<{$strarea}>";
+						tree2=new dhtmlXTreeObject("treeofbox","100%","100%",0);
+						tree2.setSkin('dhx_skyblue');
+						tree2.setImagePath("smarty/templates/BellManager/codebase/csh_bluebooks/");
+						tree2.enableCheckBoxes(1);
+						tree2.enableThreeStateCheckboxes(true);
+						tree2.loadXMLString(str);
+					  </script>
+				   </td>
+				 </tr>
+				<tr >
+					<td width="180"></td>
+					<td width="420">
+						<div>
+						  <input type="submit" name="submit" id="submit" value="<{$create_alarm_zone.Submit|capitalize}>" class="terminal_button" />
+							&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+						  <input name="reset" type="reset" id="reset" value="<{$create_alarm_zone.Cancel|capitalize}>" class="terminal_button"/>
+						</div>
+				  </td>
+				</tr> 
+			</table>
+		</td>
+	</tr>
+</table>
+</form>

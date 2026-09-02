@@ -1,0 +1,35 @@
+<table width="98%" border="0" cellpadding="2" cellspacing="1"  align="center"  id="tableplan" class="terminal_form_to_body">
+	<thead> 
+		<tr align='center' class="terminal_table_row_bg">
+		  <th width="8%" nowrap="nowrap">
+		  	<{$Bellmanager.No_}>
+		  </th >
+		
+		  <th  width="90%" nowrap="nowrap" onclick="sortTable('tableplan', 1)" class="sort_data_table_sequence">
+		  	<{$Bellmanager.media_name|capitalize}>
+			</th>  
+		  
+		
+		</tr>
+	</thead>
+	<tbody>
+	<{if $getplantaskinfo|@count neq 0}>
+	 <{section name=loop loop=$getplantaskinfo}>        
+	      <tr align='center' class="tablestyle" onmouseover="this.style.backgroundColor ='#EEEEFF';" onmouseout="javascript:this.style.backgroundColor='#FFFFFF';"> 
+		   
+			<td nowrap="nowrap"><{$smarty.section.loop.index+1+$start}></td>
+			
+			<td nowrap="nowrap"><{$getplantaskinfo[loop].name}> </td>
+
+	      </tr>         
+	<{/section}>
+	<{else}>
+	 <tr align='center' onmouseover="this.style.backgroundColor ='#EEEEFF';" onmouseout="this.style.backgroundColor='#FFFFFF';"> 
+	 	<td colspan="9">
+			<strong style="font-size:12px"><{$Bellmanager.No_data}></strong>
+		</td>
+	 </tr>
+	<{/if}>
+	</tbody>
+</table>
+<div class="link_style" style="float:none; margin-top:5px; text-align:center;"><{$pagestr}></div>

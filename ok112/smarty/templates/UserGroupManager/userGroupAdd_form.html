@@ -1,0 +1,146 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<title>AddUserGroup</title>
+
+<link href="skin/css/main_page_style.css" rel="stylesheet" type="text/css" />
+
+<script language="javascript"> 
+function isNull( str )
+{
+	if ( str == "" || str==null) 
+	return true;
+	var regu = "^[ ]+$";
+	var re = new RegExp(regu);
+	return re.test(str);
+}
+function isChinaOrNumbOrLett(s)
+{ 
+	var regu = "^[0-9a-zA-Z\u4e00-\u9fa5]+$"; 
+	var re = new RegExp(regu); 
+	if (re.test(s)) 
+	{ 
+		return true; 
+	}
+	else
+	{ 
+		return false; 
+	} 
+} 
+//验证表单
+function checkform()
+{
+	if(isNull(document.addUserForm.usergroupname.value))
+	{
+		document.getElementById('usergroupname_s').innerHTML="<font class='terminal_star'><{$user_group_add.enter_usergroup_name|capitalize}></font>";
+		document.addUserForm.usergroupname.focus();
+		return false;
+	}
+	else
+	{
+		if(!isChinaOrNumbOrLett(document.addUserForm.usergroupname.value))
+		{
+			document.getElementById('usergroupname_s').innerHTML="<font class='terminal_star'><{$user_group_add.enter_usergroup_name|capitalize}></font>";
+			document.addUserForm.usergroupname.focus();
+			return false;
+		}
+	}
+	document.getElementById('usergroupname_s').innerHTML="<font class='terminal_star'></font>";
+	return true;
+}
+</script>
+</head>
+<body>
+<form name="addUserForm" method="post" action="do.php?act=usergroupadd_msg" onSubmit="return checkform();" class="terminal_form_to_body">
+<table width="600" border="0" align="center" cellpadding="0" cellspacing="0" class="terminal_table_border">
+	<tr>
+		<td>
+			<table width="100%" border="0" align="center" cellpadding="0" cellspacing="0">
+				<tr>
+					<td>
+						<img src="<{$user_group_add.group_add_image}>"/>
+					</td>
+				</tr>
+			</table>
+		</td>
+	</tr> 
+	
+	<tr>
+		<td>
+			<table width="100%" border="0" align="center" cellpadding="5" cellspacing="0" style="font-size:12px;">
+	           
+				<tr>
+					<td width="20%" align="right"><{$user_group_add.Group_Name|capitalize}></td>
+					<td width="60%">
+						<input title="<{$user_group_add.User_Nametask|capitalize}>" name="usergroupname" type="text" class="terminal_input_font" id="usergroupname" value=""/>
+						<span class="terminal_star" id="usergroupname_s">*</span>
+					</td>
+				</tr>
+				
+				<tr>
+					<td width="20%" align="right"><{$user_group_add.Description|capitalize}></td>
+					<td width="60%">
+					<input title="<{$user_group_add.Descriptiontask|capitalize}>" type="text" class="terminal_input_font" name="UserDes" id="UserDes" maxlength="30" value="NO Description"/>
+					<{$user_group_add.Max_character|capitalize}>
+				  </td>
+				</tr>
+				
+				<tr>
+				  <td width="20%" align="right" valign="top"><{$user_group_add.Level|capitalize}></td>
+				  
+				  <td width="60%"> 
+					<select title="<{$user_group_add.Prioritytask|capitalize}>" id="level" name="level" class="terminal_select_style">
+						
+						 <script>
+							var levels=0;
+							for(levels=10;levels<=109;levels++)
+							{
+								document.write("<option value='"+levels+"'>"+levels+"</option>");
+							}
+						  </script>
+						
+						
+					</select>	  
+				  </td>
+				</tr>  
+				<tr>
+					<td width="20%" align="right" valign="top"><{$user_group_add.Authority}></td>
+					
+					<td width="60%">
+					<div class="usergroup_right">
+						<input name="taskpriv" type="checkbox" id="taskpriv" value=1 /><{$user_group_add.Task_Management|capitalize}>
+						<input name="terminalpriv" type="checkbox" id="terminalpriv" value=1 /><{$user_group_add.Terminal_Management|capitalize}>
+						<input name="mediapriv" type="checkbox" id="mediapriv" value=1  /><{$user_group_add.Media_Management|capitalize}>
+						<input name="userpriv" type="checkbox" id="userpriv" value=1  /><{$user_group_add.User_Management|capitalize}>
+						<p>
+						<input name="serverpriv" type="checkbox" id="serverpriv" value=1  /><{$user_group_add.Server_Management|capitalize}>
+						<input name="folderpriv" type="checkbox" id="folderpriv" value=1  /><{$user_group_add.Folder_Management|capitalize}>
+						<input name="terminalgrouppriv" type="checkbox" id="terminalgrouppriv" value=1 /><{$user_group_add.Zone_Management|capitalize}>
+						<input name="alarmgrouppriv" type="checkbox" id="alarmgrouppriv" value=1  /><{$user_group_add.Alarm_Management|capitalize}>
+						<p>
+						<input name="bellpriv" type="checkbox" id="bellpriv" value=1  /><{$user_group_add.Bell_Management|capitalize}>
+						<input name="admpriv" type="checkbox" id="admpriv" value=1  /><{$user_group_add.Collection_Management|capitalize}>
+						<input name="telephonepriv" type="checkbox" id="telephonepriv" value=1  /><{$user_group_add.Phone_Management|capitalize}>
+						<input name="powerplay" type="checkbox" id="powerplay" value=1  /><{$user_group_add.Power_Management|capitalize}>
+						<p>
+						<input name="ttspriv" type="checkbox" id="ttspriv" value=1  /><{$user_group_add.tts_Management|capitalize}>
+					</div>
+				  </td> 
+				  
+				</tr>
+				<tr>
+					<td></td>
+					<td>
+						<input title="<{$user_group_add.Sumbittask|capitalize}>" type="submit" name="button" id="button" class="terminal_button" value="<{$user_group_add.Submit|capitalize}>"/>
+						&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+						<input title="<{$user_group_add.Canceltask|capitalize}>" name="reset" type="reset" id="reset" class="terminal_button" value="<{$user_group_add.Cancel|capitalize}>"/>
+					</td>
+				</tr>      
+			</table>
+		</td>
+	</tr>
+</table>
+</form>
+<{include file="language/`$language`_foot.php"}>
+</body>
+</html>

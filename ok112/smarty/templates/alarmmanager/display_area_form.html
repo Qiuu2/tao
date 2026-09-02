@@ -1,0 +1,109 @@
+<form name="form2" class="terminal_form_to_body">
+<table width="98%" border="0" cellpadding="2" cellspacing="1"  align="center" name="sorttable" id="sorttable">
+	<tr align='center' class="terminal_table_row_bg">
+	  <td width="7%"  nowrap="nowrap"><{$alarm_zone.Selection|capitalize}></td>
+	  <td width="15%"  nowrap="nowrap"><{$alarm_zone.Zone_Name|capitalize}></td>
+	  <td width="15%"  nowrap="nowrap"><{$alarm_zone.Zone_Description|capitalize}></td>
+	  <td width="10%"  nowrap="nowrap"><{$alarm_zone.Created_Time|capitalize}></td>
+	  <td width="7%"  nowrap="nowrap"><{$alarm_zone.Zone_Terminal|capitalize}></td>
+	</tr>
+	<tr></tr>
+<{if $info|@count neq 0}>
+ <{section name=loop loop=$info}>        
+      <tr align='center'> 
+		<td>
+		<{if $is_right || $admin_id == "administrator"}>
+		<input type="checkbox" name="id" id="id" value="<{$info[loop].id}>"/>
+		<{else}>
+			<{$smarty.section.loop.index+1+$start}>
+		<{/if}>
+		</td>
+		
+		<td><{$info[loop].name}></td>  
+		
+		<td><{$info[loop].info}></td>
+		
+		<td><{$info[loop].createtime}></td>
+		
+		<td>
+			<a id="link_view" name="link_view" href="displayareaterminal.php?id=<{$info[loop].id}>">
+				<{$alarm_zone.Browse|capitalize}>
+			</a>
+		</td>
+		
+      </tr>         
+    <{/section}>
+<{else}>
+<tr>
+	<td colspan="5" align="center" valign="middle">
+		<strong><{$alarm_zone.No_record|capitalize}></strong>
+	</td>
+</tr>
+<{/if}>
+<script src="smarty/templates/UserAccessControl/CheckUserRights.js" type="text/javascript" language="javascript"></script>
+<tr style="background-color: #FFFFFF;">
+	<td colspan="5">
+		<a title="<{$alarm_zone.Select_Allalarm|capitalize}>" href="javascript:selAll(0)"><{$alarm_zone.Select_All|capitalize}></a>&nbsp;&nbsp;
+		
+		<a title="<{$alarm_zone.noSelect_Allalarm|capitalize}>" href="javascript:noSelAll(0)"><{$alarm_zone.Cancel|capitalize}></a>&nbsp;&nbsp;
+		
+		<a title="<{$alarm_zone.creat_noalarm|capitalize}>" href="javascript:createalarmarea()"><{$alarm_zone.Create_Alarm_Zone|capitalize}></a>&nbsp;&nbsp;
+		
+		<a title="<{$alarm_zone.Modyfy_Alarm_Zoneterminal|capitalize}>" href="javascript:modifyalarmarea()"><{$alarm_zone.Modify_Alarm_Zone|capitalize}></a>&nbsp;&nbsp;
+		
+		<a title="<{$alarm_zone.del_noalarm|capitalize}>" href="javascript:delalarmarea()"><{$alarm_zone.Delete_Alarm_Zone|capitalize}></a>&nbsp;&nbsp;
+	</td>
+</tr>
+<script>
+	rights_control(<{$is_right}>,"<{$admin_id}>","link_view");
+</script>
+</table>
+</form>
+<div class="link_style" align="center"><{$pagestr}></div>
+
+<!--  搜索表单  -->
+<form name='formsearch' action='display_alarm_area.php' method="get">
+<input type='hidden' name='dopost' value='' />
+<table width='98%'  border='0' align="center" cellpadding='1' cellspacing='1'>
+	<tr>
+		<td align="center">
+		<{$Searchform.Search_conditions}>
+		&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+			<select  name='searchkey' id="searchkey" style='width:150px'>
+			<option value=""><{$Searchform.Select_type}></option>
+			<option value="name"><{$alarm_zone.Zone_Name|capitalize}></option>
+			</select>
+		&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+		<{$Searchform.Keyword}>
+		&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+		<input  type='text' name='searchvalue' id="searchvalue" value='' style='width:150px'/>
+		&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+		<select  name='searchsequence' id="searchsequence" style='width:80px'>
+		<option value=""><{$Searchform.Sort}></option>
+		<option value="createtime"><{$alarm_zone.time|capitalize}></option>
+		</select> 
+		 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;      
+		<input name="imageField" type="image" src="<{$alarm_zone.search_image}>" style="width:45px; height:20px; border-width:0px" align="bottom"/>
+		</td>      
+	</tr>
+</table>
+</form>
+<script language="javascript">
+	var get_user_right = "<{$is_right}>";
+
+	if(get_user_right == 1)
+	{
+		//什么也不做
+	}
+	else
+	{
+		var get_a_objects = document.getElementsByTagName("a");
+		for(var i=0; i<get_a_objects.length; i++)
+		{
+			get_a_objects[i].href = "javascript:void(0);";
+			get_a_objects[i].onclick = null;
+			get_a_objects[i].style.color="#787878";
+		//	get_a_objects[i].disabled = true;
+		}
+	}
+</script>

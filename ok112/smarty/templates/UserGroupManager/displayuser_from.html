@@ -1,0 +1,49 @@
+<table width="98%" border="0" cellpadding="2" cellspacing="1"  align="center" name="sorttable" id="sorttable" class="terminal_form_to_body">
+<tr align='center' class="terminal_table_row_bg">
+	<td width="10%" nowrap="nowrap"><{$group_user.Selection|capitalize}></td>                 	  
+	<td width="15%" nowrap="nowrap"><{$group_user.User_Name|capitalize}></td>
+	<td width="20%" nowrap="nowrap"><{$group_user.Full_name|capitalize}></td>
+	<td width="20%" nowrap="nowrap"><{$group_user.Description|capitalize}></td>
+</tr>
+<{if $users|@count neq 0}>
+<{section name=user loop=$users}>  
+	<tr  align='center' onmouseover="this.style.backgroundColor='#EEEEFF'" onMouseOut="this.style.backgroundColor='#FFFFFF'">          	 
+		<td  nowrap="nowrap">
+			<{if $admin_id=="administrator"}>
+				<input name="id" type="checkbox" value="<{$users[user].id}>"  id="id">
+			<{else}>
+				<{$smarty.section.user.index+1+$start}>
+			<{/if}>
+		</td>
+		<td  nowrap="nowrap"> 
+			<{$users[user].username}>
+		</td> 
+		<td  nowrap="nowrap">
+			<{$users[user].fullname}>
+		</td> 						
+		<td nowrap="nowrap">
+			<{$users[user].info}>
+		</td>          		
+	</tr>        
+<{/section}>
+<{else}>
+	<tr>
+		<td colspan="4" align="center">
+			<strong style="font-size:12px"><{$group_user.No_Record|capitalize}></strong>
+		</td>
+	</tr>
+<{/if}>
+	<!--	
+	<tr>
+		<td colspan="4">
+		<{if $admin_id=="administrator"}>
+			<a href="javascript:selAll()"><{$group_user.Select_All|capitalize}></a>&nbsp;
+			<a href="javascript:noSelAll(0)"><{$group_user.Cancel|capitalize}></a>&nbsp;
+			<a href="javascript:delUser()"><{$group_user.Delete_User|capitalize}></a>&nbsp;
+		<{/if}>
+		</td>
+	</tr> 
+	-->
+</table>
+
+<div class="link_style" align="center"><{$pagestr}></div>

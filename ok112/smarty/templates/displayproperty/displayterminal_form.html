@@ -1,0 +1,109 @@
+<table width="98%" border="0" cellpadding="2" cellspacing="1"  align="center" class="terminal_form_to_body">
+<tr align='center' class="terminal_table_row_bg">
+  <td width="5%"  nowrap="nowrap"><{$displayterminal.Serial_number}></td>
+  <td width="10%"  nowrap="nowrap"><{$displayterminal.Terminal_name}></td>
+  <td width="10%"  nowrap="nowrap"><{$displayterminal.Terminal_Type}></td>
+  <td width="10%"  nowrap="nowrap"><{$displayterminal.Network_Status}></td>
+  <td width="10%"  nowrap="nowrap"><{$displayterminal.Device_Status}></td>
+  <td width="10%"  nowrap="nowrap"><{$displayterminal.Task_Status}></td>
+  <td width="10%"  nowrap="nowrap"><{$displayterminal.Terminal_IP}></td>
+  <td width="10%"  nowrap="nowrap"><{$displayterminal.Terminal_volume}></td>
+<!--
+  <td width="10%"  nowrap="nowrap"><{$displayterminal.Zone}></td>
+-->
+</tr>
+<tr></tr>
+<{if $info|@count neq 0}>
+ <{section name=loop loop=$info}>        
+      <tr align='center' class="tablestyle" > 
+	   	<td><{$smarty.section.loop.index+1+$start}></td>
+      	 <td><{$info[loop].terminalname}></td>  
+		<td>
+			<{section name=type loop=$terminaltype_info}>
+				<{if $terminaltype_info[type].id == $info[loop].typeid}>
+				
+				<script language="javascript">
+					document.write(chinese_big5_english("<{$chinese_big5_english}>","<{$terminaltype_info[type].name}>"));
+				</script>
+					
+				<{/if}>
+			<{/section}>
+		</td> 
+		<td>
+				<{if $info[loop].netstate==1}>
+					<{$displayterminal.Connected}>
+				<{elseif $info[loop].netstate==0}>
+					<{$displayterminal.Interrupted}>
+				<{/if}>
+		</td>
+		<td>
+			
+				<{if $info[loop].netstate==0}>
+					<{$displayterminal.Interrupted}>
+				<{elseif $info[loop].netstate==1 && $info[loop].devicestate==0}>
+					<{$displayterminal.Idle}>
+				<{elseif $info[loop].netstate==1 && $info[loop].devicestate==1}>
+					<{$displayterminal.Run}>
+				<{/if}>
+			
+		</td>
+		<td>
+			
+				<{if $info[loop].netstate==0}>
+					<{$displayterminal.Interrupted}>
+				<{elseif $info[loop].netstate==1 && $info[loop].taskstate == 0}>
+					<{$displayterminal.Ready}>
+				<{elseif $info[loop].netstate==1 && $info[loop].taskstate == 1}>
+					<{$displayterminal.Timing_Play}>
+				<{elseif $info[loop].netstate==1 && $info[loop].taskstate == 2}>
+					<{$displayterminal.On_Talkback}>
+				<{elseif $info[loop].netstate==1 && $info[loop].taskstate == 3}>
+					<{$displayterminal.AOD}>
+				<{elseif $info[loop].netstate==1 && $info[loop].taskstate == 4}>
+					<{$displayterminal.Selected_Play}>
+				<{elseif $info[loop].netstate==1 && $info[loop].taskstate == 5}>
+					<{$displayterminal.Paging}>
+				<{elseif $info[loop].netstate==1 && $info[loop].taskstate == 6}>
+					<{$displayterminal.Talkback_Ready}>
+				<{elseif $info[loop].netstate==1 && $info[loop].taskstate == 7}>
+					<{$displayterminal.Local_Amplifying}>
+				<{elseif $info[loop].netstate==1 && $info[loop].taskstate == 8}>
+					<{$displayterminal.Play_from_USB}>
+				<{elseif $info[loop].netstate==1 && $info[loop].taskstate == 9}>
+					<{$displayterminal.Request_Talkback}>
+				<{elseif $info[loop].netstate==1 && $info[loop].taskstate == 10}>
+					<{$displayterminal.Request_Talkback}>
+				<{elseif $info[loop].netstate==1 && $info[loop].taskstate == 11}>
+					<{$displayterminal.Paging_Play}>
+				<{elseif $info[loop].netstate==1 && $info[loop].taskstate == 12}>
+					<{$displayterminal.Timing_Play}>
+				<{elseif $info[loop].netstate==1 && $info[loop].taskstate == 25}>
+					<{$displayterminal.Timing_Play}>
+				<{/if}>
+			
+		</td>	
+		<td><{$info[loop].ip}></td>
+		<td><{$info[loop].volume}></td>
+<!--	
+		<td>
+		<{if $info[loop].groupid neq 0}>
+			<{section name=stream loop=$stream_info}>
+				<{if $stream_info[stream].id == $info[loop].groupid}>
+					<{$stream_info[stream].name}>
+				<{/if}>
+			<{/section}>
+		<{elseif $info[loop].groupid eq 0}>
+			......
+		<{/if}>
+-->	
+		</td>
+      </tr>         
+    <{/section}>
+<{else}>
+<tr align='center' >
+<td colspan="8"><strong><{$Revise.No_data}></strong></td>
+</tr>
+<{/if}>
+</table>
+
+<div class="link_style" style="float:none; margin-top:5px; text-align:center;"><{$pagestr}></div>

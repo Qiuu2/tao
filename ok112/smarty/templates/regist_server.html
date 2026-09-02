@@ -1,0 +1,193 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<link href="skin/css/main_page_style.css" rel="stylesheet" type="text/css" />
+<style type="text/css">
+	.regist_button
+	{
+		border:1px solid #aaaaaa;
+		
+		width:60px;
+		
+		height:20px; 
+	}
+	.regist_demos
+	{
+		border:0px solid #aaaaaa;
+		
+		width:460px;
+		
+		height:20px; 
+	}
+	
+</style>
+<title>Regist Server</title>
+
+<script language="javascript">
+var regist_input_count = 0;
+
+function registed_user()
+{
+
+	var obj_reg = document.getElementById('license_key');
+
+	var regist_botton_obj = document.getElementById('regist_botton');
+	var regist_botton_obj2 = document.getElementById('regist_botton2');
+	if(<{$user_registed}> == 1)
+	{
+		obj_reg.value = "<{$regist_server.s_registered}>";
+		//obj_reg.readOnly = true;
+		obj_reg.style.color = "blue";
+		//regist_botton_obj.disabled = true;
+		//regist_botton_obj2.disabled=true;
+	}
+	else if(<{$user_registed}> == 2&&<{$getDays}> >=0)
+	{
+		obj_reg.value = "<{$regist_server.s_period_registered}>";
+		//obj_reg.readOnly = false;
+		
+		document.getElementById("demos").value="<{$regist_server.duedate}><{$getDays}><{$regist_server.duedate2}>";
+	
+		obj_reg.style.color = "red";
+		//regist_botton_obj2.disabled=false;
+		//regist_botton_obj.disabled = false;
+	}
+	else if(<{$user_registed}> == 2&&<{$getDays}> <0)
+	{
+		obj_reg.value = "<{$regist_server.s_not_registered}>";
+	//	obj_reg.readOnly = false;
+		obj_reg.style.color = "red";
+		//regist_botton_obj.disabled = false;
+		//regist_botton_obj2.disabled=false;
+	}
+	else if(<{$user_registed}> == 3)
+	{
+		obj_reg.value = "<{$regist_server.s_period_look}>";
+		
+		//obj_reg.readOnly = false;
+		
+		obj_reg.style.color = "red";
+		//	regist_botton_obj2.disabled=false;
+		//regist_botton_obj.disabled = false;
+	}
+	else if(<{$user_registed}> == 4)
+	{
+		obj_reg.value = "<{$regist_server.have_exprit}>";
+		
+		//obj_reg.readOnly = false;
+		
+		obj_reg.style.color = "red";
+		//regist_botton_obj2.disabled=false;
+		//regist_botton_obj.disabled = false;
+	}
+	else 
+	{
+		obj_reg.value = "<{$regist_server.s_not_registered}>";
+	//	obj_reg.readOnly = false;
+		obj_reg.style.color = "red";
+	//	regist_botton_obj2.disabled=false;
+	//	regist_botton_obj.disabled = false;
+	}
+}
+
+function change_input_state()
+{
+	var obj_reg = document.getElementById('license_key');
+	
+	//if(obj_reg.readOnly == false)
+	//{
+		if(regist_input_count==0)
+		{
+			regist_input_count = 1;
+			
+			obj_reg.value = "";
+			
+			obj_reg.style.color = "";
+		}
+	//}
+}
+
+function isNull( str )
+{
+	if ( str == "" || str==null) 
+	return true;
+	var regu = "^[ ]+$";
+	var re = new RegExp(regu);
+	return re.test(str);
+}
+
+function checkform()
+{
+	//验证任务名
+	if(isNull((document.getElementById('license_key').value)))
+	{
+		document.getElementById('key_text').innerHTML="<font class='terminal_star'><{$regist_server.enter_key_name|capitalize}></font>";
+		document.getElementById('license_key').focus();
+		return false;
+	}
+
+}
+
+
+function settrydo(regist)
+{
+
+	if(regist==1)
+		alert("<{$regist_server.s_registered}>");
+	else if(regist==3)
+		alert("<{$regist_server.s_period_look}>");
+	else if(regist==4)
+		alert("<{$regist_server.have_exprit}>");
+	else if(regist==2)
+		alert("<{$regist_server.s_period_registered}>");
+	else
+		location="do.php?act=settrydo&regist="+regist+"";		
+}
+
+</script>
+</head>
+<body style="margin:0px; padding:0px;size:12px;" onload="registed_user();">
+
+<form name="form1" method="post" action="do.php?act=regist_server" class="terminal_form_to_body" onSubmit="return checkform();">
+  <table width="500" border="0" align="center" cellpadding="0" cellspacing="0" class="terminal_table_border">
+	<tr>       
+	  <td>
+		<img src="<{$regist_server.regist_img}>"  width="500px" height="50px"/>
+      </td>
+    </tr>
+	
+	<tr>
+		<td>	
+			<table width="100%" border="0" cellpadding="10" cellspacing="0"> 
+				
+			<tr align="center">
+			<input  type="#" name="demos" id="demos" value=""  class="regist_demos"  style="color:#FF0000"/>	
+			</tr>
+				<tr>
+				  <td width="197" align="right"><{$regist_server.machine_code}></td>
+				  <td width="297">
+				  	<input title="<{$regist_server.machine_codetask}>" type="text" value="<{$output_info}>" name="machine_code" id="machine_code" style="width:150px" readonly="true">
+				  </td>
+				</tr>
+				<tr>
+					<td align="right"><{$regist_server.license_key}></td>
+					<td>
+						<input title="<{$regist_server.license_keytask}>" type="text" name="license_key" id="license_key" style="width:150px;" onclick="change_input_state()"/>
+						<span class="terminal_star" id="key_text">*</span>
+					</td>
+				</tr>
+				<tr>
+					<td align="center">
+					</td>
+				  <td align="left">
+						<input title="<{$regist_server.registtask}>" type="submit" name="regist_botton" id="regist_botton" value="<{$regist_server.regist}>" class="regist_button"> 
+					    <input  type="button" name="regist_botton2" id="regist_botton2" value="<{$regist_server.trydo}>" onclick="settrydo(<{$user_registed}>)" class="regist_button" /></td>
+				</tr>
+		  </table>
+  		</td>
+  	</tr>
+  </table>
+</form>
+</body>
+</html>

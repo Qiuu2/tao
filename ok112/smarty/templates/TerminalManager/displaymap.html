@@ -1,0 +1,361 @@
+
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>map</title>
+<?php
+	//验证是否有效
+
+	if (!session_id()) session_start();
+	require_once("verify_user_sessionin_valid.php");
+	verifysessionvalid();
+	
+	if(empty($_SESSION['language']))
+	{
+
+		$_SESSION['language'] = "chinese";
+	}
+	require_once("language/".$_SESSION['language'].".php");
+
+?>
+<script  src="smarty/templates/ajax/changeselect.js"></script>
+<style type="text/css">
+    .iw_poi_title {color:#CC5522;font-size:14px;font-weight:bold;overflow:hidden;padding-right:13px;white-space:nowrap}
+    .iw_poi_content {font:12px arial,sans-serif;overflow:visible;padding-top:4px;white-space:-moz-pre-wrap;word-wrap:break-word}
+</style>
+<link href="../../../skin/css/main_page_style.css" rel="stylesheet" type="text/css" />
+<script type="text/javascript" src="http://api.map.baidu.com/api?v=1.4&services=true"></script>
+
+</head>
+<body style="text-align:center;" >
+
+ <table width="1040px" border="0" align="center" cellpadding="0" cellspacing="0" class="terminal_table_border">
+	<tr>       
+	  <td>
+		<img src="../../../skin/images/frame/displaymap.jpg" alt="" width="1020pxpx" height="50px"/>
+      </td>
+    </tr>
+	<tr>
+		<td>	
+		<div style="width:1020px;height:560px;border:#ccc solid 1px;" onMouseDown="test(event)" id="container"></div>
+  		</td>
+  	</tr>
+	
+  </table>
+ 
+<script type="text/javascript">
+
+var right = "<iframe name='rightiframe' id='rightiframe' frameborder='0' scrolling='no' style='position:absolute;z-index:-1;margin:0px;width:0px; height:0px;'></iframe>";
+document.writeln("<div id=\"rightclick\" style=\"font-size: 12px; margin:0px; text-align:center; position:absolute; width:0px; height:0px;visibility:hidden\">");
+right += "<table width='100%' height = '100%' style='border: 1 solid #C2DEED; font-size: 12px;'><tr align='center' valign='middle'><td>";
+
+right += "<p><input type=\"button\" onclick=\"_delterminal()\" value=\"删除\" class=\"terminal_button\"/></td></tr></table></div>";
+document.writeln(right);
+
+
+var textdemo = "<iframe name='textdemoiframe' id='textdemoiframe' frameborder='0' scrolling='no' style='position:absolute;z-index:-1;margin:0px;width:0px; height:0px;'></iframe>";
+document.writeln("<div id=\"textdemoclick\" style=\"font-size: 12px; margin:0px; text-align:center; position:absolute; width:0px; height:0px;visibility:hidden\">");
+textdemo += "<table width='300px' height = '400px' style='border: 1 solid #C2DEED; font-size: 12px;'><tr align='center' valign='middle'><td>";
+	textdemo += "<textarea rows=\"8\" cols=\"70\" id=\"gettextarea\" name=\"gettextarea\" value=\"<{$text_info}>\"></textarea>";
+textdemo += "<p><input type=\"button\" onclick=\"_addterminal()\" value=\"添加\" class=\"terminal_button\"/></td></tr></table></div>";
+document.writeln(textdemo);
+
+var str = "<iframe name='iframe' id='iframe' frameborder='0' scrolling='no' style='position:absolute;z-index:-1;margin:0px;width:200; height:100px;'></iframe>";
+document.writeln("<div id=\"_contents\" style=\"font-size: 12px; margin:0px; text-align:center; position:absolute; width:200px; height:100px;visibility:hidden\">");
+str += "<table width='100%' height = '100%' style='border: 1 solid #C2DEED; font-size: 12px;'><tr align='center' valign='middle'><td>设备名称：<select name=\"audiosource\" id=\"audiosource\" style=\"width:120px\">";
+str += "<option value=\"0\">请选择设备...</option>";
+</script>
+<{if $group_terminal|@count neq 0}>   
+	<{section name=loop loop=$group_terminal}>   
+	<script>
+	str += "<option value=\"<{$group_terminal[loop].id}>\"><{$group_terminal[loop].terminalname}></option>";
+	</script>
+		<{/section}>
+	<{/if}> 
+<script>
+str += "</select>&nbsp;<p><input type=\"button\" onclick=\"_select()\" value=\"确定\" class=\"terminal_button\"/>&nbsp;&nbsp;<input type=\"button\" onclick=\"_cancel()\" value=\"取消\" class=\"terminal_button\"/></td></tr></table></div>";
+document.writeln(str);
+</script>
+
+
+<script language="javascript">
+	var txt=document.createElement('DIV'); 
+	txt.innerHTML="<{$text_info}>";
+	var gettxt=txt.innerHTML;
+	gettxt=gettxt.replace(/<BR>/g,'\r\n');
+	gettxt=gettxt.replace(/<br>/g,'\r\n');
+	gettxt=gettxt.replace(/<\/B>/g,'');
+	gettxt=gettxt.replace(/<\/b>/g,'');
+	gettxt=gettxt.replace(/\\"/g,'"');	
+	document.getElementById('gettextarea').value=gettxt;
+	</script>
+<script>
+	var w=36,h=24,l=0,t=0,x=6,lb=5,ll=37;
+	var mapx,mapy;
+	var px=0,py=0;
+	var typeid;
+	var _marker;
+	var _getterminalid;
+	var opts = {
+	  width : 200,     // 信息窗口宽度
+	  height: 50     // 信息窗口高度
+	 
+	}
+
+
+    //创建和初始化地图函数：
+    function initMap(){
+		
+        window.map = new BMap.Map("container");
+		var point = new BMap.Point(<{$longitude}>,<{$latitude}>);
+        map.centerAndZoom(point,15);
+		map.addEventListener("rightclick",function(e){
+			px=e.point.lng;
+			py=e.point.lat;
+			//document.all.rightclick.style.visibility = "hidden";
+			});
+        map.enableScrollWheelZoom();
+     	map.addControl(new BMap.NavigationControl());
+		var contextMenu = new BMap.ContextMenu();
+		var txtMenuItem = [
+		  {
+		   text:'放大',
+		   callback:function(){map.zoomIn()}
+		  },
+		  {
+		   text:'缩小',
+		   callback:function(){map.zoomOut()}
+		  },
+		  {
+		   text:'放置到最大级',
+		   callback:function(){map.zoomTo(18)}
+		  },
+		  {
+		   text:'查看全国',
+		   callback:function(){map.zoomTo(4)}
+		  },
+		  {
+		   text:'画笔',
+		   callback:function(){}
+		  },
+		  {
+		   text:'投屏',
+		   callback:function(){}
+		  },
+		  {
+		   text:'自然语言输入(各语句用逗号隔开)',
+		   callback:function(p){
+			document.all.textdemoclick.style.top = mapy;
+			document.all.textdemoclick.style.left = mapx;
+			document.all.textdemoclick.style.visibility = "visible";
+		   }
+		  },
+		  {
+		   text:'在此添加标注',
+		   callback:function(p){
+		 	//var iconImg = createIcon2(json.icon);
+			//var marker = new BMap.Marker(p);
+			//alert(mousePos(e).x);
+			document.all._contents.style.top = mapy;
+			document.all._contents.style.left = mapx;
+			document.all._contents.style.visibility = "visible";
+			//map.addOverlay(marker);
+		   }
+		  }
+		 ];
+		 for(var i=0; i < txtMenuItem.length; i++){
+		  contextMenu.addItem(new BMap.MenuItem(txtMenuItem[i].text,txtMenuItem[i].callback,100));
+		  if(i==1 || i==3) {
+		   contextMenu.addSeparator();
+		  }
+		 }
+		 map.addContextMenu(contextMenu);
+		 
+     	 //向地图中添加marker
+    }
+
+  	function _select()
+	{
+		var id = document.getElementById('audiosource').value;
+		var url = "get_terminalnum.php?id="+id+"&longitude="+px+"&latitude="+py;
+		updateterminaldate(url);
+	
+	
+		for(var i=0;i<ret.length;i++)
+		{
+			var terminal1=ret.split("@")[0];
+			var terminaltype=terminal1.split("#")[1];
+			var terminal_ip=terminal1.split("#")[0];
+			var terminal=ret.split("@")[1];
+			var terminal_name=terminal.split("|")[0];
+			var networkstate=terminal.split("|")[1];
+		}
+		
+		if(terminaltype==0)
+		{
+			addMarker(w,h,l,t,x,lb,px,py,terminal_name,networkstate,id,terminal_ip);
+		}
+	else
+		{
+			addMarker(w,h,ll,t,x,lb,px,py,terminal_name,networkstate,id,terminal_ip);
+		}
+		
+		document.all.textdemoclick.style.visibility = "hidden";
+		document.all._contents.style.visibility = "hidden";
+	}
+	
+	function _cancel()
+	{	
+		document.all.textdemoclick.style.visibility = "hidden";
+		document.all._contents.style.visibility = "hidden";
+	}
+		
+    //创建marker
+    	window.addMarker = function (w,h,l,t,x,lb,p1,p2,name,netstate,id,terminalip){
+       // map.clearOverlays();
+            var p0 = p1;
+            var p1 = p2;
+            var point = new BMap.Point(p0,p1);
+            var iconImg = createIcon(w,h,l,t,x,lb);
+            var marker = new BMap.Marker(point,{icon:iconImg});
+		
+            var iw = createInfoWindow(name,netstate,terminalip,p0,p1);
+            var label = new BMap.Label(name,{"offset":new BMap.Size(lb-x+30,-20)});
+          	marker.setLabel(label);	
+			map.addOverlay(marker);	 
+			
+			marker.addEventListener("rightclick", function(e){
+			//	map.removeOverlay(marker); 
+				_marker=marker;
+				_getterminalid=id;
+				document.all.rightclick.style.top = mapy;
+				document.all.rightclick.style.left = mapx+20;
+				document.all.rightclick.style.visibility = "visible";
+			});  	   
+         	label.setStyle({
+                        borderColor:"#808080",
+                        color:"#333",
+                        cursor:"pointer"
+            });
+					
+			(function(){
+				var _iw = createInfoWindow(name,netstate,terminalip,p0,p1);
+				var _marker = marker;
+				_marker.addEventListener("click",function(){
+				    this.openInfoWindow(_iw);
+			    });
+			    _iw.addEventListener("open",function(){
+				    _marker.getLabel().hide();
+			    })
+			    _iw.addEventListener("close",function(){
+				    _marker.getLabel().show();
+			    })
+				label.addEventListener("click",function(){
+				    _marker.openInfoWindow(_iw);
+			    })
+				
+			})()
+			
+    }
+	function _addterminal()
+	{
+		var text = document.getElementById('gettextarea').value;
+		var url = "get_terminalnum.php?text="+text;
+		updateterminaldate(url);
+
+		document.all.textdemoclick.style.visibility = "hidden";
+		document.all.rightclick.style.visibility = "hidden";
+	}
+
+	function _delterminal()
+	{
+		var url = "del_terminalnum.php?id="+_getterminalid;
+		delterminaldate(url);
+		map.removeOverlay(_marker);
+		
+		document.all.rightclick.style.visibility = "hidden";
+	}
+	function test(e){
+	//document.getElementById("mjs").innerHTML = mousePos(e).x+','+mousePos(e).y;
+	mapx=mousePos(e).x;
+	mapy=mousePos(e).y;
+	    
+	};
+	function mousePos(e){
+		var x,y;
+		var e = e||window.event;
+		return {
+		x:e.clientX+document.body.scrollLeft+document.documentElement.scrollLeft,
+		y:e.clientY+document.body.scrollTop+document.documentElement.scrollTop
+		};
+	};
+function calculateBaiduDistance(lat1, lng1, lat2, lng2) {
+    const EARTH_RADIUS = 6370996.81; // 百度地图使用的地球半径(米)
+    
+    // 将经纬度转换为弧度
+    const radLat1 = lat1 * Math.PI / 180;
+    const radLng1 = lng1 * Math.PI / 180;
+    const radLat2 = lat2 * Math.PI / 180;
+    const radLng2 = lng2 * Math.PI / 180;
+    
+    // 计算差值
+    const a = radLat1 - radLat2;
+    const b = radLng1 - radLng2;
+    
+    // 使用百度地图官方距离计算公式
+    const s = 2 * Math.asin(Math.sqrt(
+        Math.pow(Math.sin(a/2), 2) +
+        Math.cos(radLat1) * Math.cos(radLat2) *
+        Math.pow(Math.sin(b/2), 2)
+    ));
+    
+    return Math.round(s * EARTH_RADIUS); // 四舍五入到米
+}
+    //创建InfoWindow
+    function createInfoWindow(json,netstate,terminalip,p0,p1){
+		var state;
+		if(netstate==1)
+			state="连接";
+		else
+			state="断开";
+	
+	   const distance = calculateBaiduDistance(p0, p1, 118.3623, 31.244);
+
+       var iw = new BMap.InfoWindow("<a class='iw_poi_title' href='http://" + terminalip + "' target=_blank>" + json + "</a><div class='iw_poi_content' >连接状态："+state+"</div><div class='iw_poi_content' >连接距离："+distance+"米</div>",opts);
+        return iw;
+    }
+    //创建一个Icon
+    function createIcon(w,h,l,t,x,lb){
+        var icon = new BMap.Icon("./skin/images/frame/6u.png", new BMap.Size(w,h),{imageOffset: new BMap.Size(-l,-t),infoWindowOffset:new BMap.Size(lb+5,1),offset:new BMap.Size(x,h)});
+        return icon;
+    }
+    initMap();//创建和初始化地图
+
+</script>
+<{if $group_info|@count neq 0}>   
+	<{section name=loop loop=$group_info}>    
+<script language="javascript">
+var terminalid= "<{$group_info[loop].id}>";
+var longitude= "<{$group_info[loop].longitude}>";
+var latitude= "<{$group_info[loop].latitude}>";
+var terminalname ="<{$group_info[loop].terminalname}>";
+var netstate ="<{$group_info[loop].netstate}>";
+var terminalip="<{$group_info[loop].ip}>";
+if((<{$group_info[loop].typeid}>==0)&&(<{$group_info[loop].latitude}>!=0)&&(<{$group_info[loop].longitude}>!=0))
+{
+	
+	addMarker(w,h,l,t,x,lb,longitude,latitude,terminalname,netstate,terminalid,terminalip);
+}
+else if((<{$group_info[loop].latitude}>!=0)&&(<{$group_info[loop].longitude}>!=0))
+{
+
+	addMarker(w,h,ll,t,x,lb,longitude,latitude,terminalname,netstate,terminalid,terminalip);
+}
+</script>
+	<{/section}>
+	<{/if}>  
+
+</body>
+</html>
+
+

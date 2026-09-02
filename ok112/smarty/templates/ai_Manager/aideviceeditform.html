@@ -1,0 +1,84 @@
+<form name="frmSearch2" method="post" action="do.php?act=renliandevicemodify_msg&shibiedeviceid=<{$shibiedeviceid}>&id=<{$streamid}>" onSubmit="return checkform();" classs= "terminal_form_to_body">
+	<table width="600px" border="0" align="center" cellpadding="0" cellspacing="0" class="terminal_table_border">
+		<tr>
+		<td>
+			<table width="100%" border="0" align="center" cellpadding="0" cellspacing="0">
+				<tr>
+					<td>
+							<img src="<{$stream_modify.modify_sounds_aidevice}>"/>
+					</td>
+				</tr>
+			</table>
+		</td>
+		</tr>
+		<tr>
+		<td>
+			<table width="100%" border="0" align="center" cellpadding="5" cellspacing="0">
+				<tr>
+					<td width="150" align="right" nowrap="nowrap"><{$stream_modify.ai_peopleid|capitalize}></td>
+					<td width="450">
+						<input  type="text"  maxlength="18" name="peopleid" id="peopleid" value="<{$streaminfo.peopleidcard}>"  class="terminal_input_font"/>
+						<span id="peopleid_s" class="terminal_star"><{$stream_modify.ai_peopleiddemo|capitalize}>*</span>
+					</td>
+				</tr>
+				<tr>
+					<td width="150" align="right" nowrap="nowrap"><{$stream_modify.device_ip|capitalize}></td>
+					<td width="450">
+						 <input class="terminal_input_font" name="deviceip" type="text" id="deviceip" value="<{$streaminfo.deviceip}>" style="width:150px;"/>
+						 <span id="device_ips" class="terminal_star"><{$stream_modify.ai_deviceipdemo|capitalize}>*</span>
+						</td>
+					</td>
+				</tr>
+				<tr>
+					<td width="150" align="right" nowrap="nowrap"><{$stream_modify.ainame|capitalize}></td>
+					<td width="450">
+						 <input class="terminal_input_font" name="peoplename" type="text" id="peoplename"  value="<{$streaminfo.peoplename}>" style="width:150px;"/>
+						 <span id="device_names" class="terminal_star"><{$stream_modify.ai_namedemo|capitalize}>*</span>
+						</td>
+					</td>
+				</tr>
+				<tr>
+					<td width="150" align="right" nowrap="nowrap"><{$stream_modify.banji_name|capitalize}></td>
+					<td width="450">
+						 <input class="terminal_input_font" name="deviceaddr" type="text" id="deviceaddr"  value="<{$streaminfo.deviceaddr}>" style="width:150px;"/>
+						 <span id="device_times" class="terminal_star"><{$stream_modify.banji_name|capitalize}>*</span>
+						</td>
+					</td>
+				</tr>
+				<tr>
+					<td width="150" align="right" nowrap="nowrap"><{$stream_modify.boyname1|capitalize}></td>
+					<td width="450">
+						 <input class="terminal_input_font" name="peoplesubboy1" type="text" id="peoplesubboy1"  value="<{$streaminfo.boyname1}>" style="width:150px;"/>
+						 <span id="people_subboy1s" class="terminal_star"><{$stream_modify.ai_namesubboy1|capitalize}>*</span>
+						</td>
+					</td>
+				</tr>
+				<tr>
+					<td width="150" align="right" nowrap="nowrap"><{$stream_modify.boyname2|capitalize}></td>
+					<td width="450">
+						 <input class="terminal_input_font" name="peoplesubboy2" type="text" id="peoplesubboy2"  value="<{$streaminfo.boyname2}>" style="width:150px;"/>
+						 <span id="people_subboy2s" class="terminal_star"><{$stream_modify.ai_namesubboy2|capitalize}>*</span>
+						</td>
+					</td>
+				</tr>
+				<tr>
+					<td width="150" align="right" nowrap="nowrap"><{$stream_modify.boyname3|capitalize}></td>
+					<td width="450">
+						 <input class="terminal_input_font" name="peoplesubboy3" type="text" id="peoplesubboy3"  value="<{$streaminfo.boyname3}>" style="width:150px;"/>
+						 <span id="people_subboy3s" class="terminal_star"><{$stream_modify.ai_namesubboy3|capitalize}>*</span>
+						</td>
+					</td>
+				</tr>
+				<tr>
+					<td></td>
+					<td>
+						<input type="submit" name="submit" id="submit" value="<{$stream_modify.Sumbit|capitalize}>" class="terminal_button"/>
+						&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+						<input name="reset" type="reset" id="reset" value="<{$stream_modify.Cancel|capitalize}>" class="terminal_button"/>
+					</td>
+				</tr>
+				</table> 
+			</td>
+		</tr>
+	</table>
+	</form> 

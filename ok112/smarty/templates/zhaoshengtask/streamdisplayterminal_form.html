@@ -1,0 +1,141 @@
+<div id="divTest" style="width:100%;overflow-x:hidden;overflow-y:scroll">
+<table width="98%" id="displayttable" border="0" cellpadding="2" cellspacing="1"  align="center" class="terminal_form_to_body">
+ <thead>
+<tr align='center' class="terminal_table_row_bg">
+  <th width="5%"  nowrap="nowrap"><{$stream_terminal.No|capitalize}></th>
+  <th width="15%" onclick="sortTable('displayttable', 1)" nowrap="nowrap"><{$stream_terminal.Terminal_Name|capitalize}>↑↓</th>
+  <th width="10%" onclick="sortTable('displayttable', 2)"  nowrap="nowrap"><{$stream_terminal.Terminal_Type|capitalize}>↑↓</th>
+  <th width="10%"  onclick="sortTable('displayttable', 3)" nowrap="nowrap"><{$stream_terminal.Network_Status|capitalize}>↑↓</th>
+  <th width="10%" nowrap="nowrap"><{$stream_terminal.Device_Status|capitalize}></th>
+  <th width="10%" nowrap="nowrap"><{$stream_terminal.Task_Status|capitalize}></th>
+  <th width="10%" nowrap="nowrap"><{$stream_terminal.IP_Address|capitalize}></th>
+  <th width="10%" nowrap="nowrap"><{$stream_terminal.Volume}></th>
+</tr>
+</thead>
+<tbody>
+<{if $info|@count neq 0}>
+ <{section name=loop loop=$info}>
+      
+      <tr align='center' class="tablestyle"  height="22"> 
+	   	<td><{$smarty.section.loop.index+1+$start}></td>
+      	 <td><{$info[loop].terminalname}></td>  
+		<td><{$info[loop].typename}></td> 
+		<td>
+			<{if $info[loop].netstate==1}>
+				<{$stream_terminal.Connected|capitalize}>
+			<{elseif $info[loop].netstate==0}>
+				<{$stream_terminal.Disconnected|capitalize}>
+			<{/if}>
+		</td>
+		
+		<td>
+			<{if $info[loop].netstate==0}>
+				<{$stream_terminal.Disconnected|capitalize}>
+			<{elseif $info[loop].netstate==1 && $info[loop].devicestate==0}>
+				<{$stream_terminal.Idle|capitalize}>
+			<{elseif $info[loop].netstate==1 && $info[loop].devicestate==1}>
+				<{$stream_terminal.Running|capitalize}>
+			<{/if}>
+		</td>
+
+		<td>
+			<{if $info[loop].netstate==0}>
+				<{$stream_terminal.Disconnected|capitalize}>
+			<{elseif $info[loop].netstate==1 && $info[loop].taskstate == 0}>
+				<{$stream_terminal.Ready|capitalize}>
+			<{elseif $info[loop].netstate==1 && $info[loop].taskstate == 1}>
+				<{$stream_terminal.Timing_Play|capitalize}>
+			<{elseif $info[loop].netstate==1 && $info[loop].taskstate == 2}>
+				<{$stream_terminal.On_Talkback}>
+			<{elseif $info[loop].netstate==1 && $info[loop].taskstate == 3}>
+				<{$stream_terminal.AOD|capitalize}>
+			<{elseif $info[loop].netstate==1 && $info[loop].taskstate == 4}>
+				<{$stream_terminal.Selected_Play|capitalize}>
+			<{elseif $info[loop].netstate==1 && $info[loop].taskstate == 5}>
+				<{$stream_terminal.Paging|capitalize}>
+			<{elseif $info[loop].netstate==1 && $info[loop].taskstate == 6}>
+				<{$stream_terminal.Talkback_Ready}>
+			<{elseif $info[loop].netstate==1 && $info[loop].taskstate == 7}>
+				<{$stream_terminal.Local_Amplifying|capitalize}>
+			<{elseif $info[loop].netstate==1 && $info[loop].taskstate == 8}>
+				<{$stream_terminal.Play_from_USB|capitalize}>
+			<{elseif $info[loop].netstate==1 && $info[loop].taskstate == 9}>
+				<{$stream_terminal.Request_Talkback|capitalize}>
+			<{elseif $info[loop].netstate==1 && $info[loop].taskstate == 10}>
+				<{$stream_terminal.Requested_Talkback|capitalize}>
+			<{elseif $info[loop].netstate==1 && $info[loop].taskstate == 11}>
+				<{$stream_terminal.Paging_Play}>
+			<{elseif $info[loop].netstate==1 && $info[loop].taskstate == 12}>
+				<{$stream_terminal.Timing_Play|capitalize}>
+			<{/if}>
+		</td>	
+		<td><{$info[loop].ip}></td>
+		<td><{$info[loop].volume}></td>
+      </tr>         
+    <{/section}>
+<{else}>
+<tr align='center'>
+<td colspan="8"><strong><{$stream_terminal.No_Record|capitalize}></strong></td>
+</tr>
+<{/if}>
+</tbody>
+</table>
+</div>
+
+
+ <script language="javascript">
+var   obj   =   document.getElementById( "divTest").offsetHeight; 
+ if(obj>=600)
+ {
+ document.getElementById("divTest").style.height=600+"px"; 
+
+ }
+ else
+ {
+  document.getElementById("divTest").style.height=document.getElementById( "divTest").offsetHeight;
+ }
+ var objwidth = document.getElementById( "divTest").offsetWidth;
+if(objwidth<=1000)
+ {
+ document.getElementById("divTest").style.width=1000+"px"; 
+
+ }
+ else
+ {
+  document.getElementById("divTest").style.width=document.getElementById( "divTest").offsetWidth;
+ }
+</script> 
+
+<div id="divTest2" style="width:100%;overflow-x:hidden;overflow-y:scroll">
+<table width="98%" id="devicetable" border="0" cellpadding="2" cellspacing="1"  align="center" class="terminal_form_to_body">
+ <thead>
+<tr align='center' class="terminal_table_row_bg">
+  <th width="5%"  nowrap="nowrap"><{$stream_terminal.No|capitalize}></th>
+  <th width="25%" onclick="sortTable('displayttable', 1)" nowrap="nowrap"><{$stream_terminal.devicename|capitalize}>↑↓</th>
+
+  <th width="20%" nowrap="nowrap"><{$stream_terminal.deviceaddr|capitalize}></th>
+  <th width="30%" nowrap="nowrap"><{$stream_terminal.IP_Address|capitalize}></th>
+  <th width="10%" nowrap="nowrap"><{$stream_terminal.devicenum}></th>
+</tr>
+</thead>
+<tbody>
+<{if $info|@count neq 0}>
+ <{section name=loop loop=$devices}>
+      
+      <tr align='center' class="tablestyle"  height="22"> 
+	   	<td><{$smarty.section.loop.index+1+$start}></td>
+      	 <td><{$devices[loop].name}></td>  
+		<td><{$devices[loop].devaddr}></td> 
+		
+		<td><{$devices[loop].ip}></td>
+		<td><{$devices[loop].dbvalue}></td>
+      </tr>         
+    <{/section}>
+<{else}>
+<tr align='center' onmouseover="this.style.backgroundColor = #EEEEFF" onmouseout="this.style.backgroundColor = #FFFFFF">
+<td colspan="8"><strong><{$stream_terminal.No_Record|capitalize}></strong></td>
+</tr>
+<{/if}>
+</tbody>
+</table>
+</div>
