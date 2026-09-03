@@ -399,55 +399,81 @@
       append-to-body
     >
       <el-form :model="qtEdit" label-width="100px">
+        <!-- 字段顺序照 set_task_quickplay.html：任务名 → 播放时长 → 随机播放
+             → TTS/LED 开关 → 发送模式 → 音量 → 优先级 → 快捷键
+             → LED 字幕 → 播放内容 → 目标终端 -->
         <el-form-item label="任务名称" required>
           <el-input v-model="qtEdit.taskName" maxlength="8" show-word-limit placeholder="最多 8 个字" />
         </el-form-item>
-        <el-form-item label="快捷键" required>
-          <el-select v-model="qtEdit.key" placeholder="选择键值" class="fill">
-            <el-option v-for="k in qtEdit.keyOptions" :key="k.value" :label="k.label" :value="k.value" />
-          </el-select>
-        </el-form-item>
 
         <el-form-item label="播放时长" required>
-          <el-radio-group v-model="qtEdit.timeLengthType" class="qt-len">
-            <el-radio :value="1">按时长</el-radio>
-            <el-radio :value="2">按次数</el-radio>
+          <el-radio-group v-model="qtEdit.timeLengthType">
+            <el-radio :value="1">时长</el-radio>
+            <el-radio :value="2">循环次数</el-radio>
           </el-radio-group>
         </el-form-item>
-        <el-form-item v-if="qtEdit.timeLengthType === 1" label="时 / 分 / 秒">
+        <el-form-item v-if="qtEdit.timeLengthType === 1" label=" ">
+          <!-- 旧版这里是三个 select，不是数字输入框。范围同旧版：时 0~23、分秒 0~59 -->
           <div class="qt-hms">
-            <el-input-number v-model="qtEdit.hour" :min="0" :max="23" :controls="false" /> 时
-            <el-input-number v-model="qtEdit.minute" :min="0" :max="59" :controls="false" /> 分
-            <el-input-number v-model="qtEdit.second" :min="0" :max="59" :controls="false" /> 秒
+            <el-select v-model="qtEdit.hour" class="qt-hms-sel">
+              <el-option v-for="h in 24" :key="h - 1" :label="h - 1" :value="h - 1" />
+            </el-select>
+            <span>时</span>
+            <el-select v-model="qtEdit.minute" class="qt-hms-sel">
+              <el-option v-for="m in 60" :key="m - 1" :label="m - 1" :value="m - 1" />
+            </el-select>
+            <span>分</span>
+            <el-select v-model="qtEdit.second" class="qt-hms-sel">
+              <el-option v-for="sc in 60" :key="sc - 1" :label="sc - 1" :value="sc - 1" />
+            </el-select>
+            <span>秒</span>
           </div>
         </el-form-item>
-        <el-form-item v-else label="循环次数">
+        <el-form-item v-else label=" ">
           <el-input-number v-model="qtEdit.circleTime" :min="1" :max="999" />
+          <span class="dlg-note inline">次</span>
         </el-form-item>
 
-        <el-form-item label="优先级">
-          <el-input-number v-model="qtEdit.priority" :min="0" :max="99" />
-          <span class="dlg-note inline">数值越大越优先，旧版默认 13</span>
+        <el-form-item label="随机播放">
+          <el-checkbox v-model="qtEdit.isRandom" />
+        </el-form-item>
+        <el-form-item label="播放方式">
+          <!-- 旧版把 TTS 与 LED 两个开关并排放在这里 -->
+          <el-checkbox v-model="qtEdit.ttsOn">文字播报</el-checkbox>
+          <el-checkbox v-model="qtEdit.ledOn" class="ml12">LED 播放</el-checkbox>
+        </el-form-item>
+        <el-form-item label="发送模式">
+          <el-select v-model="qtEdit.dataSendMode" class="qt-narrow">
+            <el-option label="单播" :value="0" />
+            <el-option label="多播" :value="1" />
+          </el-select>
         </el-form-item>
         <el-form-item label="音量">
           <el-slider v-model="qtEdit.volume" :min="0" :max="100" show-input />
         </el-form-item>
-        <el-form-item label="播放方式">
-          <el-radio-group v-model="qtEdit.dataSendMode">
-            <el-radio :value="0">单播</el-radio>
-            <el-radio :value="1">多播</el-radio>
-          </el-radio-group>
-          <el-checkbox v-model="qtEdit.isRandom" class="ml12">随机播放</el-checkbox>
+        <el-form-item label="优先级">
+          <!-- 旧版是下拉，从当前用户组的 level 起到 109 -->
+          <el-select v-model="qtEdit.priority" class="qt-narrow">
+            <el-option v-for="p in priorityOptions" :key="p" :label="p" :value="p" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="快捷键" required>
+          <el-select v-model="qtEdit.key" placeholder="选择键值" class="qt-narrow2">
+            <el-option v-for="k in qtEdit.keyOptions" :key="k.value" :label="k.label" :value="k.value" />
+          </el-select>
         </el-form-item>
 
-        <el-divider content-position="left">播放内容</el-divider>
-        <el-form-item label="文字播报">
-          <el-switch v-model="qtEdit.ttsOn" />
-          <span class="dlg-note inline">开启后由 TTS 合成语音，不再播放媒体文件</span>
-        </el-form-item>
+        <!-- LED 字幕在媒体之前，与旧版一致 -->
+        <template v-if="qtEdit.ledOn">
+          <el-divider content-position="left">LED 字幕</el-divider>
+          <el-form-item label="上屏文字" required>
+            <el-input v-model="qtEdit.ledText" maxlength="120" show-word-limit placeholder="要在 LED 屏上滚动的文字" />
+          </el-form-item>
+        </template>
 
+        <el-divider content-position="left">{{ qtEdit.ttsOn ? "播报内容" : "媒体文件" }}</el-divider>
         <template v-if="qtEdit.ttsOn">
-          <el-form-item label="播报内容" required>
+          <el-form-item label="播报文字" required>
             <el-input v-model="qtEdit.ttsText" type="textarea" :rows="3" maxlength="500" show-word-limit />
           </el-form-item>
           <el-form-item label="音源" required>
@@ -456,37 +482,23 @@
             </el-select>
           </el-form-item>
           <el-form-item label="语速">
-            <el-input-number v-model="qtEdit.ttsSpeed" :min="1" :max="10" />
+            <el-select v-model="qtEdit.ttsSpeed" class="qt-narrow">
+              <el-option v-for="sp in 10" :key="sp" :label="sp" :value="sp" />
+            </el-select>
             <el-radio-group v-model="qtEdit.ttsMale" class="ml12">
               <el-radio :value="0">女声</el-radio>
               <el-radio :value="1">男声</el-radio>
             </el-radio-group>
           </el-form-item>
         </template>
-        <el-form-item v-else label="媒体文件" required>
-          <el-select
-            v-model="qtEdit.mediaIds"
-            multiple
-            filterable
-            remote
-            :remote-method="searchQuickMedia"
-            collapse-tags
-            collapse-tags-tooltip
-            placeholder="选择要播放的音频"
-            class="fill"
-          >
-            <el-option v-for="m in qtEdit.mediaOptions" :key="m.id" :label="m.name" :value="m.id" />
-          </el-select>
+        <el-form-item v-else label="选择媒体" required>
+          <!-- 旧版这里是一棵树（媒体库为枝、音频为叶），不是扁平下拉 -->
+          <MediaTree v-model="qtEdit.mediaIds" :selected-names="qtEdit.selectedMedia" height="220px" />
         </el-form-item>
 
-        <el-divider content-position="left">播放到</el-divider>
-        <el-form-item label="目标终端" required>
+        <el-divider content-position="left">目标终端</el-divider>
+        <el-form-item label="播放到" required>
           <TerminalTree v-model="qtEdit.terminalIds" :terminals="qtEdit.candidates" :loading="qtEdit.loading" height="220px" />
-        </el-form-item>
-
-        <el-divider content-position="left">LED 字幕（可选）</el-divider>
-        <el-form-item label="上屏字幕">
-          <el-input v-model="qtEdit.ledText" maxlength="120" placeholder="留空则不上屏" />
         </el-form-item>
       </el-form>
       <template #footer>
@@ -627,7 +639,7 @@ import { ArrowDown, EditPen, Folder, Link, Menu } from "@element-plus/icons-vue"
 import { ElMessage, ElMessageBox } from "element-plus";
 import { computed, onMounted, reactive, ref } from "vue";
 
-import { getTaskListApi, searchTaskMediaApi, syncTaskTerminalsApi } from "@/api/modules/task";
+import { getTaskListApi, syncTaskTerminalsApi } from "@/api/modules/task";
 import {
   checkTerminalCircuitApi,
   createQuickTaskApi,
@@ -672,12 +684,16 @@ import type {
   TerminalType,
   ToggleKey
 } from "@/api/modules/terminal";
+import MediaTree from "@/components/MediaTree/index.vue";
 import ProTable from "@/components/ProTable/index.vue";
 import TerminalTree from "@/components/TerminalTree/index.vue";
 import { useAuthStore } from "@/stores/modules/auth";
+import { useUserStore } from "@/stores/modules/user";
 import type { ColumnProps, ProTableInstance } from "@/components/ProTable/interface";
 
 const authStore = useAuthStore();
+// 优先级下拉的下限取自登录用户所在用户组的 level（见 priorityOptions）
+const userStore = useUserStore();
 // store 里 authButtonList 的声明是 { [key: string]: string[] }（Geeker 原始模板的形状），
 // 而后端下发的是 map[string]map[string]bool。这里和用户模块保持同一种写法：
 // 就地断言成 any，不去动共用 store 的类型声明。
@@ -1150,23 +1166,29 @@ const qtEdit = reactive({
   dataSendMode: 0,
   isRandom: false,
   ttsOn: false,
+  ledOn: false,
   ttsText: "",
   ttsSpeed: 5,
   ttsMale: 0,
   ttsSource: 0,
   mediaIds: [] as number[],
+  /** 回填时把已选媒体的名字带给 MediaTree —— 树是懒加载的，光有 id 显示不出名字 */
+  selectedMedia: [] as { mediaId: number; name: string }[],
   terminalIds: [] as number[],
   ledText: "",
   keyOptions: [] as ShortcutKeyOption[],
   audioSources: [] as QuickAudioSource[],
-  mediaOptions: [] as { id: number; name: string }[],
   candidates: [] as TerminalRow[]
 });
 
-const searchQuickMedia = async (keyword: string) => {
-  const { data } = await searchTaskMediaApi(keyword ?? "");
-  qtEdit.mediaOptions = data.map(m => ({ id: m.id, name: m.name }));
-};
+/*
+  优先级下拉。旧版是 `for(level = <当前用户组 level>; level <= 109; level++)`，
+  也就是不能设得比自己所在用户组更高。level 取自登录用户，109 是旧版写死的上限。
+*/
+const priorityOptions = computed(() => {
+  const from = Number(userStore.userInfo?.level ?? 0);
+  return Array.from({ length: Math.max(0, 109 - from + 1) }, (_, i) => from + i);
+});
 
 const openQuickEdit = async (detail: QuickTaskDetail | null) => {
   qtEdit.taskId = detail?.taskId ?? 0;
@@ -1184,16 +1206,18 @@ const openQuickEdit = async (detail: QuickTaskDetail | null) => {
     qtEdit.second = t % 60;
     qtEdit.circleTime = 1;
   }
-  qtEdit.priority = detail?.priority ?? 13;
+  qtEdit.priority = detail?.priority ?? Math.max(13, Number(userStore.userInfo?.level ?? 0));
   qtEdit.volume = detail?.volume ?? 80;
   qtEdit.dataSendMode = detail?.dataSendMode ?? 0;
   qtEdit.isRandom = (detail?.isRandomPlay ?? 0) === 1;
   qtEdit.ttsOn = !!detail?.tts;
+  qtEdit.ledOn = !!detail?.led?.text;
   qtEdit.ttsText = detail?.tts?.text ?? "";
   qtEdit.ttsSpeed = detail?.tts?.speed ?? 5;
   qtEdit.ttsMale = detail?.tts?.musicMode ?? 0;
   qtEdit.ttsSource = detail?.tts?.audioSource ?? 0;
   qtEdit.mediaIds = detail?.mediaIds ? [...detail.mediaIds] : [];
+  qtEdit.selectedMedia = detail?.media ? detail.media.map(m => ({ mediaId: m.mediaId, name: m.name })) : [];
   qtEdit.terminalIds = detail?.terminalIds ? [...detail.terminalIds] : [];
   qtEdit.ledText = detail?.led?.text ?? "";
   qtEdit.visible = true;
@@ -1207,15 +1231,6 @@ const openQuickEdit = async (detail: QuickTaskDetail | null) => {
     qtEdit.keyOptions = keys.data;
     qtEdit.audioSources = sources.data;
     qtEdit.candidates = all.data.list as TerminalRow[];
-    // 回填时把已选媒体的名字带进下拉，否则只显示 id
-    qtEdit.mediaOptions = detail?.media?.length ? detail.media.map(m => ({ id: m.mediaId, name: m.name })) : [];
-    await searchQuickMedia("");
-    if (detail?.media?.length) {
-      const have = new Set(qtEdit.mediaOptions.map(m => m.id));
-      detail.media.forEach(m => {
-        if (!have.has(m.mediaId)) qtEdit.mediaOptions.unshift({ id: m.mediaId, name: m.name });
-      });
-    }
   } finally {
     qtEdit.loading = false;
   }
@@ -1234,6 +1249,7 @@ const submitQuickEdit = async () => {
   const timeLength = qtEdit.timeLengthType === 2 ? qtEdit.circleTime : qtEdit.hour * 3600 + qtEdit.minute * 60 + qtEdit.second;
   if (timeLength <= 0) return ElMessage.warning("播放时长必须大于 0");
   if (qtEdit.ttsOn && !qtEdit.ttsText.trim()) return ElMessage.warning("请填写播报内容");
+  if (qtEdit.ledOn && !qtEdit.ledText.trim()) return ElMessage.warning("请填写 LED 上屏文字");
   if (!qtEdit.ttsOn && !qtEdit.mediaIds.length) return ElMessage.warning("请选择要播放的媒体文件");
   if (!qtEdit.terminalIds.length) return ElMessage.warning("请选择要播放到哪些终端");
 
@@ -1660,10 +1676,7 @@ onMounted(async () => {
   margin-bottom: 0;
   margin-left: 12px;
 }
-.qt-len {
-  margin-right: 12px;
-}
-/* 时 / 分 / 秒三个数字框排一行，宽度收窄，别撑满 */
+/* 时 / 分 / 秒三个下拉排一行，宽度收窄，别撑满 */
 .qt-hms {
   display: flex;
   gap: 6px;
@@ -1671,8 +1684,15 @@ onMounted(async () => {
   font-size: 13px;
   color: var(--el-text-color-secondary);
 }
-.qt-hms :deep(.el-input-number) {
-  width: 72px;
+.qt-hms-sel {
+  width: 76px;
+}
+/* 发送模式 / 优先级 / 语速这类短下拉不该跟输入框一样宽 */
+.qt-narrow {
+  width: 110px;
+}
+.qt-narrow2 {
+  width: 180px;
 }
 .ok {
   color: var(--el-color-success);
