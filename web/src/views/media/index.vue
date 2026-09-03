@@ -176,15 +176,11 @@
     <!-- 删除影响面预览 -->
     <el-dialog v-model="delDlg.visible" :title="delDlg.title" width="560px">
       <div v-if="delDlg.deletable.length">
-        <el-alert type="warning" :closable="false" show-icon class="mb10">
-          以下内容将被<b>永久删除</b>，且不可恢复：
-        </el-alert>
+        <el-alert type="warning" :closable="false" show-icon class="mb10"> 以下内容将被<b>永久删除</b>，且不可恢复： </el-alert>
         <el-table :data="delDlg.deletable" size="small" border max-height="240">
           <el-table-column prop="name" label="名称" />
           <el-table-column v-if="delDlg.kind === 'folder'" label="影响范围" width="200">
-            <template #default="s">
-              子目录 {{ s.row.descendantFolders }} 个 · 媒体 {{ s.row.mediaCount }} 个
-            </template>
+            <template #default="s"> 子目录 {{ s.row.descendantFolders }} 个 · 媒体 {{ s.row.mediaCount }} 个 </template>
           </el-table-column>
         </el-table>
       </div>
@@ -261,7 +257,8 @@
 
       <el-alert type="info" :closable="false" show-icon class="mb10">
         支持 mp3 / wav，单文件不超过 300MB。<br />
-        服务端会统一转码为 mp3，并在尾部追加 2 秒静音（沿用原系统约定）。<br />
+        上传的 MP3 码率各不相同（32k 到 320k 都有），服务端会先认文件头确认格式， 再统一转成 <b>128kbps 立体声</b>（提示音目录
+        16000Hz，其余 44100Hz）， 并在尾部追加 2 秒静音（沿用原系统约定）。<br />
         同名文件将<b>覆盖</b>原有媒体。
       </el-alert>
 
@@ -275,14 +272,27 @@
       <div v-if="uploadResults.length" class="mt10">
         <el-divider content-position="left">上传结果</el-divider>
         <el-table :data="uploadResults" size="small" border>
-          <el-table-column prop="fileName" label="文件" show-overflow-tooltip />
-          <el-table-column label="结果" width="150">
+          <el-table-column prop="fileName" label="文件" min-width="120" show-overflow-tooltip />
+          <el-table-column label="结果" width="80" align="center">
             <template #default="s">
               <el-tag v-if="s.row.status === 'created'" type="success" size="small">新增</el-tag>
               <el-tag v-else-if="s.row.status === 'overwritten'" type="warning" size="small">覆盖</el-tag>
-              <el-tooltip v-else :content="s.row.message" placement="top">
-                <el-tag type="danger" size="small">失败</el-tag>
-              </el-tooltip>
+              <el-tag v-else type="danger" size="small">失败</el-tag>
+            </template>
+          </el-table-column>
+          <!--
+            转码前后的参数摆出来 —— 上传的码率五花八门，用户得看得见
+            「我这个 320k 单声道的文件，进来之后变成了 128k 立体声」。
+            失败的行这里改放原因，比缩在 tooltip 里靠谱。
+          -->
+          <el-table-column label="转换" min-width="200">
+            <template #default="s">
+              <span v-if="s.row.status === 'failed'" class="up-bad">{{ s.row.message }}</span>
+              <span v-else class="up-fmt">
+                <span class="up-src">{{ s.row.sourceFormat || "WAV" }}</span>
+                <el-icon><Right /></el-icon>
+                <span class="up-dst">{{ s.row.targetFormat }}</span>
+              </span>
             </template>
           </el-table-column>
         </el-table>
@@ -308,6 +318,7 @@ import {
   FolderOpened,
   Plus,
   Refresh,
+  Right,
   Search,
   Upload,
   UploadFilled,
@@ -698,6 +709,23 @@ onMounted(loadTree);
 </script>
 
 <style scoped lang="scss">
+.up-fmt {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  font-size: 12px;
+}
+.up-src {
+  color: var(--el-text-color-secondary);
+}
+.up-dst {
+  color: var(--el-color-success);
+}
+.up-bad {
+  font-size: 12px;
+  color: var(--el-color-danger);
+}
+
 .media-container {
   display: flex;
   gap: 10px;

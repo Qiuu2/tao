@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -27,6 +28,16 @@ var (
 // 提示音目录：上传到这里的媒体按 16000Hz 转码，其余按 44100Hz（BR-39）。
 const tipFolderID = 9
 
+// 转码目标：一律 128kbps 立体声（BR-38）。
+//
+// 上传的 MP3 码率各不相同（32k 到 320k 都有），终端那头按固定码率解，
+// 所以入库前必须统一。采样率不在这里定 —— 提示音目录是 16000Hz，
+// 其余 44100Hz，见 tipFolderID。
+const (
+	targetBitrateKbps = 128
+	targetChannels    = 2
+)
+
 // 系统预置文件夹上限。位于其中的媒体仅超级管理员可删（BR-53）。
 const systemFolderMaxID = 9
 
@@ -38,6 +49,12 @@ type UploadResult struct {
 	SizeKB    int64  `json:"sizeKB,omitempty"`
 	ErrorCode int    `json:"errorCode,omitempty"`
 	Message   string `json:"message,omitempty"`
+	// SourceFormat / TargetFormat 是转码前后的音频参数，形如
+	// 「320kbps / 44100Hz / 立体声」。上传的媒体码率五花八门，统一转成
+	// 128kbps 立体声之后，界面上要能说清楚「从什么转成了什么」。
+	// 源是 WAV 时 SourceFormat 为空 —— WAV 不认帧头，认了也没用。
+	SourceFormat string `json:"sourceFormat,omitempty"`
+	TargetFormat string `json:"targetFormat,omitempty"`
 }
 
 type Uploader struct {
@@ -105,7 +122,31 @@ func (u *Uploader) Upload(
 	defer os.Remove(tmpPath)
 	_ = written
 
-	// 2) 统一转码为 mp3
+	// 2) 认文件头，确认它真是这个格式
+	//
+	// 只按扩展名判类型是不够的：一个改名成 .mp3 的文本文件会一路送进 ffmpeg，
+	// 用户看到的是「转码失败: exit status 1: [mp3 @ 0x…] Failed to read frame
+	// size: Could not seek to 1059…」——一句谁也看不懂的内部报错。
+	// 先认头就能直接说「不是有效的 MP3 文件」。
+	//
+	// 顺带把源文件的码率/采样率/声道读出来，好在界面上告诉用户转换前是什么。
+	if ext == "mp3" {
+		srcInfo, err := ReadMP3Info(tmpPath)
+		if err != nil {
+			if errors.Is(err, ErrNotMP3) {
+				res.Message = "不是有效的 MP3 文件（找不到音频帧，可能已损坏或并非 MP3）"
+			} else {
+				res.Message = "读取 MP3 文件头失败: " + err.Error()
+			}
+			return res
+		}
+		res.SourceFormat = srcInfo.String()
+	} else if err := IsWAV(tmpPath); err != nil {
+		res.Message = "不是有效的 WAV 文件"
+		return res
+	}
+
+	// 3) 统一转码为 mp3
 	//
 	// 沿用旧系统的转码约定，不能随意改（BR-38 ~ BR-40）：
 	//   · 统一 mp3、128k、双声道
@@ -131,10 +172,32 @@ func (u *Uploader) Upload(
 		res.Message = "转码未产出有效文件"
 		return res
 	}
+
+	// 4) 再认一次头，核对产物**真的**是 128kbps 立体声
+	//
+	// 前面只是把参数交给了 ffmpeg，没人核对它照做没有。换个 ffmpeg 版本、
+	// 或者滤镜链哪天被改坏，产出一个 64kbps 单声道的文件照样会入库，
+	// 等现场播出来不对劲才发现。这一步把「说好的」和「实际的」对上。
+	outInfo, err := ReadMP3Info(targetAbs)
+	if err != nil {
+		_ = os.Remove(targetAbs)
+		res.Message = "转码产物不是有效的 MP3: " + err.Error()
+		return res
+	}
+	wantRate, _ := strconv.Atoi(sampleRate)
+	if outInfo.BitrateKbps != targetBitrateKbps || outInfo.Channels != targetChannels ||
+		outInfo.SampleRate != wantRate {
+		_ = os.Remove(targetAbs)
+		res.Message = fmt.Sprintf("转码结果不符：得到 %s，要求 %dkbps / %dHz / 立体声",
+			outInfo.String(), targetBitrateKbps, wantRate)
+		return res
+	}
+	res.TargetFormat = outInfo.String()
+
 	sizeKB := st.Size() / 1024
 	res.SizeKB = sizeKB
 
-	// 3) 查重与写库，用命名锁串行化
+	// 5) 查重与写库，用命名锁串行化
 	//
 	// media 表没有 (name, folderid) 唯一索引，且不允许新建索引（R1 红线），
 	// 只能用 GET_LOCK 在应用层保证「查重 + 写入」的原子性（缺陷 D-28）。
