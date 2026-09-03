@@ -214,21 +214,50 @@ func (s *Service) GetCallGroup(ctx context.Context, groupID int64) (*CallGroupDe
 // 排除宿主终端自己 —— 自己寻呼自己没有意义。
 func (s *Service) CallGroupCandidates(ctx context.Context, u *auth.User,
 	terminalID int64) ([]CallGroupCandidate, error) {
+	return s.callGroupCandidates(ctx, u, terminalID, false)
+}
+
+// CallGroupCandidatesByFolder 同上，但树按**目录**分组，供「授权终端」用。
+//
+// ok112 的 flag=2 走 get_dirarea：从 terminalfolder 递归下来，每个目录里的
+// 终端来自 terminaloffolder 的内连接 —— 也就是说**没有放进任何目录的终端
+// 根本不在候选里**。这里照搬：想授权一台终端，得先把它放进某个目录。
+func (s *Service) CallGroupCandidatesByFolder(ctx context.Context, u *auth.User,
+	terminalID int64) ([]CallGroupCandidate, error) {
+	return s.callGroupCandidates(ctx, u, terminalID, true)
+}
+
+func (s *Service) callGroupCandidates(ctx context.Context, u *auth.User,
+	terminalID int64, byFolder bool) ([]CallGroupCandidate, error) {
 
 	if err := s.assertTerminalExists(ctx, terminalID); err != nil {
 		return nil, err
 	}
 
+	// 两种分组：按终端分区（授权寻呼）或按本机目录（授权终端）。
+	// 只有 JOIN 和取哪两列不同，其余条件完全一样，所以共用这一个查询。
+	join := `LEFT JOIN terminalofgroup og ON og.terminalid = t.id
+		         LEFT JOIN serverplaystream sp ON sp.streamid = og.groupid`
+	groupCols := `COALESCE(og.groupid,0), COALESCE(sp.name,'')`
+	if byFolder {
+		join = `JOIN terminaloffolder og ON og.terminalid = t.id
+		        JOIN terminalfolder sp ON sp.id = og.folderid AND sp.terminalid = ?`
+		groupCols = `COALESCE(og.folderid,0), COALESCE(sp.name,'')`
+	}
+
 	q := `
 		SELECT t.id, COALESCE(t.terminalname,''), COALESCE(t.typeid,0), COALESCE(tt.name,''),
 		       COALESCE(t.ip,''), COALESCE(t.netstate,0),
-		       COALESCE(og.groupid,0), COALESCE(sp.name,'')
+		       ` + groupCols + `
 		FROM terminal t
 		JOIN terminaltype tt ON tt.id = t.typeid
-		LEFT JOIN terminalofgroup og ON og.terminalid = t.id
-		LEFT JOIN serverplaystream sp ON sp.streamid = og.groupid
+		` + join + `
 		WHERE COALESCE(tt.isdecode,0) = 1 AND t.id <> ?`
-	args := []interface{}{terminalID}
+	args := []interface{}{}
+	if byFolder {
+		args = append(args, terminalID) // 目录必须是这台宿主终端自己的
+	}
+	args = append(args, terminalID)
 
 	// 普通用户只看得到绑给自己的终端（ok112 的 userterminal 子查询）
 	if !u.IsAdmin {
@@ -244,6 +273,7 @@ func (s *Service) CallGroupCandidates(ctx context.Context, u *auth.User,
 	defer rs.Close()
 
 	out := []CallGroupCandidate{}
+	seen := map[int64]bool{}
 	for rs.Next() {
 		var c CallGroupCandidate
 		if err := rs.Scan(&c.ID, &c.Name, &c.TypeID, &c.TypeName,
@@ -255,6 +285,13 @@ func (s *Service) CallGroupCandidates(ctx context.Context, u *auth.User,
 		if in(callGroupMemberExclude, c.TypeID) {
 			continue
 		}
+		// 一台终端可能同时在两个目录里（terminaloffolder 没有唯一约束），
+		// 那样会查出两行。树上按终端 id 建节点，重复 key 会让 el-tree 乱掉，
+		// 所以只留第一条 —— 它在树上归到哪个目录不影响勾中的是哪台终端。
+		if seen[c.ID] {
+			continue
+		}
+		seen[c.ID] = true
 		out = append(out, c)
 	}
 	return out, rs.Err()

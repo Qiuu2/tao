@@ -69,7 +69,7 @@
           <span v-if="data.terminalId" class="tt-meta">
             <el-tag v-if="data.netstate === 1" type="success" size="small" effect="plain">在线</el-tag>
             <el-tag v-else type="info" size="small" effect="plain">离线</el-tag>
-            <span v-if="showSub && data.sub" class="tt-sub">{{ data.sub }}</span>
+            <span v-if="data.sub" class="tt-sub">{{ data.sub }}</span>
           </span>
           <span v-else class="tt-count">{{ data.children?.length ?? 0 }} 台</span>
         </span>
@@ -111,8 +111,12 @@ const props = withDefaults(
      * 分区清单。**树的骨架由它决定**，不是从终端归纳出来的 ——
      * 这样一台终端都没有的分区也会作为空节点出现（与 ok112 一致）。
      * 不传时组件自己去 /api/zones/options 拉。
+     *
+     * 带 parentId 时分组之间会**再嵌一层**（授权终端的目录树就是这样：
+     * terminalfolder 本身是有父子的）。一条都不带 parentId 就还是平铺一层，
+     * 与原来完全一样 —— 其余十来处调用方不受影响。
      */
-    groups?: { id: number; name: string }[];
+    groups?: { id: number; name: string; parentId?: number }[];
     /** 用哪个字段取分区名。默认 groupName；终端分区页要用 currentZoneName */
     groupField?: string;
     /** 用哪个字段取分区 id。默认 groupId；终端分区页要用 currentZoneId */
@@ -126,14 +130,6 @@ const props = withDefaults(
      *   摆一个搜出来没反应的框比没有框更糟，那种地方传 false。
      */
     searchable?: boolean;
-    /**
-     * 节点后面那行次要信息（型号 · IP）显不显示。
-     *
-     * 默认显示 —— 全站十来处选终端的地方都靠它区分同名终端。
-     * 只有在对话框里空间紧、且调用方本来就不关心 IP 时才关掉
-     * （快捷任务的目标终端就是这种）。
-     */
-    showSub?: boolean;
   }>(),
   {
     multiple: true,
@@ -143,8 +139,7 @@ const props = withDefaults(
     // 措辞照 ok112：language/chinese.php 的 No_group_terminal = "无分区终端"
     ungroupedLabel: "无分区终端",
     height: "300px",
-    searchable: true,
-    showSub: true
+    searchable: true
   }
 );
 
@@ -186,7 +181,6 @@ const normalize = (t: any) => ({
   groupId: Number(t[props.groupIdField] ?? 0),
   netstate: Number(t.netstate ?? 0),
   typeName: String(t.typeName ?? "").trim(),
-  ip: String(t.ip ?? "").trim(),
   disabled: !!t.disabled
 });
 
@@ -225,12 +219,19 @@ const nodes = computed<TermNode[]>(() => {
   const list: TermNode[] = [];
   const byId = new Map<number, TermNode>();
   const byName = new Map<string, TermNode>();
+  // 分组自己是否分层。只要有一条带了 parentId 就按层级摆，否则平铺（老行为）。
+  const nestedGroups = groups.value.some(g => Number((g as any).parentId ?? 0) > 0);
 
   for (const g of groups.value) {
     const node: TermNode = { key: `g:${g.id}`, label: g.name || `分区 ${g.id}`, children: [] };
-    list.push(node);
     byId.set(Number(g.id), node);
     if (g.name) byName.set(g.name, node);
+  }
+  for (const g of groups.value) {
+    const node = byId.get(Number(g.id))!;
+    const parent = nestedGroups ? byId.get(Number((g as any).parentId ?? 0)) : undefined;
+    if (parent && parent !== node) parent.children!.push(node);
+    else list.push(node);
   }
 
   // 无分区节点恒在最后，且**恒存在**（哪怕一台都没有）——
@@ -250,8 +251,13 @@ const nodes = computed<TermNode[]>(() => {
     if (!bucket && t.group) bucket = byName.get(t.group);
     if (!bucket) bucket = ungrouped;
 
-    // 次要信息：有型号显型号，否则显 IP；两个都有就都显
-    const sub = [t.typeName, t.ip].filter(Boolean).join(" · ");
+    // 次要信息只放型号，**不放 IP**。
+    //
+    // ok112 树上的叶子就是「终端名-型号名」（inc/common.php 的
+    // get_terminallistoggroup2：`$terminal_row['terminalname']."-".$faname`），
+    // 从来没有 IP。这里跟它一致 —— 挑终端时看的是「这是哪一台、什么型号」，
+    // IP 只会把节点撑成两行；真要查 IP，终端列表里那一列一直都在。
+    const sub = t.typeName;
     bucket.children!.push({
       key: `t:${t.id}`,
       label: t.name || `终端 ${t.id}`,
@@ -262,13 +268,25 @@ const nodes = computed<TermNode[]>(() => {
     });
   }
 
-  list.sort((a, b) => a.label.localeCompare(b.label, "zh"));
+  // 平铺时按名字排，方便找；分层时保持调用方给的顺序 ——
+  // 一排就把「父目录 → 子目录」的层级顺序打乱了。
+  if (!nestedGroups) list.sort((a, b) => a.label.localeCompare(b.label, "zh"));
   list.push(ungrouped);
   return list;
 });
 
 /** 默认把有选中项的分组展开；一个都没选时展开全部（数量不多时） */
-const expandedKeys = computed(() => nodes.value.map(n => n.key));
+const expandedKeys = computed(() => {
+  const keys: string[] = [];
+  const walk = (list: TermNode[]) =>
+    list.forEach(n => {
+      if (n.terminalId) return; // 叶子不需要展开
+      keys.push(n.key);
+      walk(n.children ?? []);
+    });
+  walk(nodes.value);
+  return keys;
+});
 
 const selectedIds = computed<number[]>(() => {
   if (props.multiple) return (props.modelValue as number[]) ?? [];
@@ -317,8 +335,19 @@ const onNodeClick = (data: TermNode) => {
 
 const checkAll = (on: boolean) => {
   if (!treeRef.value) return;
-  const all = nodes.value.flatMap(g => g.children ?? []).filter(n => !n.disabled);
-  treeRef.value.setCheckedKeys(on ? all.map(n => n.key) : [], false);
+  // ⚠ 递归收叶子。分组可以再嵌分组（授权终端的目录），只取一层 children
+  //   的话，子目录里的终端「全选」永远选不到。
+  const leaves: TermNode[] = [];
+  const walk = (list: TermNode[]) =>
+    list.forEach(n => {
+      if (n.terminalId) {
+        if (!n.disabled) leaves.push(n);
+        return;
+      }
+      walk(n.children ?? []);
+    });
+  walk(nodes.value);
+  treeRef.value.setCheckedKeys(on ? leaves.map(n => n.key) : [], false);
   emitChecked();
 };
 

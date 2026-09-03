@@ -288,6 +288,16 @@ func (a *app) routes() http.Handler {
 	mux.HandleFunc("DELETE /api/terminals/{id}/call-groups", trm(a.handleCallGroupDelete))
 	mux.HandleFunc("GET /api/call-groups/{gid}", req(a.handleCallGroupGet))
 
+	// 授权终端的「目录管理」。目录是每台宿主终端各有一套的（terminalfolder），
+	// 只服务于「授权终端」那棵挑终端的树，所以挂在终端下面而不是全局资源。
+	mux.HandleFunc("GET /api/terminals/{id}/folders", req(a.handleTerminalFolderTree))
+	mux.HandleFunc("POST /api/terminals/{id}/folders", trm(a.handleTerminalFolderSave))
+	mux.HandleFunc("DELETE /api/terminals/{id}/folders", trm(a.handleTerminalFolderDelete))
+	mux.HandleFunc("GET /api/terminals/{id}/folders/terminals", req(a.handleFolderTerminals))
+	mux.HandleFunc("GET /api/terminals/{id}/folders/candidates", req(a.handleFolderCandidates))
+	mux.HandleFunc("POST /api/terminals/{id}/folders/terminals", trm(a.handleFolderTerminalsAdd))
+	mux.HandleFunc("DELETE /api/terminals/{id}/folders/terminals", trm(a.handleFolderTerminalsRemove))
+
 	// ⚠ 快捷任务是「为这台终端新建一条专属任务并绑到键上」，
 	//   不是「把已有任务绑到键上」。三个 tasktype(20/21/29) 的由来、
 	//   cmd 与 cmdargs 两个终端 ID 列的含义，见 terminal/quicktask.go。

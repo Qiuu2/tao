@@ -29,7 +29,8 @@ func failShortcut(w http.ResponseWriter, action string, err error) {
 // pathNamedID 取路径里指定名字的数字参数。
 //
 // ⚠ 不要叫 pathID —— user_handlers.go 里已经有一个同名的（只认 {id}，
-//   并且自己写错误响应）。这里的路由用了 {keyId}，需要按名字取。
+//
+//	并且自己写错误响应）。这里的路由用了 {keyId}，需要按名字取。
 func pathNamedID(w http.ResponseWriter, r *http.Request, name string) (int64, bool) {
 	v, err := strconv.ParseInt(r.PathValue(name), 10, 64)
 	if err != nil || v <= 0 {

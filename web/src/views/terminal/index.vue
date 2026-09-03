@@ -515,13 +515,7 @@
           </el-row>
           <el-divider content-position="left">目标终端</el-divider>
           <el-form-item label="播放到" required>
-            <TerminalTree
-              v-model="qtEdit.terminalIds"
-              :terminals="qtEdit.candidates"
-              :loading="qtEdit.loading"
-              :show-sub="false"
-              height="240px"
-            />
+            <TerminalTree v-model="qtEdit.terminalIds" :terminals="qtEdit.candidates" :loading="qtEdit.loading" height="240px" />
           </el-form-item>
         </template>
 
@@ -546,7 +540,6 @@
                 v-model="qtEdit.terminalIds"
                 :terminals="qtEdit.candidates"
                 :loading="qtEdit.loading"
-                :show-sub="false"
                 height="260px"
               />
             </el-col>
@@ -618,10 +611,132 @@
 
       <template #footer>
         <el-button @click="cg.visible = false">关闭</el-button>
+        <!-- ok112 的 call_group_form.html：flag == 2 时才多出「目录修改」这一项 -->
+        <el-button v-if="cg.byFolder" @click="openFolderManager">目录修改</el-button>
         <el-button :disabled="!cg.checked.length" :loading="cg.deleting" @click="deleteCallGroups">
           删除分区{{ cg.checked.length ? `（${cg.checked.length}）` : "" }}
         </el-button>
         <el-button type="primary" @click="openCallGroupEdit(null)">添加分区</el-button>
+      </template>
+    </el-dialog>
+
+    <!--
+      子页：目录管理（ok112 的 dirstreammanager.php，两个 frame）。
+      左边目录树（terminalfolder，每台宿主终端各一套），右边是选中目录里的
+      终端（terminaloffolder）。底部动作照 dirarea_terminal.html：
+      创建目录 / 修改目录 / 删除目录 / 添加终端 / 移出选中终端。
+    -->
+    <el-dialog v-model="fm.visible" :title="`目录管理 · ${cg.name}`" width="1000px" top="6vh" append-to-body>
+      <div class="fm-body">
+        <div class="fm-side">
+          <div class="fm-side-title">目录</div>
+          <el-tree
+            v-loading="fm.loading"
+            class="fm-tree"
+            :data="fm.tree"
+            :props="{ label: 'name', children: 'children' }"
+            node-key="id"
+            highlight-current
+            :current-node-key="fm.folderId"
+            :default-expand-all="true"
+            :expand-on-click-node="false"
+            @node-click="onFolderPick"
+          >
+            <template #default="{ data }">
+              <span class="fm-node">
+                <el-icon><Folder /></el-icon>
+                <span class="fm-name">{{ data.name }}</span>
+                <span v-if="data.count" class="st-count">{{ data.count }}</span>
+              </span>
+            </template>
+          </el-tree>
+          <p v-if="!fm.loading && !fm.tree.length" class="dlg-note fm-empty">还没有目录，点「创建目录」新建一个</p>
+        </div>
+
+        <div class="fm-main">
+          <div class="st-bar">
+            <el-input
+              v-model="fm.keyword"
+              placeholder="搜索终端名称"
+              clearable
+              size="small"
+              :prefix-icon="Search"
+              :disabled="!fm.folderId"
+              @input="loadFolderTerminals"
+            />
+            <span class="dlg-note">{{ fm.folderName ? `当前目录：${fm.folderName}` : "请先在左边选一个目录" }}</span>
+          </div>
+          <el-table
+            v-loading="fm.listLoading"
+            :data="fm.terminals"
+            size="small"
+            height="360"
+            @selection-change="rows => (fm.checked = rows.map((r: any) => r.id))"
+          >
+            <el-table-column type="selection" width="44" />
+            <el-table-column prop="terminalname" label="终端名称" min-width="130" show-overflow-tooltip />
+            <el-table-column prop="typeName" label="终端类型" min-width="100" show-overflow-tooltip />
+            <el-table-column label="任务状态" width="100" align="center">
+              <template #default="{ row }">{{ taskStateText(row.netstate, row.taskstate) }}</template>
+            </el-table-column>
+            <el-table-column label="网络状态" width="94" align="center">
+              <template #default="{ row }">
+                <el-tag :type="row.netstate === 1 ? 'success' : 'info'" size="small" effect="plain">
+                  {{ netStateText(row.netstate) }}
+                </el-tag>
+              </template>
+            </el-table-column>
+            <el-table-column prop="ip" label="IP地址" width="126" />
+            <el-table-column prop="volume" label="音量" width="70" align="center" />
+            <template #empty>
+              <span class="dlg-note">{{ fm.folderId ? "这个目录里还没有终端" : "请先在左边选一个目录" }}</span>
+            </template>
+          </el-table>
+        </div>
+      </div>
+
+      <template #footer>
+        <el-button @click="fm.visible = false">关闭</el-button>
+        <el-button :disabled="!fm.folderId" @click="openFolderEdit('rename')">修改目录</el-button>
+        <el-button :disabled="!fm.folderId || fm.isRoot" @click="deleteFolder">删除目录</el-button>
+        <el-button :disabled="!fm.checked.length" :loading="fm.saving" @click="removeFolderTerminals">
+          移出终端{{ fm.checked.length ? `（${fm.checked.length}）` : "" }}
+        </el-button>
+        <el-button :disabled="!fm.folderId" @click="openFolderPicker">添加终端</el-button>
+        <el-button type="primary" @click="openFolderEdit('create')">创建目录</el-button>
+      </template>
+    </el-dialog>
+
+    <!-- 子页：创建 / 修改目录（ok112 的 dirareaadd.php / dirareamodify.php） -->
+    <el-dialog
+      v-model="fe.visible"
+      :title="fe.mode === 'create' ? '创建目录' : '修改目录'"
+      width="440px"
+      top="16vh"
+      append-to-body
+    >
+      <el-form label-width="90px">
+        <el-form-item v-if="fe.mode === 'create'" label="上级目录">
+          <span class="dlg-note">{{ fm.folderName || "根目录" }}</span>
+        </el-form-item>
+        <el-form-item label="目录名称" required>
+          <el-input v-model="fe.name" maxlength="32" show-word-limit placeholder="仅数字 / 字母 / 汉字" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="fe.visible = false">取消</el-button>
+        <el-button type="primary" :loading="fe.saving" @click="submitFolder">确定</el-button>
+      </template>
+    </el-dialog>
+
+    <!-- 子页：往目录里加终端（ok112 的 dir_area_add.php） -->
+    <el-dialog v-model="fp.visible" :title="`添加终端到「${fm.folderName}」`" width="560px" top="10vh" append-to-body>
+      <TerminalTree v-model="fp.ids" :terminals="fp.candidates" :loading="fp.loading" height="360px" />
+      <template #footer>
+        <el-button @click="fp.visible = false">取消</el-button>
+        <el-button type="primary" :disabled="!fp.ids.length" :loading="fp.saving" @click="submitFolderTerminals">
+          添加{{ fp.ids.length ? `（${fp.ids.length}）` : "" }}
+        </el-button>
       </template>
     </el-dialog>
 
@@ -651,6 +766,8 @@
             v-model="cgEdit.terminalIds"
             :terminals="cgEdit.candidates"
             :loading="cgEdit.loading"
+            :groups="cg.byFolder ? cgEdit.folders : undefined"
+            :ungrouped-label="cg.byFolder ? '未归目录' : '无分区终端'"
             height="300px"
             style="width: 100%"
           />
@@ -832,24 +949,31 @@ import {
   createQuickTaskApi,
   createShortcutKeyApi,
   deleteQuickTasksApi,
+  addFolderTerminalsApi,
   deleteCallGroupsApi,
   deleteShortcutKeysApi,
+  deleteTerminalFolderApi,
   deleteTerminalsApi,
   getCallGroupApi,
   getCallGroupCandidatesApi,
   getCallGroupsApi,
+  getFolderCandidatesApi,
+  getFolderTerminalsApi,
   getQuickAudioSourcesApi,
   getQuickTaskDetailApi,
   getQuickTasksApi,
   getShortcutKeyOptionsApi,
   getShortcutKeysApi,
   getTerminalApi,
+  getTerminalFoldersApi,
   getTerminalGroupTreeApi,
   getTerminalListApi,
   getTerminalTypesApi,
   previewDeleteTerminalsApi,
   replaceTerminalApi,
+  removeFolderTerminalsApi,
   saveCallGroupApi,
+  saveTerminalFolderApi,
   setTerminalPasswordApi,
   setTerminalRunningApi,
   setTerminalToggleApi,
@@ -864,6 +988,7 @@ import type {
   CallGroupCandidate,
   CallGroupMember,
   DeletePreview,
+  FolderTerminal,
   OpResult,
   QuickAudioSource,
   QuickTask,
@@ -872,6 +997,7 @@ import type {
   ShortcutKey,
   ShortcutKeyOption,
   TerminalCaps,
+  TerminalFolder,
   TerminalGroupNode,
   TerminalRow,
   TerminalType,
@@ -1156,7 +1282,7 @@ const onMoreCmd = async (cmd: string, raw: (string | number)[]) => {
   if (cmd === "del-shortcut") return clearShortcuts(ids[0]);
   if (cmd === "quick-task") return openQuickTask(ids[0]);
   if (cmd === "auth-paging") return openCallGroup(ids[0], "授权寻呼");
-  if (cmd === "auth-terminal") return openCallGroup(ids[0], "授权终端");
+  if (cmd === "auth-terminal") return openCallGroup(ids[0], "授权终端", true);
   if (cmd === "replace") return openReplace(ids[0]);
   if (cmd === "add-terminal") return openSyncTerminals(ids);
   const { data } = await syncTerminalTimeApi(ids);
@@ -1537,6 +1663,8 @@ const cg = reactive({
   id: 0,
   name: "",
   title: "授权寻呼",
+  /** true = 从「授权终端」进来（ok112 flag=2）：树按目录分组，底部多一个「目录修改」 */
+  byFolder: false,
   keyword: "",
   orderBy: "",
   list: [] as CallGroup[],
@@ -1556,10 +1684,11 @@ const loadCallGroups = async () => {
 
 watch(() => cg.orderBy, loadCallGroups);
 
-const openCallGroup = async (id: number, title: string) => {
+const openCallGroup = async (id: number, title: string, byFolder = false) => {
   const row = selectedRows([id])[0];
   cg.id = id;
   cg.title = title;
+  cg.byFolder = byFolder;
   cg.name = row?.terminalname ?? `#${id}`;
   cg.keyword = "";
   cg.orderBy = "";
@@ -1597,8 +1726,26 @@ const cgEdit = reactive({
   id: 0,
   name: "",
   terminalIds: [] as number[],
-  candidates: [] as CallGroupCandidate[]
+  candidates: [] as CallGroupCandidate[],
+  /**
+   * 「授权终端」时树的骨架 —— 本机目录拍平成一层。
+   *
+   * ⚠ TerminalTree 的分组骨架**来自 groups 而不是从终端归纳**（见组件里的
+   *   注释）。不传的话它自己去拉 /api/zones/options 拿终端分区，而候选终端
+   *   身上带的 groupId 是**目录** id，两边对不上，所有终端都会掉进
+   *   「无分区终端」—— 树看着还在，分组全没了。
+   */
+  folders: [] as { id: number; name: string; parentId: number }[]
 });
+
+/**
+ * 目录树拍成 TerminalTree 要的 {id, name, parentId} 清单。
+ *
+ * 顺序是「父目录紧跟着它的子目录」，并且带上 parentId —— TerminalTree 见到
+ * parentId 就会把分组本身也摆成层级，不再按名字排序，目录的父子关系才留得住。
+ */
+const flattenFolders = (list: TerminalFolder[]): { id: number; name: string; parentId: number }[] =>
+  (list ?? []).flatMap(f => [{ id: f.id, name: f.name, parentId: f.parentid }, ...flattenFolders(f.children ?? [])]);
 
 const openCallGroupEdit = async (row: CallGroup | null) => {
   cgEdit.id = row?.id ?? 0;
@@ -1608,11 +1755,13 @@ const openCallGroupEdit = async (row: CallGroup | null) => {
   cgEdit.loading = true;
   try {
     // 候选终端每次重新拉：型号、分区、在线状态都可能在这期间变过
-    const [cand, detail] = await Promise.all([
-      getCallGroupCandidatesApi(cg.id),
-      row ? getCallGroupApi(row.id) : Promise.resolve(null)
+    const [cand, detail, folders] = await Promise.all([
+      getCallGroupCandidatesApi(cg.id, cg.byFolder),
+      row ? getCallGroupApi(row.id) : Promise.resolve(null),
+      cg.byFolder ? getTerminalFoldersApi(cg.id) : Promise.resolve(null)
     ]);
     cgEdit.candidates = cand.data ?? [];
+    cgEdit.folders = folders ? flattenFolders(folders.data.tree ?? []) : [];
     // 回填时跳过指向已删除终端的脏行 —— 树上没有它们，勾不上，
     // 留着只会让「已选 N 台」和树上勾的对不上。
     cgEdit.terminalIds = (detail?.data.members ?? []).filter(m => !m.missing).map(m => m.id);
@@ -1636,6 +1785,180 @@ const submitCallGroup = async () => {
     await loadCallGroups();
   } finally {
     cgEdit.saving = false;
+  }
+};
+
+/* ---- 子页：目录管理（只有「授权终端」有）----
+ *
+ * ok112 的 dirstreammanager.php 是两个 frame：左边 dir_stream_tree.php 的
+ * 目录树，右边 dir_terminal_area.php 里该目录下的终端。这里做成一个对话框
+ * 的左右两栏，动作照 dirarea_terminal.html 底部那一排。
+ *
+ * ⚠ 旧版底部还有一个「复制主目录到主终端」，指向 do.php?act=dirareacopy_msg
+ *   —— 但 do.php 里根本没有这个 case（全文件 0 处匹配），是条死链。不搬。
+ */
+const fm = reactive({
+  visible: false,
+  loading: false,
+  listLoading: false,
+  saving: false,
+  tree: [] as TerminalFolder[],
+  folderId: 0,
+  folderName: "",
+  /** 根目录不能删（ok112 的 `AND parentid > 0`） */
+  isRoot: false,
+  keyword: "",
+  terminals: [] as FolderTerminal[],
+  checked: [] as number[]
+});
+
+const loadFolderTree = async () => {
+  fm.loading = true;
+  try {
+    const { data } = await getTerminalFoldersApi(cg.id);
+    fm.tree = data.tree ?? [];
+    // 选中的目录可能刚被删掉，重新对一遍；没选过就默认落在根目录上
+    const found = fm.folderId ? findFolder(fm.tree, fm.folderId) : null;
+    if (found) {
+      fm.folderName = found.name;
+      fm.isRoot = found.parentid === 0;
+    } else {
+      const root = fm.tree[0];
+      fm.folderId = root?.id ?? 0;
+      fm.folderName = root?.name ?? "";
+      fm.isRoot = !!root && root.parentid === 0;
+    }
+    await loadFolderTerminals();
+  } finally {
+    fm.loading = false;
+  }
+};
+
+const findFolder = (list: TerminalFolder[], id: number): TerminalFolder | null => {
+  for (const f of list) {
+    if (f.id === id) return f;
+    const hit = findFolder(f.children ?? [], id);
+    if (hit) return hit;
+  }
+  return null;
+};
+
+const loadFolderTerminals = async () => {
+  if (!fm.folderId) {
+    fm.terminals = [];
+    return;
+  }
+  fm.listLoading = true;
+  try {
+    const { data } = await getFolderTerminalsApi(cg.id, fm.folderId, fm.keyword);
+    fm.terminals = data.list ?? [];
+    fm.checked = [];
+  } finally {
+    fm.listLoading = false;
+  }
+};
+
+const onFolderPick = (node: TerminalFolder) => {
+  fm.folderId = node.id;
+  fm.folderName = node.name;
+  fm.isRoot = node.parentid === 0;
+  fm.keyword = "";
+  loadFolderTerminals();
+};
+
+const openFolderManager = async () => {
+  fm.folderId = 0;
+  fm.folderName = "";
+  fm.keyword = "";
+  fm.terminals = [];
+  fm.checked = [];
+  fm.visible = true;
+  await loadFolderTree();
+};
+
+const removeFolderTerminals = async () => {
+  if (!fm.checked.length) return;
+  await ElMessageBox.confirm(`确定把选中的 ${fm.checked.length} 台终端移出「${fm.folderName}」？`, "移出目录", {
+    type: "warning"
+  });
+  fm.saving = true;
+  try {
+    const { data } = await removeFolderTerminalsApi(cg.id, fm.folderId, fm.checked);
+    ElMessage.success(`已移出 ${data.affected} 台终端`);
+    await loadFolderTree();
+  } finally {
+    fm.saving = false;
+  }
+};
+
+const deleteFolder = async () => {
+  await ElMessageBox.confirm(
+    `确定删除目录「${fm.folderName}」？它下面的子目录、以及这些目录里的终端归属会一并清掉（终端本身不受影响）。`,
+    "删除目录",
+    { type: "warning" }
+  );
+  const { data } = await deleteTerminalFolderApi(cg.id, fm.folderId);
+  ElMessage.success(`已删除 ${data.deleted} 个目录`);
+  fm.folderId = 0;
+  await loadFolderTree();
+};
+
+/* ---- 子页：创建 / 修改目录 ---- */
+const fe = reactive({ visible: false, saving: false, mode: "create" as "create" | "rename", name: "" });
+
+const openFolderEdit = (mode: "create" | "rename") => {
+  fe.mode = mode;
+  fe.name = mode === "rename" ? fm.folderName : "";
+  fe.visible = true;
+};
+
+const submitFolder = async () => {
+  const name = fe.name.trim();
+  if (!name) return ElMessage.warning("请填写目录名称");
+  if (!/^[\u4e00-\u9fa5A-Za-z0-9]+$/.test(name)) return ElMessage.warning("目录名称仅能由数字 / 字母 / 汉字组成");
+  fe.saving = true;
+  try {
+    // 创建时挂在当前选中的目录下；一个目录都还没有时传 0，后端会先补出根目录
+    await saveTerminalFolderApi(cg.id, fe.mode === "rename" ? fm.folderId : 0, fe.mode === "create" ? fm.folderId : 0, name);
+    ElMessage.success(fe.mode === "rename" ? "已修改目录" : "已创建目录");
+    fe.visible = false;
+    await loadFolderTree();
+  } finally {
+    fe.saving = false;
+  }
+};
+
+/* ---- 子页：往目录里加终端 ---- */
+const fp = reactive({
+  visible: false,
+  loading: false,
+  saving: false,
+  ids: [] as number[],
+  candidates: [] as CallGroupCandidate[]
+});
+
+const openFolderPicker = async () => {
+  fp.ids = [];
+  fp.visible = true;
+  fp.loading = true;
+  try {
+    const { data } = await getFolderCandidatesApi(cg.id, fm.folderId);
+    fp.candidates = data ?? [];
+  } finally {
+    fp.loading = false;
+  }
+};
+
+const submitFolderTerminals = async () => {
+  if (!fp.ids.length) return;
+  fp.saving = true;
+  try {
+    const { data } = await addFolderTerminalsApi(cg.id, fm.folderId, fp.ids);
+    ElMessage.success(`已添加 ${data.affected} 台终端`);
+    fp.visible = false;
+    await loadFolderTree();
+  } finally {
+    fp.saving = false;
   }
 };
 
@@ -2158,6 +2481,47 @@ onMounted(async () => {
   border: 1px solid var(--el-border-color-light);
   border-bottom: 0;
   border-radius: 4px 4px 0 0;
+}
+.fm-body {
+  display: flex;
+  gap: 12px;
+}
+.fm-side {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  width: 240px;
+  border: 1px solid var(--el-border-color-light);
+  border-radius: 4px;
+}
+.fm-side-title {
+  padding: 6px 10px;
+  font-size: 13px;
+  color: var(--el-text-color-regular);
+  border-bottom: 1px solid var(--el-border-color-lighter);
+}
+.fm-tree {
+  flex: 1;
+  overflow: auto;
+  min-height: 0;
+}
+.fm-empty {
+  padding: 10px;
+}
+.fm-node {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+  min-width: 0;
+}
+.fm-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.fm-main {
+  flex: 1;
+  min-width: 0;
 }
 .st-tree {
   /* 分组从两支涨到六支，320px 一屏只装得下作息方案，往下全靠滚。

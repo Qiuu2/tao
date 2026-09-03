@@ -456,8 +456,13 @@ export const getCallGroupsApi = (terminalId: number, params?: { keyword?: string
   return http.get<{ list: CallGroup[] }>(PORT1 + `/api/terminals/${terminalId}/call-groups`, params ?? {});
 };
 
-export const getCallGroupCandidatesApi = (terminalId: number) => {
-  return http.get<CallGroupCandidate[]>(PORT1 + `/api/terminals/${terminalId}/call-groups/candidates`, {}, { loading: false });
+/** byFolder=true → 树按本机目录分组（授权终端 flag=2）；否则按终端分区（授权寻呼 flag=1） */
+export const getCallGroupCandidatesApi = (terminalId: number, byFolder = false) => {
+  return http.get<CallGroupCandidate[]>(
+    PORT1 + `/api/terminals/${terminalId}/call-groups/candidates`,
+    byFolder ? { byFolder: 1 } : {},
+    { loading: false }
+  );
 };
 
 export const getCallGroupApi = (groupId: number) => {
@@ -471,6 +476,80 @@ export const saveCallGroupApi = (terminalId: number, groupId: number, name: stri
     name,
     terminalIds
   });
+};
+
+/* ---- 授权终端的「目录」（ok112 的 dirstreammanager.php?flag=2）----
+ *
+ * 目录是**每台宿主终端各有一套**的（terminalfolder.terminalid），和全局的
+ * 终端分区无关。它只服务于一件事：给「授权终端」那棵挑终端的树分组。
+ * 所以接口挂在终端下面，不是全局资源。
+ */
+
+export interface TerminalFolder {
+  id: number;
+  parentid: number;
+  name: string;
+  terminalId: number;
+  seqnumber: number;
+  /** 这个目录自身挂了几台终端，不含子目录 */
+  count: number;
+  children: TerminalFolder[];
+}
+
+/** 目录里的一台终端。列按 ok112 dirarea_terminal.html */
+export interface FolderTerminal {
+  id: number;
+  terminalname: string;
+  typeId: number;
+  typeName: string;
+  netstate: number;
+  taskstate: number;
+  ip: string;
+  volume: number;
+}
+
+export const getTerminalFoldersApi = (terminalId: number) => {
+  return http.get<{ tree: TerminalFolder[] }>(PORT1 + `/api/terminals/${terminalId}/folders`, {}, { loading: false });
+};
+
+export const getFolderTerminalsApi = (terminalId: number, folderId: number, keyword = "") => {
+  return http.get<{ list: FolderTerminal[] }>(
+    PORT1 + `/api/terminals/${terminalId}/folders/terminals`,
+    { folderId, keyword },
+    { loading: false }
+  );
+};
+
+export const getFolderCandidatesApi = (terminalId: number, folderId: number) => {
+  return http.get<CallGroupCandidate[]>(
+    PORT1 + `/api/terminals/${terminalId}/folders/candidates`,
+    { folderId },
+    { loading: false }
+  );
+};
+
+/** folderId 传 0 = 新建（挂在根目录下）；> 0 = 给这个目录改名 */
+export const saveTerminalFolderApi = (terminalId: number, folderId: number, parentId: number, name: string) => {
+  return http.post<{ folderId: number }>(PORT1 + `/api/terminals/${terminalId}/folders`, { folderId, parentId, name });
+};
+
+export const deleteTerminalFolderApi = (terminalId: number, folderId: number) => {
+  return http.delete<{ deleted: number }>(PORT1 + `/api/terminals/${terminalId}/folders`, {}, { data: { folderId } });
+};
+
+export const addFolderTerminalsApi = (terminalId: number, folderId: number, terminalIds: number[]) => {
+  return http.post<{ affected: number }>(PORT1 + `/api/terminals/${terminalId}/folders/terminals`, {
+    folderId,
+    terminalIds
+  });
+};
+
+export const removeFolderTerminalsApi = (terminalId: number, folderId: number, terminalIds: number[]) => {
+  return http.delete<{ affected: number }>(
+    PORT1 + `/api/terminals/${terminalId}/folders/terminals`,
+    {},
+    { data: { folderId, terminalIds } }
+  );
 };
 
 export const deleteCallGroupsApi = (terminalId: number, groupIds: number[]) => {
