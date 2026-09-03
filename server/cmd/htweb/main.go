@@ -281,10 +281,17 @@ func (a *app) routes() http.Handler {
 	mux.HandleFunc("GET /api/terminals/{id}/call-group", req(a.handleCallGroupGet))
 	mux.HandleFunc("POST /api/terminals/{id}/call-group", trm(a.handleCallGroupSet))
 
+	// ⚠ 快捷任务是「为这台终端新建一条专属任务并绑到键上」，
+	//   不是「把已有任务绑到键上」。三个 tasktype(20/21/29) 的由来、
+	//   cmd 与 cmdargs 两个终端 ID 列的含义，见 terminal/quicktask.go。
+	//   写用 POST/PUT 不用 PUT /api/terminals/{id}/... 之外的形状：
+	//   PUT /api/terminals/{id}/xxx 会与 PUT /api/terminals/toggle/{toggle} 撞路由。
 	mux.HandleFunc("GET /api/terminals/{id}/quick-tasks", req(a.handleQuickTaskList))
-	mux.HandleFunc("GET /api/terminals/{id}/quick-tasks/options", req(a.handleQuickTaskOptions))
-	mux.HandleFunc("POST /api/terminals/{id}/quick-tasks", trm(a.handleQuickTaskSet))
+	mux.HandleFunc("GET /api/terminals/{id}/quick-tasks/detail", req(a.handleQuickTaskDetail))
+	mux.HandleFunc("POST /api/terminals/{id}/quick-tasks", trm(a.handleQuickTaskCreate))
+	mux.HandleFunc("POST /api/terminals/{id}/quick-tasks/update", trm(a.handleQuickTaskUpdate))
 	mux.HandleFunc("DELETE /api/terminals/{id}/quick-tasks", trm(a.handleQuickTaskDelete))
+	mux.HandleFunc("GET /api/quick-task-audio-sources", req(a.handleQuickAudioSources))
 
 	// —— 任务（业务域七，F-32 ~ F-37）——
 	//

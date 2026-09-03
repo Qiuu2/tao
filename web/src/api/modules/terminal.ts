@@ -288,41 +288,111 @@ export const deleteShortcutKeysApi = (ids: number[]) => {
 
 /* ───────────── 快捷任务 ─────────────
  *
- * 「在这台终端上按这个键，执行那条任务」。只有 terminalkeymaptask 一张表，
- * 主键 (keyid, terminalid) —— 一台终端一个键只能绑一条任务，再绑就是覆盖。
+ * ⚠ 它是「为这台终端**新建**一条专属任务并绑到键上」，不是「把已有任务绑到键上」。
+ *   ok112 的列表只认 tasktype IN (20,21,29) 且 task.cmdargs 指向本终端的任务。
+ *
+ *   20 媒体播放      按键播放选定的音频文件
+ *   21 文字播报      勾了 TTS，音源是 TTS 主机
+ *   29 文字播报      同上，但音源选的是「服务器」；旧版此时把语速 ×10，
+ *                    这个换算在服务端做，前端填的、读到的都是原始语速
+ *
+ *   LED 字幕不改类型，它是另挂一条 LED 子任务。
  */
 
 export interface QuickTask {
+  taskId: number;
+  taskName: string;
   key: number;
   keyLabel: string;
-  taskId: number;
-  taskName: string;
-  /** 绑定还在，但它指向的任务已经被删了 */
-  taskMissing: boolean;
+  /** 配合 timeLengthType：类型 1 是秒数，类型 2 是循环次数 */
+  timeLength: number;
+  timeLengthType: number;
+  priority: number;
+  volume: number;
+  isRandomPlay: number;
+  dataSendMode: number;
+  taskType: number;
+  typeText: string;
+  /** 宿主终端名（ok112 列表里也有这一列） */
+  terminalName: string;
 }
 
-export interface QuickTaskOption {
-  taskId: number;
+export interface QuickTaskTTS {
+  text: string;
+  speed: number;
+  /** 对应 ttssentence.male，0 女声 1 男声 */
+  musicMode: number;
+  /** 音源终端 ID，0 表示服务器 */
+  audioSource: number;
+}
+
+export interface QuickTaskLED {
+  text: string;
+  speed: number;
+  ledmode: number;
+  terminalIds: number[];
+}
+
+export interface QuickTaskDetail extends QuickTask {
+  mediaIds: number[];
+  media: { mediaId: number; name: string; sort: number }[];
+  terminalIds: number[];
+  tts?: QuickTaskTTS;
+  led?: QuickTaskLED;
+}
+
+/** 新建 / 修改快捷任务的入参，字段与 ok112 的 set_task_quickplay 表单一一对应 */
+export interface QuickTaskForm {
   taskName: string;
-  /** 已经被本终端的哪个键占用；-1 表示没被占用 */
-  usedByKey: number;
+  key: number;
+  isRandomPlay: number;
+  volume: number;
+  priority: number;
+  timeLengthType: number;
+  timeLength: number;
+  dataSendMode: number;
+  mediaIds: number[];
+  terminalIds: number[];
+  tts?: QuickTaskTTS | null;
+  led?: QuickTaskLED | null;
+}
+
+export interface QuickAudioSource {
+  id: number;
+  name: string;
+  typeId: number;
+  /** 选它时任务类型走 29，语速由服务端按倍数放大 */
+  isServer: boolean;
 }
 
 export const getQuickTasksApi = (terminalId: number) => {
   return http.get<QuickTask[]>(PORT1 + `/api/terminals/${terminalId}/quick-tasks`);
 };
 
-export const getQuickTaskOptionsApi = (terminalId: number, keyword = "") => {
-  return http.get<QuickTaskOption[]>(PORT1 + `/api/terminals/${terminalId}/quick-tasks/options`, { keyword });
+/** 修改表单的回填数据（ok112 的 modifyquickplay.php） */
+export const getQuickTaskDetailApi = (terminalId: number, taskId: number) => {
+  return http.get<QuickTaskDetail>(PORT1 + `/api/terminals/${terminalId}/quick-tasks/detail`, { taskId });
 };
 
-export const setQuickTaskApi = (terminalId: number, key: number, taskId: number) => {
-  // 用 POST 不用 PUT：PUT /api/terminals/{id}/... 会和 PUT /api/terminals/toggle/{toggle} 撞路由
-  return http.post(PORT1 + `/api/terminals/${terminalId}/quick-tasks`, { key, taskId });
+/** 音源候选：两种 TTS 主机加「服务器」，与 ok112 的 typeid IN (22,32,0) 一致 */
+export const getQuickAudioSourcesApi = () => {
+  return http.get<QuickAudioSource[]>(PORT1 + `/api/quick-task-audio-sources`);
 };
 
-export const deleteQuickTaskApi = (terminalId: number, key: number) => {
-  return http.delete(PORT1 + `/api/terminals/${terminalId}/quick-tasks`, { key });
+/** 新建快捷任务（ok112 的 set_task_quick_play） */
+export const createQuickTaskApi = (terminalId: number, data: QuickTaskForm) => {
+  return http.post<{ taskId: number }>(PORT1 + `/api/terminals/${terminalId}/quick-tasks`, data);
+};
+
+/** 修改快捷任务（ok112 的 modify_task_quick_play） */
+export const updateQuickTaskApi = (terminalId: number, taskId: number, data: QuickTaskForm) => {
+  // 用 POST 而不是 PUT：PUT /api/terminals/{id}/... 会和 PUT /api/terminals/toggle/{toggle} 撞路由
+  return http.post<{ updated: boolean }>(PORT1 + `/api/terminals/${terminalId}/quick-tasks/update?taskId=${taskId}`, data);
+};
+
+/** 删除快捷任务（ok112 的 del_quick_task，列表是复选框多选后一起删） */
+export const deleteQuickTasksApi = (terminalId: number, taskIds: number[]) => {
+  return http.delete<{ deleted: number }>(PORT1 + `/api/terminals/${terminalId}/quick-tasks`, {}, { data: { taskIds } });
 };
 
 /* ───────────── 寻呼授权（授权寻呼 / 授权终端）─────────────

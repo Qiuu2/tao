@@ -328,49 +328,170 @@
     </el-dialog>
 
     <!--
-      快捷任务（ok112 的 view_quickplay / setquickplay）。
-      一台终端上一个键只能绑一条任务，再绑就是覆盖 —— 主键 (keyid, terminalid) 决定的。
+      快捷任务（ok112 的 view_quickplay.php）。
+
+      那个页面的四个动作逐条对应到这里：
+
+        setshotcut(1)            添加快捷任务 → 底部「添加快捷任务」
+        setshotcut(2)            修改快捷任务 → 底部「修改快捷任务」（限选一条）
+        del_terminal_shotcut()   删除快捷任务 → 底部「删除快捷任务」（可多选）
+        view_terminal(id)        查看终端     → 目标终端在编辑对话框里可见
+
+      ⚠ 它是复选框 + 底部按钮的操作方式，不是行内按钮 —— 照 ok112。
+        列也照 view_quickplay_from.html：
+        任务名称 / 时长 / 优先级 / 音量 / 快捷键 / 终端名称 / 任务ID。
     -->
-    <el-dialog v-model="qt.visible" :title="`快捷任务 · ${qt.name}`" width="720px" top="8vh">
+    <el-dialog v-model="qt.visible" :title="`快捷任务 · ${qt.name}`" width="900px" top="7vh">
       <el-alert type="info" :closable="false" show-icon class="mb12">
-        在这台终端上按下某个键，直接执行对应的任务。同一个键再绑一次即为改绑。
+        在这台终端上按下某个键，执行一条<b>专属于这台终端</b>的任务。任务在这里新建，不是从已有任务里挑。
       </el-alert>
-      <el-table :data="qt.rows" size="small" border max-height="40vh">
-        <el-table-column prop="keyLabel" label="键" width="80" />
-        <el-table-column label="绑定的任务" min-width="240">
+      <el-table :data="qt.rows" size="small" border max-height="42vh" @selection-change="onQtSelect">
+        <el-table-column type="selection" width="44" />
+        <el-table-column prop="taskName" label="任务名称" min-width="140" show-overflow-tooltip />
+        <el-table-column label="任务时长" width="110">
+          <template #default="s">{{ quickLengthText(s.row) }}</template>
+        </el-table-column>
+        <el-table-column prop="priority" label="优先级" width="80" align="center" />
+        <el-table-column prop="volume" label="音量" width="70" align="center" />
+        <el-table-column prop="keyLabel" label="快捷键" width="100" />
+        <el-table-column label="类型" width="140">
           <template #default="s">
-            <span v-if="s.row.taskMissing" class="bad">任务已被删除（ID {{ s.row.taskId }}）</span>
-            <span v-else>{{ s.row.taskName }}</span>
+            <el-tag size="small" effect="plain" :type="s.row.taskType === 20 ? 'info' : 'warning'">
+              {{ s.row.typeText }}
+            </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="90">
-          <template #default="s">
-            <el-button type="danger" link :disabled="!canControl" @click="removeQuickTask(s.row.key)">解绑</el-button>
-          </template>
-        </el-table-column>
+        <el-table-column prop="terminalName" label="终端名称" min-width="120" show-overflow-tooltip />
+        <el-table-column prop="taskId" label="任务ID" width="90" align="center" />
       </el-table>
-      <p v-if="!qt.rows.length" class="dlg-note">这台终端还没有绑定快捷任务。</p>
-      <el-divider content-position="left">新增 / 改绑</el-divider>
-      <div class="qt-add">
-        <el-select v-model="qt.key" placeholder="选择键值" style="width: 180px">
-          <el-option v-for="k in qt.keyOptions" :key="k.value" :label="k.label" :value="k.value" />
-        </el-select>
-        <el-select
-          v-model="qt.taskId"
-          filterable
-          remote
-          :remote-method="searchQuickTaskOptions"
-          placeholder="选择任务"
-          style="flex: 1"
-        >
-          <el-option v-for="o in qt.options" :key="o.taskId" :label="o.taskName" :value="o.taskId" />
-        </el-select>
-        <el-button type="primary" :disabled="!qt.key || !qt.taskId" :loading="qt.saving" @click="submitQuickTask">
-          绑定
-        </el-button>
-      </div>
+      <p v-if="!qt.rows.length" class="dlg-note">这台终端还没有快捷任务。</p>
       <template #footer>
-        <el-button @click="qt.visible = false">关闭</el-button>
+        <div class="dlg-foot">
+          <el-button type="primary" :disabled="!canControl" @click="openQuickEdit(null)">添加快捷任务</el-button>
+          <el-button
+            :disabled="!canControl || qt.selected.length !== 1"
+            :title="qt.selected.length !== 1 ? '修改时只能选中一条' : ''"
+            @click="openQuickEditSelected"
+          >
+            修改快捷任务
+          </el-button>
+          <el-button type="danger" :disabled="!canControl || !qt.selected.length" @click="removeQuickTasks">
+            删除快捷任务{{ qt.selected.length ? `（${qt.selected.length}）` : "" }}
+          </el-button>
+          <el-button @click="qt.visible = false">关闭</el-button>
+        </div>
+      </template>
+    </el-dialog>
+
+    <!--
+      添加 / 修改快捷任务（ok112 的 setquickplay.php 与 modifyquickplay.php）。
+      两个页面字段相同、只差回填，合成一个对话框，由 qtEdit.taskId 区分。
+
+      勾「文字播报」后表单切到 TTS 那一套：内容 / 语速 / 男女声 / 音源。
+      音源选「服务器」时任务类型走 29，语速由服务端 ×10 —— 这里填的、
+      回填读到的都是原始语速，换算不在前端做。
+    -->
+    <el-dialog
+      v-model="qtEdit.visible"
+      :title="qtEdit.taskId ? '修改快捷任务' : '添加快捷任务'"
+      width="720px"
+      top="6vh"
+      append-to-body
+    >
+      <el-form :model="qtEdit" label-width="100px">
+        <el-form-item label="任务名称" required>
+          <el-input v-model="qtEdit.taskName" maxlength="8" show-word-limit placeholder="最多 8 个字" />
+        </el-form-item>
+        <el-form-item label="快捷键" required>
+          <el-select v-model="qtEdit.key" placeholder="选择键值" class="fill">
+            <el-option v-for="k in qtEdit.keyOptions" :key="k.value" :label="k.label" :value="k.value" />
+          </el-select>
+        </el-form-item>
+
+        <el-form-item label="播放时长" required>
+          <el-radio-group v-model="qtEdit.timeLengthType" class="qt-len">
+            <el-radio :value="1">按时长</el-radio>
+            <el-radio :value="2">按次数</el-radio>
+          </el-radio-group>
+        </el-form-item>
+        <el-form-item v-if="qtEdit.timeLengthType === 1" label="时 / 分 / 秒">
+          <div class="qt-hms">
+            <el-input-number v-model="qtEdit.hour" :min="0" :max="23" :controls="false" /> 时
+            <el-input-number v-model="qtEdit.minute" :min="0" :max="59" :controls="false" /> 分
+            <el-input-number v-model="qtEdit.second" :min="0" :max="59" :controls="false" /> 秒
+          </div>
+        </el-form-item>
+        <el-form-item v-else label="循环次数">
+          <el-input-number v-model="qtEdit.circleTime" :min="1" :max="999" />
+        </el-form-item>
+
+        <el-form-item label="优先级">
+          <el-input-number v-model="qtEdit.priority" :min="0" :max="99" />
+          <span class="dlg-note inline">数值越大越优先，旧版默认 13</span>
+        </el-form-item>
+        <el-form-item label="音量">
+          <el-slider v-model="qtEdit.volume" :min="0" :max="100" show-input />
+        </el-form-item>
+        <el-form-item label="播放方式">
+          <el-radio-group v-model="qtEdit.dataSendMode">
+            <el-radio :value="0">单播</el-radio>
+            <el-radio :value="1">多播</el-radio>
+          </el-radio-group>
+          <el-checkbox v-model="qtEdit.isRandom" class="ml12">随机播放</el-checkbox>
+        </el-form-item>
+
+        <el-divider content-position="left">播放内容</el-divider>
+        <el-form-item label="文字播报">
+          <el-switch v-model="qtEdit.ttsOn" />
+          <span class="dlg-note inline">开启后由 TTS 合成语音，不再播放媒体文件</span>
+        </el-form-item>
+
+        <template v-if="qtEdit.ttsOn">
+          <el-form-item label="播报内容" required>
+            <el-input v-model="qtEdit.ttsText" type="textarea" :rows="3" maxlength="500" show-word-limit />
+          </el-form-item>
+          <el-form-item label="音源" required>
+            <el-select v-model="qtEdit.ttsSource" class="fill">
+              <el-option v-for="a in qtEdit.audioSources" :key="a.id" :label="a.name" :value="a.isServer ? 0 : a.id" />
+            </el-select>
+          </el-form-item>
+          <el-form-item label="语速">
+            <el-input-number v-model="qtEdit.ttsSpeed" :min="1" :max="10" />
+            <el-radio-group v-model="qtEdit.ttsMale" class="ml12">
+              <el-radio :value="0">女声</el-radio>
+              <el-radio :value="1">男声</el-radio>
+            </el-radio-group>
+          </el-form-item>
+        </template>
+        <el-form-item v-else label="媒体文件" required>
+          <el-select
+            v-model="qtEdit.mediaIds"
+            multiple
+            filterable
+            remote
+            :remote-method="searchQuickMedia"
+            collapse-tags
+            collapse-tags-tooltip
+            placeholder="选择要播放的音频"
+            class="fill"
+          >
+            <el-option v-for="m in qtEdit.mediaOptions" :key="m.id" :label="m.name" :value="m.id" />
+          </el-select>
+        </el-form-item>
+
+        <el-divider content-position="left">播放到</el-divider>
+        <el-form-item label="目标终端" required>
+          <TerminalTree v-model="qtEdit.terminalIds" :terminals="qtEdit.candidates" :loading="qtEdit.loading" height="220px" />
+        </el-form-item>
+
+        <el-divider content-position="left">LED 字幕（可选）</el-divider>
+        <el-form-item label="上屏字幕">
+          <el-input v-model="qtEdit.ledText" maxlength="120" placeholder="留空则不上屏" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="qtEdit.visible = false">取消</el-button>
+        <el-button type="primary" :loading="qtEdit.saving" @click="submitQuickEdit">确定</el-button>
       </template>
     </el-dialog>
 
@@ -506,15 +627,17 @@ import { ArrowDown, EditPen, Folder, Link, Menu } from "@element-plus/icons-vue"
 import { ElMessage, ElMessageBox } from "element-plus";
 import { computed, onMounted, reactive, ref } from "vue";
 
-import { getTaskListApi, syncTaskTerminalsApi } from "@/api/modules/task";
+import { getTaskListApi, searchTaskMediaApi, syncTaskTerminalsApi } from "@/api/modules/task";
 import {
   checkTerminalCircuitApi,
+  createQuickTaskApi,
   createShortcutKeyApi,
-  deleteQuickTaskApi,
+  deleteQuickTasksApi,
   deleteShortcutKeysApi,
   deleteTerminalsApi,
   getCallGroupApi,
-  getQuickTaskOptionsApi,
+  getQuickAudioSourcesApi,
+  getQuickTaskDetailApi,
   getQuickTasksApi,
   getShortcutKeyOptionsApi,
   getShortcutKeysApi,
@@ -525,22 +648,24 @@ import {
   previewDeleteTerminalsApi,
   replaceTerminalApi,
   setCallGroupApi,
-  setQuickTaskApi,
   setTerminalPasswordApi,
   setTerminalRunningApi,
   setTerminalToggleApi,
   setTerminalVolumeApi,
   syncTerminalTimeApi,
+  updateQuickTaskApi,
   updateShortcutKeyApi,
   updateTerminalApi
 } from "@/api/modules/terminal";
 import type {
   DeletePreview,
   OpResult,
+  QuickAudioSource,
   QuickTask,
-  ShortcutKeyOption,
-  QuickTaskOption,
+  QuickTaskDetail,
+  QuickTaskForm,
   ShortcutKey,
+  ShortcutKeyOption,
   TerminalCaps,
   TerminalGroupNode,
   TerminalRow,
@@ -949,61 +1074,200 @@ const submitShortcutEdit = async () => {
   }
 };
 
-/* ─────────────── 快捷任务 ─────────────── */
+/* ─────────────── 快捷任务 ───────────────
+ *
+ * ⚠ 它是「为这台终端**新建**一条专属任务并绑到键上」，不是「把已有任务绑到键上」。
+ *   ok112 的列表只认 tasktype IN (20,21,29) 且 cmdargs 指向本终端的任务。
+ *   操作方式也照 ok112：复选框选中 + 底部按钮（添加 / 修改 / 删除），
+ *   修改限恰好选一条，删除可多选。
+ */
 const qt = reactive({
   visible: false,
-  saving: false,
   id: 0,
   name: "",
   rows: [] as QuickTask[],
-  options: [] as QuickTaskOption[],
-  keyOptions: [] as ShortcutKeyOption[],
-  key: undefined as number | undefined,
-  taskId: undefined as number | undefined
+  selected: [] as number[]
 });
+
+/** 列表里「任务时长」那一列：类型 1 是秒数拆成时分秒，类型 2 是循环次数 */
+const quickLengthText = (row: QuickTask) => {
+  if (row.timeLengthType === 2) return `${row.timeLength} 次`;
+  const h = Math.floor(row.timeLength / 3600);
+  const m = Math.floor((row.timeLength % 3600) / 60);
+  const sec = row.timeLength % 60;
+  return [h ? `${h}时` : "", m ? `${m}分` : "", sec ? `${sec}秒` : ""].join("") || "0秒";
+};
 
 const openQuickTask = async (id: number) => {
   const row = selectedRows([id])[0];
   qt.id = id;
   qt.name = row?.terminalname ?? `#${id}`;
-  qt.key = undefined;
-  qt.taskId = undefined;
-  const [list, opts, keys] = await Promise.all([getQuickTasksApi(id), getQuickTaskOptionsApi(id), getShortcutKeyOptionsApi(id)]);
-  qt.rows = list.data;
-  qt.options = opts.data;
-  qt.keyOptions = keys.data;
+  qt.selected = [];
+  const { data } = await getQuickTasksApi(id);
+  qt.rows = data;
   qt.visible = true;
 };
 
-const searchQuickTaskOptions = async (keyword: string) => {
-  const { data } = await getQuickTaskOptionsApi(qt.id, keyword);
-  qt.options = data;
+const onQtSelect = (rows: QuickTask[]) => {
+  qt.selected = rows.map(r => r.taskId);
 };
 
 const refreshQuickTasks = async () => {
   const { data } = await getQuickTasksApi(qt.id);
   qt.rows = data;
+  qt.selected = [];
 };
 
-const submitQuickTask = async () => {
-  if (!qt.key || !qt.taskId) return;
-  qt.saving = true;
+/** 底部「删除快捷任务」—— ok112 的 del_terminal_shotcut()，可多选 */
+const removeQuickTasks = async () => {
+  if (!qt.selected.length) return;
+  await ElMessageBox.confirm(
+    `将删除选中的 ${qt.selected.length} 条快捷任务，连同它们的媒体、目标终端与按键绑定，且不可恢复。确定继续？`,
+    "删除快捷任务",
+    { type: "warning" }
+  );
+  const { data } = await deleteQuickTasksApi(qt.id, qt.selected);
+  ElMessage.success(`已删除 ${data.deleted} 条快捷任务`);
+  await refreshQuickTasks();
+};
+
+/* 添加 / 修改快捷任务（ok112 的 setquickplay / modifyquickplay） */
+const qtEdit = reactive({
+  visible: false,
+  saving: false,
+  loading: false,
+  /** 0 = 新建；非 0 = 修改这条任务 */
+  taskId: 0,
+  taskName: "",
+  key: undefined as number | undefined,
+  timeLengthType: 1,
+  hour: 0,
+  minute: 0,
+  second: 30,
+  circleTime: 1,
+  priority: 13,
+  volume: 80,
+  dataSendMode: 0,
+  isRandom: false,
+  ttsOn: false,
+  ttsText: "",
+  ttsSpeed: 5,
+  ttsMale: 0,
+  ttsSource: 0,
+  mediaIds: [] as number[],
+  terminalIds: [] as number[],
+  ledText: "",
+  keyOptions: [] as ShortcutKeyOption[],
+  audioSources: [] as QuickAudioSource[],
+  mediaOptions: [] as { id: number; name: string }[],
+  candidates: [] as TerminalRow[]
+});
+
+const searchQuickMedia = async (keyword: string) => {
+  const { data } = await searchTaskMediaApi(keyword ?? "");
+  qtEdit.mediaOptions = data.map(m => ({ id: m.id, name: m.name }));
+};
+
+const openQuickEdit = async (detail: QuickTaskDetail | null) => {
+  qtEdit.taskId = detail?.taskId ?? 0;
+  qtEdit.taskName = detail?.taskName ?? "";
+  qtEdit.key = detail?.key;
+  qtEdit.timeLengthType = detail?.timeLengthType ?? 1;
+  if (detail && detail.timeLengthType === 2) {
+    qtEdit.circleTime = detail.timeLength || 1;
+    qtEdit.hour = qtEdit.minute = 0;
+    qtEdit.second = 30;
+  } else {
+    const t = detail?.timeLength ?? 30;
+    qtEdit.hour = Math.floor(t / 3600);
+    qtEdit.minute = Math.floor((t % 3600) / 60);
+    qtEdit.second = t % 60;
+    qtEdit.circleTime = 1;
+  }
+  qtEdit.priority = detail?.priority ?? 13;
+  qtEdit.volume = detail?.volume ?? 80;
+  qtEdit.dataSendMode = detail?.dataSendMode ?? 0;
+  qtEdit.isRandom = (detail?.isRandomPlay ?? 0) === 1;
+  qtEdit.ttsOn = !!detail?.tts;
+  qtEdit.ttsText = detail?.tts?.text ?? "";
+  qtEdit.ttsSpeed = detail?.tts?.speed ?? 5;
+  qtEdit.ttsMale = detail?.tts?.musicMode ?? 0;
+  qtEdit.ttsSource = detail?.tts?.audioSource ?? 0;
+  qtEdit.mediaIds = detail?.mediaIds ? [...detail.mediaIds] : [];
+  qtEdit.terminalIds = detail?.terminalIds ? [...detail.terminalIds] : [];
+  qtEdit.ledText = detail?.led?.text ?? "";
+  qtEdit.visible = true;
+  qtEdit.loading = true;
   try {
-    await setQuickTaskApi(qt.id, qt.key, qt.taskId);
-    ElMessage.success("已绑定");
-    qt.key = undefined;
-    qt.taskId = undefined;
-    await refreshQuickTasks();
+    const [keys, sources, all] = await Promise.all([
+      getShortcutKeyOptionsApi(qt.id),
+      getQuickAudioSourcesApi(),
+      getTerminalListApi({ pageNum: 1, pageSize: 500 })
+    ]);
+    qtEdit.keyOptions = keys.data;
+    qtEdit.audioSources = sources.data;
+    qtEdit.candidates = all.data.list as TerminalRow[];
+    // 回填时把已选媒体的名字带进下拉，否则只显示 id
+    qtEdit.mediaOptions = detail?.media?.length ? detail.media.map(m => ({ id: m.mediaId, name: m.name })) : [];
+    await searchQuickMedia("");
+    if (detail?.media?.length) {
+      const have = new Set(qtEdit.mediaOptions.map(m => m.id));
+      detail.media.forEach(m => {
+        if (!have.has(m.mediaId)) qtEdit.mediaOptions.unshift({ id: m.mediaId, name: m.name });
+      });
+    }
   } finally {
-    qt.saving = false;
+    qtEdit.loading = false;
   }
 };
 
-const removeQuickTask = async (key: number) => {
-  await ElMessageBox.confirm(`确定解除键 ${key} 上的绑定？`, "解绑快捷任务", { type: "warning" });
-  await deleteQuickTaskApi(qt.id, key);
-  ElMessage.success("已解绑");
-  await refreshQuickTasks();
+/** 底部「修改快捷任务」—— ok112 的 setshotcut(2)，限恰好选一条 */
+const openQuickEditSelected = async () => {
+  if (qt.selected.length !== 1) return ElMessage.warning("修改时只能选中一条快捷任务");
+  const { data } = await getQuickTaskDetailApi(qt.id, qt.selected[0]);
+  await openQuickEdit(data);
+};
+
+const submitQuickEdit = async () => {
+  if (!qtEdit.taskName.trim()) return ElMessage.warning("请填写任务名称");
+  if (qtEdit.key === undefined) return ElMessage.warning("请选择快捷键");
+  const timeLength = qtEdit.timeLengthType === 2 ? qtEdit.circleTime : qtEdit.hour * 3600 + qtEdit.minute * 60 + qtEdit.second;
+  if (timeLength <= 0) return ElMessage.warning("播放时长必须大于 0");
+  if (qtEdit.ttsOn && !qtEdit.ttsText.trim()) return ElMessage.warning("请填写播报内容");
+  if (!qtEdit.ttsOn && !qtEdit.mediaIds.length) return ElMessage.warning("请选择要播放的媒体文件");
+  if (!qtEdit.terminalIds.length) return ElMessage.warning("请选择要播放到哪些终端");
+
+  const form: QuickTaskForm = {
+    taskName: qtEdit.taskName.trim(),
+    key: qtEdit.key,
+    isRandomPlay: qtEdit.isRandom ? 1 : 0,
+    volume: qtEdit.volume,
+    priority: qtEdit.priority,
+    timeLengthType: qtEdit.timeLengthType,
+    timeLength,
+    dataSendMode: qtEdit.dataSendMode,
+    mediaIds: qtEdit.ttsOn ? [] : qtEdit.mediaIds,
+    terminalIds: qtEdit.terminalIds,
+    tts: qtEdit.ttsOn
+      ? { text: qtEdit.ttsText, speed: qtEdit.ttsSpeed, musicMode: qtEdit.ttsMale, audioSource: qtEdit.ttsSource }
+      : null,
+    led: qtEdit.ledText.trim() ? { text: qtEdit.ledText.trim(), speed: 5, ledmode: 1, terminalIds: qtEdit.terminalIds } : null
+  };
+
+  qtEdit.saving = true;
+  try {
+    if (qtEdit.taskId) {
+      await updateQuickTaskApi(qt.id, qtEdit.taskId, form);
+      ElMessage.success("已修改");
+    } else {
+      await createQuickTaskApi(qt.id, form);
+      ElMessage.success("已添加");
+    }
+    qtEdit.visible = false;
+    await refreshQuickTasks();
+  } finally {
+    qtEdit.saving = false;
+  }
 };
 
 /* ─────────────── 寻呼授权（授权寻呼 / 授权终端）───────────────
@@ -1381,6 +1645,34 @@ onMounted(async () => {
 }
 .fill {
   width: 100%;
+}
+.ml12 {
+  margin-left: 12px;
+}
+/* 对话框底部：ok112 的按钮是左对齐一排，这里保持同样的排布 */
+.dlg-foot {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+/* 说明文字跟在控件后面时不该再顶一行下边距 */
+.dlg-note.inline {
+  margin-bottom: 0;
+  margin-left: 12px;
+}
+.qt-len {
+  margin-right: 12px;
+}
+/* 时 / 分 / 秒三个数字框排一行，宽度收窄，别撑满 */
+.qt-hms {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  font-size: 13px;
+  color: var(--el-text-color-secondary);
+}
+.qt-hms :deep(.el-input-number) {
+  width: 72px;
 }
 .ok {
   color: var(--el-color-success);

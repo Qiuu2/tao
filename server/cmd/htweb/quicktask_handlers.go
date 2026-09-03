@@ -4,39 +4,40 @@ import (
 	"errors"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"htweb/internal/auth"
 	"htweb/internal/httpx"
 	"htweb/internal/terminal"
 )
 
-// 快捷任务（ok112 的 view_quickplay / setquickplay / modifyquickplay）。
+// 快捷任务（ok112 的 view_quickplay / setquickplay / modifyquickplay
+// 与 do.php 的 set_task_quick_play / modify_task_quick_play / del_quick_task）。
 //
-// 「在这台终端上按这个键，执行那条任务」。数据落在 terminalkeymaptask 一张表上，
-// 主键 (keyid, terminalid) —— 一台终端上一个键只能绑一条任务，所以「改绑」
-// 就是覆盖同一行。业务规则全在 terminal/quicktask.go，这里只做 HTTP 转接。
-//
-// ⚠ 与快捷键寻呼不是一套结构，别把 keyid 当成 terminalkey.id 去 JOIN，
-//   它存的是键值本身。详见 quicktask.go 顶部的注释。
+// ⚠ 它是「为这台终端新建一条专属任务并绑到键上」，不是「把已有任务绑到键上」。
+//   业务规则、三个 tasktype 的由来、两个终端 ID 列的含义，全在
+//   terminal/quicktask.go 顶部写着，改这里之前先读那段。
 
 func failQuickTask(w http.ResponseWriter, action string, err error) {
 	switch {
 	case errors.Is(err, terminal.ErrQuickTaskNotFound):
-		httpx.Fail(w, httpx.CodeNotFound, "快捷任务绑定不存在")
+		httpx.Fail(w, httpx.CodeNotFound, "快捷任务不存在")
 	case errors.Is(err, terminal.ErrNotFound):
 		httpx.Fail(w, httpx.CodeNotFound, "终端不存在")
 	case errors.Is(err, terminal.ErrNoPermission):
 		httpx.Fail(w, httpx.CodeForbidden, "没有这台终端的操作权限")
-	// 这两类都是「这台终端做不了」而非服务端出错，原样把话说给用户，
+	// 这几类都是「这台终端做不了」而非服务端出错，原样把话说给用户，
 	// 不要压成一句笼统的提示，更不能落成 500。
-	case errors.Is(err, terminal.ErrKeyValueBad), errors.Is(err, terminal.ErrQuickTaskUnsupported):
+	case errors.Is(err, terminal.ErrKeyValueBad),
+		errors.Is(err, terminal.ErrQuickTaskUnsupported),
+		errors.Is(err, terminal.ErrQuickKeyUsed):
 		httpx.Fail(w, httpx.CodeBadRequest, err.Error())
 	default:
 		httpx.Internal(w, action, err)
 	}
 }
 
-// handleQuickTaskList 列出一台终端上的快捷任务绑定。
+// handleQuickTaskList 列出一台终端的快捷任务。
 func (a *app) handleQuickTaskList(w http.ResponseWriter, r *http.Request) {
 	id, ok := pathNamedID(w, r, "id")
 	if !ok {
@@ -50,28 +51,107 @@ func (a *app) handleQuickTaskList(w http.ResponseWriter, r *http.Request) {
 	httpx.OK(w, list)
 }
 
-// handleQuickTaskOptions 列出可绑的任务，供下拉选择。
-func (a *app) handleQuickTaskOptions(w http.ResponseWriter, r *http.Request) {
+// handleQuickTaskDetail 取一条快捷任务的完整内容，供「修改」表单回填。
+func (a *app) handleQuickTaskDetail(w http.ResponseWriter, r *http.Request) {
 	id, ok := pathNamedID(w, r, "id")
 	if !ok {
 		return
 	}
-	opts, err := a.terminals.QuickTaskOptions(r.Context(), auth.From(r.Context()),
-		id, r.URL.Query().Get("keyword"))
-	if err != nil {
-		failQuickTask(w, "查询可绑任务", err)
+	taskID, err := strconv.ParseInt(r.URL.Query().Get("taskId"), 10, 64)
+	if err != nil || taskID <= 0 {
+		httpx.Fail(w, httpx.CodeBadRequest, "任务 ID 不合法")
 		return
 	}
-	httpx.OK(w, opts)
+	d, err := a.terminals.GetQuickTask(r.Context(), id, taskID)
+	if err != nil {
+		failQuickTask(w, "查询快捷任务", err)
+		return
+	}
+	httpx.OK(w, d)
 }
 
+// handleQuickAudioSources 列出可选音源（TTS 主机与服务器）。
+func (a *app) handleQuickAudioSources(w http.ResponseWriter, r *http.Request) {
+	list, err := a.terminals.QuickAudioSources(r.Context())
+	if err != nil {
+		failQuickTask(w, "查询音源", err)
+		return
+	}
+	httpx.OK(w, list)
+}
+
+// quickTaskReq 的字段与 ok112 的 set_task_quickplay 表单一一对应。
 type quickTaskReq struct {
-	Key    int   `json:"key"`
-	TaskID int64 `json:"taskId"`
+	TaskName     string  `json:"taskName"`
+	Key          int     `json:"key"`
+	IsRandomPlay int     `json:"isRandomPlay"`
+	Volume       int     `json:"volume"`
+	Priority     int     `json:"priority"`
+	TimeLengthTy int     `json:"timeLengthType"`
+	TimeLength   int     `json:"timeLength"`
+	DataSendMode int     `json:"dataSendMode"`
+	MediaIDs     []int64 `json:"mediaIds"`
+	TerminalIDs  []int64 `json:"terminalIds"`
+	TTS          *struct {
+		Text        string `json:"text"`
+		Speed       int    `json:"speed"`
+		MusicMode   int    `json:"musicMode"`
+		AudioSource int64  `json:"audioSource"`
+	} `json:"tts"`
+	LED *struct {
+		Text        string  `json:"text"`
+		Speed       int     `json:"speed"`
+		LedMode     int     `json:"ledmode"`
+		TerminalIDs []int64 `json:"terminalIds"`
+	} `json:"led"`
 }
 
-// handleQuickTaskSet 绑定或改绑一条快捷任务。
-func (a *app) handleQuickTaskSet(w http.ResponseWriter, r *http.Request) {
+func (in quickTaskReq) toForm() terminal.QuickTaskForm {
+	f := terminal.QuickTaskForm{
+		TaskName: strings.TrimSpace(in.TaskName), Key: in.Key,
+		IsRandomPlay: in.IsRandomPlay, Volume: in.Volume, Priority: in.Priority,
+		TimeLengthTy: in.TimeLengthTy, TimeLength: in.TimeLength,
+		DataSendMode: in.DataSendMode,
+		MediaIDs:     in.MediaIDs, TerminalIDs: in.TerminalIDs,
+	}
+	if in.TTS != nil && strings.TrimSpace(in.TTS.Text) != "" {
+		f.TTS = &terminal.QuickTTS{
+			Text: in.TTS.Text, Speed: in.TTS.Speed,
+			MusicMode: in.TTS.MusicMode, AudioSource: in.TTS.AudioSource,
+		}
+	}
+	if in.LED != nil && strings.TrimSpace(in.LED.Text) != "" {
+		f.LED = &terminal.QuickLED{
+			Text: in.LED.Text, Speed: in.LED.Speed,
+			LedMode: in.LED.LedMode, TerminalIDs: in.LED.TerminalIDs,
+		}
+	}
+	return f
+}
+
+// validate 做那些不依赖数据库的基本检查，让错误在进服务层之前就说清楚。
+func (in quickTaskReq) validate() string {
+	if strings.TrimSpace(in.TaskName) == "" {
+		return "请填写任务名称"
+	}
+	if in.TimeLengthTy != 1 && in.TimeLengthTy != 2 {
+		return "播放时长类型只能是「按时长」或「按次数」"
+	}
+	if in.TimeLength <= 0 {
+		return "播放时长必须大于 0"
+	}
+	isTTS := in.TTS != nil && strings.TrimSpace(in.TTS.Text) != ""
+	if !isTTS && len(in.MediaIDs) == 0 {
+		return "请选择要播放的媒体文件，或改用文字播报"
+	}
+	if len(in.TerminalIDs) == 0 {
+		return "请选择要播放到哪些终端"
+	}
+	return ""
+}
+
+// handleQuickTaskCreate 新建快捷任务（ok112 的 set_task_quick_play）。
+func (a *app) handleQuickTaskCreate(w http.ResponseWriter, r *http.Request) {
 	id, ok := pathNamedID(w, r, "id")
 	if !ok {
 		return
@@ -80,34 +160,69 @@ func (a *app) handleQuickTaskSet(w http.ResponseWriter, r *http.Request) {
 	if !httpx.DecodeJSON(w, r, &in) {
 		return
 	}
-	if in.TaskID <= 0 {
-		httpx.Fail(w, httpx.CodeBadRequest, "请选择要绑定的任务")
+	if msg := in.validate(); msg != "" {
+		httpx.Fail(w, httpx.CodeBadRequest, msg)
 		return
 	}
-	if err := a.terminals.SetQuickTask(r.Context(), auth.From(r.Context()), id, in.Key, in.TaskID); err != nil {
-		failQuickTask(w, "设置快捷任务", err)
+	taskID, err := a.terminals.CreateQuickTask(r.Context(), auth.From(r.Context()), id, in.toForm())
+	if err != nil {
+		failQuickTask(w, "新建快捷任务", err)
 		return
 	}
-	httpx.OK(w, nil)
+	httpx.OK(w, map[string]interface{}{"taskId": taskID})
 }
 
-// handleQuickTaskDelete 解除一条绑定。
+// handleQuickTaskUpdate 修改快捷任务（ok112 的 modify_task_quick_play）。
+func (a *app) handleQuickTaskUpdate(w http.ResponseWriter, r *http.Request) {
+	id, ok := pathNamedID(w, r, "id")
+	if !ok {
+		return
+	}
+	taskID, err := strconv.ParseInt(r.URL.Query().Get("taskId"), 10, 64)
+	if err != nil || taskID <= 0 {
+		httpx.Fail(w, httpx.CodeBadRequest, "任务 ID 不合法")
+		return
+	}
+	var in quickTaskReq
+	if !httpx.DecodeJSON(w, r, &in) {
+		return
+	}
+	if msg := in.validate(); msg != "" {
+		httpx.Fail(w, httpx.CodeBadRequest, msg)
+		return
+	}
+	if err := a.terminals.UpdateQuickTask(r.Context(), auth.From(r.Context()),
+		id, taskID, in.toForm()); err != nil {
+		failQuickTask(w, "修改快捷任务", err)
+		return
+	}
+	httpx.OK(w, map[string]interface{}{"updated": true})
+}
+
+type quickTaskDeleteReq struct {
+	TaskIDs []int64 `json:"taskIds"`
+}
+
+// handleQuickTaskDelete 删快捷任务（ok112 的 del_quick_task）。
 //
-// 键值走查询串而不是路径段：它不是资源 id，而是 (terminalid, key) 复合主键的一半，
-// 放进路径会让人误以为存在一个独立的 /quick-tasks/{id} 资源。
+// ok112 的列表是复选框多选后一起删，所以这里收的是数组而不是单个 id。
 func (a *app) handleQuickTaskDelete(w http.ResponseWriter, r *http.Request) {
 	id, ok := pathNamedID(w, r, "id")
 	if !ok {
 		return
 	}
-	key, err := strconv.Atoi(r.URL.Query().Get("key"))
-	if err != nil {
-		httpx.Fail(w, httpx.CodeBadRequest, "键值不合法")
+	var in quickTaskDeleteReq
+	if !httpx.DecodeJSON(w, r, &in) {
 		return
 	}
-	if err := a.terminals.DeleteQuickTask(r.Context(), auth.From(r.Context()), id, key); err != nil {
+	if len(in.TaskIDs) == 0 {
+		httpx.Fail(w, httpx.CodeBadRequest, "未选择快捷任务")
+		return
+	}
+	n, err := a.terminals.DeleteQuickTasks(r.Context(), auth.From(r.Context()), id, in.TaskIDs)
+	if err != nil {
 		failQuickTask(w, "删除快捷任务", err)
 		return
 	}
-	httpx.OK(w, nil)
+	httpx.OK(w, map[string]interface{}{"deleted": n})
 }
