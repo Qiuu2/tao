@@ -560,36 +560,142 @@
     </el-dialog>
 
     <!--
-      寻呼授权（ok112 的「授权寻呼」view_terminal_call_group?flag=1
-      与「授权终端」dirstreammanager?flag=2）。
-      两个菜单项是同一份名单，区别只在挑终端的方式，所以共用这一个对话框，
-      标题按入口变。
+      授权寻呼 / 授权终端（ok112 的 view_terminal_call_group.php?flag=1
+      与 dirstreammanager.php?flag=2）。
+
+      ⚠ 一台终端可以有**多个**寻呼分区 —— 旧版这一页是一张带搜索、排序、
+        「添加分区 / 修改分区 / 删除分区 / 浏览终端」的列表，不是一份名单。
+        所以这里也是「列表 + 三个子页」：
+
+          主页  分区列表（本对话框）
+          子页  添加分区 / 修改分区（cgEdit，名称 + 终端树）
+          子页  浏览终端（cgView，成员表，列对齐 view_terminal_call.php）
     -->
-    <el-dialog v-model="cg.visible" :title="`${cg.title} · ${cg.name}`" width="700px" top="8vh">
-      <el-alert :type="cg.configured ? 'warning' : 'info'" :closable="false" show-icon class="mb12">
-        <template v-if="cg.configured"> 已限定为下列终端。<b>清空并保存即可取消限定</b>，回到「可寻呼所有在线终端」。 </template>
-        <template v-else> 当前未做限定，这台终端可以寻呼<b>所有在线终端</b>。选中若干台后保存即变为白名单。 </template>
+    <el-dialog v-model="cg.visible" :title="`${cg.title} · ${cg.name}`" width="760px" top="8vh">
+      <el-alert :type="cg.list.length ? 'warning' : 'info'" :closable="false" show-icon class="mb12">
+        <template v-if="cg.list.length">
+          这台终端只能寻呼下列分区里的终端。<b>把分区全部删掉</b>即回到「可寻呼所有在线终端」。
+        </template>
+        <template v-else> 当前一个寻呼分区都没有，这台终端可以寻呼<b>所有在线终端</b>。添加分区后即变为白名单。 </template>
       </el-alert>
-      <el-select
-        v-model="cg.selected"
-        multiple
-        filterable
-        collapse-tags
-        collapse-tags-tooltip
-        placeholder="选择允许被它寻呼的终端"
-        style="width: 100%"
+
+      <div class="st-bar">
+        <el-input
+          v-model="cg.keyword"
+          placeholder="搜索分区名称"
+          clearable
+          size="small"
+          :prefix-icon="Search"
+          @input="loadCallGroups"
+        />
+        <el-button size="small" link @click="cg.orderBy = cg.orderBy === 'name' ? '' : 'name'">
+          {{ cg.orderBy === "name" ? "按名称排序 ✓" : "按名称排序" }}
+        </el-button>
+      </div>
+
+      <el-table
+        ref="cgTableRef"
+        v-loading="cg.loading"
+        :data="cg.list"
+        size="small"
+        max-height="320"
+        @selection-change="rows => (cg.checked = rows.map((r: any) => r.id))"
       >
-        <el-option v-for="t in cg.candidates" :key="t.id" :label="`${t.terminalname}（${t.ip}）`" :value="t.id">
-          <span>{{ t.terminalname }}</span>
-          <span class="opt-ip">{{ t.ip }}</span>
-        </el-option>
-      </el-select>
-      <p v-if="cg.missing.length" class="dlg-note bad">
-        名单里有 {{ cg.missing.length }} 条指向已删除终端的记录，保存后会被清理。
-      </p>
+        <el-table-column type="selection" width="44" />
+        <el-table-column type="index" label="序号" width="64" align="center" />
+        <el-table-column prop="name" label="分区名称" min-width="220" show-overflow-tooltip />
+        <el-table-column label="终端数" width="90" align="center">
+          <template #default="{ row }">{{ row.memberCount }}</template>
+        </el-table-column>
+        <el-table-column label="操作" width="180" align="center">
+          <template #default="{ row }">
+            <el-button link type="primary" @click="openCallGroupView(row)">浏览终端</el-button>
+            <el-button link type="primary" @click="openCallGroupEdit(row)">修改</el-button>
+          </template>
+        </el-table-column>
+        <template #empty><span class="dlg-note">还没有寻呼分区</span></template>
+      </el-table>
+
       <template #footer>
-        <el-button @click="cg.visible = false">取消</el-button>
-        <el-button type="primary" :loading="cg.saving" @click="submitCallGroup">保存</el-button>
+        <el-button @click="cg.visible = false">关闭</el-button>
+        <el-button :disabled="!cg.checked.length" :loading="cg.deleting" @click="deleteCallGroups">
+          删除分区{{ cg.checked.length ? `（${cg.checked.length}）` : "" }}
+        </el-button>
+        <el-button type="primary" @click="openCallGroupEdit(null)">添加分区</el-button>
+      </template>
+    </el-dialog>
+
+    <!--
+      子页：添加 / 修改寻呼分区（ok112 的 call_group_add.php / call_group_edit.php）。
+      两个页面的表单一模一样 —— 分区名称 + 一棵终端树，只是修改时带回填，
+      所以合成一个对话框，靠 cgEdit.id 区分。
+    -->
+    <el-dialog
+      v-model="cgEdit.visible"
+      :title="cgEdit.id ? '修改寻呼分区' : '添加寻呼分区'"
+      width="620px"
+      top="10vh"
+      append-to-body
+    >
+      <el-form label-width="110px">
+        <el-form-item label="分区名称" required>
+          <el-input v-model="cgEdit.name" maxlength="32" show-word-limit placeholder="仅数字 / 字母 / 汉字" />
+        </el-form-item>
+        <el-form-item label="选择分区终端" required>
+          <!--
+            ok112 这里是 dhtmlxtree：分区 → 终端，外加「无分区终端」。
+            候选范围由后端按 get_terminal_type(3) 过好（isdecode=1 且排除
+            一串型号），并且不含宿主终端自己。
+          -->
+          <TerminalTree
+            v-model="cgEdit.terminalIds"
+            :terminals="cgEdit.candidates"
+            :loading="cgEdit.loading"
+            height="300px"
+            style="width: 100%"
+          />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="cgEdit.visible = false">取消</el-button>
+        <el-button type="primary" :loading="cgEdit.saving" @click="submitCallGroup">确定</el-button>
+      </template>
+    </el-dialog>
+
+    <!--
+      子页：浏览终端（ok112 的 view_terminal_call.php）。
+      列与旧版逐列对齐：序号 / 终端名称 / 终端类型 / 网络状态 / 设备状态 /
+      任务状态 / IP地址 / 音量。
+    -->
+    <el-dialog v-model="cgView.visible" :title="`浏览终端 · ${cgView.name}`" width="900px" top="10vh" append-to-body>
+      <el-table v-loading="cgView.loading" :data="cgView.members" size="small" max-height="420">
+        <el-table-column type="index" label="序号" width="64" align="center" />
+        <el-table-column prop="name" label="终端名称" min-width="140" show-overflow-tooltip>
+          <template #default="{ row }">
+            <span v-if="row.missing" class="bad">#{{ row.id }}（终端已删除）</span>
+            <span v-else>{{ row.name }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column prop="typeName" label="终端类型" min-width="110" show-overflow-tooltip />
+        <el-table-column label="网络状态" width="94" align="center">
+          <template #default="{ row }">
+            <el-tag :type="row.netstate === 1 ? 'success' : 'info'" size="small" effect="plain">
+              {{ netStateText(row.netstate) }}
+            </el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column label="设备状态" width="94" align="center">
+          <template #default="{ row }">{{ deviceStateText(row.netstate, row.devicestate) }}</template>
+        </el-table-column>
+        <el-table-column label="任务状态" width="110" align="center">
+          <template #default="{ row }">{{ taskStateText(row.netstate, row.taskstate) }}</template>
+        </el-table-column>
+        <el-table-column prop="ip" label="IP地址" width="130" />
+        <el-table-column prop="volume" label="音量" width="72" align="center" />
+        <template #empty><span class="dlg-note">这个分区里还没有终端</span></template>
+      </el-table>
+      <template #footer>
+        <el-button @click="cgView.visible = false">关闭</el-button>
       </template>
     </el-dialog>
 
@@ -716,7 +822,7 @@
 <script setup lang="ts" name="terminalManage">
 import { ArrowDown, EditPen, Folder, Link, Menu, Search } from "@element-plus/icons-vue";
 import { ElMessage, ElMessageBox } from "element-plus";
-import { computed, onMounted, reactive, ref } from "vue";
+import { computed, onMounted, reactive, ref, watch } from "vue";
 
 import { getBellPlanApi, getBellPlanListApi } from "@/api/modules/bell";
 import { getTypedListApi, type TypedKind } from "@/api/modules/ninemod";
@@ -726,9 +832,12 @@ import {
   createQuickTaskApi,
   createShortcutKeyApi,
   deleteQuickTasksApi,
+  deleteCallGroupsApi,
   deleteShortcutKeysApi,
   deleteTerminalsApi,
   getCallGroupApi,
+  getCallGroupCandidatesApi,
+  getCallGroupsApi,
   getQuickAudioSourcesApi,
   getQuickTaskDetailApi,
   getQuickTasksApi,
@@ -740,7 +849,7 @@ import {
   getTerminalTypesApi,
   previewDeleteTerminalsApi,
   replaceTerminalApi,
-  setCallGroupApi,
+  saveCallGroupApi,
   setTerminalPasswordApi,
   setTerminalRunningApi,
   setTerminalToggleApi,
@@ -751,6 +860,9 @@ import {
   updateTerminalApi
 } from "@/api/modules/terminal";
 import type {
+  CallGroup,
+  CallGroupCandidate,
+  CallGroupMember,
   DeletePreview,
   OpResult,
   QuickAudioSource,
@@ -1367,51 +1479,184 @@ const submitQuickEdit = async () => {
   }
 };
 
-/* ─────────────── 寻呼授权（授权寻呼 / 授权终端）───────────────
+/* ─────────────── 授权寻呼 / 授权终端 ───────────────
  *
- * ⚠ 空名单 = 取消限定 = 可寻呼所有在线终端，**不是**「谁都不能呼」。
- *   对话框里的提示文案专门写清楚了这一点，别改成「清空即禁止」。
+ * ok112 的 view_terminal_call_group.php?flag=1（授权寻呼）与
+ * dirstreammanager.php?flag=2（授权终端）。
+ *
+ * ⚠ 一台终端可以有**多个**寻呼分区。旧版这一页的主查询是
+ *     SELECT * FROM callgroup WHERE terminalid = $terminal_id ORDER BY id DESC
+ *   带分页、按 name 搜索与排序，底下四个动作是「添加分区 / 修改分区 /
+ *   删除分区 / 浏览终端」—— 是一张列表，不是一份名单。
+ *
+ * ⚠ 一个分区都没有 = 可寻呼所有在线终端，**不是**「谁都不能呼」。
+ *   对话框里的提示文案专门写清楚了这一点，别改成「删光即禁止」。
+ *
+ * 三个子页：
+ *   添加分区 / 修改分区  call_group_add.php / call_group_edit.php → cgEdit
+ *   浏览终端            view_terminal_call.php                   → cgView
  */
+
+/* ok112 view_terminal_call.html 里那三列的状态文案，逐条照搬。
+   ⚠ 设备状态和任务状态都先看 netstate：断网时不管库里存的是什么，
+     一律显示「断开」——旧版就是这么判的，库里的状态是上次在线时留下的。*/
+const netStateText = (net: number) => (net === 1 ? "已连接" : "断开");
+
+const deviceStateText = (net: number, dev: number) => {
+  if (net !== 1) return "断开";
+  return dev === 1 ? "运行" : "空闲";
+};
+
+const TASK_STATE_TEXT = [
+  "准备就绪", // 0
+  "定时播放", // 1
+  "正在对讲", // 2
+  "点播", // 3
+  "选播", // 4
+  "寻呼", // 5
+  "准备对讲", // 6
+  "本地扩音", // 7
+  "USB 播放", // 8
+  "请求对讲", // 9
+  "被请求对讲", // 10
+  "播放寻呼", // 11
+  "定时播放" // 12（旧版 12 与 1 同文案）
+];
+
+const taskStateText = (net: number, task: number) => {
+  if (net !== 1) return "断开";
+  return TASK_STATE_TEXT[task] ?? `状态 ${task}`;
+};
+
+/* ---- 主页：分区列表 ---- */
+const cgTableRef = ref();
 const cg = reactive({
   visible: false,
-  saving: false,
+  loading: false,
+  deleting: false,
   id: 0,
   name: "",
   title: "授权寻呼",
-  configured: false,
-  groupName: "",
-  selected: [] as number[],
-  missing: [] as number[],
-  candidates: [] as TerminalRow[]
+  keyword: "",
+  orderBy: "",
+  list: [] as CallGroup[],
+  checked: [] as number[]
 });
+
+const loadCallGroups = async () => {
+  cg.loading = true;
+  try {
+    const { data } = await getCallGroupsApi(cg.id, { keyword: cg.keyword, orderBy: cg.orderBy });
+    cg.list = data.list ?? [];
+    cg.checked = [];
+  } finally {
+    cg.loading = false;
+  }
+};
+
+watch(() => cg.orderBy, loadCallGroups);
 
 const openCallGroup = async (id: number, title: string) => {
   const row = selectedRows([id])[0];
   cg.id = id;
   cg.title = title;
   cg.name = row?.terminalname ?? `#${id}`;
-  const [info, all] = await Promise.all([
-    getCallGroupApi(id),
-    // 候选集取全量终端；自己会被服务端剔掉，这里也先滤一遍，免得列表里出现自己
-    getTerminalListApi({ pageNum: 1, pageSize: 500 })
-  ]);
-  cg.configured = info.data.configured;
-  cg.groupName = info.data.name;
-  cg.selected = info.data.members.filter(m => !m.missing).map(m => m.id);
-  cg.missing = info.data.members.filter(m => m.missing).map(m => m.id);
-  cg.candidates = (all.data.list as TerminalRow[]).filter(t => t.id !== id);
+  cg.keyword = "";
+  cg.orderBy = "";
+  cg.list = [];
+  cg.checked = [];
   cg.visible = true;
+  await loadCallGroups();
+};
+
+const deleteCallGroups = async () => {
+  if (!cg.checked.length) return;
+  const names = cg.list.filter(g => cg.checked.includes(g.id)).map(g => g.name);
+  await ElMessageBox.confirm(
+    `确定删除 ${names.length} 个寻呼分区（${names.join("、")}）？` +
+      (names.length === cg.list.length ? "\n删光后这台终端将恢复为「可寻呼所有在线终端」。" : ""),
+    "删除分区",
+    { type: "warning" }
+  );
+  cg.deleting = true;
+  try {
+    const { data } = await deleteCallGroupsApi(cg.id, cg.checked);
+    ElMessage.success(`已删除 ${data.deleted} 个寻呼分区`);
+    await loadCallGroups();
+  } finally {
+    cg.deleting = false;
+  }
+};
+
+/* ---- 子页：添加 / 修改分区 ---- */
+const cgEdit = reactive({
+  visible: false,
+  loading: false,
+  saving: false,
+  /** 0 = 添加；> 0 = 修改这个分区 */
+  id: 0,
+  name: "",
+  terminalIds: [] as number[],
+  candidates: [] as CallGroupCandidate[]
+});
+
+const openCallGroupEdit = async (row: CallGroup | null) => {
+  cgEdit.id = row?.id ?? 0;
+  cgEdit.name = row?.name ?? "";
+  cgEdit.terminalIds = [];
+  cgEdit.visible = true;
+  cgEdit.loading = true;
+  try {
+    // 候选终端每次重新拉：型号、分区、在线状态都可能在这期间变过
+    const [cand, detail] = await Promise.all([
+      getCallGroupCandidatesApi(cg.id),
+      row ? getCallGroupApi(row.id) : Promise.resolve(null)
+    ]);
+    cgEdit.candidates = cand.data ?? [];
+    // 回填时跳过指向已删除终端的脏行 —— 树上没有它们，勾不上，
+    // 留着只会让「已选 N 台」和树上勾的对不上。
+    cgEdit.terminalIds = (detail?.data.members ?? []).filter(m => !m.missing).map(m => m.id);
+  } finally {
+    cgEdit.loading = false;
+  }
 };
 
 const submitCallGroup = async () => {
-  cg.saving = true;
+  const name = cgEdit.name.trim();
+  if (!name) return ElMessage.warning("请填写分区名称");
+  // ok112 的 checkform() 用 isChinaOrNumbOrLett 拦，这里同样的口径
+  if (!/^[\u4e00-\u9fa5A-Za-z0-9]+$/.test(name)) return ElMessage.warning("分区名称仅能由数字 / 字母 / 汉字组成");
+  if (!cgEdit.terminalIds.length) return ElMessage.warning("请至少选择一台终端");
+
+  cgEdit.saving = true;
   try {
-    await setCallGroupApi(cg.id, cg.groupName || `${cg.name} 寻呼授权`, cg.selected);
-    ElMessage.success(cg.selected.length ? `已授权 ${cg.selected.length} 台终端` : "已取消限定，恢复为可寻呼所有在线终端");
-    cg.visible = false;
-    proTableRef.value?.getTableList();
+    await saveCallGroupApi(cg.id, cgEdit.id, name, cgEdit.terminalIds);
+    ElMessage.success(cgEdit.id ? "已修改寻呼分区" : "已添加寻呼分区");
+    cgEdit.visible = false;
+    await loadCallGroups();
   } finally {
-    cg.saving = false;
+    cgEdit.saving = false;
+  }
+};
+
+/* ---- 子页：浏览终端 ---- */
+const cgView = reactive({
+  visible: false,
+  loading: false,
+  name: "",
+  members: [] as CallGroupMember[]
+});
+
+const openCallGroupView = async (row: CallGroup) => {
+  cgView.name = row.name;
+  cgView.members = [];
+  cgView.visible = true;
+  cgView.loading = true;
+  try {
+    const { data } = await getCallGroupApi(row.id);
+    cgView.members = data.members ?? [];
+  } finally {
+    cgView.loading = false;
   }
 };
 

@@ -397,38 +397,86 @@ export const deleteQuickTasksApi = (terminalId: number, taskIds: number[]) => {
 
 /* ───────────── 寻呼授权（授权寻呼 / 授权终端）─────────────
  *
- * 白名单，且**不配置即全放开**：没建过名单的终端可以寻呼所有在线终端。
- * 所以清空名单是「放开到默认」，不是「全部禁止」——这一点很容易搞反。
+ * 白名单，且**不配置即全放开**：一个寻呼分区都没有的终端可以寻呼所有在线终端。
+ * 所以删光分区是「放开到默认」，不是「全部禁止」——这一点很容易搞反。
  *
- * 「授权寻呼」和「授权终端」是同一份名单的两个入口，区别只在挑终端的界面。
+ * 一台终端可以有**多个**寻呼分区（ok112 的 view_terminal_call_group.php
+ * 是一张带分页、搜索、增删改的列表），所以这里是一组资源接口。
+ *
+ * 「授权寻呼」和「授权终端」是同一份数据的两个入口，区别只在挑终端的界面。
  */
 
+/** 列表里的一行：一个寻呼分区 */
+export interface CallGroup {
+  id: number;
+  name: string;
+  terminalId: number;
+  memberCount: number;
+}
+
+/** 分区里的一台终端。字段按 ok112「浏览终端」页的列来配 */
 export interface CallGroupMember {
   id: number;
   name: string;
   typeId: number;
+  typeName: string;
+  netstate: number;
+  devicestate: number;
+  taskstate: number;
   ip: string;
-  online: boolean;
+  volume: number;
   groupId: number;
+  groupName: string;
   /** 名单里还留着，但终端已经被删了 */
   missing: boolean;
 }
 
-export interface CallGroupInfo {
+/** 一个分区的完整内容，「浏览终端」与「修改分区」共用 */
+export interface CallGroupDetail {
+  id: number;
+  name: string;
   terminalId: number;
   terminalName: string;
-  /** false = 没建过名单，按默认可寻呼所有在线终端 */
-  configured: boolean;
-  name: string;
   members: CallGroupMember[];
 }
 
-export const getCallGroupApi = (terminalId: number) => {
-  return http.get<CallGroupInfo>(PORT1 + `/api/terminals/${terminalId}/call-group`);
+/** 可以加进分区的候选终端（树的数据源，字段名对齐 TerminalTree） */
+export interface CallGroupCandidate {
+  id: number;
+  terminalname: string;
+  typeId: number;
+  typeName: string;
+  ip: string;
+  netstate: number;
+  groupId: number;
+  groupName: string;
+}
+
+export const getCallGroupsApi = (terminalId: number, params?: { keyword?: string; orderBy?: string }) => {
+  return http.get<{ list: CallGroup[] }>(PORT1 + `/api/terminals/${terminalId}/call-groups`, params ?? {});
 };
 
-export const setCallGroupApi = (terminalId: number, name: string, terminalIds: number[]) => {
-  return http.post(PORT1 + `/api/terminals/${terminalId}/call-group`, { name, terminalIds });
+export const getCallGroupCandidatesApi = (terminalId: number) => {
+  return http.get<CallGroupCandidate[]>(PORT1 + `/api/terminals/${terminalId}/call-groups/candidates`, {}, { loading: false });
+};
+
+export const getCallGroupApi = (groupId: number) => {
+  return http.get<CallGroupDetail>(PORT1 + `/api/call-groups/${groupId}`, {}, { loading: false });
+};
+
+/** groupId 传 0 = 新增（同名覆盖，照 ok112）；> 0 = 修改这个分区 */
+export const saveCallGroupApi = (terminalId: number, groupId: number, name: string, terminalIds: number[]) => {
+  return http.post<{ groupId: number }>(PORT1 + `/api/terminals/${terminalId}/call-groups`, {
+    groupId,
+    name,
+    terminalIds
+  });
+};
+
+export const deleteCallGroupsApi = (terminalId: number, groupIds: number[]) => {
+  // ⚠ 第二个参数会被拼进 query string，请求体要走第三个参数的 data
+  //   —— 与本文件里其它 DELETE（删终端 / 删快捷键 / 删快捷任务）同一种写法。
+  return http.delete<{ deleted: number }>(PORT1 + `/api/terminals/${terminalId}/call-groups`, {}, { data: { groupIds } });
 };
 
 /* ───────────── 终端替换 ───────────── */

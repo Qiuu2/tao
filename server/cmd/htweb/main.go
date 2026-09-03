@@ -278,8 +278,15 @@ func (a *app) routes() http.Handler {
 	// ⚠ 写用 POST 不用 PUT：PUT /api/terminals/{id}/... 会与
 	//   PUT /api/terminals/toggle/{toggle} 冲突。快捷键那边也是同样的原因
 	//   才把更新放到 /api/shortcut-keys/{keyId} 上。
-	mux.HandleFunc("GET /api/terminals/{id}/call-group", req(a.handleCallGroupGet))
-	mux.HandleFunc("POST /api/terminals/{id}/call-group", trm(a.handleCallGroupSet))
+	// 寻呼分区（授权寻呼 / 授权终端）。一台终端可以有多个分区，
+	// 所以是一组资源接口：列表 / 候选终端 / 单个分区 / 新增改 / 删除。
+	// ⚠ 写操作一律 POST —— `PUT /api/terminals/{id}/...` 的通配位已被
+	//   toggle 那组路由占了，再注册 ServeMux 会 panic。
+	mux.HandleFunc("GET /api/terminals/{id}/call-groups", req(a.handleCallGroupList))
+	mux.HandleFunc("GET /api/terminals/{id}/call-groups/candidates", req(a.handleCallGroupCandidates))
+	mux.HandleFunc("POST /api/terminals/{id}/call-groups", trm(a.handleCallGroupSave))
+	mux.HandleFunc("DELETE /api/terminals/{id}/call-groups", trm(a.handleCallGroupDelete))
+	mux.HandleFunc("GET /api/call-groups/{gid}", req(a.handleCallGroupGet))
 
 	// ⚠ 快捷任务是「为这台终端新建一条专属任务并绑到键上」，
 	//   不是「把已有任务绑到键上」。三个 tasktype(20/21/29) 的由来、
