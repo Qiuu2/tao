@@ -264,6 +264,24 @@ export const getShortcutKeyOptionsApi = (terminalId: number, emergency = false) 
   return http.get<ShortcutKeyOption[]>(PORT1 + `/api/terminals/${terminalId}/shortcut-keys/options`, { emergency });
 };
 
+/** 新建/修改快捷键的入参。字段与 ok112 的 setterminalkeyoption 表单一一对应 */
+export interface ShortcutKeyForm {
+  name: string;
+  key: number;
+  emergency: boolean;
+  targetIds: number[];
+}
+
+/** 设置快捷键（ok112 的 setterminalkeyoption.php） */
+export const createShortcutKeyApi = (terminalId: number, data: ShortcutKeyForm) => {
+  return http.post<{ id: number }>(PORT1 + `/api/terminals/${terminalId}/shortcut-keys`, data);
+};
+
+/** 修改快捷键（ok112 的 modifyterminalkeyoption.php） */
+export const updateShortcutKeyApi = (keyId: number, data: ShortcutKeyForm) => {
+  return http.put<{ updated: boolean }>(PORT1 + `/api/shortcut-keys/${keyId}`, data);
+};
+
 export const deleteShortcutKeysApi = (ids: number[]) => {
   return http.delete<{ deleted: number }>(PORT1 + `/api/shortcut-keys`, {}, { data: { ids } });
 };

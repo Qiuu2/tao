@@ -239,26 +239,27 @@
     </el-dialog>
 
     <!--
-      查看快捷键 / 删除快捷键（ok112 的 view_terminal_shotcut_mapping.php
-      与 do.php?act=cancel_terminal_shotcut）。
-      旧版是两个独立入口跳两个页面；这里合成一个对话框 —— 要删也得先看见删什么。
+      查看快捷键（ok112 的 view_terminal_shotcut_mapping.php）。
+
+      那个页面是一套完整的增删改查，四个动作逐条对应到这里：
+
+        setshotcut()            设置快捷键 → 底部「设置快捷键」按钮
+        modifyshotcut(id)       修改快捷键 → 每行「修改」
+        del_terminal_shotcut(id) 删除映射   → 每行「删除」
+        view_terminal(id)       查看终端   → 「映射终端」列直接把目标列出来
+
+      ⚠ 只有最后一项做了合并：ok112 是跳到 displayterminal.php 去看目标终端，
+        这里目标本来就在列表里，再跳一次页只是多一步。动作本身没有少。
     -->
-    <el-dialog v-model="sk.visible" :title="`快捷键 · ${sk.name}`" width="760px" top="8vh">
+    <el-dialog v-model="sk.visible" :title="`快捷键 · ${sk.name}`" width="820px" top="8vh">
       <el-alert type="info" :closable="false" show-icon class="mb12">
         在这台终端上按下某个键，去寻呼下面列出的目标终端。
       </el-alert>
-      <el-table :data="sk.rows" size="small" border max-height="46vh" @selection-change="onSkSelect">
-        <el-table-column type="selection" width="44" />
-        <el-table-column prop="keyLabel" label="键" width="70" />
-        <el-table-column prop="name" label="名称" min-width="130" show-overflow-tooltip />
-        <el-table-column label="类型" width="80">
-          <template #default="s">
-            <el-tag :type="s.row.emergency ? 'danger' : 'info'" size="small" effect="plain">
-              {{ s.row.emergency ? "急救" : "寻呼" }}
-            </el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column label="目标终端" min-width="240">
+      <el-table :data="sk.rows" size="small" border max-height="46vh">
+        <el-table-column type="index" label="序号" width="60" align="center" />
+        <el-table-column prop="name" label="快捷键名称" min-width="130" show-overflow-tooltip />
+        <el-table-column prop="keyLabel" label="快捷键" width="110" />
+        <el-table-column label="映射终端" min-width="230">
           <template #default="s">
             <span v-if="!s.row.targets.length" class="muted">未指定</span>
             <el-tag
@@ -273,12 +274,55 @@
             </el-tag>
           </template>
         </el-table-column>
+        <el-table-column label="操作" width="120" align="center">
+          <template #default="s">
+            <el-button type="primary" link :disabled="!canControl" @click="openShortcutEdit(s.row)">修改</el-button>
+            <el-button type="danger" link :disabled="!canControl" @click="removeShortcut(s.row)">删除</el-button>
+          </template>
+        </el-table-column>
       </el-table>
       <p v-if="!sk.rows.length" class="dlg-note">这台终端还没有配置快捷键。</p>
       <template #footer>
-        <el-button @click="sk.visible = false">关闭</el-button>
-        <el-button type="danger" :disabled="!sk.selected.length" :loading="sk.saving" @click="submitDelShortcut">
-          删除选中（{{ sk.selected.length }}）
+        <div class="dlg-foot">
+          <el-button type="primary" :disabled="!canControl" @click="openShortcutEdit(null)">设置快捷键</el-button>
+          <el-button @click="sk.visible = false">关闭</el-button>
+        </div>
+      </template>
+    </el-dialog>
+
+    <!--
+      设置 / 修改快捷键（ok112 的 setterminalkeyoption.php 与
+      modifyterminalkeyoption.php）。两个页面字段完全相同，只差回填，
+      所以合成一个对话框，由 skEdit.id 区分是新建还是修改。
+
+      ⚠ ok112 的表单还有一组「分区」复选框，按每台目标终端的通道数渲染，
+        写进 terminalkeymap.area。新 Web 目前在任何地方都没有暴露 area 编辑
+        （任务页也是写死默认值），这里保持一致，用服务端默认值。
+        要做 area 编辑就该三处一起做，只在这一个对话框里冒出来反而更乱。
+    -->
+    <el-dialog v-model="skEdit.visible" :title="skEdit.id ? '修改快捷键' : '设置快捷键'" width="620px" top="8vh" append-to-body>
+      <el-form :model="skEdit" label-width="100px">
+        <el-form-item label="快捷键名称" required>
+          <el-input v-model="skEdit.name" maxlength="45" show-word-limit placeholder="例如：呼叫A栋一层" />
+        </el-form-item>
+        <el-form-item label="快捷键" required>
+          <el-select v-model="skEdit.key" placeholder="选择键值" class="fill">
+            <el-option v-for="k in skEdit.keyOptions" :key="k.value" :label="k.label" :value="k.value" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="映射终端">
+          <TerminalTree v-model="skEdit.targetIds" :terminals="skEdit.candidates" :loading="skEdit.loading" height="260px" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="skEdit.visible = false">取消</el-button>
+        <el-button
+          type="primary"
+          :disabled="!skEdit.name || skEdit.key === undefined"
+          :loading="skEdit.saving"
+          @click="submitShortcutEdit"
+        >
+          确定
         </el-button>
       </template>
     </el-dialog>
@@ -465,6 +509,7 @@ import { computed, onMounted, reactive, ref } from "vue";
 import { getTaskListApi, syncTaskTerminalsApi } from "@/api/modules/task";
 import {
   checkTerminalCircuitApi,
+  createShortcutKeyApi,
   deleteQuickTaskApi,
   deleteShortcutKeysApi,
   deleteTerminalsApi,
@@ -486,6 +531,7 @@ import {
   setTerminalToggleApi,
   setTerminalVolumeApi,
   syncTerminalTimeApi,
+  updateShortcutKeyApi,
   updateTerminalApi
 } from "@/api/modules/terminal";
 import type {
@@ -502,6 +548,7 @@ import type {
   ToggleKey
 } from "@/api/modules/terminal";
 import ProTable from "@/components/ProTable/index.vue";
+import TerminalTree from "@/components/TerminalTree/index.vue";
 import { useAuthStore } from "@/stores/modules/auth";
 import type { ColumnProps, ProTableInstance } from "@/components/ProTable/interface";
 
@@ -771,7 +818,8 @@ const onMoreCmd = async (cmd: string, raw: (string | number)[]) => {
     const { data } = await checkTerminalCircuitApi(ids);
     return reportOp(data, "自动寻检指令下发");
   }
-  if (cmd === "view-shortcut" || cmd === "del-shortcut") return openShortcut(ids[0]);
+  if (cmd === "view-shortcut") return openShortcut(ids[0]);
+  if (cmd === "del-shortcut") return clearShortcuts(ids[0]);
   if (cmd === "quick-task") return openQuickTask(ids[0]);
   if (cmd === "auth-paging") return openCallGroup(ids[0], "授权寻呼");
   if (cmd === "auth-terminal") return openCallGroup(ids[0], "授权终端");
@@ -793,37 +841,111 @@ const sk = reactive({
   saving: false,
   id: 0,
   name: "",
-  rows: [] as ShortcutKey[],
-  selected: [] as number[]
+  rows: [] as ShortcutKey[]
 });
 
 const openShortcut = async (id: number) => {
   const row = selectedRows([id])[0];
   sk.id = id;
   sk.name = row?.terminalname ?? `#${id}`;
-  sk.selected = [];
   const { data } = await getShortcutKeysApi(id);
   sk.rows = data;
   sk.visible = true;
 };
 
-const onSkSelect = (rows: ShortcutKey[]) => {
-  sk.selected = rows.map(r => r.id);
+const refreshShortcuts = async () => {
+  const { data } = await getShortcutKeysApi(sk.id);
+  sk.rows = data;
 };
 
-const submitDelShortcut = async () => {
-  if (!sk.selected.length) return;
-  await ElMessageBox.confirm(`确定删除选中的 ${sk.selected.length} 个快捷键？`, "删除快捷键", { type: "warning" });
-  sk.saving = true;
+/** 列表内每行的「删除」—— 对应 ok112 的 del_terminal_shotcut(id)，只删这一条 */
+const removeShortcut = async (row: ShortcutKey) => {
+  await ElMessageBox.confirm(`确定删除快捷键「${row.name}」（键 ${row.keyLabel}）？`, "删除快捷键", { type: "warning" });
+  const { data } = await deleteShortcutKeysApi([row.id]);
+  ElMessage.success(`已删除 ${data.deleted} 个快捷键`);
+  await refreshShortcuts();
+  proTableRef.value?.getTableList();
+};
+
+/*
+  菜单里的「删除快捷键」—— 对应 ok112 的 cancel_terminal_shotcut，
+  按 terminal_id 清空这台终端的**全部**快捷键，不是删某一条。
+
+  ⚠ 别把它和列表里每行的「删除」搞混：那个是 del_terminal_shotcut，只删一条。
+    两者在 ok112 里就是两个不同的入口，这里保持一致。
+*/
+const clearShortcuts = async (id: number) => {
+  const row = selectedRows([id])[0];
+  const name = row?.terminalname ?? `#${id}`;
+  const { data: list } = await getShortcutKeysApi(id);
+  if (!list.length) return ElMessage.info(`终端「${name}」没有配置快捷键`);
+  await ElMessageBox.confirm(`将清空终端「${name}」的全部 ${list.length} 个快捷键，且不可恢复。确定继续？`, "删除快捷键", {
+    type: "warning"
+  });
+  const { data } = await deleteShortcutKeysApi(list.map(k => k.id));
+  ElMessage.success(`已删除 ${data.deleted} 个快捷键`);
+  proTableRef.value?.getTableList();
+};
+
+/* 设置 / 修改快捷键（ok112 的 setterminalkeyoption / modifyterminalkeyoption） */
+const skEdit = reactive({
+  visible: false,
+  saving: false,
+  loading: false,
+  /** 0 = 新建；非 0 = 修改这条快捷键 */
+  id: 0,
+  name: "",
+  key: undefined as number | undefined,
+  emergency: false,
+  targetIds: [] as number[],
+  keyOptions: [] as ShortcutKeyOption[],
+  candidates: [] as TerminalRow[]
+});
+
+const openShortcutEdit = async (row: ShortcutKey | null) => {
+  skEdit.id = row?.id ?? 0;
+  skEdit.name = row?.name ?? "";
+  skEdit.key = row?.key;
+  skEdit.emergency = row?.emergency ?? false;
+  skEdit.targetIds = row ? row.targets.filter(t => !t.deleted).map(t => t.terminalId) : [];
+  skEdit.visible = true;
+  skEdit.loading = true;
   try {
-    const { data } = await deleteShortcutKeysApi(sk.selected);
-    ElMessage.success(`已删除 ${data.deleted} 个快捷键`);
-    const res = await getShortcutKeysApi(sk.id);
-    sk.rows = res.data;
-    sk.selected = [];
+    const [keys, all] = await Promise.all([
+      // 可选键值按型号算，急救与普通快捷键的可选集不同，改的时候要沿用原来那一套
+      getShortcutKeyOptionsApi(sk.id, skEdit.emergency),
+      getTerminalListApi({ pageNum: 1, pageSize: 500 })
+    ]);
+    skEdit.keyOptions = keys.data;
+    // 自己不能是自己的寻呼目标
+    skEdit.candidates = (all.data.list as TerminalRow[]).filter(t => t.id !== sk.id);
+  } finally {
+    skEdit.loading = false;
+  }
+};
+
+const submitShortcutEdit = async () => {
+  if (!skEdit.name || skEdit.key === undefined) return;
+  skEdit.saving = true;
+  try {
+    const payload = {
+      name: skEdit.name,
+      key: skEdit.key,
+      emergency: skEdit.emergency,
+      targetIds: skEdit.targetIds
+    };
+    if (skEdit.id) {
+      await updateShortcutKeyApi(skEdit.id, payload);
+      ElMessage.success("已修改");
+    } else {
+      await createShortcutKeyApi(sk.id, payload);
+      ElMessage.success("已添加");
+    }
+    skEdit.visible = false;
+    await refreshShortcuts();
     proTableRef.value?.getTableList();
   } finally {
-    sk.saving = false;
+    skEdit.saving = false;
   }
 };
 
