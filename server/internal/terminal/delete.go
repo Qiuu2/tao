@@ -338,11 +338,21 @@ func (s *Service) Delete(ctx context.Context, u *auth.User, ids []int64) (*Delet
 
 // deleteOwnTasks 删掉「该终端专属」的 tasktype=20 任务。
 //
-// 注意 task.cmd 存的是终端 ID —— 这是旧库的字段复用，
-// cmd 这个列名和它在这里的含义毫无关系。
+// ⚠ 这类任务在 task 表里用**两个**列各存了一个终端 ID，含义不同：
+//
+//	task.cmd     音源终端（采集源）—— ok112 建表时写的是 $audiosource，
+//	             而 $audiosource 本身就是一台采集终端的 id
+//	task.cmdargs 宿主终端（按下键触发的那台）—— ok112 写的是 $_GET['terminal_id']，
+//	             terminalkeymaptask.terminalid 也取的同一个值
+//
+// 两个列名都跟含义没关系，是旧库的字段复用。
+// 以前这里只比 cmd，于是删掉**宿主**终端时找不到它的专属任务，
+// 任务连同它的 terminalkeymaptask / terminaloftask / mediaoftask 全留成孤儿。
+// 两个列都要比：音源没了任务放不出声，宿主没了任务没人触发，都该跟着删。
 func (s *Service) deleteOwnTasks(ctx context.Context, tx *sql.Tx, ph string, args []interface{}) (int, error) {
 	rs, err := tx.QueryContext(ctx,
-		`SELECT taskid FROM task WHERE cmd IN (`+ph+`) AND tasktype = 20`, args...)
+		`SELECT taskid FROM task WHERE (cmd IN (`+ph+`) OR cmdargs IN (`+ph+`)) AND tasktype = 20`,
+		append(append([]interface{}{}, args...), args...)...)
 	if err != nil {
 		return 0, fmt.Errorf("查询终端专属任务: %w", err)
 	}
