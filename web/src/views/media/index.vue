@@ -263,10 +263,25 @@
       </el-alert>
 
       <div class="mt10">
-        <el-button @click="uploadVisible = false">取消</el-button>
+        <el-button :disabled="uploading" @click="uploadVisible = false">取消</el-button>
         <el-button type="primary" :loading="uploading" :disabled="!fileList.length" @click="doUpload">
           确定{{ fileList.length ? `（${fileList.length} 个）` : "" }}
         </el-button>
+      </div>
+
+      <!--
+        进度条。百分比走的是浏览器的 xhr.upload.onprogress，量的是
+        「字节发出去了多少」；发完之后服务端还要逐个转码，那一段没有进度可报，
+        所以到 100% 就把文案换成「服务器转码中…」。
+      -->
+      <div v-if="progress.phase" class="up-progress">
+        <el-progress
+          :percentage="progress.percent"
+          :status="progress.phase === 'transcoding' ? 'success' : undefined"
+          :stroke-width="14"
+          text-inside
+        />
+        <p class="up-progress-text">{{ progressText }}</p>
       </div>
 
       <div v-if="uploadResults.length" class="mt10">
@@ -649,21 +664,74 @@ const uploadResults = ref<any[]>([]);
 
 const onFileChange = (_f: any, list: UploadUserFile[]) => (fileList.value = list);
 
+/**
+ * 上传进度。
+ *
+ * ⚠ 浏览器只能报「字节发出去了多少」，报不了服务器那边转码到哪一步了。
+ *   媒体上传是**先传完、再转码**：字节到 100% 之后，服务端还要逐个走 ffmpeg
+ *   （统一转 128kbps 立体声）。所以百分比到 100 不等于完事，这里把阶段
+ *   切成「转码中」，免得用户对着一个卡在 100% 的条不知道在等什么。
+ */
+const progress = reactive({
+  percent: 0,
+  loaded: 0,
+  total: 0,
+  phase: "" as "" | "uploading" | "transcoding"
+});
+
+const fmtBytes = (n: number) => {
+  if (n >= 1024 * 1024) return (n / 1024 / 1024).toFixed(1) + " MB";
+  if (n >= 1024) return (n / 1024).toFixed(0) + " KB";
+  return n + " B";
+};
+
+const progressText = computed(() => {
+  if (progress.phase === "transcoding") return "文件已传完，服务器转码中…";
+  if (progress.phase === "uploading" && progress.total) {
+    return `${fmtBytes(progress.loaded)} / ${fmtBytes(progress.total)}`;
+  }
+  return "";
+});
+
 const doUpload = async () => {
   if (!folderInfo.value) return;
   uploading.value = true;
   uploadResults.value = [];
+  progress.percent = 0;
+  progress.loaded = 0;
+  progress.total = 0;
+  progress.phase = "uploading";
   try {
     const form = new FormData();
     form.append("folderId", String(folderInfo.value.id));
     fileList.value.forEach(f => f.raw && form.append("file", f.raw));
 
-    const resp = await fetch("/api/media/upload", {
-      method: "POST",
-      headers: { "x-access-token": userStore.token },
-      body: form
+    // ⚠ 用 XHR 不用 fetch：fetch 没有上传进度事件（没有 request 侧的
+    //   ReadableStream 进度回调），要百分比就只能走 xhr.upload.onprogress。
+    const json = await new Promise<any>((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open("POST", "/api/media/upload");
+      xhr.setRequestHeader("x-access-token", userStore.token);
+      xhr.upload.onprogress = e => {
+        if (!e.lengthComputable) return;
+        progress.loaded = e.loaded;
+        progress.total = e.total;
+        progress.percent = Math.round((e.loaded / e.total) * 100);
+        // 字节发完了，后面等的是服务端转码
+        if (e.loaded >= e.total) progress.phase = "transcoding";
+      };
+      xhr.onload = () => {
+        try {
+          resolve(JSON.parse(xhr.responseText));
+        } catch {
+          reject(new Error(`服务器返回了无法解析的内容（HTTP ${xhr.status}）`));
+        }
+      };
+      xhr.onerror = () => reject(new Error("网络错误"));
+      xhr.ontimeout = () => reject(new Error("上传超时"));
+      xhr.send(form);
     });
-    const json = await resp.json();
+
     if (json.code !== 200) {
       ElMessage.error(json.msg || "上传失败");
       return;
@@ -683,6 +751,7 @@ const doUpload = async () => {
     ElMessage.error("上传失败：" + (e?.message ?? e));
   } finally {
     uploading.value = false;
+    progress.phase = "";
   }
 };
 
@@ -709,6 +778,15 @@ onMounted(loadTree);
 </script>
 
 <style scoped lang="scss">
+.up-progress {
+  margin-top: 12px;
+}
+.up-progress-text {
+  margin: 6px 0 0;
+  font-size: 12px;
+  color: var(--el-text-color-secondary);
+  text-align: right;
+}
 .up-fmt {
   display: inline-flex;
   gap: 6px;

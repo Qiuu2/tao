@@ -159,8 +159,13 @@
           <span v-else class="muted">—</span>
         </template>
 
+        <!--
+          操作列只留「浏览」。
+          ⚠ ok112 的终端列表行里也只有这一个链接（terminalmanager_form.html 的
+            `<a href="http://{ip}">`），其余动作全在底部那一排（对应这里的
+            「批量操作」菜单）。原来多出来的「查看」是新 Web 自己加的，去掉。
+        -->
         <template #operation="scope">
-          <el-button type="primary" link :icon="EditPen" :disabled="!canEdit" @click="openEdit(scope.row)">查看</el-button>
           <!--
             终端自己跑着一套独立的 Web 程序，这里只负责把用户送过去，
             设备侧的配置一律不在服务器 Web 里代管。
@@ -179,44 +184,6 @@
         </template>
       </ProTable>
     </div>
-
-    <!-- 编辑终端 -->
-    <el-dialog v-model="dlg.visible" title="修改终端" width="600px">
-      <el-form :model="dlg.form" label-width="110px">
-        <el-form-item label="终端名称" required>
-          <el-input v-model="dlg.form.terminalname" maxlength="85" show-word-limit />
-        </el-form-item>
-        <el-form-item label="终端类型" required>
-          <el-select v-model="dlg.form.typeid" filterable class="fill">
-            <el-option v-for="t in types" :key="t.id" :label="t.name" :value="t.id" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="终端分区">
-          <el-select v-model="dlg.form.groupId" class="fill">
-            <el-option label="(未分区)" :value="0" />
-            <el-option v-for="g in realGroups" :key="g.id" :label="g.name" :value="g.id" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="IP 地址" required>
-          <el-input v-model="dlg.form.ip" placeholder="192.168.2.31" />
-        </el-form-item>
-        <el-form-item label="音量">
-          <el-slider v-model="dlg.form.volume" :min="0" :max="100" show-input />
-        </el-form-item>
-        <!--
-          terminal.postion 刻意不出现在这个表单里。
-          列名虽然叫「位置」，但现网这一列存的是后台 C 服务写入的固件版本串
-          （TW_V1.0.0.3:Aug 19 2026-23:57:47 这种），属于设备上报的数据，
-          不归服务器 Web 代管。提交时由 openEdit 读到的原值原样回填，
-          既不覆盖 C 服务写的内容，也不会因为漏传而把该列清空。
-          服务端的 GBK 校验仍然保留，作为兜底。
-        -->
-      </el-form>
-      <template #footer>
-        <el-button @click="dlg.visible = false">取消</el-button>
-        <el-button type="primary" :loading="dlg.saving" @click="submitEdit">保存</el-button>
-      </template>
-    </el-dialog>
 
     <!-- 音量 -->
     <el-dialog v-model="vol.visible" title="设置音量" width="440px">
@@ -977,7 +944,7 @@
 </template>
 
 <script setup lang="ts" name="terminalManage">
-import { ArrowDown, EditPen, Folder, Link, Menu, Search } from "@element-plus/icons-vue";
+import { ArrowDown, Folder, Link, Menu, Search } from "@element-plus/icons-vue";
 import { ElMessage, ElMessageBox } from "element-plus";
 import { computed, onMounted, reactive, ref, watch } from "vue";
 
@@ -1004,7 +971,6 @@ import {
   getQuickTasksApi,
   getShortcutKeyOptionsApi,
   getShortcutKeysApi,
-  getTerminalApi,
   getTerminalFoldersApi,
   getTerminalGroupTreeApi,
   getTerminalListApi,
@@ -1020,8 +986,7 @@ import {
   setTerminalVolumeApi,
   syncTerminalTimeApi,
   updateQuickTaskApi,
-  updateShortcutKeyApi,
-  updateTerminalApi
+  updateShortcutKeyApi
 } from "@/api/modules/terminal";
 import type {
   CallGroup,
@@ -1058,7 +1023,6 @@ const userStore = useUserStore();
 // 就地断言成 any，不去动共用 store 的类型声明。
 const btn = computed(() => (authStore.authButtonListGet as any)?.terminal ?? {});
 const canControl = computed(() => !!btn.value.control);
-const canEdit = computed(() => !!btn.value.edit);
 const canDelete = computed(() => !!btn.value.delete);
 
 /** ProTable 的 selectedListIds 是 string[]（row-key 取的字符串），统一转成数字 id */
@@ -1083,9 +1047,6 @@ const onSortChange = ({ prop, order }: { prop: string; order: string | null }) =
   initParam.orderBy = prop;
   initParam.order = order === "ascending" ? "asc" : "desc";
 };
-
-/** 编辑弹窗里的分区下拉只列真实分区，不含「全部 / 未分区」两个虚拟节点 */
-const realGroups = computed(() => groups.value.filter(g => !g.virtual));
 
 // 列清单严格照 :80（页面规格.txt「终端管理」17 列）：
 // id | 终端名称 | 终端类型 | 任务状态 | 网络状态 | 设备状态 | IP地址 | 音量 |
@@ -2222,41 +2183,6 @@ const submitSyncTerminals = async () => {
     st.visible = false;
   } finally {
     st.saving = false;
-  }
-};
-
-// ---- 编辑 ----
-const dlg = reactive({
-  visible: false,
-  saving: false,
-  id: 0,
-  form: { terminalname: "", typeid: 0, groupId: 0, ip: "", postion: "", volume: 50 }
-});
-
-const openEdit = async (row: TerminalRow) => {
-  const { data } = await getTerminalApi(row.id);
-  dlg.id = data.id;
-  dlg.form = {
-    terminalname: data.terminalname,
-    typeid: data.typeid,
-    groupId: data.groupId,
-    ip: data.ip,
-    postion: data.postion,
-    volume: data.volume
-  };
-  dlg.visible = true;
-};
-
-const submitEdit = async () => {
-  dlg.saving = true;
-  try {
-    await updateTerminalApi(dlg.id, { ...dlg.form });
-    ElMessage.success("已保存并通知后台服务");
-    dlg.visible = false;
-    refresh();
-    loadGroups();
-  } finally {
-    dlg.saving = false;
   }
 };
 
