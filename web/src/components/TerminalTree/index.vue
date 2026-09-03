@@ -111,12 +111,8 @@ const props = withDefaults(
      * 分区清单。**树的骨架由它决定**，不是从终端归纳出来的 ——
      * 这样一台终端都没有的分区也会作为空节点出现（与 ok112 一致）。
      * 不传时组件自己去 /api/zones/options 拉。
-     *
-     * 带 parentId 时分组之间会**再嵌一层**（授权终端的目录树就是这样：
-     * terminalfolder 本身是有父子的）。一条都不带 parentId 就还是平铺一层，
-     * 与原来完全一样 —— 其余十来处调用方不受影响。
      */
-    groups?: { id: number; name: string; parentId?: number }[];
+    groups?: { id: number; name: string }[];
     /** 用哪个字段取分区名。默认 groupName；终端分区页要用 currentZoneName */
     groupField?: string;
     /** 用哪个字段取分区 id。默认 groupId；终端分区页要用 currentZoneId */
@@ -219,19 +215,12 @@ const nodes = computed<TermNode[]>(() => {
   const list: TermNode[] = [];
   const byId = new Map<number, TermNode>();
   const byName = new Map<string, TermNode>();
-  // 分组自己是否分层。只要有一条带了 parentId 就按层级摆，否则平铺（老行为）。
-  const nestedGroups = groups.value.some(g => Number((g as any).parentId ?? 0) > 0);
 
   for (const g of groups.value) {
     const node: TermNode = { key: `g:${g.id}`, label: g.name || `分区 ${g.id}`, children: [] };
+    list.push(node);
     byId.set(Number(g.id), node);
     if (g.name) byName.set(g.name, node);
-  }
-  for (const g of groups.value) {
-    const node = byId.get(Number(g.id))!;
-    const parent = nestedGroups ? byId.get(Number((g as any).parentId ?? 0)) : undefined;
-    if (parent && parent !== node) parent.children!.push(node);
-    else list.push(node);
   }
 
   // 无分区节点恒在最后，且**恒存在**（哪怕一台都没有）——
@@ -268,25 +257,13 @@ const nodes = computed<TermNode[]>(() => {
     });
   }
 
-  // 平铺时按名字排，方便找；分层时保持调用方给的顺序 ——
-  // 一排就把「父目录 → 子目录」的层级顺序打乱了。
-  if (!nestedGroups) list.sort((a, b) => a.label.localeCompare(b.label, "zh"));
+  list.sort((a, b) => a.label.localeCompare(b.label, "zh"));
   list.push(ungrouped);
   return list;
 });
 
 /** 默认把有选中项的分组展开；一个都没选时展开全部（数量不多时） */
-const expandedKeys = computed(() => {
-  const keys: string[] = [];
-  const walk = (list: TermNode[]) =>
-    list.forEach(n => {
-      if (n.terminalId) return; // 叶子不需要展开
-      keys.push(n.key);
-      walk(n.children ?? []);
-    });
-  walk(nodes.value);
-  return keys;
-});
+const expandedKeys = computed(() => nodes.value.map(n => n.key));
 
 const selectedIds = computed<number[]>(() => {
   if (props.multiple) return (props.modelValue as number[]) ?? [];
@@ -335,19 +312,8 @@ const onNodeClick = (data: TermNode) => {
 
 const checkAll = (on: boolean) => {
   if (!treeRef.value) return;
-  // ⚠ 递归收叶子。分组可以再嵌分组（授权终端的目录），只取一层 children
-  //   的话，子目录里的终端「全选」永远选不到。
-  const leaves: TermNode[] = [];
-  const walk = (list: TermNode[]) =>
-    list.forEach(n => {
-      if (n.terminalId) {
-        if (!n.disabled) leaves.push(n);
-        return;
-      }
-      walk(n.children ?? []);
-    });
-  walk(nodes.value);
-  treeRef.value.setCheckedKeys(on ? leaves.map(n => n.key) : [], false);
+  const all = nodes.value.flatMap(g => g.children ?? []).filter(n => !n.disabled);
+  treeRef.value.setCheckedKeys(on ? all.map(n => n.key) : [], false);
   emitChecked();
 };
 

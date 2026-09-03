@@ -456,13 +456,8 @@ export const getCallGroupsApi = (terminalId: number, params?: { keyword?: string
   return http.get<{ list: CallGroup[] }>(PORT1 + `/api/terminals/${terminalId}/call-groups`, params ?? {});
 };
 
-/** byFolder=true → 树按本机目录分组（授权终端 flag=2）；否则按终端分区（授权寻呼 flag=1） */
-export const getCallGroupCandidatesApi = (terminalId: number, byFolder = false) => {
-  return http.get<CallGroupCandidate[]>(
-    PORT1 + `/api/terminals/${terminalId}/call-groups/candidates`,
-    byFolder ? { byFolder: 1 } : {},
-    { loading: false }
-  );
+export const getCallGroupCandidatesApi = (terminalId: number) => {
+  return http.get<CallGroupCandidate[]>(PORT1 + `/api/terminals/${terminalId}/call-groups/candidates`, {}, { loading: false });
 };
 
 export const getCallGroupApi = (groupId: number) => {
@@ -496,13 +491,17 @@ export interface TerminalFolder {
   children: TerminalFolder[];
 }
 
-/** 目录里的一台终端。列按 ok112 dirarea_terminal.html */
+/**
+ * 一台终端。目录里的清单和「添加终端」的候选都用它，
+ * 列取 dirarea_terminal.html 与 dir_area_add_form.html 的并集。
+ */
 export interface FolderTerminal {
   id: number;
   terminalname: string;
   typeId: number;
   typeName: string;
   netstate: number;
+  devicestate: number;
   taskstate: number;
   ip: string;
   volume: number;
@@ -520,10 +519,16 @@ export const getFolderTerminalsApi = (terminalId: number, folderId: number, keyw
   );
 };
 
-export const getFolderCandidatesApi = (terminalId: number, folderId: number) => {
-  return http.get<CallGroupCandidate[]>(
+/**
+ * 还能加进这个目录的终端。
+ *
+ * ⚠ 返回的是**一张平表**，不是树。ok112 的 dir_area_add.php 就是一张带
+ *   复选框的表格，整页没有「分区」这个概念。
+ */
+export const getFolderCandidatesApi = (terminalId: number, folderId: number, keyword = "") => {
+  return http.get<{ list: FolderTerminal[] }>(
     PORT1 + `/api/terminals/${terminalId}/folders/candidates`,
-    { folderId },
+    { folderId, keyword },
     { loading: false }
   );
 };

@@ -58,12 +58,7 @@ func (a *app) handleCallGroupCandidates(w http.ResponseWriter, r *http.Request) 
 	if !ok {
 		return
 	}
-	// byFolder=1 → 树按本机目录分组（授权终端 flag=2）；否则按终端分区（授权寻呼 flag=1）
-	fn := a.terminals.CallGroupCandidates
-	if r.URL.Query().Get("byFolder") == "1" {
-		fn = a.terminals.CallGroupCandidatesByFolder
-	}
-	list, err := fn(r.Context(), auth.From(r.Context()), id)
+	list, err := a.terminals.CallGroupCandidates(r.Context(), auth.From(r.Context()), id)
 	if err != nil {
 		failCallGroup(w, "查询候选终端", err)
 		return

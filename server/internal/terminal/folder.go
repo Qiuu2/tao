@@ -56,19 +56,22 @@ type TerminalFolder struct {
 	Children []TerminalFolder `json:"children"`
 }
 
-// FolderTerminal 是目录里的一台终端。
+// FolderTerminal 是一台终端，目录里的清单和「添加终端」的候选都用它。
 //
-// 列按 ok112 dirarea_terminal.html：终端名称 / 终端类型 / 任务状态 /
-// 网络状态 / IP地址 / 音量。
+// 列取两个页面的并集：
+//
+//	dirarea_terminal.html   终端名称 / 终端类型 / 任务状态 / 网络状态 / IP地址 / 音量
+//	dir_area_add_form.html  上面这些，外加设备状态
 type FolderTerminal struct {
-	ID        int64  `json:"id"`
-	Name      string `json:"terminalname"`
-	TypeID    int    `json:"typeId"`
-	TypeName  string `json:"typeName"`
-	NetState  int    `json:"netstate"`
-	TaskState int    `json:"taskstate"`
-	IP        string `json:"ip"`
-	Volume    int    `json:"volume"`
+	ID          int64  `json:"id"`
+	Name        string `json:"terminalname"`
+	TypeID      int    `json:"typeId"`
+	TypeName    string `json:"typeName"`
+	NetState    int    `json:"netstate"`
+	DeviceState int    `json:"devicestate"`
+	TaskState   int    `json:"taskstate"`
+	IP          string `json:"ip"`
+	Volume      int    `json:"volume"`
 }
 
 var (
@@ -174,23 +177,31 @@ func nestFolders(flat []TerminalFolder) []TerminalFolder {
 //
 //	对话框里的表格直接滚动更顺手，也少一套翻页状态。
 func (s *Service) FolderTerminals(ctx context.Context, folderID int64, keyword string) ([]FolderTerminal, error) {
-	q := `
-		SELECT t.id, COALESCE(t.terminalname,''), COALESCE(t.typeid,0), COALESCE(tt.name,''),
-		       COALESCE(t.netstate,0), COALESCE(t.taskstate,0), COALESCE(t.ip,''), COALESCE(t.volume,0)
+	q := folderTerminalCols + `
 		FROM terminaloffolder o
 		JOIN terminal t ON t.id = o.terminalid
 		LEFT JOIN terminaltype tt ON tt.id = t.typeid
 		WHERE o.folderid = ?`
 	args := []interface{}{folderID}
 	if kw := strings.TrimSpace(keyword); kw != "" {
-		q += ` AND t.terminalname LIKE ?`
-		args = append(args, "%"+kw+"%")
+		q += ` AND (t.terminalname LIKE ? OR t.ip LIKE ?)`
+		args = append(args, "%"+kw+"%", "%"+kw+"%")
 	}
 	q += ` ORDER BY t.terminalname`
 
+	return s.scanFolderTerminals(ctx, q, args...)
+}
+
+// folderTerminalCols 是 FolderTerminal 的取列片段，目录清单与候选清单共用。
+const folderTerminalCols = `
+		SELECT t.id, COALESCE(t.terminalname,''), COALESCE(t.typeid,0), COALESCE(tt.name,''),
+		       COALESCE(t.netstate,0), COALESCE(t.devicestate,0), COALESCE(t.taskstate,0),
+		       COALESCE(t.ip,''), COALESCE(t.volume,0)`
+
+func (s *Service) scanFolderTerminals(ctx context.Context, q string, args ...interface{}) ([]FolderTerminal, error) {
 	rs, err := s.db.QueryContext(ctx, q, args...)
 	if err != nil {
-		return nil, fmt.Errorf("查询目录终端: %w", err)
+		return nil, fmt.Errorf("查询终端: %w", err)
 	}
 	defer rs.Close()
 
@@ -198,8 +209,8 @@ func (s *Service) FolderTerminals(ctx context.Context, folderID int64, keyword s
 	for rs.Next() {
 		var t FolderTerminal
 		if err := rs.Scan(&t.ID, &t.Name, &t.TypeID, &t.TypeName,
-			&t.NetState, &t.TaskState, &t.IP, &t.Volume); err != nil {
-			return nil, fmt.Errorf("读取目录终端: %w", err)
+			&t.NetState, &t.DeviceState, &t.TaskState, &t.IP, &t.Volume); err != nil {
+			return nil, fmt.Errorf("读取终端: %w", err)
 		}
 		out = append(out, t)
 	}
@@ -465,36 +476,49 @@ func (s *Service) SetFolderTerminals(ctx context.Context, u *auth.User,
 
 // FolderCandidates 列出还没在这个目录里的、可以加进来的终端。
 //
+// ⚠ 这里返回的是**一张平表**，不是树。ok112 的 dir_area_add.php 就是一张
+//
+//	带复选框的表格（SELECT ... FROM terminal WHERE typeid in($type)
+//	ORDER BY netstate ASC），列是 终端名称/终端类型/任务状态/网络状态/
+//	设备状态/IP地址/音量，可按名称或 IP 搜 —— 整页没有「分区」这个概念。
+//	先前这里套了一棵按终端分区分组的树，是凭空多出来的一层。
+//
 // 型号范围与寻呼分区的成员一致（get_terminal_type(3)），并且不含宿主自己。
 func (s *Service) FolderCandidates(ctx context.Context, u *auth.User,
-	terminalID, folderID int64) ([]CallGroupCandidate, error) {
+	terminalID, folderID int64, keyword string) ([]FolderTerminal, error) {
 
-	all, err := s.CallGroupCandidates(ctx, u, terminalID)
-	if err != nil {
-		return nil, err
-	}
-	rs, err := s.db.QueryContext(ctx,
-		`SELECT terminalid FROM terminaloffolder WHERE folderid = ?`, folderID)
-	if err != nil {
-		return nil, fmt.Errorf("查询目录终端: %w", err)
-	}
-	defer rs.Close()
-	inFolder := map[int64]bool{}
-	for rs.Next() {
-		var id int64
-		if err := rs.Scan(&id); err != nil {
-			return nil, err
-		}
-		inFolder[id] = true
-	}
-	if err := rs.Err(); err != nil {
+	if err := s.assertTerminalExists(ctx, terminalID); err != nil {
 		return nil, err
 	}
 
-	out := make([]CallGroupCandidate, 0, len(all))
-	for _, c := range all {
-		if !inFolder[c.ID] {
-			out = append(out, c)
+	q := folderTerminalCols + `
+		FROM terminal t
+		JOIN terminaltype tt ON tt.id = t.typeid
+		WHERE COALESCE(tt.isdecode,0) = 1 AND t.id <> ?
+		  AND t.id NOT IN (SELECT terminalid FROM terminaloffolder WHERE folderid = ?)`
+	args := []interface{}{terminalID, folderID}
+
+	// 普通用户只看得到绑给自己的终端（ok112 的 userterminal 子查询）
+	if !u.IsAdmin {
+		q += ` AND t.id IN (SELECT terminalid FROM userterminal WHERE userid = ?)`
+		args = append(args, u.ID)
+	}
+	if kw := strings.TrimSpace(keyword); kw != "" {
+		q += ` AND (t.terminalname LIKE ? OR t.ip LIKE ?)`
+		args = append(args, "%"+kw+"%", "%"+kw+"%")
+	}
+	// ok112 默认 ORDER BY netstate ASC —— 在线的排前面
+	q += ` ORDER BY t.netstate DESC, t.terminalname`
+
+	all, err := s.scanFolderTerminals(ctx, q, args...)
+	if err != nil {
+		return nil, err
+	}
+	// 型号排除表在这里过，理由同 CallGroupCandidates
+	out := make([]FolderTerminal, 0, len(all))
+	for _, t := range all {
+		if !in(callGroupMemberExclude, t.TypeID) {
+			out = append(out, t)
 		}
 	}
 	return out, nil

@@ -72,17 +72,19 @@ func (a *app) handleFolderCandidates(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	folderID, err := strconv.ParseInt(r.URL.Query().Get("folderId"), 10, 64)
+	q := r.URL.Query()
+	folderID, err := strconv.ParseInt(q.Get("folderId"), 10, 64)
 	if err != nil || folderID <= 0 {
 		httpx.Fail(w, httpx.CodeBadRequest, "请先选择一个目录")
 		return
 	}
-	list, err := a.terminals.FolderCandidates(r.Context(), auth.From(r.Context()), id, folderID)
+	list, err := a.terminals.FolderCandidates(r.Context(), auth.From(r.Context()),
+		id, folderID, strings.TrimSpace(q.Get("keyword")))
 	if err != nil {
 		failFolder(w, "查询候选终端", err)
 		return
 	}
-	httpx.OK(w, list)
+	httpx.OK(w, map[string]interface{}{"list": list})
 }
 
 type folderSaveReq struct {
