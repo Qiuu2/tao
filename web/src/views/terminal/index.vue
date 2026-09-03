@@ -394,17 +394,53 @@
     <el-dialog
       v-model="qtEdit.visible"
       :title="qtEdit.taskId ? '修改快捷任务' : '添加快捷任务'"
-      width="720px"
+      width="980px"
       top="6vh"
       append-to-body
     >
-      <el-form :model="qtEdit" label-width="100px">
-        <!-- 字段顺序照 set_task_quickplay.html：任务名 → 播放时长 → 随机播放
-             → TTS/LED 开关 → 发送模式 → 音量 → 优先级 → 快捷键
-             → LED 字幕 → 播放内容 → 目标终端 -->
+      <el-form :model="qtEdit" label-width="92px">
+        <!--
+          两列排布：左列是「这条任务是什么」（快捷键、优先级、时长），
+          右列是「怎么放」（随机、发送模式、音量）。旧版是个 table 布局，
+          同样把成对的属性摆在一行里。
+        -->
         <el-form-item label="任务名称" required>
           <el-input v-model="qtEdit.taskName" maxlength="8" show-word-limit placeholder="最多 8 个字" />
         </el-form-item>
+
+        <el-row :gutter="16">
+          <el-col :span="12">
+            <el-form-item label="快捷键" required>
+              <el-select v-model="qtEdit.key" placeholder="选择键值" class="fill">
+                <el-option v-for="k in qtEdit.keyOptions" :key="k.value" :label="k.label" :value="k.value" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="随机播放">
+              <el-checkbox v-model="qtEdit.isRandom" />
+            </el-form-item>
+          </el-col>
+        </el-row>
+
+        <el-row :gutter="16">
+          <el-col :span="12">
+            <el-form-item label="优先级">
+              <!-- 旧版是下拉，从当前用户组的 level 起到 109 -->
+              <el-select v-model="qtEdit.priority" class="fill">
+                <el-option v-for="p in priorityOptions" :key="p" :label="p" :value="p" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="发送模式">
+              <el-select v-model="qtEdit.dataSendMode" class="fill">
+                <el-option label="单播" :value="0" />
+                <el-option label="多播" :value="1" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+        </el-row>
 
         <el-form-item label="播放时长" required>
           <el-radio-group v-model="qtEdit.timeLengthType">
@@ -434,33 +470,13 @@
           <span class="dlg-note inline">次</span>
         </el-form-item>
 
-        <el-form-item label="随机播放">
-          <el-checkbox v-model="qtEdit.isRandom" />
+        <el-form-item label="音量">
+          <el-slider v-model="qtEdit.volume" :min="0" :max="100" show-input />
         </el-form-item>
         <el-form-item label="播放方式">
           <!-- 旧版把 TTS 与 LED 两个开关并排放在这里 -->
           <el-checkbox v-model="qtEdit.ttsOn">文字播报</el-checkbox>
           <el-checkbox v-model="qtEdit.ledOn" class="ml12">LED 播放</el-checkbox>
-        </el-form-item>
-        <el-form-item label="发送模式">
-          <el-select v-model="qtEdit.dataSendMode" class="qt-narrow">
-            <el-option label="单播" :value="0" />
-            <el-option label="多播" :value="1" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="音量">
-          <el-slider v-model="qtEdit.volume" :min="0" :max="100" show-input />
-        </el-form-item>
-        <el-form-item label="优先级">
-          <!-- 旧版是下拉，从当前用户组的 level 起到 109 -->
-          <el-select v-model="qtEdit.priority" class="qt-narrow">
-            <el-option v-for="p in priorityOptions" :key="p" :label="p" :value="p" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="快捷键" required>
-          <el-select v-model="qtEdit.key" placeholder="选择键值" class="qt-narrow2">
-            <el-option v-for="k in qtEdit.keyOptions" :key="k.value" :label="k.label" :value="k.value" />
-          </el-select>
         </el-form-item>
 
         <!-- LED 字幕在媒体之前，与旧版一致 -->
@@ -471,35 +487,71 @@
           </el-form-item>
         </template>
 
-        <el-divider content-position="left">{{ qtEdit.ttsOn ? "播报内容" : "媒体文件" }}</el-divider>
+        <!-- 文字播报时没有媒体可选，这一段整体让位给播报设置 -->
         <template v-if="qtEdit.ttsOn">
+          <el-divider content-position="left">播报内容</el-divider>
           <el-form-item label="播报文字" required>
             <el-input v-model="qtEdit.ttsText" type="textarea" :rows="3" maxlength="500" show-word-limit />
           </el-form-item>
-          <el-form-item label="音源" required>
-            <el-select v-model="qtEdit.ttsSource" class="fill">
-              <el-option v-for="a in qtEdit.audioSources" :key="a.id" :label="a.name" :value="a.isServer ? 0 : a.id" />
-            </el-select>
-          </el-form-item>
-          <el-form-item label="语速">
-            <el-select v-model="qtEdit.ttsSpeed" class="qt-narrow">
-              <el-option v-for="sp in 10" :key="sp" :label="sp" :value="sp" />
-            </el-select>
-            <el-radio-group v-model="qtEdit.ttsMale" class="ml12">
-              <el-radio :value="0">女声</el-radio>
-              <el-radio :value="1">男声</el-radio>
-            </el-radio-group>
+          <el-row :gutter="16">
+            <el-col :span="12">
+              <el-form-item label="音源" required>
+                <el-select v-model="qtEdit.ttsSource" class="fill">
+                  <el-option v-for="a in qtEdit.audioSources" :key="a.id" :label="a.name" :value="a.isServer ? 0 : a.id" />
+                </el-select>
+              </el-form-item>
+            </el-col>
+            <el-col :span="12">
+              <el-form-item label="语速">
+                <el-select v-model="qtEdit.ttsSpeed" class="qt-narrow">
+                  <el-option v-for="sp in 10" :key="sp" :label="sp" :value="sp" />
+                </el-select>
+                <el-radio-group v-model="qtEdit.ttsMale" class="ml12">
+                  <el-radio :value="0">女声</el-radio>
+                  <el-radio :value="1">男声</el-radio>
+                </el-radio-group>
+              </el-form-item>
+            </el-col>
+          </el-row>
+          <el-divider content-position="left">目标终端</el-divider>
+          <el-form-item label="播放到" required>
+            <TerminalTree
+              v-model="qtEdit.terminalIds"
+              :terminals="qtEdit.candidates"
+              :loading="qtEdit.loading"
+              :show-sub="false"
+              height="240px"
+            />
           </el-form-item>
         </template>
-        <el-form-item v-else label="选择媒体" required>
-          <!-- 旧版这里是一棵树（媒体库为枝、音频为叶），不是扁平下拉 -->
-          <MediaTree v-model="qtEdit.mediaIds" :selected-names="qtEdit.selectedMedia" height="220px" />
-        </el-form-item>
 
-        <el-divider content-position="left">目标终端</el-divider>
-        <el-form-item label="播放到" required>
-          <TerminalTree v-model="qtEdit.terminalIds" :terminals="qtEdit.candidates" :loading="qtEdit.loading" height="220px" />
-        </el-form-item>
+        <!--
+          媒体文件与目标终端左右并排 —— 旧版 set_task_quickplay.html 的
+          753/754 两个 <td> 就是这么摆的（Media_File_List | Terminal_list）。
+        -->
+        <template v-else>
+          <el-divider content-position="left">播放内容与目标</el-divider>
+          <!--
+            这两列不套 el-form-item —— 表单的 label 是竖排在左侧的，
+            两棵树各自已经有标题，再套一层会出现两个重复的竖排标签。
+          -->
+          <el-row :gutter="16" class="qt-cols">
+            <el-col :span="12">
+              <div class="qt-col-title">媒体文件</div>
+              <MediaTree v-model="qtEdit.mediaIds" :selected-names="qtEdit.selectedMedia" height="260px" />
+            </el-col>
+            <el-col :span="12">
+              <div class="qt-col-title">目标终端</div>
+              <TerminalTree
+                v-model="qtEdit.terminalIds"
+                :terminals="qtEdit.candidates"
+                :loading="qtEdit.loading"
+                :show-sub="false"
+                height="260px"
+              />
+            </el-col>
+          </el-row>
+        </template>
       </el-form>
       <template #footer>
         <el-button @click="qtEdit.visible = false">取消</el-button>
@@ -564,27 +616,53 @@
       把选中的这些终端，补加到选中的那些任务的下发列表里。
       ⚠ 手册说它是「把一个任务的配置同步到其他任务」，与代码完全不符，以代码为准。
     -->
-    <el-dialog v-model="st.visible" title="增补终端到任务" width="620px" top="8vh">
+    <el-dialog v-model="st.visible" title="增补终端到任务" width="680px" top="8vh">
       <el-alert type="info" :closable="false" show-icon class="mb12">
         把选中的 <b>{{ st.ids.length }}</b> 台终端补加到下列任务的下发列表里。已在列表中的不会重复添加。
       </el-alert>
-      <el-select
-        v-model="st.taskIds"
-        multiple
-        filterable
-        remote
-        :remote-method="searchSyncTasks"
-        collapse-tags
-        collapse-tags-tooltip
-        placeholder="选择要增补到的任务"
-        style="width: 100%"
+      <!--
+        任务按类型分两支：作息方案（tasktype 1/15，再按方案名分组）与
+        文件广播（tasktype 2/7）。两类任务的来源接口不同，扁平列成一条
+        长下拉分不清哪条属于哪个方案，所以做成树。
+      -->
+      <div class="st-bar">
+        <el-input
+          v-model="st.keyword"
+          placeholder="搜索任务名称"
+          clearable
+          size="small"
+          :prefix-icon="Search"
+          @input="onSyncSearch"
+        />
+        <el-button size="small" link @click="clearSyncTasks">清空</el-button>
+      </div>
+      <el-tree
+        ref="stTreeRef"
+        v-loading="st.loading"
+        class="st-tree"
+        :data="st.tree"
+        :props="{ label: 'label', children: 'children' }"
+        node-key="key"
+        show-checkbox
+        check-on-click-node
+        :expand-on-click-node="false"
+        :default-expanded-keys="['g:file', 'g:bell']"
+        :filter-node-method="filterSyncNode"
+        @check="onSyncCheck"
       >
-        <el-option v-for="o in st.options" :key="o.taskId" :label="o.taskName" :value="o.taskId" />
-      </el-select>
+        <template #default="{ data }">
+          <span class="st-node">
+            <span class="st-label">{{ data.label }}</span>
+            <span v-if="data.time" class="st-time">{{ data.time }}</span>
+            <span v-if="data.count !== undefined" class="st-count">{{ data.count }}</span>
+          </span>
+        </template>
+      </el-tree>
+      <p class="dlg-note st-sum">已选 {{ st.taskIds.length }} 个任务</p>
       <template #footer>
         <el-button @click="st.visible = false">取消</el-button>
         <el-button type="primary" :disabled="!st.taskIds.length" :loading="st.saving" @click="submitSyncTerminals">
-          增补
+          增补{{ st.taskIds.length ? `（${st.taskIds.length}）` : "" }}
         </el-button>
       </template>
     </el-dialog>
@@ -635,10 +713,11 @@
 </template>
 
 <script setup lang="ts" name="terminalManage">
-import { ArrowDown, EditPen, Folder, Link, Menu } from "@element-plus/icons-vue";
+import { ArrowDown, EditPen, Folder, Link, Menu, Search } from "@element-plus/icons-vue";
 import { ElMessage, ElMessageBox } from "element-plus";
 import { computed, onMounted, reactive, ref } from "vue";
 
+import { getBellPlanApi, getBellPlanListApi } from "@/api/modules/bell";
 import { getTaskListApi, syncTaskTerminalsApi } from "@/api/modules/task";
 import {
   checkTerminalCircuitApi,
@@ -1373,33 +1452,106 @@ const submitReplace = async () => {
   }
 };
 
-/* ─────────────── 增补终端到任务 ─────────────── */
+/* ─────────────── 增补终端到任务 ───────────────
+ *
+ * 任务按类型分两支：
+ *   作息方案  tasktype 1/15，再按方案名（planName）分组
+ *   文件广播  tasktype 2/7
+ * 两类的来源接口不同（/api/bell-plans 与 /api/tasks），扁平列成一条长下拉
+ * 分不清哪条属于哪个方案，所以做成树。
+ *
+ * ⚠ 取值只认叶子（getCheckedNodes(true) 且必须带 taskId）—— 分类节点与
+ *   方案节点都是虚拟的，勾上父节点是「全选它下面的任务」，本身不该被提交。
+ */
+interface SyncNode {
+  key: string;
+  label: string;
+  taskId?: number;
+  time?: string;
+  count?: number;
+  children?: SyncNode[];
+}
+
+const stTreeRef = ref();
 const st = reactive({
   visible: false,
   saving: false,
+  loading: false,
+  keyword: "",
   ids: [] as number[],
   taskIds: [] as number[],
-  options: [] as { taskId: number; taskName: string }[]
+  tree: [] as SyncNode[]
 });
 
-const loadSyncTaskOptions = async (keyword = "") => {
-  // 用任务列表而不是快捷任务的可选集：后者是按**这台终端**收敛过的，
-  // 而增补终端要挑的是全量可见任务，两者范围不同。
-  const { data } = await getTaskListApi({ pageNum: 1, pageSize: 200, searchKey: "taskname", keyword });
-  st.options = (data.list as { taskid: number; taskname: string }[]).map(t => ({
-    taskId: t.taskid,
-    taskName: t.taskname
-  }));
+const loadSyncTree = async () => {
+  st.loading = true;
+  try {
+    const [files, plans] = await Promise.all([
+      getTaskListApi({ pageNum: 1, pageSize: 500 }),
+      getBellPlanListApi({ pageNum: 1, pageSize: 200 })
+    ]);
+
+    const fileNodes: SyncNode[] = (files.data.list as { taskid: number; taskname: string }[]).map(t => ({
+      key: `t:${t.taskid}`,
+      label: t.taskname,
+      taskId: t.taskid
+    }));
+
+    // 方案下的条目要逐个方案去取（列表接口只给方案名与条目数）
+    const planList = plans.data.list as { planName: string; itemCount: number }[];
+    const details = await Promise.all(planList.map(p => getBellPlanApi(p.planName).catch(() => null)));
+    const planNodes: SyncNode[] = planList.map((p, i) => {
+      const items = (details[i]?.data.items ?? []) as { taskid: number; taskname: string; playtime: string }[];
+      return {
+        key: `p:${p.planName}`,
+        label: p.planName,
+        count: items.length,
+        children: items.map(it => ({
+          key: `t:${it.taskid}`,
+          label: it.taskname,
+          taskId: it.taskid,
+          time: it.playtime
+        }))
+      };
+    });
+
+    st.tree = [
+      { key: "g:bell", label: "作息方案", count: planNodes.reduce((n, p) => n + (p.count ?? 0), 0), children: planNodes },
+      { key: "g:file", label: "文件广播", count: fileNodes.length, children: fileNodes }
+    ];
+  } finally {
+    st.loading = false;
+  }
 };
+
+const onSyncCheck = () => {
+  const picked = (stTreeRef.value?.getCheckedNodes(true) ?? []) as SyncNode[];
+  st.taskIds = picked.filter(n => n.taskId !== undefined).map(n => n.taskId as number);
+};
+
+const clearSyncTasks = () => {
+  stTreeRef.value?.setCheckedKeys([], true);
+  st.taskIds = [];
+};
+
+const filterSyncNode = (value: string, data: any) => {
+  if (!value) return true;
+  // 分类与方案节点一律留着，否则搜出来的任务没有落脚的枝
+  if (data.taskId === undefined) return true;
+  return String(data.label ?? "")
+    .toLowerCase()
+    .includes(value.toLowerCase());
+};
+
+const onSyncSearch = () => stTreeRef.value?.filter(st.keyword);
 
 const openSyncTerminals = async (ids: number[]) => {
   st.ids = [...ids];
   st.taskIds = [];
-  await loadSyncTaskOptions();
+  st.keyword = "";
   st.visible = true;
+  await loadSyncTree();
 };
-
-const searchSyncTasks = (keyword: string) => loadSyncTaskOptions(keyword);
 
 const submitSyncTerminals = async () => {
   if (!st.taskIds.length) return;
@@ -1691,8 +1843,60 @@ onMounted(async () => {
 .qt-narrow {
   width: 110px;
 }
-.qt-narrow2 {
-  width: 180px;
+/* 两棵树并排的那一行：与上面的表单项拉开一点距离 */
+.qt-cols {
+  margin-bottom: 18px;
+}
+.qt-col-title {
+  margin-bottom: 6px;
+  font-size: 13px;
+  color: var(--el-text-color-regular);
+}
+.st-bar {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding: 6px 8px;
+  border: 1px solid var(--el-border-color-light);
+  border-bottom: 0;
+  border-radius: 4px 4px 0 0;
+}
+.st-tree {
+  height: 320px;
+  overflow: auto;
+  border: 1px solid var(--el-border-color-light);
+}
+.st-node {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  min-width: 0;
+}
+.st-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.st-time {
+  font-family: var(--el-font-family-monospace, monospace);
+  font-size: 12px;
+  color: var(--el-text-color-secondary);
+}
+.st-count {
+  flex: none;
+  padding: 0 5px;
+  font-size: 12px;
+  color: var(--el-text-color-secondary);
+  background: var(--el-fill-color-light);
+  border-radius: 8px;
+}
+.st-sum {
+  margin: 6px 0 0;
+}
+.qt-col-title::before {
+  margin-right: 4px;
+  color: var(--el-color-danger);
+  content: "*";
 }
 .ok {
   color: var(--el-color-success);

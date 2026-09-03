@@ -69,7 +69,7 @@
           <span v-if="data.terminalId" class="tt-meta">
             <el-tag v-if="data.netstate === 1" type="success" size="small" effect="plain">在线</el-tag>
             <el-tag v-else type="info" size="small" effect="plain">离线</el-tag>
-            <span v-if="data.sub" class="tt-sub">{{ data.sub }}</span>
+            <span v-if="showSub && data.sub" class="tt-sub">{{ data.sub }}</span>
           </span>
           <span v-else class="tt-count">{{ data.children?.length ?? 0 }} 台</span>
         </span>
@@ -126,6 +126,14 @@ const props = withDefaults(
      *   摆一个搜出来没反应的框比没有框更糟，那种地方传 false。
      */
     searchable?: boolean;
+    /**
+     * 节点后面那行次要信息（型号 · IP）显不显示。
+     *
+     * 默认显示 —— 全站十来处选终端的地方都靠它区分同名终端。
+     * 只有在对话框里空间紧、且调用方本来就不关心 IP 时才关掉
+     * （快捷任务的目标终端就是这种）。
+     */
+    showSub?: boolean;
   }>(),
   {
     multiple: true,
@@ -135,7 +143,8 @@ const props = withDefaults(
     // 措辞照 ok112：language/chinese.php 的 No_group_terminal = "无分区终端"
     ungroupedLabel: "无分区终端",
     height: "300px",
-    searchable: true
+    searchable: true,
+    showSub: true
   }
 );
 
@@ -273,7 +282,10 @@ const syncToTree = async () => {
   if (!treeRef.value) return;
   if (props.multiple) {
     // ⚠ 只设叶子的 key。设分组 key 会把整组勾上。
-    treeRef.value.setCheckedKeys(selectedIds.value.map(id => `t:${id}`), false);
+    treeRef.value.setCheckedKeys(
+      selectedIds.value.map(id => `t:${id}`),
+      false
+    );
   } else {
     const id = props.modelValue as number | undefined;
     treeRef.value.setCurrentKey(id ? `t:${id}` : null);
@@ -292,9 +304,7 @@ watch(nodes, syncToTree);
  */
 const emitChecked = () => {
   if (!props.multiple || !treeRef.value) return;
-  const ids = (treeRef.value.getCheckedNodes(true) as TermNode[])
-    .filter(n => !!n.terminalId)
-    .map(n => n.terminalId as number);
+  const ids = (treeRef.value.getCheckedNodes(true) as TermNode[]).filter(n => !!n.terminalId).map(n => n.terminalId as number);
   emit("update:modelValue", ids);
 };
 
