@@ -621,9 +621,10 @@
         把选中的 <b>{{ st.ids.length }}</b> 台终端补加到下列任务的下发列表里。已在列表中的不会重复添加。
       </el-alert>
       <!--
-        任务按类型分两支：作息方案（tasktype 1/15，再按方案名分组）与
-        文件广播（tasktype 2/7）。两类任务的来源接口不同，扁平列成一条
-        长下拉分不清哪条属于哪个方案，所以做成树。
+        任务按类别分支，与 ok112 的 set_synch_task.php 一一对应：作息方案
+        （再按方案名分一层）、文件广播、采播管理、文字语音、终端功放，外加
+        新 Web 的 LED 播放。扁平列成一条长下拉分不清哪条属于哪一类、
+        哪个方案，所以做成树。取值范围与差异见 loadSyncTree 上方的注释。
       -->
       <div class="st-bar">
         <el-input
@@ -646,7 +647,6 @@
         show-checkbox
         check-on-click-node
         :expand-on-click-node="false"
-        :default-expanded-keys="['g:file', 'g:bell']"
         :filter-node-method="filterSyncNode"
         @check="onSyncCheck"
       >
@@ -658,6 +658,7 @@
           </span>
         </template>
       </el-tree>
+      <el-empty v-if="!st.loading && !st.tree.length" description="没有可增补的任务" :image-size="72" />
       <p class="dlg-note st-sum">已选 {{ st.taskIds.length }} 个任务</p>
       <template #footer>
         <el-button @click="st.visible = false">取消</el-button>
@@ -718,6 +719,7 @@ import { ElMessage, ElMessageBox } from "element-plus";
 import { computed, onMounted, reactive, ref } from "vue";
 
 import { getBellPlanApi, getBellPlanListApi } from "@/api/modules/bell";
+import { getTypedListApi, type TypedKind } from "@/api/modules/ninemod";
 import { getTaskListApi, syncTaskTerminalsApi } from "@/api/modules/task";
 import {
   checkTerminalCircuitApi,
@@ -1454,15 +1456,50 @@ const submitReplace = async () => {
 
 /* ─────────────── 增补终端到任务 ───────────────
  *
- * 任务按类型分两支：
- *   作息方案  tasktype 1/15，再按方案名（planName）分组
- *   文件广播  tasktype 2/7
- * 两类的来源接口不同（/api/bell-plans 与 /api/tasks），扁平列成一条长下拉
- * 分不清哪条属于哪个方案，所以做成树。
+ * 任务按类别分支，逐条对齐 ok112 的 set_synch_task.php：
+ *
+ *   ok112 的分组                  它写死的 SQL                          这里的来源
+ *   ─────────────────────────────────────────────────────────────────────────────
+ *   作息方案                      tasktype = 1，按 info 再分方案         /api/bell-plans
+ *   文件广播                      tasktype = 2                          /api/tasks
+ *   采播管理                      tasktype = 3                          typed-tasks/collect
+ *   网络电台                      tasktype = 10                         —— 见下
+ *   文字语音                      tasktype IN (17,19)                   typed-tasks/tts
+ *   终端功放                      tasktype = 5 且 sec_task_id=0、prepower=0   typed-tasks/amplifier
+ *   文字语音（第二次）            tasktype = 17 且 sec_task_id = 0       —— 见下
+ *   LED 播放                      （ok112 没有这一组）                   typed-tasks/led
+ *
+ * 三处与 ok112 不一致，都是有意的：
+ *
+ * 1. ok112 把「文字语音」列了**两遍** —— 一组是 tasktype IN(17,19)，另一组是
+ *    tasktype=17 AND sec_task_id=0。17 号任务同时落进两组，树上会出现两条一模一样
+ *    的记录，勾哪条都是同一个 taskid。这是旧版的重复，不照搬。这里只列一次，
+ *    范围取新 Web 文字语音页的口径 tasktype IN (15,17,19) AND sec_task_id = 0
+ *    —— 比 ok112 多一个 15。15 就是「播一段 TTS 合成出来的文件」，
+ *    displayttsmanager.php 自己也把它当文字语音列，ok112 这里漏了。
+ *
+ * 2. 网络电台（tasktype = 10）没有列。不是漏掉：新 Web 根本没有网络电台这个模块，
+ *    没有页面能建、能看、能删这类任务，单在这里放一支树只会指向一堆管不了的任务。
+ *    等网络电台移植过来再补这一组。
+ *
+ * 3. LED 播放是 ok112 没有的。LED 任务（tasktype 24/30 且 sec_task_id = 0）
+ *    照样有自己的 terminaloftask 下发列表，增补终端对它成立，所以补上。
+ *    ⚠ 只列独立 LED 任务；sec_task_id ≠ 0 的是附在别的任务下面的 LED 子任务，
+ *      终端跟着主任务走，单独增补没有意义 —— typed-tasks/led 本身就已经把它们滤掉了。
+ *
+ * 空的分组不显示（ok112 每组外面都套了 `if(mysqli_num_rows() > 0)`）。
  *
  * ⚠ 取值只认叶子（getCheckedNodes(true) 且必须带 taskId）—— 分类节点与
  *   方案节点都是虚拟的，勾上父节点是「全选它下面的任务」，本身不该被提交。
  */
+
+/** 走 typed-tasks 的四支，顺序照 ok112（LED 是新增的，排最后） */
+const SYNC_TYPED: { kind: TypedKind; label: string }[] = [
+  { kind: "collect", label: "采播管理" },
+  { kind: "tts", label: "文字语音" },
+  { kind: "amplifier", label: "终端功放" },
+  { kind: "led", label: "LED 播放" }
+];
 interface SyncNode {
   key: string;
   label: string;
@@ -1486,9 +1523,10 @@ const st = reactive({
 const loadSyncTree = async () => {
   st.loading = true;
   try {
-    const [files, plans] = await Promise.all([
+    const [files, plans, ...typed] = await Promise.all([
       getTaskListApi({ pageNum: 1, pageSize: 500 }),
-      getBellPlanListApi({ pageNum: 1, pageSize: 200 })
+      getBellPlanListApi({ pageNum: 1, pageSize: 200 }),
+      ...SYNC_TYPED.map(g => getTypedListApi(g.kind, { folderId: 0, pageNum: 1, pageSize: 500 }).catch(() => null))
     ]);
 
     const fileNodes: SyncNode[] = (files.data.list as { taskid: number; taskname: string }[]).map(t => ({
@@ -1515,10 +1553,22 @@ const loadSyncTree = async () => {
       };
     });
 
-    st.tree = [
+    const groups: SyncNode[] = [
       { key: "g:bell", label: "作息方案", count: planNodes.reduce((n, p) => n + (p.count ?? 0), 0), children: planNodes },
-      { key: "g:file", label: "文件广播", count: fileNodes.length, children: fileNodes }
+      { key: "g:file", label: "文件广播", count: fileNodes.length, children: fileNodes },
+      ...SYNC_TYPED.map((g, i) => {
+        const list = (typed[i]?.data.list ?? []) as { taskId: number; taskName: string }[];
+        return {
+          key: `g:${g.kind}`,
+          label: g.label,
+          count: list.length,
+          children: list.map(t => ({ key: `t:${t.taskId}`, label: t.taskName, taskId: t.taskId }))
+        };
+      })
     ];
+
+    // 空分组不显示 —— ok112 每组外面都套了 if(mysqli_num_rows() > 0)
+    st.tree = groups.filter(g => (g.children?.length ?? 0) > 0);
   } finally {
     st.loading = false;
   }
@@ -1536,8 +1586,11 @@ const clearSyncTasks = () => {
 
 const filterSyncNode = (value: string, data: any) => {
   if (!value) return true;
-  // 分类与方案节点一律留着，否则搜出来的任务没有落脚的枝
-  if (data.taskId === undefined) return true;
+  // 分类节点与方案节点自己不参与匹配，一律先判 false。
+  // el-tree 过滤完子节点后会回头把「还有子节点可见」的父节点重新点亮，
+  // 所以搜到的任务照样有落脚的枝，而空掉的那几类会整支收起来 ——
+  // 这里要是直接 return true，六个分类会全部留在屏幕上，其中五个是空的。
+  if (data.taskId === undefined) return false;
   return String(data.label ?? "")
     .toLowerCase()
     .includes(value.toLowerCase());
@@ -1862,7 +1915,10 @@ onMounted(async () => {
   border-radius: 4px 4px 0 0;
 }
 .st-tree {
-  height: 320px;
+  /* 分组从两支涨到六支，320px 一屏只装得下作息方案，往下全靠滚。
+     用 vh 让它跟着窗口长，同时留住底部的「已选 N 个任务」和按钮。 */
+  height: 460px;
+  max-height: 58vh;
   overflow: auto;
   border: 1px solid var(--el-border-color-light);
 }
