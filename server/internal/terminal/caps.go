@@ -116,9 +116,20 @@ func CapsOf(t TypeTraits) Caps {
 		AutoCheck: anyCodec,
 		Circuit:   anyCodec,
 
-		Shortcut:  !in(shortcutExclude, t.TypeID),
-		QuickTask: in(quickTaskAllow, t.TypeID),
-		Instancy:  t.IsSpeech,
+		Shortcut: !in(shortcutExclude, t.TypeID),
+		// ⚠ 白名单之外还要真有键可用。
+		//
+		//   快捷任务是「按某个键执行某条任务」，键值可选集由 keyspec.go 按型号算，
+		//   要求 isencode = 1 且该型号有按键数。而 ok112 抄来的 quickTaskAllow
+		//   里有 6 个型号根本凑不出键：1 / 11 是 isencode = 0，
+		//   23 / 24 / 38 是 shortkeycount = 0。
+		//
+		//   只判白名单的话，这些型号在界面上是「可点」的，点下去必然报错 ——
+		//   菜单说支持、后端说不支持，用户看到的是一个内部错误。
+		//   这里让 caps 反映真实可用性：凑不出键就是不支持。
+		QuickTask: in(quickTaskAllow, t.TypeID) &&
+			len(ShortcutKeyOptions(t.TypeID, t.IsEncode, false)) > 0,
+		Instancy: t.IsSpeech,
 
 		AuthPaging: t.IsEncode && !in(authPagingExclude, t.TypeID),
 

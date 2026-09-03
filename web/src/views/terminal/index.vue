@@ -1085,16 +1085,12 @@ const submitPassword = async () => {
 };
 
 // ---- 删除 ----
+//
+// ⚠ 菜单里**没有**独立的「删除终端」项，这是刻意的：删除终端就是「重新注册」，
+//   两者是同一个动作的两个说法（ok112 的 delterminal 也是名为重新注册、
+//   实为 terminaldel_msg）。删除的入口只有 openReRegister 一个，
+//   下面这个对话框由它打开。别再加第二个入口。
 const del = reactive({ visible: false, saving: false, ids: [] as number[], preview: null as DeletePreview | null });
-
-const openDelete = async (raw: (string | number)[]) => {
-  const ids = toIds(raw);
-  if (!ids.length) return ElMessage.warning("请先勾选终端");
-  del.ids = ids;
-  const { data } = await previewDeleteTerminalsApi(ids);
-  del.preview = data;
-  del.visible = true;
-};
 
 /*
   「重新注册」。

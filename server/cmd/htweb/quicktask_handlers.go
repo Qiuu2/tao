@@ -27,8 +27,10 @@ func failQuickTask(w http.ResponseWriter, action string, err error) {
 		httpx.Fail(w, httpx.CodeNotFound, "终端不存在")
 	case errors.Is(err, terminal.ErrNoPermission):
 		httpx.Fail(w, httpx.CodeForbidden, "没有这台终端的操作权限")
-	case errors.Is(err, terminal.ErrKeyValueBad):
-		httpx.Fail(w, httpx.CodeBadRequest, "该终端型号没有这个键值")
+	// 这两类都是「这台终端做不了」而非服务端出错，原样把话说给用户，
+	// 不要压成一句笼统的提示，更不能落成 500。
+	case errors.Is(err, terminal.ErrKeyValueBad), errors.Is(err, terminal.ErrQuickTaskUnsupported):
+		httpx.Fail(w, httpx.CodeBadRequest, err.Error())
 	default:
 		httpx.Internal(w, action, err)
 	}

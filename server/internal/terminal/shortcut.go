@@ -266,7 +266,9 @@ func (s *Service) assertKeyValue(ctx context.Context, ownerID int64, key int, em
 		return err
 	}
 	if !isEncode {
-		return fmt.Errorf("终端「%s」不支持编码（isencode = 0），不能设置快捷键", name)
+		// 包 ErrKeyValueBad：这是「这个型号做不了」而不是服务端出错，
+		// HTTP 层据此回 400 并把这句话原样给用户，不能落成 500 内部错误。
+		return fmt.Errorf("%w：终端「%s」不支持编码（isencode = 0），没有可用的键值", ErrKeyValueBad, name)
 	}
 	for _, o := range ShortcutKeyOptions(typeID, isEncode, emergency) {
 		if o.Value == key {

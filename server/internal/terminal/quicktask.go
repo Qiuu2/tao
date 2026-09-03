@@ -95,6 +95,11 @@ func (s *Service) SetQuickTask(ctx context.Context, u *auth.User, terminalID int
 	if _, _, err := s.CheckBound(ctx, u, []int64{terminalID}); err != nil {
 		return err
 	}
+	// 型号本身得支持快捷任务。前端会按 caps.quickTask 把菜单项置灰，
+	// 但那只是提示 —— 直接调接口一样能进来，拦截必须在服务端做。
+	if err := s.assertQuickTaskSupported(ctx, terminalID); err != nil {
+		return err
+	}
 	// 键值必须是这个型号真有的（快捷任务用非急救那一套）
 	if err := s.assertKeyValue(ctx, terminalID, key, false); err != nil {
 		return err
@@ -190,4 +195,37 @@ func (s *Service) QuickTaskOptions(ctx context.Context, u *auth.User, terminalID
 		out = append(out, o)
 	}
 	return out, rs.Err()
+}
+
+// ErrQuickTaskUnsupported 终端型号不支持快捷任务。
+var ErrQuickTaskUnsupported = errors.New("该终端型号不支持快捷任务")
+
+// assertQuickTaskSupported 校验终端型号是否在快捷任务的白名单里。
+//
+// 判据是 caps.QuickTask（terminal/caps.go 的 quickTaskAllow，抄自 ok112 的
+// get_terminal_type）。前端拿 caps 置灰菜单，这里是同一套规则的服务端复检 ——
+// 少了它，绕过界面直接调接口就能给不支持的型号绑上快捷任务，
+// 绑完还查不出来：按键在设备上根本没有响应，界面里却明明白白列着一条。
+func (s *Service) assertQuickTaskSupported(ctx context.Context, terminalID int64) error {
+	var tr TypeTraits
+	var dec, enc, lcd, spk int
+	var name string
+	if err := s.db.QueryRowContext(ctx, `
+		SELECT tt.id, COALESCE(tt.isdecode,0), COALESCE(tt.isencode,0),
+		       COALESCE(tt.isLCD,0), COALESCE(tt.isspeech,0),
+		       COALESCE(tt.shortkeycount,0), COALESCE(tt.switchcount,0),
+		       COALESCE(t.terminalname,'')
+		FROM terminal t JOIN terminaltype tt ON tt.id = t.typeid
+		WHERE t.id = ?`, terminalID).
+		Scan(&tr.TypeID, &dec, &enc, &lcd, &spk, &tr.ShortKeyCount, &tr.SwitchCount, &name); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return ErrNotFound
+		}
+		return fmt.Errorf("查询终端类型: %w", err)
+	}
+	tr.IsDecode, tr.IsEncode, tr.IsLCD, tr.IsSpeech = dec == 1, enc == 1, lcd >= 1, spk == 1
+	if !CapsOf(tr).QuickTask {
+		return fmt.Errorf("%w：终端「%s」（类型 %d）", ErrQuickTaskUnsupported, name, tr.TypeID)
+	}
+	return nil
 }
