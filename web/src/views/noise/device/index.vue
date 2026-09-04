@@ -19,11 +19,15 @@
       row-key="id"
       @sort-change="onSortChange"
     >
-      <!-- 按钮对齐 :80（docs/image/oktw/页面规格.txt「噪声设备」）：添加设备 / 删除设备 -->
+      <!-- 按钮照旧版 sounddevice_form.html：全选 / 取消 / 添加设备 / 修改设备 / 删除设备
+           （全选与取消由 ProTable 的复选框代劳） -->
       <template #tableHeader="scope">
         <div class="header-bar">
           <div class="header-left">
             <el-button type="primary" :disabled="!canEdit" @click="openCreate">添加设备</el-button>
+            <el-button :disabled="!canEdit || scope.selectedListIds.length !== 1" @click="openEditById(scope.selectedListIds)">
+              修改设备
+            </el-button>
             <el-button type="danger" :disabled="!canEdit || !scope.isSelected" @click="doDelete(scope.selectedListIds)">
               删除设备
             </el-button>
@@ -51,19 +55,19 @@
         <el-form-item label="设备地址名称" required>
           <el-input v-model="form.name" maxlength="10" show-word-limit placeholder="请输入设备地址名称" />
         </el-form-item>
-        <el-form-item label="设备IP" required>
+        <el-form-item label="设备ip" required>
           <el-input v-model="form.ip" placeholder="请输入设备IP" />
         </el-form-item>
         <el-form-item label="设备地址" required>
           <el-input-number v-model="form.devaddr" :min="0" :max="255" controls-position="right" />
         </el-form-item>
-        <el-form-item label="发送端口">
+        <el-form-item label="发送通道">
           <el-input-number v-model="form.sendport" :min="0" :max="65535" controls-position="right" />
         </el-form-item>
       </el-form>
       <template #footer>
         <el-button @click="dlg.visible = false">取消</el-button>
-        <el-button type="primary" :loading="dlg.saving" @click="submit">确定</el-button>
+        <el-button type="primary" :loading="dlg.saving" @click="submit">提交</el-button>
       </template>
     </el-dialog>
   </div>
@@ -106,12 +110,12 @@ const onSortChange = ({ prop, order }: { prop: string; order: string | null }) =
 // 列清单严格照 :80：ID | 设备IP | 设备名称 | 设备地址 | 设备噪声值 | 操作，无搜索区。
 // 「发送端口」「声场分区」两列已按要求去掉，两者仍可在修改弹窗与声场分区页里看到。
 const columns = reactive<ColumnProps<SoundDevice>[]>([
+  // 列清单照旧版 sounddevice_form.html：选项 | 设备ip | 设备名称 | 设备地址 | 设备噪声值
   { type: "selection", fixed: "left", width: 50 },
-  { prop: "id", label: "ID", width: 90 },
-  { prop: "ip", label: "设备IP", width: 180 },
-  { prop: "name", label: "设备名称", minWidth: 220 },
-  { prop: "devaddr", label: "设备地址", width: 130 },
-  { prop: "dbvalue", label: "设备噪声值", width: 140 },
+  { prop: "ip", label: "设备ip", width: 200 },
+  { prop: "name", label: "设备名称", minWidth: 240 },
+  { prop: "devaddr", label: "设备地址", width: 140 },
+  { prop: "dbvalue", label: "设备噪声值", width: 150 },
   { prop: "operation", label: "操作", fixed: "right", width: 140 }
 ]);
 
@@ -127,6 +131,15 @@ const openCreate = () => {
 
 const openEdit = async (row: SoundDevice) => {
   const { data } = await getSoundDeviceApi(row.id);
+  Object.assign(form, { name: data.name, ip: data.ip, devaddr: data.devaddr, sendport: data.sendport });
+  Object.assign(dlg, { visible: true, saving: false, isEdit: true, title: `修改噪声设备：${data.name}`, id: data.id });
+};
+
+/** 工具栏上的「修改设备」：旧版是「勾一条再点」，这里保留同一套语义 */
+const openEditById = async (raw: (string | number)[]) => {
+  const ids = toIds(raw);
+  if (ids.length !== 1) return ElMessage.warning("请勾选一条设备");
+  const { data } = await getSoundDeviceApi(ids[0]);
   Object.assign(form, { name: data.name, ip: data.ip, devaddr: data.devaddr, sendport: data.sendport });
   Object.assign(dlg, { visible: true, saving: false, isEdit: true, title: `修改噪声设备：${data.name}`, id: data.id });
 };

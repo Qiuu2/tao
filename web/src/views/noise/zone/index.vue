@@ -11,18 +11,16 @@
 -->
 <template>
   <div class="table-box">
-    <ProTable
-      ref="proTableRef"
-      :columns="columns"
-      :request-api="getSoundGroupsApi"
-      :data-callback="dataCallback"
-      row-key="id"
-    >
+    <ProTable ref="proTableRef" :columns="columns" :request-api="getSoundGroupsApi" :data-callback="dataCallback" row-key="id">
       <template #tableHeader="scope">
         <div class="header-bar">
-          <!-- 按钮对齐 :80：添加分区 / 删除分区 -->
+          <!-- 按钮照旧版 streammanager_form.html：全选 / 取消 / 添加分区 / 修改分区 / 删除分区
+               （全选与取消由 ProTable 的复选框代劳） -->
           <div class="header-left">
             <el-button type="primary" :disabled="!canEdit" @click="openCreate">添加分区</el-button>
+            <el-button :disabled="!canEdit || scope.selectedListIds.length !== 1" @click="openEditById(scope.selectedListIds)">
+              修改分区
+            </el-button>
             <el-button type="danger" :disabled="!canEdit || !scope.isSelected" @click="doDelete(scope.selectedListIds)">
               删除分区
             </el-button>
@@ -34,22 +32,12 @@
       </template>
 
       <template #operation="s">
-        <el-button
-          type="primary"
-          link
-          :icon="EditPen"
-          :disabled="!canEdit || !s.row.canModify"
-          @click="openEdit(s.row)"
-        >
+        <!-- 旧版这一列就是一个「浏览终端」链接（zhaoshengdisplayterminal.php） -->
+        <el-button type="primary" link @click="openTerminals(s.row)">浏览终端</el-button>
+        <el-button type="primary" link :icon="EditPen" :disabled="!canEdit || !s.row.canModify" @click="openEdit(s.row)">
           修改
         </el-button>
-        <el-button
-          type="danger"
-          link
-          :icon="Delete"
-          :disabled="!canEdit || !s.row.canModify"
-          @click="doDelete([s.row.id])"
-        >
+        <el-button type="danger" link :icon="Delete" :disabled="!canEdit || !s.row.canModify" @click="doDelete([s.row.id])">
           删除
         </el-button>
       </template>
@@ -63,12 +51,7 @@
         </el-form-item>
         <el-form-item label="选择终端">
           <!-- 按终端分区分组的树。⚠ 这个接口的主键叫 terminalId 不是 id，组件里已适配 -->
-          <TerminalTree
-            v-model="selectedTerminals"
-            :terminals="terminals"
-            :loading="terminalLoading"
-            @search="searchTerminals"
-          />
+          <TerminalTree v-model="selectedTerminals" :terminals="terminals" :loading="terminalLoading" @search="searchTerminals" />
         </el-form-item>
         <el-form-item label="选择设备">
           <el-select
@@ -93,7 +76,26 @@
 
       <template #footer>
         <el-button @click="dlg.visible = false">取消</el-button>
-        <el-button type="primary" :loading="dlg.saving" @click="submit">确定</el-button>
+        <el-button type="primary" :loading="dlg.saving" @click="submit">提交</el-button>
+      </template>
+    </el-dialog>
+
+    <!-- 浏览终端：旧版 zhaoshengdisplayterminal.php 那张表 -->
+    <el-dialog v-model="termDlg.visible" :title="termDlg.title" width="760px" top="8vh">
+      <el-table :data="termDlg.list" size="small" max-height="400" empty-text="这个分区里还没有终端">
+        <el-table-column prop="terminalname" label="终端名称" min-width="180" show-overflow-tooltip />
+        <el-table-column prop="typeName" label="终端类型" width="150" show-overflow-tooltip />
+        <el-table-column label="网络状态" width="110">
+          <template #default="{ row }">
+            <el-tag :type="row.netstate === 1 ? 'success' : 'info'" size="small">
+              {{ row.netstate === 1 ? "在线" : "离线" }}
+            </el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column prop="ip" label="终端IP" width="160" />
+      </el-table>
+      <template #footer>
+        <el-button @click="termDlg.visible = false">关闭</el-button>
       </template>
     </el-dialog>
   </div>
@@ -137,7 +139,7 @@ const dataCallback = (data: any) => {
 const columns = reactive<ColumnProps<SoundGroup>[]>([
   { type: "selection", fixed: "left", width: 50 },
   { prop: "name", label: "分区名称", minWidth: 400 },
-  { prop: "operation", label: "操作", fixed: "right", width: 140 }
+  { prop: "operation", label: "操作", fixed: "right", width: 230 }
 ]);
 
 const refresh = () => proTableRef.value?.getTableList();
@@ -184,6 +186,24 @@ const openEdit = async (row: SoundGroup) => {
   Object.assign(dlg, { visible: true, saving: false, isEdit: true, title: `修改声场分区：${data.name}`, id: data.id });
   await Promise.all([searchTerminals(""), loadDevices()]);
   if (dropped) ElMessage.warning(`该分区里有 ${dropped} 台终端已被删除，已自动移除`);
+};
+
+/** 工具栏上的「修改分区」：旧版是「勾一条再点」，这里保留同一套语义 */
+const openEditById = async (raw: (string | number)[]) => {
+  const ids = toIds(raw);
+  if (ids.length !== 1) return ElMessage.warning("请勾选一个分区");
+  await openEdit({ id: ids[0] } as SoundGroup);
+};
+
+/* ---------------- 浏览终端 ---------------- */
+
+const termDlg = reactive({ visible: false, title: "", list: [] as SoundGroupTerminal[] });
+
+const openTerminals = async (row: SoundGroup) => {
+  const { data } = await getSoundGroupApi(row.id);
+  termDlg.title = `${data.name} 的终端`;
+  termDlg.list = data.terminals ?? [];
+  termDlg.visible = true;
 };
 
 const submit = async () => {
