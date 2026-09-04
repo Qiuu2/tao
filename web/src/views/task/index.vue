@@ -308,35 +308,35 @@
         </el-row>
         <el-row :gutter="16">
           <el-col :span="12">
-            <el-form-item label="随机播放">
-              <!-- 旧版是一个复选框；⚠ 取值反直觉：0 = 随机、1 = 顺序 -->
-              <el-checkbox v-model="randomOn">选中歌曲将随机播放</el-checkbox>
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
             <el-form-item label="预开电源">
-              <el-select v-model="dlg.form.power.prepower" style="width: 140px">
+              <el-select v-model="dlg.form.power.prepower" class="fill">
                 <el-option v-for="s in prepowerSeconds" :key="s" :label="`${s} 秒`" :value="s" />
                 <el-option v-for="m in [1, 2, 3, 4, 5]" :key="`m${m}`" :label="`${m} 分钟`" :value="m * 60" />
               </el-select>
             </el-form-item>
           </el-col>
+          <el-col :span="12">
+            <el-form-item label="随机播放">
+              <!-- 旧版是一个复选框；⚠ 取值反直觉：0 = 随机、1 = 顺序 -->
+              <el-checkbox v-model="randomOn">选中歌曲将随机播放</el-checkbox>
+            </el-form-item>
+          </el-col>
         </el-row>
         <el-row :gutter="16">
+          <el-col :span="12">
+            <el-form-item label="发送模式">
+              <el-select v-model="dlg.form.power.datasendmodel" class="fill">
+                <el-option label="单播" :value="0" />
+                <el-option label="组播" :value="1" />
+              </el-select>
+            </el-form-item>
+          </el-col>
           <el-col :span="12">
             <el-form-item label="任务级别">
               <el-select v-model="dlg.form.playback.priority" style="width: 110px">
                 <el-option v-for="p in priorityOptions" :key="p" :label="String(p)" :value="p" />
               </el-select>
               <span class="form-tip">10 为最高级别</span>
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="发送模式">
-              <el-select v-model="dlg.form.power.datasendmodel" style="width: 110px">
-                <el-option label="单播" :value="0" />
-                <el-option label="组播" :value="1" />
-              </el-select>
             </el-form-item>
           </el-col>
         </el-row>
@@ -347,15 +347,24 @@
             间隔时间 —— 总时长 + 间隔长度，再选「间隔时长」或「间隔次数」
           库里没有 intervalmode 这一列，它由 interval_s 是否为 0 反推。
         -->
-        <el-form-item label="播放模式">
-          <el-select v-model="playMode" style="width: 140px" @change="onPlayModeChange">
-            <el-option label="普通模式" :value="0" />
-            <el-option label="间隔时间" :value="1" />
-          </el-select>
-          <el-checkbox v-model="ledOn" class="ml16">led播放</el-checkbox>
-        </el-form-item>
+        <el-row :gutter="16">
+          <el-col :span="12">
+            <el-form-item label="播放模式">
+              <el-select v-model="playMode" class="fill" @change="onPlayModeChange">
+                <el-option label="普通模式" :value="0" />
+                <el-option label="间隔时间" :value="1" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="led播放">
+              <el-checkbox v-model="ledOn">上屏显示 led 字幕</el-checkbox>
+            </el-form-item>
+          </el-col>
+        </el-row>
 
-        <el-form-item v-if="playMode === 0" label=" ">
+        <!-- 两行单选左对齐：不占标签列，两行的输入框起点也对齐（.len-line 里给了固定宽度） -->
+        <el-form-item v-if="playMode === 0" label-width="0">
           <el-radio-group v-model="dlg.form.playback.timelengthtype" class="len-group">
             <div class="len-line">
               <el-radio :value="1">时长</el-radio>
@@ -385,7 +394,7 @@
           <el-form-item label="间隔长度">
             <HmsInput v-model="dlg.form.playback.interval_s" />
           </el-form-item>
-          <el-form-item label=" ">
+          <el-form-item label-width="0">
             <el-radio-group v-model="dlg.form.playback.intplaylengthtype" class="len-group">
               <div class="len-line">
                 <el-radio :value="1">间隔时长</el-radio>
@@ -1370,6 +1379,9 @@ onMounted(async () => {
 .len-group {
   display: flex;
   flex-direction: column;
+  /* el-radio-group 自带 align-items: center，竖排时会把两行居中，
+     两行的起点因此对不齐，这里改回左对齐 */
+  align-items: flex-start;
   gap: 8px;
   width: 100%;
 }
@@ -1378,6 +1390,12 @@ onMounted(async () => {
   flex-wrap: wrap;
   gap: 8px;
   align-items: center;
+  /* 「时长」两个字和「循环次数」四个字宽度不同，给单选一个固定宽度，
+     两行的输入框才在同一条竖线上 */
+  :deep(.el-radio) {
+    width: 88px;
+    margin-right: 0;
+  }
 }
 .led-dev {
   width: 100%;
