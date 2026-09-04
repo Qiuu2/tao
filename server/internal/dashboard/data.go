@@ -277,7 +277,7 @@ type BrowseItem struct {
 	TaskID     int64  `json:"taskId"`
 	TaskName   string `json:"taskName"`
 	FolderName string `json:"folderName"`
-	// Weekdays 是播放周期，7 位掩码转成 [1..7]
+	// Weekdays 是播放周期，7 位掩码转成 [1..7]（1 = 周日）
 	Weekdays  []int  `json:"weekdays"`
 	CycleText string `json:"cycleText"`
 	PlayTime  string `json:"playtime"`
@@ -293,7 +293,7 @@ type BrowseItem struct {
 
 type BrowseQuery struct {
 	FolderID int64
-	// Weekday 1..7（周一=1），0 表示不筛
+	// Weekday 1..7（周日=1，与掩码位次一致），0 表示不筛
 	Weekday int
 	// AutoOnly: 1=只看自动任务, 2=只看手动任务, 0=全部
 	AutoMode int
@@ -318,8 +318,9 @@ type BrowseResult struct {
 // 这里保持同一口径。
 func (s *Service) Browse(ctx context.Context, u *auth.User, q BrowseQuery) (*BrowseResult, error) {
 	now := time.Now()
-	// Go 的 Weekday 周日=0；这里的掩码是周一=第 0 位
-	idx := (int(now.Weekday()) + 6) % 7
+	// exemodel 是周日打头的掩码（旧站 SUBSTRING(exemodel, WEEKDAY()+2 ... ) 里
+	// 周日取第 1 位、周一第 2 位）；Go 的 Weekday 也是周日=0，直接对上。
+	idx := int(now.Weekday())
 	if q.Weekday >= 1 && q.Weekday <= 7 {
 		idx = q.Weekday - 1
 	}
@@ -411,7 +412,8 @@ func parseWeekdays(mask string) []int {
 	return out
 }
 
-var weekNames = [7]string{"一", "二", "三", "四", "五", "六", "日"}
+// exemodel 是周日打头的 7 位掩码（第 1 位 = 周日），标签顺序要跟它对齐。
+var weekNames = [7]string{"日", "一", "二", "三", "四", "五", "六"}
 
 func cycleText(mask string) string {
 	days := parseWeekdays(mask)

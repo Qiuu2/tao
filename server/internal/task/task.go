@@ -349,7 +349,7 @@ func decorate(it *Item) {
 	}
 }
 
-// parseWeekdays 把 7 位掩码转成 [1..7]（周一 = 1）。
+// parseWeekdays 把 7 位掩码转成 [1..7]（掩码是周日打头的，所以 1 = 周日）。
 // BR-165：1111111 = 每天，0000000 = 手动。
 func parseWeekdays(mask string) []int {
 	out := []int{}

@@ -442,7 +442,8 @@ const loadPerf = async () => {
 
 /* ---------------- 浏览任务 ---------------- */
 
-const weekLabels = ["一", "二", "三", "四", "五", "六", "日"];
+// exemodel 是周日打头的 7 位掩码，下拉的 value 就是位次（周日 = 1）
+const weekLabels = ["日", "一", "二", "三", "四", "五", "六"];
 const tasks = ref<BrowseItem[]>([]);
 const tasksTotal = ref(0);
 const tasksLoading = ref(false);

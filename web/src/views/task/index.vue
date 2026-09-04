@@ -652,7 +652,8 @@ import TerminalTree from "@/components/TerminalTree/index.vue";
 import { useAuthStore } from "@/stores/modules/auth";
 import type { ColumnProps, ProTableInstance } from "@/components/ProTable/interface";
 
-const WEEK = ["一", "二", "三", "四", "五", "六", "日"];
+// exemodel 是周日打头的 7 位掩码（旧站表单也是「日一二三四五六」的排法）
+const WEEK = ["日", "一", "二", "三", "四", "五", "六"];
 
 const route = useRoute();
 const router = useRouter();

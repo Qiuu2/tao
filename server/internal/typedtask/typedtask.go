@@ -452,10 +452,11 @@ func switchText(cmd int64) string {
 	return "打开"
 }
 
-var weekNames = [7]string{"一", "二", "三", "四", "五", "六", "日"}
+// exemodel 是周日打头的 7 位掩码（第 1 位 = 周日），标签顺序要跟它对齐。
+var weekNames = [7]string{"日", "一", "二", "三", "四", "五", "六"}
 
 // cycleText 把 exemodel 的 7 位掩码翻成人话。
-// 位序与作息方案一致：第 0 位是周一 …… 第 6 位是周日。
+// 位序与作息方案一致：第 0 位是周日 …… 第 6 位是周六。
 func cycleText(mask string) string {
 	if len(mask) != 7 {
 		return "—"

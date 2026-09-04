@@ -63,7 +63,7 @@ type AutoRestart struct {
 	// Time 是当前生效的那个时间（HH:MM:SS）。
 	// ⚠ 重启和关机共用 playtime 这一列，所以只有 Mode 对应的那个时间是真的。
 	Time string `json:"time"`
-	// ExeModel 是 7 位星期掩码，第 0 位是周一。全 0 表示后台永远不执行。
+	// ExeModel 是 7 位星期掩码，第 0 位是周日。全 0 表示后台永远不执行。
 	ExeModel string `json:"exemodel"`
 }
 

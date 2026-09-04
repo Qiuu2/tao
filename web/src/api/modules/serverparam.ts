@@ -165,7 +165,7 @@ export interface AutoRestart {
   mode: RestartMode;
   /** HH:MM:SS。⚠ 只属于当前 mode 那一边，另一边库里没有存储。 */
   time: string;
-  /** 7 位星期掩码，第 0 位是周一 */
+  /** 7 位星期掩码，第 0 位是周日 */
   exemodel: string;
 }
 

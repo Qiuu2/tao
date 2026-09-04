@@ -546,7 +546,8 @@ const canEdit = computed(() => !!(authStore.authButtonListGet as any)?.task?.edi
 
 const toIds = (raw: (string | number)[]) => (raw ?? []).map(Number).filter(n => Number.isFinite(n) && n > 0);
 
-const WEEK = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"];
+// exemodel 是周日打头的 7 位掩码，标签顺序要跟位次一致
+const WEEK = ["周日", "周一", "周二", "周三", "周四", "周五", "周六"];
 
 const proTableRef = ref<ProTableInstance>();
 const scopeNote = ref("");

@@ -388,7 +388,8 @@ type TransferTask struct {
 	SourceMissing bool `json:"sourceMissing"`
 }
 
-var weekNames = [7]string{"一", "二", "三", "四", "五", "六", "日"}
+// exemodel 是周日打头的 7 位掩码（第 1 位 = 周日），标签顺序要跟它对齐。
+var weekNames = [7]string{"日", "一", "二", "三", "四", "五", "六"}
 
 // cycleText / lengthText 与 typedtask 包里那两份同口径，
 // 只是离线副本这边独立取一份，免得两个包互相依赖。
