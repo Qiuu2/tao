@@ -35,11 +35,7 @@
         <div class="header-bar">
           <div class="header-left">
             <el-button type="primary" :disabled="!btn.add" @click="openCreate">添加方案</el-button>
-            <el-button
-              type="danger"
-              :disabled="!btn.delete || !scope.isSelected"
-              @click="batchCmd('delete', scope.selectedList)"
-            >
+            <el-button type="danger" :disabled="!btn.delete || !scope.isSelected" @click="batchCmd('delete', scope.selectedList)">
               删除方案
             </el-button>
             <el-button
@@ -199,56 +195,68 @@
     <!-- 新建方案 / 修改方案级属性 -->
     <el-dialog v-model="dlg.visible" :title="dlg.title" width="860px" top="5vh">
       <el-alert v-if="dlg.mixedAttrs.length" type="warning" :closable="false" class="mb12">
-        方案内以下属性各条目取值不一致：{{ dlg.mixedAttrs.join("、") }}。
-        保存后会统一成下面填写的值。
+        方案内以下属性各条目取值不一致：{{ dlg.mixedAttrs.join("、") }}。 保存后会统一成下面填写的值。
       </el-alert>
 
-      <!-- 表单项名称照 :80 的「添加方案」弹窗（docs/image/oktw/子页规格.txt） -->
-      <el-form :model="dlg.form" label-width="120px">
-        <el-form-item label="作息方案名称" required>
-          <el-input v-model="dlg.form.planName" maxlength="80" show-word-limit placeholder="请输入作息方案名称" />
-        </el-form-item>
+      <!--
+        表单排布一比一照 ok112 的「添加方案」（BellManager/addbelltask.html）：
 
-        <el-row :gutter="12">
-          <el-col :span="8">
-            <el-form-item label="开始日期" required>
-              <el-date-picker
-                v-model="dateRange[0]"
-                type="date"
-                value-format="YYYY-MM-DD"
-                placeholder="请选择开始日期"
-                class="fill"
-              />
+          ─ 任务配置 ────────────────────────────────
+          方案名称 [____]        方案任务 [添加任务]
+          预开电源 [下拉]        任务级别 [下拉] (10最高)
+          作息音量 [____]        发送模式 [单播/组播]
+          开始日期 [____]        结束日期 [____]
+          执行模式 [每天/每星期]  ← 选「每星期」才出现星期勾选
+          ─ 条目表 ─────────────────────────────────
+          序号 | 课时名称 | 作息时间 | 作息音乐 | 播放时长 | 操作
+          ─ 终端列表 ───────────────────────────────
+
+        ⚠ 旧版这张表里**没有**「播放模式（随机/顺序）」—— 建作息条目时
+          israndomplay 是写死 0（随机）的。所以这里不摆这个输入框，
+          新建时仍按 0 提交；修改时沿用方案里原有的值，不会被清掉。
+      -->
+      <el-form :model="dlg.form" label-width="90px">
+        <el-divider content-position="left">任务配置</el-divider>
+
+        <el-row :gutter="16">
+          <el-col :span="12">
+            <!-- 旧版 maxlength="8" -->
+            <el-form-item label="方案名称" required>
+              <el-input v-model="dlg.form.planName" maxlength="8" show-word-limit placeholder="请输入方案名称" />
             </el-form-item>
           </el-col>
-          <el-col :span="8">
-            <el-form-item label="结束日期" required>
-              <el-date-picker
-                v-model="dateRange[1]"
-                type="date"
-                value-format="YYYY-MM-DD"
-                placeholder="请选择结束日期"
-                class="fill"
-              />
-            </el-form-item>
-          </el-col>
-          <el-col :span="8">
-            <el-form-item label="作息音量">
-              <el-input-number v-model="dlg.form.playback.defaultvolume" :min="0" :max="100" />
+          <el-col :span="12">
+            <el-form-item v-if="!dlg.isEdit" label="方案任务">
+              <el-button type="primary" plain :icon="CirclePlus" @click="addItemRow">添加任务</el-button>
+              <span class="dlg-note ml8">共 {{ dlg.items.length }} 条</span>
             </el-form-item>
           </el-col>
         </el-row>
 
-        <el-form-item label="执行模式">
-          <el-checkbox-group v-model="weekdays">
-            <el-checkbox v-for="(w, i) in weekLabels" :key="i" :value="i">{{ w }}</el-checkbox>
-          </el-checkbox-group>
-        </el-form-item>
-
-        <el-row :gutter="12">
+        <el-row :gutter="16">
           <el-col :span="12">
-            <el-form-item label="任务等级">
-              <el-input-number v-model="dlg.form.playback.priority" :min="dlg.priorityMin" :max="dlg.priorityMax" />
+            <!-- prepower 的单位是秒不是分钟；选项与默认值（15 秒）都照旧版 -->
+            <el-form-item label="预开电源">
+              <el-select v-model="dlg.form.playback.prepower" class="fill">
+                <el-option v-for="s in prepowerSeconds" :key="s" :label="`${s} 秒`" :value="s" />
+                <el-option v-for="m in [1, 2, 3, 4, 5]" :key="`m${m}`" :label="`${m} 分钟`" :value="m * 60" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="任务级别">
+              <el-select v-model="dlg.form.playback.priority" style="width: 110px">
+                <el-option v-for="p in priorityOptions" :key="p" :label="String(p)" :value="p" />
+              </el-select>
+              <span class="dlg-note ml8">（10最高）</span>
+            </el-form-item>
+          </el-col>
+        </el-row>
+
+        <el-row :gutter="16">
+          <el-col :span="12">
+            <el-form-item label="作息音量">
+              <el-slider v-model="dlg.form.playback.defaultvolume" :min="0" :max="100" show-input />
             </el-form-item>
           </el-col>
           <el-col :span="12">
@@ -259,78 +267,113 @@
               </el-radio-group>
             </el-form-item>
           </el-col>
+        </el-row>
+
+        <el-row :gutter="16">
           <el-col :span="12">
-            <!-- ⚠ 取值反直觉：0 = 随机、1 = 顺序。旧库如此，不能顺手对调 -->
-            <el-form-item label="播放模式">
-              <el-radio-group v-model="dlg.form.playback.israndomplay">
-                <el-radio :value="0">随机</el-radio>
-                <el-radio :value="1">顺序</el-radio>
-              </el-radio-group>
+            <el-form-item label="开始日期" required>
+              <el-date-picker v-model="dateRange[0]" type="date" value-format="YYYY-MM-DD" placeholder="开始日期" class="fill" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="结束日期" required>
+              <el-date-picker v-model="dateRange[1]" type="date" value-format="YYYY-MM-DD" placeholder="结束日期" class="fill" />
             </el-form-item>
           </el-col>
         </el-row>
 
-        <!-- prepower 的单位是秒不是分钟，取值沿用旧界面下拉 -->
-        <el-form-item label="预开电源">
-          <el-select v-model="dlg.form.playback.prepower" style="width: 120px">
-            <el-option v-for="s in prepowerSeconds" :key="s" :label="`${s} 秒`" :value="s" />
-            <el-option v-for="m in [1, 2, 3, 4, 5]" :key="`m${m}`" :label="`${m} 分钟`" :value="m * 60" />
+        <!--
+          执行模式是下拉「每天 / 每星期」，选每星期才展开星期勾选
+          （旧版 select#exemodel 的 onChange="displayweek(this)"）。
+          每天 = 七位全 1。
+        -->
+        <el-form-item label="执行模式">
+          <el-select v-model="runMode" style="width: 140px" @change="onRunModeChange">
+            <el-option label="每天" :value="1" />
+            <el-option label="每星期" :value="2" />
           </el-select>
+          <el-checkbox-group v-if="runMode === 2" v-model="weekdays" class="ml8">
+            <el-checkbox v-for="(w, i) in weekLabels" :key="i" :value="i">{{ w }}</el-checkbox>
+          </el-checkbox-group>
         </el-form-item>
 
-        <el-form-item label="终端范围" :required="!dlg.isEdit">
+        <!-- 新建时才在这里填条目；修改走「条目」抽屉，避免一次提交动几百行 -->
+        <template v-if="!dlg.isEdit">
+          <el-divider content-position="left">方案任务</el-divider>
+          <!-- 列名照旧版 coursetable：序号 / 课时名称 / 作息时间 / 作息音乐 / 播放时长 / 操作 -->
+          <el-table :data="dlg.items" size="small" border max-height="300">
+            <el-table-column type="index" label="序号" width="60" align="center" />
+            <el-table-column label="课时名称" min-width="150">
+              <template #default="{ row }">
+                <el-input v-model="row.taskname" size="small" maxlength="12" placeholder="课时名称" />
+              </template>
+            </el-table-column>
+            <el-table-column label="作息时间" width="130">
+              <template #default="{ row }">
+                <el-time-picker v-model="row.playtime" value-format="HH:mm:ss" size="small" placeholder="00:00:00" class="fill" />
+              </template>
+            </el-table-column>
+            <el-table-column label="作息音乐" min-width="200">
+              <template #default="{ row }">
+                <el-select
+                  v-model="row.mediaIds"
+                  multiple
+                  filterable
+                  remote
+                  reserve-keyword
+                  collapse-tags
+                  collapse-tags-tooltip
+                  size="small"
+                  :remote-method="searchMedia"
+                  :loading="mediaLoading"
+                  placeholder="媒体名称搜索"
+                  class="fill"
+                >
+                  <el-option v-for="m in medias" :key="m.id" :label="m.name" :value="m.id" />
+                </el-select>
+              </template>
+            </el-table-column>
+            <el-table-column label="播放时长" width="180">
+              <template #default="{ row }">
+                <div class="len-cell">
+                  <el-select v-model="row.timelengthtype" size="small" style="width: 74px">
+                    <el-option label="时长" :value="1" />
+                    <el-option label="次数" :value="2" />
+                  </el-select>
+                  <el-input-number
+                    v-model="row.timelength"
+                    :min="0"
+                    :max="86400"
+                    size="small"
+                    :controls="false"
+                    style="width: 90px"
+                  />
+                </div>
+              </template>
+            </el-table-column>
+            <!-- 旧版每行三个按钮：添加 / 删除 / 复制 -->
+            <el-table-column label="操作" width="150" align="center">
+              <template #default="{ $index }">
+                <el-button link type="primary" @click="addItemRow">添加</el-button>
+                <el-button link type="primary" @click="copyItemRow($index)">复制</el-button>
+                <el-button link type="danger" @click="dlg.items.splice($index, 1)">删除</el-button>
+              </template>
+            </el-table-column>
+            <template #empty><span class="dlg-note">还没有课时，点「添加任务」加一条</span></template>
+          </el-table>
+        </template>
+
+        <el-divider content-position="left">终端列表</el-divider>
+        <el-form-item label-width="0" :required="!dlg.isEdit">
           <TerminalTree
             v-model="selectedTerminalIds"
             :terminals="terminals"
             :loading="terminalLoading"
             height="260px"
+            style="width: 100%"
             @search="searchTerminals"
           />
         </el-form-item>
-
-        <!-- 新建时才在这里填条目；修改走「条目」抽屉，避免一次提交动几百行 -->
-        <template v-if="!dlg.isEdit">
-          <!-- 每列对应 :80 内嵌表格的：任务名称 | 播放时间 | 播放类型 | 播放时长/次数 | 作息音乐 -->
-          <el-divider content-position="left">打铃条目</el-divider>
-          <div class="item-head">
-            <span style="width: 180px">任务名称</span>
-            <span style="width: 130px">播放时间</span>
-            <span style="width: 120px">播放类型</span>
-            <span style="width: 120px">播放时长/次数</span>
-            <span style="width: 220px">作息音乐</span>
-            <span style="width: 32px"></span>
-          </div>
-          <div v-for="(it, idx) in dlg.items" :key="idx" class="item-row">
-            <el-input v-model="it.taskname" placeholder="请输入任务名称" style="width: 180px" />
-            <el-time-picker
-              v-model="it.playtime"
-              value-format="HH:mm:ss"
-              placeholder="播放时间"
-              style="width: 130px"
-            />
-            <el-select v-model="it.timelengthtype" style="width: 120px">
-              <el-option label="按时长播放" :value="1" />
-              <el-option label="按次数播放" :value="2" />
-            </el-select>
-            <el-input-number v-model="it.timelength" :min="0" :max="86400" style="width: 120px" />
-            <el-select
-              v-model="it.mediaIds"
-              multiple
-              filterable
-              remote
-              reserve-keyword
-              collapse-tags
-              :remote-method="searchMedia"
-              :loading="mediaLoading"
-              placeholder="媒体名称搜索"
-              style="width: 220px"
-            >
-              <el-option v-for="m in medias" :key="m.id" :label="m.name" :value="m.id" />
-            </el-select>
-            <el-button type="danger" link :icon="Delete" @click="dlg.items.splice(idx, 1)" />
-          </div>
-          <el-button type="primary" link :icon="CirclePlus" @click="addItemRow">添加任务</el-button>
-        </template>
       </el-form>
 
       <template #footer>
@@ -343,15 +386,8 @@
     <el-drawer v-model="items.visible" :title="`打铃条目 —— ${items.planName}`" size="60%">
       <div class="drawer-bar">
         <!-- 按钮与列名照 :80 的「查看任务」弹窗 -->
-        <el-button type="primary" :icon="CirclePlus" :disabled="!btn.item" @click="openItemEdit(null)">
-          添加任务
-        </el-button>
-        <el-button
-          type="danger"
-          :icon="Delete"
-          :disabled="!btn.item || !items.checked.length"
-          @click="removeItems"
-        >
+        <el-button type="primary" :icon="CirclePlus" :disabled="!btn.item" @click="openItemEdit(null)"> 添加任务 </el-button>
+        <el-button type="danger" :icon="Delete" :disabled="!btn.item || !items.checked.length" @click="removeItems">
           删除任务{{ items.checked.length ? `(${items.checked.length})` : "" }}
         </el-button>
       </div>
@@ -394,9 +430,7 @@
         </el-table-column>
         <el-table-column label="操作" width="90" fixed="right">
           <template #default="{ row }">
-            <el-button type="primary" link :icon="EditPen" :disabled="!btn.item" @click="openItemEdit(row)">
-              修改
-            </el-button>
+            <el-button type="primary" link :icon="EditPen" :disabled="!btn.item" @click="openItemEdit(row)"> 修改 </el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -444,9 +478,7 @@
 
     <!-- 删除确认 -->
     <el-dialog v-model="del.visible" title="删除作息方案" width="560px">
-      <el-alert type="error" :closable="false" class="mb12">
-        将删除方案「{{ del.planName }}」的全部内容，不可恢复。
-      </el-alert>
+      <el-alert type="error" :closable="false" class="mb12"> 将删除方案「{{ del.planName }}」的全部内容，不可恢复。 </el-alert>
       <el-descriptions :column="2" border size="small">
         <el-descriptions-item label="打铃条目">{{ del.impact?.items ?? 0 }} 条</el-descriptions-item>
         <el-descriptions-item label="功放子任务">{{ del.impact?.powerSubTasks ?? 0 }} 条</el-descriptions-item>
@@ -456,8 +488,8 @@
         <el-descriptions-item label="离线任务关联">{{ del.impact?.offlineTaskRows ?? 0 }} 行</el-descriptions-item>
       </el-descriptions>
       <el-alert v-if="del.impact?.sameNameOtherTasks" type="warning" :closable="false" class="mt12">
-        库里还有 {{ del.impact.sameNameOtherTasks }} 条任务的名称也叫「{{ del.planName }}」，
-        但它们不属于本方案。<b>新版不会删除它们</b> —— 旧版会连它们一起删掉。
+        库里还有 {{ del.impact.sameNameOtherTasks }} 条任务的名称也叫「{{ del.planName }}」，但它们不属于本方案。
+        <b>新版不会删除它们</b> —— 旧版会连它们一起删掉。
       </el-alert>
       <template #footer>
         <el-button @click="del.visible = false">取消</el-button>
@@ -470,7 +502,7 @@
 <script setup lang="ts" name="bellPlan">
 import { computed, reactive, ref } from "vue";
 import { ElMessage, ElMessageBox } from "element-plus";
-import { CirclePlus, Delete, EditPen, More, View, WarningFilled } from "@element-plus/icons-vue";
+import { CirclePlus, Delete, EditPen, View, WarningFilled } from "@element-plus/icons-vue";
 import ProTable from "@/components/ProTable/index.vue";
 import TerminalTree from "@/components/TerminalTree/index.vue";
 import { useAuthStore } from "@/stores/modules/auth";
@@ -501,8 +533,17 @@ const proTableRef = ref<ProTableInstance>();
 const scopeNote = ref("");
 const initParam = reactive({ orderBy: "", order: "" });
 
-const weekLabels = ["一", "二", "三", "四", "五", "六", "日"];
-/** 旧界面的提前开电源下拉：0、5、10 … 55 秒 */
+/**
+ * 星期勾选的顺序，**周日在最前**。
+ *
+ * ⚠ exemodel 是一个七位字符串，按下标定位，第 0 位就是这一排的第一个勾。
+ *   ok112 那一排是 星期日/一/二/三/四/五/六（addbelltask.html 的 displayweek），
+ *   所以第 0 位 = 星期日。这里原来写成「一…六日」，第 0 位成了星期一 ——
+ *   整串**错位一天**：新 Web 里勾「周一到周五」存出来是 1111100，
+ *   旧系统和后台 C 服务读到的是「周日到周四」。
+ */
+const weekLabels = ["日", "一", "二", "三", "四", "五", "六"];
+/** 旧界面的提前开电源下拉：0、5、10 … 55 秒，默认选中 15 秒 */
 const prepowerSeconds = Array.from({ length: 12 }, (_, i) => i * 5);
 
 const onSortChange = ({ prop, order }: { prop: string; order: string | null }) => {
@@ -570,6 +611,26 @@ const searchTerminals = async (kw: string) => {
 const today = () => new Date().toISOString().slice(0, 10);
 const dateRange = ref<[string, string]>([today(), today()]);
 const weekdays = ref<number[]>([0, 1, 2, 3, 4, 5, 6]);
+/** 执行模式：1 = 每天（七位全 1），2 = 每星期（按下面的勾选拼位） */
+const runMode = ref(1);
+
+/**
+ * 任务级别下拉的取值。
+ *
+ * 旧版是 `for(level = $getlevel; level <= 109; level++)`，下限来自当前用户，
+ * 上限写死 109。这里的上下限由后端按用户权限给（priorityMin/priorityMax），
+ * 语义一致，只是范围以服务端为准。
+ */
+const priorityOptions = computed(() => {
+  const lo = dlg.priorityMin ?? 0;
+  const hi = dlg.priorityMax ?? 99;
+  return Array.from({ length: Math.max(0, hi - lo + 1) }, (_, i) => lo + i);
+});
+
+const onRunModeChange = (v: number) => {
+  // 切回「每天」就把七天全勾上 —— 旧版 getexemodel 直接写 "1111111"
+  if (v === 1) weekdays.value = [0, 1, 2, 3, 4, 5, 6];
+};
 
 const emptyItemRow = () => ({
   taskname: "",
@@ -597,6 +658,12 @@ const dlg = reactive({
 });
 
 const addItemRow = () => dlg.items.push(emptyItemRow());
+/** 复制某一行 —— 旧版每行都有的「复制」按钮 */
+const copyItemRow = (idx: number) => {
+  const src = dlg.items[idx];
+  if (!src) return;
+  dlg.items.splice(idx + 1, 0, { ...src, mediaIds: [...(src.mediaIds ?? [])] });
+};
 
 const maskFromWeekdays = () => {
   const arr = Array(7).fill("0");
@@ -606,6 +673,8 @@ const maskFromWeekdays = () => {
 const applyMask = (mask: string) => {
   weekdays.value = [];
   for (let i = 0; i < 7 && i < mask.length; i++) if (mask[i] === "1") weekdays.value.push(i);
+  // 七天全勾就是「每天」，否则是「每星期」
+  runMode.value = weekdays.value.length === 7 ? 1 : 2;
 };
 
 /* ---------------- 调整音量 ---------------- */
@@ -698,6 +767,7 @@ const openCreate = async () => {
   });
   dateRange.value = [today(), today()];
   weekdays.value = [0, 1, 2, 3, 4, 5, 6];
+  runMode.value = 1; // 默认「每天」，与旧版下拉的第一项一致
   selectedTerminalIds.value = [];
   await Promise.all([searchTerminals(""), searchMedia("")]);
 };
@@ -891,11 +961,10 @@ const batchCmd = async (cmd: string, raw: Record<string, any>[]) => {
     // 删除要看影响面弹窗，一次处理一条；多选时只对第一条打开，
     // 免得连开一串确认框把人淹掉。
     if (rows.length > 1) {
-      await ElMessageBox.confirm(
-        `一次只能删一个方案。先处理「${rows[0].planName}」，其余的删完再来。`,
-        "逐个删除",
-        { type: "warning", confirmButtonText: "继续" }
-      );
+      await ElMessageBox.confirm(`一次只能删一个方案。先处理「${rows[0].planName}」，其余的删完再来。`, "逐个删除", {
+        type: "warning",
+        confirmButtonText: "继续"
+      });
     }
     return onMoreCmd("delete", rows[0]);
   }
