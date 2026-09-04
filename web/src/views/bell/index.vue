@@ -340,6 +340,36 @@
           </el-col>
         </el-row>
 
+        <!--
+          LED 播放：勾上才出现字幕与速度两个输入框，与文件广播那张表单同一套做法。
+          它不是主任务上的一个开关列 —— 保存时会给方案里**每个课时**各挂一条
+          tasktype=30 的 LED 子任务，字幕正文写进 ledsentence，跟着课时一起播。
+        -->
+        <el-row :gutter="16">
+          <el-col :span="12">
+            <el-form-item label="LED播放">
+              <el-checkbox v-model="dlg.form.ledOn">开启 LED 字幕</el-checkbox>
+            </el-form-item>
+          </el-col>
+          <el-col v-if="dlg.form.ledOn" :span="12">
+            <el-form-item label="LED速度">
+              <el-select v-model="dlg.form.ledSpeed" style="width: 110px">
+                <el-option v-for="n in [0, 1, 2, 3, 4, 5]" :key="n" :label="`${n} 级`" :value="n" />
+              </el-select>
+              <span class="dlg-note ml8">0 ~ 5 级</span>
+            </el-form-item>
+          </el-col>
+        </el-row>
+        <el-form-item v-if="dlg.form.ledOn" label="LED字幕" prop="ledText">
+          <el-input
+            v-model="dlg.form.ledText"
+            maxlength="200"
+            show-word-limit
+            placeholder="要在 LED 屏上滚动的文字"
+            @input="planFormRef?.clearValidate('ledText')"
+          />
+        </el-form-item>
+
         <el-row :gutter="16">
           <el-col :span="12">
             <el-form-item label="开始日期" prop="startdate">
@@ -789,7 +819,11 @@ const dlg = reactive({
   savedPlanName: "",
   form: {
     planName: "",
-    playback: { defaultvolume: 80, priority: 10, prepower: 15, datasendmodel: 0, israndomplay: 0 }
+    playback: { defaultvolume: 80, priority: 10, prepower: 15, datasendmodel: 0, israndomplay: 0 },
+    /* LED 字幕：方案级，勾上才会给每个课时挂 LED 子任务 */
+    ledOn: false,
+    ledText: "",
+    ledSpeed: 5
   },
   items: [emptyItemRow()]
 });
@@ -936,6 +970,14 @@ const planRules: FormRules = {
       }
     }
   ],
+  ledText: [
+    {
+      required: true,
+      trigger: "blur",
+      validator: (_r, _v, cb) =>
+        dlg.form.ledOn && !dlg.form.ledText.trim() ? cb(new Error("勾了 LED 播放就要填字幕内容")) : cb()
+    }
+  ],
   weekdays: [
     {
       required: true,
@@ -1019,6 +1061,7 @@ const saveOneItem = async (idx: number) => {
         schedule: scheduleForm(),
         playback: dlg.form.playback,
         terminals: terminalsForm(),
+        led: ledForm(),
         items: [itemPayload(row)]
       });
       dlg.savedPlanName = res.data.planName;
@@ -1184,7 +1227,13 @@ const openCreate = async () => {
     priorityMin: 0,
     priorityMax: 99,
     savedPlanName: "",
-    form: { planName: "", playback: { defaultvolume: 80, priority: 10, prepower: 15, datasendmodel: 0, israndomplay: 0 } },
+    form: {
+      planName: "",
+      playback: { defaultvolume: 80, priority: 10, prepower: 15, datasendmodel: 0, israndomplay: 0 },
+      ledOn: false,
+      ledText: "",
+      ledSpeed: 5
+    },
     items: [emptyItemRow()]
   });
   dateRange.value = [today(), today()];
@@ -1211,7 +1260,13 @@ const openEdit = async (row: BellPlan, mode: "edit" | "batch" = "edit") => {
     priorityMin: data.priorityMin,
     priorityMax: data.priorityMax,
     savedPlanName: "",
-    form: { planName: data.planName, playback: { ...data.playback } },
+    form: {
+      planName: data.planName,
+      playback: { ...data.playback },
+      ledOn: !!data.led?.text,
+      ledText: data.led?.text ?? "",
+      ledSpeed: data.led?.speed ?? 5
+    },
     items: data.items.map(it => ({
       taskid: it.taskid,
       taskname: it.taskname,
@@ -1256,6 +1311,10 @@ const openBatch = async (row: Record<string, any>) => {
   await openEdit(row as BellPlan, "batch");
 };
 
+/** LED 字幕：没勾或没填就传 null，后端据此把已有的 LED 子任务整批删掉 */
+const ledForm = () =>
+  dlg.form.ledOn && dlg.form.ledText.trim() ? { text: dlg.form.ledText.trim(), speed: dlg.form.ledSpeed } : null;
+
 /** 方案头里的排期与终端清单，行内保存和整体提交共用 */
 const scheduleForm = () => ({
   startdate: dateRange.value[0],
@@ -1293,6 +1352,7 @@ const flushHeader = async () => {
     schedule: scheduleForm(),
     playback: dlg.form.playback,
     terminals: terminalsForm(),
+    led: ledForm(),
     applyTerminals: dlg.mode === "batch" ? batch.enableTerminal : true
   });
   if (res.data.renamed) {
@@ -1330,6 +1390,7 @@ const saveAllPending = async () => {
         schedule: scheduleForm(),
         playback: dlg.form.playback,
         terminals: terminalsForm(),
+        led: ledForm(),
         items: dlg.items.map(itemPayload)
       });
       dlg.items.forEach((it, i) => (it.taskid = res.data.taskIds?.[i] ?? 0));

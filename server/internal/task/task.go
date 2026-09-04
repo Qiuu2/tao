@@ -62,6 +62,10 @@ const (
 // ledSubTypes 是查/删 LED 子任务时要覆盖的类型集合。
 var ledSubTypes = []int{TypeLEDSub, TypeLEDSubOld}
 
+// LEDSubTypes 是 LED 字幕子任务的两个 tasktype（30 新 / 24 旧）。
+// 作息方案那边也要按它找子任务，所以给一份只读副本。
+func LEDSubTypes() []int { return append([]int{}, ledSubTypes...) }
+
 // fileTypes 是「文件广播任务」的类型集合（BR-159）。
 var fileTypes = []int{TypeFile, TypeFileAlt}
 

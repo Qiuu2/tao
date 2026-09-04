@@ -24,6 +24,7 @@ type DeleteImpact struct {
 	PlanName      string `json:"planName"`
 	Items         int    `json:"items"`
 	PowerSubTasks int    `json:"powerSubTasks"`
+	LEDSubTasks   int    `json:"ledSubTasks"`
 	MediaRows     int    `json:"mediaRows"`
 	TerminalRows  int    `json:"terminalRows"`
 	KeyMapRows    int    `json:"keyMapRows"`
@@ -55,9 +56,15 @@ func (s *Service) Preview(ctx context.Context, u *auth.User, planName string) (*
 		planName, PowerType).Scan(&imp.PowerSubTasks); err != nil {
 		return nil, fmt.Errorf("统计功放子任务: %w", err)
 	}
-	// 同名撞车：info 相同但既不是方案条目也不是它的功放子任务
+	ledPH, ledArgs := ledTypeArgs()
 	if err := s.db.QueryRowContext(ctx,
-		`SELECT COUNT(*) FROM task WHERE info = ? AND NOT (`+planScopeWithPower("")+`)`,
+		`SELECT COUNT(*) FROM task WHERE info = ? AND channel = 0 AND tasktype IN (`+ledPH+`)`,
+		append([]interface{}{planName}, ledArgs...)...).Scan(&imp.LEDSubTasks); err != nil {
+		return nil, fmt.Errorf("统计 LED 子任务: %w", err)
+	}
+	// 同名撞车：info 相同但既不是方案条目也不是它的功放 / LED 子任务
+	if err := s.db.QueryRowContext(ctx,
+		`SELECT COUNT(*) FROM task WHERE info = ? AND NOT (`+planScopeWithSubs("")+`)`,
 		planName).Scan(&imp.SameNameOthers); err != nil {
 		return nil, fmt.Errorf("统计同名任务: %w", err)
 	}
@@ -86,7 +93,7 @@ func (s *Service) Preview(ctx context.Context, u *auth.User, planName string) (*
 // planAllIDs 取方案下全部 taskid（条目 + 功放子任务）。
 func (s *Service) planAllIDs(ctx context.Context, planName string) ([]int64, error) {
 	rows, err := s.db.QueryContext(ctx,
-		`SELECT taskid FROM task WHERE info = ? AND `+planScopeWithPower(""), planName)
+		`SELECT taskid FROM task WHERE info = ? AND `+planScopeWithSubs(""), planName)
 	if err != nil {
 		return nil, fmt.Errorf("查询方案任务: %w", err)
 	}
@@ -107,6 +114,7 @@ type DeleteResult struct {
 	DeletedTasks []int64 `json:"deletedTasks"`
 	Items        int     `json:"items"`
 	PowerSubs    int     `json:"powerSubTasks"`
+	LEDSubs      int     `json:"ledSubTasks"`
 }
 
 // Delete 删除整个方案。
@@ -132,7 +140,12 @@ func (s *Service) Delete(ctx context.Context, u *auth.User, planName string) (*D
 	if err != nil {
 		return nil, err
 	}
-	all := append(append([]int64{}, items...), subs...)
+	// LED 字幕子任务也是方案的一部分，漏掉它删完方案会留下一堆孤儿任务
+	leds, err := planLEDSubIDs(ctx, tx, planName)
+	if err != nil {
+		return nil, err
+	}
+	all := append(append(append([]int64{}, items...), subs...), leds...)
 	if len(all) == 0 {
 		return nil, ErrNotFound
 	}
@@ -143,7 +156,7 @@ func (s *Service) Delete(ctx context.Context, u *auth.User, planName string) (*D
 		return nil, fmt.Errorf("提交事务: %w", err)
 	}
 	return &DeleteResult{PlanName: planName, DeletedTasks: all,
-		Items: len(items), PowerSubs: len(subs)}, nil
+		Items: len(items), PowerSubs: len(subs), LEDSubs: len(leds)}, nil
 }
 
 // purgeTaskRows 删掉一批任务及其全部关联行。
@@ -158,6 +171,14 @@ func purgeTaskRows(ctx context.Context, tx *sql.Tx, ids []int64) error {
 	}
 	ph, args := placeholders(ids)
 	for _, q := range []string{
+		// LED 字幕子任务的正文与那条虚拟媒体挂在 mediaoftask 上，
+		// 必须先顺着它找到 mediaid 删掉，再删 mediaoftask —— 反过来就找不到该删哪些了。
+		// typeid 限定在 tts/led 这个条件很要紧：条目自己的铃声也在 mediaoftask 里，不能跟着删。
+		`DELETE FROM ledsentence WHERE mediaid IN (
+		     SELECT mediaid FROM mediaoftask WHERE taskid IN (` + ph + `))`,
+		`DELETE FROM media WHERE typeid IN ('tts','led') AND id IN (
+		     SELECT mediaid FROM mediaoftask WHERE taskid IN (` + ph + `))`,
+		`DELETE FROM ledoftask WHERE taskid IN (` + ph + `)`,
 		`DELETE FROM mediaoftask WHERE taskid IN (` + ph + `)`,
 		`DELETE FROM terminaloftask WHERE taskid IN (` + ph + `)`,
 		`DELETE FROM terminalkeymaptask WHERE taskid IN (` + ph + `)`,

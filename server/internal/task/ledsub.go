@@ -114,8 +114,11 @@ func dropLEDSub(ctx context.Context, tx *sql.Tx, ledID int64) error {
 	return nil
 }
 
-// writeLEDContent 建虚拟媒体 + 字幕行。与 typedtask.writeLED 同构。
-func writeLEDContent(ctx context.Context, tx *sql.Tx, ledID int64, led *LEDSub) error {
+// WriteLEDContent 建虚拟媒体 + 字幕行。与 typedtask.writeLED 同构。
+//
+// 导出是给作息方案用的：它的条目也能挂 LED 字幕，结构与文件广播这边完全一样，
+// 不该各写一份（两份就会各写各的列，像快捷任务那样写出根本不存在的列都发现不了）。
+func WriteLEDContent(ctx context.Context, tx *sql.Tx, ledID int64, led *LEDSub) error {
 	res, err := tx.ExecContext(ctx,
 		`INSERT INTO media (name, size, typeid, priority, filename, folderid, timelength, channel, sample, bitrate)
 		 VALUES (?,?,?,?,?,?,?,?,?,?)`,
@@ -177,7 +180,7 @@ func syncLEDTask(ctx context.Context, tx *sql.Tx, mainID int64, in Input, ownerI
 	if err != nil {
 		return 0, fmt.Errorf("新建 LED 子任务: %w", err)
 	}
-	if err := writeLEDContent(ctx, tx, ledID, in.LED); err != nil {
+	if err := WriteLEDContent(ctx, tx, ledID, in.LED); err != nil {
 		return 0, err
 	}
 	// 终端清单与主任务一致 —— 现网 70007/70009 与 70033/70035 都是这样

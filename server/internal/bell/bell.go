@@ -75,6 +75,9 @@ const (
 	ItemType    = 1 // 新建条目写死的类型
 	ItemTypeAlt = 15
 	PowerType   = 9 // 功放子任务
+	// LEDType / LEDTypeOld 是 LED 字幕子任务（与 task 包同一套：30 新、24 旧）
+	LEDType    = 30
+	LEDTypeOld = 24
 )
 
 // planScope 是「哪些 task 行属于作息方案」的唯一定义。
@@ -89,17 +92,20 @@ func planScope(alias string) string {
 		p, ItemType, ItemTypeAlt)
 }
 
-// planScopeWithPower 是启停/删除用的范围：额外把功放子任务（类型 9）算进来。
-// 旧版 bellstart_msg / bellstop_msg 用的就是 `tasktype IN(1,15,9)`（BR-229）。
-// 注意这里**不能**再要求 sec_task_id = 0 —— 功放子任务的 sec_task_id 指向主任务。
-func planScopeWithPower(alias string) string {
+// planScopeWithSubs 是启停/删除用的范围：额外把子任务算进来 ——
+// 功放子任务（类型 9）与 LED 字幕子任务（类型 30 / 24）。
+// 旧版 bellstart_msg / bellstop_msg 用的是 `tasktype IN(1,15,9)`（BR-229），
+// 那会儿作息方案还挂不了 LED 字幕；现在能挂了，子任务就得一并算进来，
+// 否则删方案会留下孤儿 LED 任务、启停也漏掉它。
+// 注意这里**不能**再要求 sec_task_id = 0 —— 子任务的 sec_task_id 指向主任务。
+func planScopeWithSubs(alias string) string {
 	p := ""
 	if alias != "" {
 		p = alias + "."
 	}
 	return fmt.Sprintf(
-		"%[1]stasktype IN (%[2]d,%[3]d,%[4]d) AND %[1]sinfo <> '' AND %[1]schannel = 0",
-		p, ItemType, ItemTypeAlt, PowerType)
+		"%[1]stasktype IN (%[2]d,%[3]d,%[4]d,%[5]d,%[6]d) AND %[1]sinfo <> '' AND %[1]schannel = 0",
+		p, ItemType, ItemTypeAlt, PowerType, LEDType, LEDTypeOld)
 }
 
 type Service struct {

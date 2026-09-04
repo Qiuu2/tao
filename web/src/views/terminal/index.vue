@@ -452,6 +452,13 @@
           <el-form-item label="上屏文字" required>
             <el-input v-model="qtEdit.ledText" maxlength="120" show-word-limit placeholder="要在 LED 屏上滚动的文字" />
           </el-form-item>
+          <el-form-item label="LED速度">
+            <el-select v-model="qtEdit.ledSpeed" style="width: 110px">
+              <el-option v-for="n in [0, 1, 2, 3, 4, 5]" :key="n" :label="`${n} 级`" :value="n" />
+            </el-select>
+            <!-- 旧版没有这个输入框，写库时把 speed 写死成 5，所以默认值也取 5 -->
+            <span class="form-tip">0 ~ 5 级</span>
+          </el-form-item>
         </template>
 
         <!-- 文字播报时没有媒体可选，这一段整体让位给播报设置 -->
@@ -1500,6 +1507,7 @@ const qtEdit = reactive({
   selectedMedia: [] as { mediaId: number; name: string }[],
   terminalIds: [] as number[],
   ledText: "",
+  ledSpeed: 5,
   keyOptions: [] as ShortcutKeyOption[],
   audioSources: [] as QuickAudioSource[],
   candidates: [] as TerminalRow[]
@@ -1544,6 +1552,7 @@ const openQuickEdit = async (detail: QuickTaskDetail | null) => {
   qtEdit.selectedMedia = detail?.media ? detail.media.map(m => ({ mediaId: m.mediaId, name: m.name })) : [];
   qtEdit.terminalIds = detail?.terminalIds ? [...detail.terminalIds] : [];
   qtEdit.ledText = detail?.led?.text ?? "";
+  qtEdit.ledSpeed = detail?.led?.speed ?? 5;
   qtEdit.visible = true;
   qtEdit.loading = true;
   try {
@@ -1591,7 +1600,9 @@ const submitQuickEdit = async () => {
     tts: qtEdit.ttsOn
       ? { text: qtEdit.ttsText, speed: qtEdit.ttsSpeed, musicMode: qtEdit.ttsMale, audioSource: qtEdit.ttsSource }
       : null,
-    led: qtEdit.ledText.trim() ? { text: qtEdit.ledText.trim(), speed: 5, ledmode: 1, terminalIds: qtEdit.terminalIds } : null
+    led: qtEdit.ledText.trim()
+      ? { text: qtEdit.ledText.trim(), speed: qtEdit.ledSpeed, ledmode: 1, terminalIds: qtEdit.terminalIds }
+      : null
   };
 
   qtEdit.saving = true;

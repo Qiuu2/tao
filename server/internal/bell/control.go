@@ -45,7 +45,7 @@ type VolumeResult struct {
 // SetVolume 是 :80 作息方案页的「调整音量」按钮：整个方案改一次音量。
 //
 // 方案不是一张表，而是 task 里共享同一个 info 的一组行，所以这里按 info 批量改。
-// 范围用 planScopeWithPower —— **功放子任务一起改**，否则会出现
+// 范围用 planScopeWithSubs —— **功放/LED 子任务一起改**，否则会出现
 // 「打铃条目 80、配套功放子任务还是 60」这种半拉子状态。
 //
 // 与「修改方案」里那个音量输入是同一列（task.defaultvolume），
@@ -60,7 +60,7 @@ func (s *Service) SetVolume(ctx context.Context, u *auth.User, planName string,
 		return nil, err
 	}
 	res, err := s.db.ExecContext(ctx,
-		`UPDATE task SET defaultvolume = ? WHERE info = ? AND `+planScopeWithPower(""),
+		`UPDATE task SET defaultvolume = ? WHERE info = ? AND `+planScopeWithSubs(""),
 		volume, planName)
 	if err != nil {
 		return nil, fmt.Errorf("调整方案音量: %w", err)
@@ -91,14 +91,14 @@ func (s *Service) SetState(ctx context.Context, u *auth.User, planName string,
 	// 先看有没有行正处在离线传输中，改完就看不出来了
 	var offline int
 	if err := tx.QueryRowContext(ctx,
-		`SELECT COUNT(*) FROM task WHERE info = ? AND `+planScopeWithPower("")+
+		`SELECT COUNT(*) FROM task WHERE info = ? AND `+planScopeWithSubs("")+
 			` AND COALESCE(offlinestate,0) <> 0`, planName).Scan(&offline); err != nil {
 		return nil, fmt.Errorf("查询离线状态: %w", err)
 	}
 
 	res, err := tx.ExecContext(ctx, `
 		UPDATE task SET projectstate = ?, state = 0, offlinestate = 0
-		WHERE info = ? AND `+planScopeWithPower(""), v, planName)
+		WHERE info = ? AND `+planScopeWithSubs(""), v, planName)
 	if err != nil {
 		return nil, fmt.Errorf("更新方案状态: %w", err)
 	}

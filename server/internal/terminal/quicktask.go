@@ -57,6 +57,11 @@ const (
 	QuickTypeMedia  = 20 // 播放媒体文件
 	QuickTypeTTS    = 21 // 文字播报（音源是 TTS 主机）
 	QuickTypeTTSSrv = 29 // 文字播报（音源是服务器）
+	// QuickLEDType 是挂在快捷任务下的 LED 字幕子任务（sec_task_id 指回主任务）
+	QuickLEDType = 30
+	// QuickLEDSpeedMax 是界面上「Led速度」的上限：0 ~ 5 级。
+	// 旧版没有这个输入框，写库时把 speed 写死成 5。
+	QuickLEDSpeedMax = 5
 )
 
 // serverAudioType 是「服务器」这个音源的终端类型。选它时 tasktype 走 29。
@@ -271,7 +276,13 @@ func (s *Service) GetQuickTask(ctx context.Context, terminalID, taskID int64) (*
 			out.Media = append(out.Media, m)
 			out.MediaIDs = append(out.MediaIDs, m.MediaID)
 		}
-		return out, mrs.Err()
+		if err := mrs.Err(); err != nil {
+			return nil, err
+		}
+		if err := s.fillQuickLED(ctx, out, taskID); err != nil {
+			return nil, err
+		}
+		return out, nil
 	}
 
 	// 文字播报：内容在 ttssentence 里，按 mediaseq 拼回一整段
@@ -311,7 +322,52 @@ func (s *Service) GetQuickTask(ctx context.Context, terminalID, taskID int64) (*
 	}
 	tts.Text = strings.Join(parts, "")
 	out.TTS = tts
+	if err := s.fillQuickLED(ctx, out, taskID); err != nil {
+		return nil, err
+	}
 	return out, nil
+}
+
+// fillQuickLED 回填 LED 字幕：修改弹窗要照原样显示字幕与速度。
+// 没挂字幕时保持 out.LED = nil。
+func (s *Service) fillQuickLED(ctx context.Context, out *QuickTaskDetail, taskID int64) error {
+	var ledID int64
+	err := s.db.QueryRowContext(ctx,
+		`SELECT taskid FROM task WHERE sec_task_id = ? AND tasktype = ? LIMIT 1`,
+		taskID, QuickLEDType).Scan(&ledID)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil
+	}
+	if err != nil {
+		return fmt.Errorf("查询 LED 子任务: %w", err)
+	}
+	led := &QuickLED{TerminalIDs: []int64{}}
+	err = s.db.QueryRowContext(ctx, `
+		SELECT COALESCE(ls.text,''), COALESCE(ls.speed,0), COALESCE(ls.ledmode,0)
+		FROM mediaoftask mt JOIN ledsentence ls ON ls.mediaid = mt.mediaid
+		WHERE mt.taskid = ? ORDER BY ls.mediaseq, ls.id LIMIT 1`, ledID).
+		Scan(&led.Text, &led.Speed, &led.LedMode)
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		return fmt.Errorf("查询 LED 字幕: %w", err)
+	}
+	rows, err := s.db.QueryContext(ctx,
+		`SELECT terminalid FROM ledoftask WHERE taskid = ?`, ledID)
+	if err != nil {
+		return fmt.Errorf("查询 LED 终端: %w", err)
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var id int64
+		if err := rows.Scan(&id); err != nil {
+			return err
+		}
+		led.TerminalIDs = append(led.TerminalIDs, id)
+	}
+	if err := rows.Err(); err != nil {
+		return err
+	}
+	out.LED = led
+	return nil
 }
 
 // CreateQuickTask 新建一条快捷任务并绑到键上。
@@ -722,10 +778,13 @@ func writeQuickLED(ctx context.Context, tx *sql.Tx, u *auth.User,
 		ledMediaID, ledTaskID); err != nil {
 		return fmt.Errorf("关联 LED 媒体: %w", err)
 	}
+	// ⚠ ledsentence 的列是 (id, text, mediaid, speed, type, mediaseq, ledmode)：
+	// 没有 name，正文列叫 text 不叫 content。写错列名的话这条 INSERT 直接报
+	// 1054 Unknown column，带 LED 字幕的快捷任务一条都存不进去。
 	if _, err := tx.ExecContext(ctx, `
-		INSERT INTO ledsentence (name, mediaid, type, content, mediaseq, speed, ledmode)
-		VALUES (?,?,1,?,0,?,?)`,
-		in.TaskName, ledMediaID, in.LED.Text, in.LED.Speed, in.LED.LedMode); err != nil {
+		INSERT INTO ledsentence (text, mediaid, speed, type, mediaseq, ledmode)
+		VALUES (?,?,?,1,0,?)`,
+		in.LED.Text, ledMediaID, in.LED.Speed, in.LED.LedMode); err != nil {
 		return fmt.Errorf("写入 LED 字幕: %w", err)
 	}
 	for _, id := range in.LED.TerminalIDs {

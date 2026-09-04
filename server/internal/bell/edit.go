@@ -57,6 +57,21 @@ type ItemInput struct {
 	Media        []task.MediaRef `json:"media"`
 }
 
+// LEDConf 是方案级的 LED 字幕设置。
+//
+// 与文件广播那边的 LED 子任务同构（task/ledsub.go）：不是主任务上的一个开关列，
+// 而是给**每个打铃条目**各挂一条 tasktype = 30 的子任务，sec_task_id 指回条目，
+// 字幕正文写在 ledsentence 里。方案里所有条目共用同一段字幕与同一个速度 ——
+// 界面上它就摆在预开电源、音量这些方案级属性旁边。
+//
+// Text 为空即表示这个方案不要 LED。
+type LEDConf struct {
+	Text  string `json:"text"`
+	Speed int    `json:"speed"`
+}
+
+func (c *LEDConf) wanted() bool { return c != nil && strings.TrimSpace(c.Text) != "" }
+
 // PlanInput 是新建 / 保存整个方案的入参。
 type PlanInput struct {
 	PlanName  string
@@ -64,6 +79,7 @@ type PlanInput struct {
 	Playback  Playback
 	Terminals []task.TerminalRef
 	Items     []ItemInput
+	LED       *LEDConf
 }
 
 // Item 是方案详情里的一个条目。
@@ -96,6 +112,8 @@ type Detail struct {
 	Terminals []task.TerminalItem `json:"terminals"`
 	Items     []Item              `json:"items"`
 	OwnerID   int64               `json:"ownerUserId"`
+	// LED 是方案的 LED 字幕设置，没挂字幕时为 nil。
+	LED *LEDConf `json:"led"`
 	// MixedAttrs 列出组内取值不一致的方案级属性。
 	// 方案级属性理论上组内一致，但旧版逐行 UPDATE 且无事务（D-169/D-170），
 	// 中途失败就会留下一半新一半旧的数据。这里如实报出来而不是随便取一行。
@@ -111,6 +129,7 @@ type SaveResult struct {
 	DeletedItems  int      `json:"deletedItems"`
 	TaskIDs       []int64  `json:"taskIds"`
 	PowerTaskIDs  []int64  `json:"powerTaskIds"`
+	LEDTaskIDs    []int64  `json:"ledTaskIds"`
 	TerminalRows  int      `json:"terminalRows"`
 	Warnings      []string `json:"warnings"`
 	NotifyTaskIDs []int64  `json:"-"`
@@ -214,6 +233,11 @@ func (s *Service) Get(ctx context.Context, u *auth.User, planName string) (*Deta
 	}
 	// 终端清单方案内每条任务各写一份，取代表条目的那一份即可
 	if len(ids) > 0 {
+		led, err := s.loadPlanLED(ctx, ids[0])
+		if err != nil {
+			return nil, err
+		}
+		d.LED = led
 		if err := s.fillPlanTerminals(ctx, d, ids[0]); err != nil {
 			return nil, err
 		}
@@ -309,6 +333,104 @@ func (s *Service) fillItemPower(ctx context.Context, items []Item, ids []int64) 
 	return nil
 }
 
+// ledTypeArgs 给 SQL 用的 LED 子任务类型占位符。
+func ledTypeArgs() (string, []interface{}) {
+	types := task.LEDSubTypes()
+	ph := make([]string, len(types))
+	args := make([]interface{}, len(types))
+	for i, t := range types {
+		ph[i], args[i] = "?", t
+	}
+	return strings.Join(ph, ","), args
+}
+
+// loadPlanLED 读方案的 LED 字幕设置。方案里每个条目各挂一条子任务，
+// 内容是同一份，所以取样一条即可（拿主任务 sampleTaskID 的那条子任务）。
+func (s *Service) loadPlanLED(ctx context.Context, sampleTaskID int64) (*LEDConf, error) {
+	ph, args := ledTypeArgs()
+	var text string
+	var speed int
+	err := s.db.QueryRowContext(ctx, `
+		SELECT COALESCE(ls.text,''), COALESCE(ls.speed,0)
+		FROM task t
+		JOIN mediaoftask mt ON mt.taskid = t.taskid
+		JOIN ledsentence ls ON ls.mediaid = mt.mediaid
+		WHERE t.sec_task_id = ? AND t.tasktype IN (`+ph+`)
+		ORDER BY ls.mediaseq, ls.id LIMIT 1`,
+		append([]interface{}{sampleTaskID}, args...)...).Scan(&text, &speed)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, fmt.Errorf("查询 LED 字幕: %w", err)
+	}
+	return &LEDConf{Text: text, Speed: speed}, nil
+}
+
+// planLEDSubIDs 列出整个方案的 LED 子任务。
+func planLEDSubIDs(ctx context.Context, tx *sql.Tx, planName string) ([]int64, error) {
+	ph, args := ledTypeArgs()
+	return collectIDs(ctx, tx,
+		`SELECT taskid FROM task WHERE info = ? AND channel = 0 AND tasktype IN (`+ph+`)`,
+		append([]interface{}{planName}, args...)...)
+}
+
+// resyncLED 让整个方案的 LED 子任务与新设置一致：整批删掉再按需重建。
+//
+// 逐列比对不划算 —— 一个方案的 LED 子任务顶多和条目一样多，重建代价极小，
+// 而且与终端清单、铃声清单「全删重插」的策略一致。
+func resyncLED(ctx context.Context, tx *sql.Tx, in PlanInput, ownerID int64) error {
+	old, err := planLEDSubIDs(ctx, tx, in.PlanName)
+	if err != nil {
+		return err
+	}
+	if err := purgeTaskRows(ctx, tx, old); err != nil {
+		return err
+	}
+	if !in.LED.wanted() {
+		return nil
+	}
+	rows, err := tx.QueryContext(ctx, `
+		SELECT taskid, COALESCE(taskname,''), TIME_FORMAT(playtime,'%H:%i:%s'),
+		       COALESCE(timelengthtype,1), COALESCE(timelength,0)
+		FROM task WHERE info = ? AND `+planScope(""), in.PlanName)
+	if err != nil {
+		return fmt.Errorf("查询方案条目: %w", err)
+	}
+	type item struct {
+		id int64
+		it ItemInput
+	}
+	list := []item{}
+	for rows.Next() {
+		var e item
+		if err := rows.Scan(&e.id, &e.it.TaskName, &e.it.PlayTime, &e.it.TimeLengthTy, &e.it.TimeLength); err != nil {
+			rows.Close()
+			return err
+		}
+		list = append(list, e)
+	}
+	rows.Close()
+	if err := rows.Err(); err != nil {
+		return err
+	}
+	for i := range list {
+		ledID, err := insertLEDSub(ctx, tx, in, &list[i].it, list[i].id, ownerID)
+		if err != nil {
+			return err
+		}
+		// 终端清单直接照抄主条目：这条路径可能是「只改方案属性、不动终端」，
+		// 那时 in.Terminals 是空的，照它写就成了没有终端的字幕任务
+		if _, err := tx.ExecContext(ctx, `
+			INSERT INTO terminaloftask (taskid, terminalid, groupid, area)
+			SELECT ?, terminalid, groupid, area FROM terminaloftask WHERE taskid = ?`,
+			ledID, list[i].id); err != nil {
+			return fmt.Errorf("写入 LED 子任务终端: %w", err)
+		}
+	}
+	return nil
+}
+
 func (s *Service) fillPlanTerminals(ctx context.Context, d *Detail, sampleTaskID int64) error {
 	rows, err := s.db.QueryContext(ctx, `
 		SELECT ot.terminalid, COALESCE(ot.groupid,0), COALESCE(ot.area,''),
@@ -388,6 +510,9 @@ func (s *Service) validate(ctx context.Context, u *auth.User, in *PlanInput, own
 	if in.Playback.Priority < lo || in.Playback.Priority > hi {
 		return fmt.Errorf("优先级必须在 %d ~ %d 之间（由所属用户组级别决定）", lo, hi)
 	}
+	if err := checkLED(in.LED); err != nil {
+		return err
+	}
 
 	if len(in.Items) == 0 {
 		return fmt.Errorf("请至少添加一个打铃条目")
@@ -438,6 +563,28 @@ func (s *Service) validate(ctx context.Context, u *auth.User, in *PlanInput, own
 		return err
 	}
 	return s.validateTerminals(ctx, u, in.Terminals)
+}
+
+// LEDSpeedMax 是界面上「Led速度」的上限：0 ~ 5 级。
+// 旧版根本没有这个输入框，写库时把 speed 写死成 5（do.php 里六处 INSERT ledsentence
+// 都是 '5'），所以 5 既是上限也是默认值。
+const LEDSpeedMax = 5
+
+// ledTextLimit 与 ledsentence.text 的列宽一致（varchar(1024)）。
+const ledTextLimit = 1024
+
+func checkLED(c *LEDConf) error {
+	if !c.wanted() {
+		return nil
+	}
+	if len(strings.TrimSpace(c.Text)) > ledTextLimit {
+		return fmt.Errorf("Led字幕过长：按 UTF-8 计 %d 字节，上限 %d 字节（约 341 个汉字）",
+			len(strings.TrimSpace(c.Text)), ledTextLimit)
+	}
+	if c.Speed < 0 || c.Speed > LEDSpeedMax {
+		return fmt.Errorf("Led速度必须在 0 ~ %d 之间", LEDSpeedMax)
+	}
+	return nil
 }
 
 func (s *Service) assertMediaExist(ctx context.Context, ids []int64) error {
@@ -548,7 +695,7 @@ func (s *Service) Create(ctx context.Context, u *auth.User, in PlanInput) (*Save
 // saveItems 把一批条目连同它们的铃声、终端写进方案，全程一个事务。
 func (s *Service) saveItems(ctx context.Context, in PlanInput, ownerID int64) (*SaveResult, error) {
 	out := &SaveResult{PlanName: in.PlanName, TaskIDs: []int64{}, PowerTaskIDs: []int64{},
-		Warnings: []string{}, NotifyTaskIDs: []int64{}, Volume: in.Playback.Volume}
+		LEDTaskIDs: []int64{}, Warnings: []string{}, NotifyTaskIDs: []int64{}, Volume: in.Playback.Volume}
 
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
@@ -572,9 +719,24 @@ func (s *Service) saveItems(ctx context.Context, in PlanInput, ownerID int64) (*
 		if err := writeMedia(ctx, tx, mainID, it.Media); err != nil {
 			return nil, err
 		}
+		ledID, err := insertLEDSub(ctx, tx, in, it, mainID, ownerID)
+		if err != nil {
+			return nil, err
+		}
+		if ledID > 0 {
+			out.LEDTaskIDs = append(out.LEDTaskIDs, ledID)
+		}
 		rows, err := writeTerminals(ctx, tx, mainID, powerID, in.Terminals)
 		if err != nil {
 			return nil, err
+		}
+		if ledID > 0 {
+			// 字幕要发到与打铃同一批终端上（与功放子任务同理）
+			n, err := writeTerminals(ctx, tx, ledID, 0, in.Terminals)
+			if err != nil {
+				return nil, err
+			}
+			rows += n
 		}
 		out.TerminalRows += rows
 	}
@@ -669,6 +831,42 @@ func insertItem(ctx context.Context, tx *sql.Tx, in PlanInput, it *ItemInput,
 	return mainID, powerID, nil
 }
 
+// insertLEDSub 给一个打铃条目挂 LED 字幕子任务。方案没配字幕时返回 0。
+//
+// 除 tasktype / sec_task_id 外整行照抄主条目，playtime 也与主条目相同 ——
+// 与 task/ledsub.go 的判断一致（字幕跟着播放内容走）。
+func insertLEDSub(ctx context.Context, tx *sql.Tx, in PlanInput, it *ItemInput,
+	mainID, ownerID int64) (int64, error) {
+
+	if !in.LED.wanted() {
+		return 0, nil
+	}
+	res, err := tx.ExecContext(ctx, `
+		INSERT INTO task (taskname, israndomplay, projectstate, timelengthtype, timelength,
+		                  prepower, datasendmodel, state, startdate, enddate,
+		                  playtime, endtime, exemodel, priority, tasktype, channel,
+		                  bandrate, samplerate, cmd, cmdargs, playfileid, info,
+		                  defaultvolume, task_user_id, sec_task_id, parentid, offlinestate)
+		VALUES (?,?,?,?,?, ?,?,0,?,?, ?, '00:00:00', ?,?,?,0, 0,0,0,'0',0,?, ?,?,?,0,0)`,
+		it.TaskName, normRandom(in.Playback.IsRandomPlay), task.StateEnabled, it.TimeLengthTy, it.TimeLength,
+		in.Playback.PrePower, in.Playback.DataSendMode,
+		in.Schedule.StartDate, in.Schedule.EndDate,
+		it.PlayTime, in.Schedule.ExeModel, in.Playback.Priority, LEDType,
+		in.PlanName, in.Playback.Volume, ownerID, mainID)
+	if err != nil {
+		return 0, fmt.Errorf("写入 LED 子任务: %w", err)
+	}
+	ledID, err := res.LastInsertId()
+	if err != nil {
+		return 0, err
+	}
+	sub := &task.LEDSub{Name: it.TaskName, Text: strings.TrimSpace(in.LED.Text), Speed: in.LED.Speed}
+	if err := task.WriteLEDContent(ctx, tx, ledID, sub); err != nil {
+		return 0, err
+	}
+	return ledID, nil
+}
+
 func writeMedia(ctx context.Context, tx *sql.Tx, taskID int64, media []task.MediaRef) error {
 	for i, m := range media {
 		sort := m.Sort
@@ -730,6 +928,9 @@ type UpdateInput struct {
 	Schedule    Schedule
 	Playback    Playback
 	Terminals   []task.TerminalRef
+	// LED 是方案级的 LED 字幕设置：nil 或正文为空表示这个方案不要 LED，
+	// 保存时会把已有的 LED 子任务整批删掉。
+	LED *LEDConf
 	// ApplyTerminals 为 false 时不动终端清单，只改方案级属性。
 	ApplyTerminals bool
 }
@@ -762,7 +963,7 @@ func (s *Service) Update(ctx context.Context, u *auth.User, in UpdateInput) (*Up
 	}
 
 	// 复用 Create 的校验：条目部分单独校验，这里只校验方案级 + 终端
-	probe := PlanInput{Schedule: in.Schedule, Playback: in.Playback, Terminals: in.Terminals}
+	probe := PlanInput{Schedule: in.Schedule, Playback: in.Playback, Terminals: in.Terminals, LED: in.LED}
 	if err := s.validatePlanLevel(ctx, &probe, owner); err != nil {
 		return nil, err
 	}
@@ -793,13 +994,13 @@ func (s *Service) Update(ctx context.Context, u *auth.User, in UpdateInput) (*Up
 	}
 	defer func() { _ = tx.Rollback() }()
 
-	// 方案级属性必须应用到组内每一行（BR-224），功放子任务也要跟着改。
-	// 范围用 planScopeWithPower：功放子任务的 sec_task_id 不为 0。
+	// 方案级属性必须应用到组内每一行（BR-224），功放与 LED 子任务也要跟着改。
+	// 范围用 planScopeWithSubs：子任务的 sec_task_id 不为 0。
 	res, err := tx.ExecContext(ctx, `
 		UPDATE task SET info = ?, startdate = ?, enddate = ?, exemodel = ?,
 		                defaultvolume = ?, priority = ?, prepower = ?, datasendmodel = ?,
 		                israndomplay = ?
-		WHERE info = ? AND `+planScopeWithPower(""),
+		WHERE info = ? AND `+planScopeWithSubs(""),
 		newName, in.Schedule.StartDate, in.Schedule.EndDate, in.Schedule.ExeModel,
 		in.Playback.Volume, in.Playback.Priority, in.Playback.PrePower,
 		in.Playback.DataSendMode, normRandom(in.Playback.IsRandomPlay), in.PlanName)
@@ -811,6 +1012,12 @@ func (s *Service) Update(ctx context.Context, u *auth.User, in UpdateInput) (*Up
 
 	// prepower 改了，功放子任务的播放时间要跟着重算
 	if err := resyncPowerTimes(ctx, tx, newName, in.Playback.PrePower); err != nil {
+		return nil, err
+	}
+	// LED 字幕：开了就（重）建，关了就整批删掉
+	ledIn := PlanInput{PlanName: newName, Schedule: in.Schedule, Playback: in.Playback,
+		Terminals: in.Terminals, LED: in.LED}
+	if err := resyncLED(ctx, tx, ledIn, owner); err != nil {
 		return nil, err
 	}
 
@@ -861,7 +1068,7 @@ func (s *Service) validatePlanLevel(ctx context.Context, in *PlanInput, ownerID 
 	if in.Playback.Priority < lo || in.Playback.Priority > hi {
 		return fmt.Errorf("优先级必须在 %d ~ %d 之间（由所属用户组级别决定）", lo, hi)
 	}
-	return nil
+	return checkLED(in.LED)
 }
 
 // resyncPowerTimes 按新的 prepower 重算功放子任务的播放时间。
@@ -931,7 +1138,7 @@ func rewriteTerminals(ctx context.Context, tx *sql.Tx, planName string,
 	terms []task.TerminalRef) (int, error) {
 
 	ids, err := collectIDs(ctx, tx,
-		`SELECT taskid FROM task WHERE info = ? AND `+planScopeWithPower(""), planName)
+		`SELECT taskid FROM task WHERE info = ? AND `+planScopeWithSubs(""), planName)
 	if err != nil {
 		return 0, err
 	}
@@ -952,6 +1159,19 @@ func rewriteTerminals(ctx context.Context, tx *sql.Tx, planName string,
 		total += n
 	}
 	return total, nil
+}
+
+// collectSubTasks 找这些条目挂着的子任务：功放（9）与 LED 字幕（30 / 24）。
+// 删条目、改条目日期都要连它们一起处理，漏掉就会留下孤儿任务。
+func collectSubTasks(ctx context.Context, tx *sql.Tx, mainIDs []int64) ([]int64, error) {
+	if len(mainIDs) == 0 {
+		return nil, nil
+	}
+	ph, args := placeholders(mainIDs)
+	ledPH, ledArgs := ledTypeArgs()
+	return collectIDs(ctx, tx,
+		`SELECT taskid FROM task WHERE sec_task_id IN (`+ph+`) AND tasktype IN (?,`+ledPH+`)`,
+		append(append(args, PowerType), ledArgs...)...)
 }
 
 func collectIDs(ctx context.Context, tx *sql.Tx, q string, args ...interface{}) ([]int64, error) {
@@ -987,7 +1207,7 @@ func (s *Service) AddItem(ctx context.Context, u *auth.User, planName string,
 	}
 	in := PlanInput{
 		PlanName: planName, Schedule: d.Schedule, Playback: d.Playback,
-		Items: []ItemInput{it},
+		Items: []ItemInput{it}, LED: d.LED,
 	}
 	// 终端沿用方案现有清单。跳过已被删除的终端 ——
 	// 它们只是列表里的一个「(终端已删除)」占位，再写回去会被存在性校验挡下，
@@ -1107,6 +1327,14 @@ func (s *Service) UpdateItem(ctx context.Context, u *auth.User, planName string,
 			return 0, fmt.Errorf("修改功放子任务: %w", err)
 		}
 	}
+	// LED 子任务的名字与时间也跟着主条目走（字幕正文由方案级设置统一管）
+	ledPH, ledArgs := ledTypeArgs()
+	if _, err := tx.ExecContext(ctx,
+		`UPDATE task SET taskname = ?, playtime = ?, timelengthtype = ?, timelength = ?
+		 WHERE sec_task_id = ? AND tasktype IN (`+ledPH+`)`,
+		append([]interface{}{it.TaskName, it.PlayTime, it.TimeLengthTy, it.TimeLength, taskID}, ledArgs...)...); err != nil {
+		return 0, fmt.Errorf("修改 LED 子任务: %w", err)
+	}
 	if _, err := tx.ExecContext(ctx,
 		`DELETE FROM mediaoftask WHERE taskid = ?`, taskID); err != nil {
 		return 0, fmt.Errorf("清理条目铃声: %w", err)
@@ -1170,10 +1398,7 @@ func (s *Service) SetItemSchedule(ctx context.Context, u *auth.User, planName st
 		`SELECT COALESCE(defaultvolume,80) FROM task WHERE taskid = ?`, own[0]).Scan(&volume); err != nil {
 		return nil, 0, fmt.Errorf("查询音量: %w", err)
 	}
-	subPH, subArgs := placeholders(own)
-	subs, err := collectIDs(ctx, tx,
-		`SELECT taskid FROM task WHERE sec_task_id IN (`+subPH+`) AND tasktype = ?`,
-		append(subArgs, PowerType)...)
+	subs, err := collectSubTasks(ctx, tx, own)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -1222,10 +1447,7 @@ func (s *Service) DeleteItems(ctx context.Context, u *auth.User, planName string
 	if len(own) == 0 {
 		return nil, false, ErrNotFound
 	}
-	subPH, subArgs := placeholders(own)
-	subs, err := collectIDs(ctx, tx,
-		`SELECT taskid FROM task WHERE sec_task_id IN (`+subPH+`) AND tasktype = ?`,
-		append(subArgs, PowerType)...)
+	subs, err := collectSubTasks(ctx, tx, own)
 	if err != nil {
 		return nil, false, err
 	}

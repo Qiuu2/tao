@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
@@ -146,6 +147,11 @@ func (in quickTaskReq) validate() string {
 	}
 	if len(in.TerminalIDs) == 0 {
 		return "请选择要播放到哪些终端"
+	}
+	if in.LED != nil && strings.TrimSpace(in.LED.Text) != "" {
+		if in.LED.Speed < 0 || in.LED.Speed > terminal.QuickLEDSpeedMax {
+			return fmt.Sprintf("Led速度必须在 0 ~ %d 之间", terminal.QuickLEDSpeedMax)
+		}
 	}
 	return ""
 }

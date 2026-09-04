@@ -120,6 +120,8 @@ type bellPlanReq struct {
 	Playback    bell.Playback      `json:"playback"`
 	Terminals   []task.TerminalRef `json:"terminals"`
 	Items       []bell.ItemInput   `json:"items"`
+	// LED 是方案级的 LED 字幕设置，不填（或正文为空）表示这个方案不挂字幕。
+	LED *bell.LEDConf `json:"led"`
 	// ApplyTerminals 只在修改时有意义：false 表示这次不动终端清单。
 	ApplyTerminals bool `json:"applyTerminals"`
 }
@@ -135,6 +137,7 @@ func (a *app) handleBellPlanCreate(w http.ResponseWriter, r *http.Request) {
 		Playback:  in.Playback,
 		Terminals: in.Terminals,
 		Items:     in.Items,
+		LED:       in.LED,
 	})
 	if err != nil {
 		failBell(w, "新建作息方案", err)
@@ -158,6 +161,7 @@ func (a *app) handleBellPlanUpdate(w http.ResponseWriter, r *http.Request) {
 		Schedule:       in.Schedule,
 		Playback:       in.Playback,
 		Terminals:      in.Terminals,
+		LED:            in.LED,
 		ApplyTerminals: in.ApplyTerminals,
 	})
 	if err != nil {

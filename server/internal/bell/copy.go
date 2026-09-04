@@ -3,10 +3,12 @@ package bell
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 
 	"htweb/internal/auth"
 	"htweb/internal/store"
+	"htweb/internal/task"
 )
 
 // 复制方案（F-52）。
@@ -40,6 +42,7 @@ type CopyResult struct {
 	NewPlanName        string           `json:"newPlanName"`
 	CopiedItems        int              `json:"copiedItems"`
 	CopiedPowerSubs    int              `json:"copiedPowerSubTasks"`
+	CopiedLEDSubs      int              `json:"copiedLedSubTasks"`
 	CopiedMediaRows    int              `json:"copiedMediaRows"`
 	CopiedTerminalRows int              `json:"copiedTerminalRows"`
 	IDMapping          map[string]int64 `json:"idMapping"`
@@ -140,6 +143,38 @@ func (s *Service) Copy(ctx context.Context, u *auth.User, planName, newName stri
 			}
 			out.CopiedTerminalRows += n
 		}
+
+		// LED 字幕子任务：整行复制之外，字幕正文那条虚拟媒体必须**另建一份**。
+		// 直接照抄 mediaoftask 会让新旧两条任务共用同一行 ledsentence，
+		// 删掉其中一个方案，另一个的字幕就跟着没了。
+		ledPH, ledArgs := ledTypeArgs()
+		ledSubs, err := collectIDs(ctx, tx,
+			`SELECT taskid FROM task WHERE sec_task_id = ? AND tasktype IN (`+ledPH+`)`,
+			append([]interface{}{srcID}, ledArgs...)...)
+		if err != nil {
+			return nil, err
+		}
+		for _, subID := range ledSubs {
+			newSub, err := copyOneTask(ctx, tx, subID, target)
+			if err != nil {
+				return nil, err
+			}
+			if _, err := tx.ExecContext(ctx,
+				`UPDATE task SET sec_task_id = ? WHERE taskid = ?`, newID, newSub); err != nil {
+				return nil, fmt.Errorf("关联 LED 子任务: %w", err)
+			}
+			out.CopiedLEDSubs++
+			out.IDMapping[fmt.Sprint(subID)] = newSub
+
+			if err := copyLEDContent(ctx, tx, subID, newSub); err != nil {
+				return nil, err
+			}
+			n, err := copyTerminals(ctx, tx, subID, newSub)
+			if err != nil {
+				return nil, err
+			}
+			out.CopiedTerminalRows += n
+		}
 	}
 
 	if err := tx.Commit(); err != nil {
@@ -147,6 +182,28 @@ func (s *Service) Copy(ctx context.Context, u *auth.User, planName, newName stri
 	}
 	_ = owner
 	return out, nil
+}
+
+// copyLEDContent 给复制出来的 LED 子任务另建一份虚拟媒体与字幕行。
+func copyLEDContent(ctx context.Context, tx *sql.Tx, srcID, dstID int64) error {
+	var text string
+	var speed int
+	err := tx.QueryRowContext(ctx, `
+		SELECT COALESCE(ls.text,''), COALESCE(ls.speed,0)
+		FROM mediaoftask mt JOIN ledsentence ls ON ls.mediaid = mt.mediaid
+		WHERE mt.taskid = ? ORDER BY ls.mediaseq, ls.id LIMIT 1`, srcID).Scan(&text, &speed)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil
+	}
+	if err != nil {
+		return fmt.Errorf("读取 LED 字幕: %w", err)
+	}
+	var name string
+	if err := tx.QueryRowContext(ctx,
+		`SELECT COALESCE(taskname,'') FROM task WHERE taskid = ?`, dstID).Scan(&name); err != nil {
+		return fmt.Errorf("读取 LED 子任务名: %w", err)
+	}
+	return task.WriteLEDContent(ctx, tx, dstID, &task.LEDSub{Name: name, Text: text, Speed: speed})
 }
 
 // copyOneTask 复制一行 task，info 换成新方案名，sec_task_id 先置 0 由调用方回填。

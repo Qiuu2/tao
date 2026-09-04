@@ -85,6 +85,8 @@ export interface BellPlayback {
 
 export interface BellDetail {
   planName: string;
+  /** 方案的 LED 字幕设置，没挂字幕时为 null */
+  led: BellLED | null;
   schedule: BellSchedule;
   playback: BellPlayback;
   terminals: BellTerminal[];
@@ -105,6 +107,12 @@ export interface BellItemForm {
   media: { mediaId: number; sort: number }[];
 }
 
+/** 方案级 LED 字幕：正文 + 速度（0~5 级）。不挂字幕时传 null */
+export interface BellLED {
+  text: string;
+  speed: number;
+}
+
 export interface BellPlanForm {
   planName: string;
   newPlanName?: string;
@@ -112,6 +120,7 @@ export interface BellPlanForm {
   playback: BellPlayback;
   terminals: { terminalId: number; groupId: number; area: string }[];
   items?: BellItemForm[];
+  led?: BellLED | null;
   applyTerminals?: boolean;
 }
 
