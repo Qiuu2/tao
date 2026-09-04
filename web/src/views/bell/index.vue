@@ -228,7 +228,8 @@
           <el-col :span="12">
             <el-form-item v-if="!dlg.isEdit" label="方案任务">
               <el-button type="primary" plain :icon="CirclePlus" @click="addItemRow">添加任务</el-button>
-              <span class="dlg-note ml8">共 {{ dlg.items.length }} 条</span>
+              <el-button type="danger" plain :icon="Delete" @click="removeSelectedItems">删除任务</el-button>
+              <span class="dlg-note ml8">{{ itemCountNote }}</span>
             </el-form-item>
           </el-col>
         </el-row>
@@ -301,9 +302,10 @@
         <template v-if="!dlg.isEdit">
           <el-divider content-position="left">方案任务</el-divider>
           <!-- 列名照旧版 coursetable：序号 / 课时名称 / 作息时间 / 作息音乐 / 播放时长 / 操作 -->
-          <el-table :data="dlg.items" size="small" border max-height="300">
-            <el-table-column type="index" label="序号" width="60" align="center" />
-            <el-table-column min-width="150">
+          <el-table :data="dlg.items" size="small" border max-height="300" @selection-change="onItemSelectionChange">
+            <el-table-column type="selection" width="42" align="center" />
+            <el-table-column type="index" label="序号" width="52" align="center" />
+            <el-table-column min-width="132">
               <template #header><span class="req-star">*</span> 课时名称</template>
               <template #default="{ row, $index }">
                 <el-input
@@ -317,7 +319,7 @@
                 <div v-if="itemErrors[$index]?.taskname" class="cell-err">{{ itemErrors[$index].taskname }}</div>
               </template>
             </el-table-column>
-            <el-table-column width="130">
+            <el-table-column width="118">
               <template #header><span class="req-star">*</span> 作息时间</template>
               <template #default="{ row, $index }">
                 <el-time-picker
@@ -332,7 +334,7 @@
                 <div v-if="itemErrors[$index]?.playtime" class="cell-err">{{ itemErrors[$index].playtime }}</div>
               </template>
             </el-table-column>
-            <el-table-column label="作息音乐" min-width="200">
+            <el-table-column label="作息音乐" min-width="120">
               <template #default="{ row }">
                 <el-select
                   v-model="row.mediaIds"
@@ -352,7 +354,7 @@
                 </el-select>
               </template>
             </el-table-column>
-            <el-table-column label="播放时长" width="180">
+            <el-table-column label="播放时长" width="172">
               <template #default="{ row }">
                 <div class="len-cell">
                   <el-select v-model="row.timelengthtype" size="small" style="width: 74px">
@@ -371,7 +373,7 @@
               </template>
             </el-table-column>
             <!-- 旧版每行三个按钮：添加 / 删除 / 复制 -->
-            <el-table-column label="操作" width="150" align="center">
+            <el-table-column label="操作" width="170" align="center">
               <template #default="{ $index }">
                 <el-button link type="primary" @click="addItemRow">添加</el-button>
                 <el-button link type="primary" @click="copyItemRow($index)">复制</el-button>
@@ -694,6 +696,27 @@ const removeItemRow = (idx: number) => {
   itemErrors.value.splice(idx, 1);
 };
 
+/* 表头上方的「删除任务」：勾几行删几行，刚加还没填的空行和已填好的行都能删 */
+const selectedItems = ref<ReturnType<typeof emptyItemRow>[]>([]);
+const onItemSelectionChange = (rows: ReturnType<typeof emptyItemRow>[]) => (selectedItems.value = rows);
+const itemCountNote = computed(() =>
+  selectedItems.value.length ? `共 ${dlg.items.length} 条，已勾选 ${selectedItems.value.length} 条` : `共 ${dlg.items.length} 条`
+);
+const removeSelectedItems = () => {
+  if (!selectedItems.value.length) return ElMessage.warning("请先勾选要删除的课时");
+  const kill = new Set<unknown>(selectedItems.value);
+  const keep = dlg.items.map((it, i) => (kill.has(it) ? -1 : i)).filter(i => i >= 0);
+  const removed = dlg.items.length - keep.length;
+  // itemErrors 是按下标对齐的，得跟着一起挑，不然红字会串行
+  const items = keep.map(i => dlg.items[i]);
+  const errs = keep.map(i => itemErrors.value[i] ?? emptyItemError());
+  dlg.items = items;
+  itemErrors.value = errs;
+  selectedItems.value = [];
+  itemsError.value = "";
+  ElMessage.success(`已删除 ${removed} 个课时`);
+};
+
 /* ---------------- 必填校验 ----------------
    旧版 addbelltask.html:checkform() 的做法：方案名称 / 日期 / 执行模式 / 课时名称
    校验不过就把对应位置的 * 或提示文字刷成红色（terminal_star 是红色样式），
@@ -793,6 +816,7 @@ const validateItems = () => {
 const resetPlanErrors = async () => {
   itemErrors.value = dlg.items.map(() => emptyItemError());
   itemsError.value = "";
+  selectedItems.value = [];
   await nextTick();
   planFormRef.value?.clearValidate();
 };
@@ -881,6 +905,7 @@ const applySmart = () => {
   dlg.items = rows;
   itemErrors.value = rows.map(() => emptyItemError());
   itemsError.value = "";
+  selectedItems.value = [];
   smart.visible = false;
   ElMessage.success(`已生成 ${rows.length} 条打铃条目，可继续逐条调整，点「确定」才保存`);
 };
