@@ -13,13 +13,7 @@
 -->
 <template>
   <div class="table-box">
-    <ProTable
-      ref="proTableRef"
-      :columns="columns"
-      :request-api="getCloudTerminalsApi"
-      :data-callback="dataCallback"
-      row-key="id"
-    >
+    <ProTable ref="proTableRef" :columns="columns" :request-api="getCloudTerminalsApi" :data-callback="dataCallback" row-key="id">
       <!--
         按钮照 :80：空闲传输 / 立即传输 / 停止传输 / 全部清除 / 同步时间 / 清除空闲媒体。
         除「同步时间」是给终端下指令外，其余五个都是**对这台终端上已有的下发关系改状态**，
@@ -29,14 +23,15 @@
         <div class="header-bar">
           <div class="header-left">
             <el-button :disabled="!scope.isSelected" @click="bulk('idle', scope.selectedListIds)">空闲传输</el-button>
-            <el-button :disabled="!scope.isSelected" @click="bulk('immediate', scope.selectedListIds)">
-              立即传输
-            </el-button>
+            <el-button :disabled="!scope.isSelected" @click="bulk('immediate', scope.selectedListIds)"> 立即传输 </el-button>
+            <el-button :disabled="!scope.isSelected" @click="bulk('deleteIdle', scope.selectedListIds)"> 空闲删除 </el-button>
+            <el-button :disabled="!scope.isSelected" @click="bulk('deleteNow', scope.selectedListIds)"> 立即删除 </el-button>
             <el-button :disabled="!scope.isSelected" @click="bulk('stop', scope.selectedListIds)">停止传输</el-button>
-            <el-button :disabled="!scope.isSelected" @click="bulk('clearAll', scope.selectedListIds)">
-              全部清除
-            </el-button>
+            <el-button :disabled="!scope.isSelected" @click="bulk('clearAll', scope.selectedListIds)"> 全部清除 </el-button>
             <el-button :disabled="!scope.isSelected" @click="syncTime(scope.selectedListIds)">同步时间</el-button>
+            <el-button :disabled="!scope.isSelected" @click="bulk('clearTerminalMedia', scope.selectedListIds)">
+              清除终端媒体
+            </el-button>
             <el-button :disabled="!scope.isSelected" @click="bulk('clearIdleMedia', scope.selectedListIds)">
               清除空闲媒体
             </el-button>
@@ -73,9 +68,7 @@
       <template #operation="s">
         <el-button type="primary" link :icon="View" @click="openInventory(s.row)">
           查看内容
-          <span v-if="s.row.mediaCount + s.row.taskCount" class="cnt">
-            （{{ s.row.mediaCount + s.row.taskCount }}）
-          </span>
+          <span v-if="s.row.mediaCount + s.row.taskCount" class="cnt"> （{{ s.row.mediaCount + s.row.taskCount }}） </span>
         </el-button>
       </template>
     </ProTable>
@@ -155,6 +148,8 @@ const dataCallback = (data: any) => {
 const columns = reactive<ColumnProps<CloudTerminal>[]>([
   { type: "selection", fixed: "left", width: 50 },
   { prop: "terminalname", label: "终端名称", minWidth: 180 },
+  // 旧版 terminalmanager_form.html 里终端名称后面就是「所属分区」
+  { prop: "groupName", label: "所属分区", width: 150, showOverflowTooltip: true },
   { prop: "typeName", label: "终端类型", minWidth: 140, showOverflowTooltip: true },
   { prop: "taskstate", label: "任务状态", width: 110 },
   { prop: "netstate", label: "网络状态", width: 110 },
@@ -194,22 +189,26 @@ const toIds = (raw: (string | number)[]) => (raw ?? []).map(Number).filter(n => 
 const ACTION_TEXT: Record<string, string> = {
   idle: "空闲传输",
   immediate: "立即传输",
+  deleteIdle: "空闲删除",
+  deleteNow: "立即删除",
   stop: "停止传输",
   clearAll: "全部清除",
+  clearTerminalMedia: "清除终端媒体",
   clearIdleMedia: "清除空闲媒体"
 };
+
+/** 会让终端删文件的动作。旧版这几个也都是先弹确认框的。 */
+const DESTRUCTIVE = ["deleteIdle", "deleteNow", "clearAll", "clearTerminalMedia", "clearIdleMedia"];
 
 /** 清除类动作不可逆（终端上的文件会被删掉），先确认再发 */
 const bulk = async (action: string, raw: (string | number)[]) => {
   const ids = toIds(raw);
   if (!ids.length) return ElMessage.warning("请先勾选终端");
   const text = ACTION_TEXT[action] ?? action;
-  if (action === "clearAll" || action === "clearIdleMedia") {
-    await ElMessageBox.confirm(
-      `将对选中的 ${ids.length} 台终端执行「${text}」，终端上的离线内容会被删除，不可恢复。`,
-      text,
-      { type: "warning" }
-    );
+  if (DESTRUCTIVE.includes(action)) {
+    await ElMessageBox.confirm(`将对选中的 ${ids.length} 台终端执行「${text}」，终端上的离线内容会被删除，不可恢复。`, text, {
+      type: "warning"
+    });
   }
   const { data } = await cloudBulkApi(ids, action);
   ElMessage.success(

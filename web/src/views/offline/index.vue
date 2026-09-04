@@ -19,9 +19,9 @@
   <div class="offline-page">
     <el-alert v-if="summary" type="info" :closable="false" class="mb12">
       <template #title>
-        离线副本 {{ summary.offlineMedia }} 个媒体 / {{ summary.offlineTask }} 个任务 ·
-        下发关系 {{ summary.offlineMediaOfTerminal }} 条媒体 / {{ summary.offlineTaskOfTerminal }} 条任务 ·
-        标记为离线的任务 {{ summary.tasksMarked }} 个
+        离线副本 {{ summary.offlineMedia }} 个媒体 / {{ summary.offlineTask }} 个任务 · 下发关系
+        {{ summary.offlineMediaOfTerminal }} 条媒体 / {{ summary.offlineTaskOfTerminal }} 条任务 · 标记为离线的任务
+        {{ summary.tasksMarked }} 个
       </template>
     </el-alert>
 
@@ -91,10 +91,14 @@
           </div>
         </div>
 
+        <!-- 按钮照旧版 set_offlinemusic.html：空闲传输 / 立即传输 / 空闲删除 / 立即删除
+             （「全部清除」在页顶那个「清空全部离线数据」上） -->
         <div class="dispatch-bar">
           <div class="spacer" />
           <el-button :disabled="!canDispatch" @click="doDispatch('idle')">空闲传输</el-button>
           <el-button type="primary" :disabled="!canDispatch" @click="doDispatch('immediate')">立即传输</el-button>
+          <el-button :disabled="!canDispatch" @click="doDispatch('deleteIdle')">空闲删除</el-button>
+          <el-button type="danger" :disabled="!canDispatch" @click="doDispatch('deleteNow')">立即删除</el-button>
         </div>
       </el-tab-pane>
 
@@ -111,11 +115,7 @@
             style="width: 130px"
             @change="reload"
           />
-          <el-button
-            type="warning"
-            :disabled="!canMedia || !checkedMedia.length"
-            @click="stopSelected"
-          >
+          <el-button type="warning" :disabled="!canMedia || !checkedMedia.length" @click="stopSelected">
             停止传输{{ checkedMedia.length ? `(${checkedMedia.length})` : "" }}
           </el-button>
         </div>
@@ -154,8 +154,19 @@
           :page-size="filter.pageSize"
           :current-page="filter.pageNum"
           :page-sizes="[10, 20, 50, 100]"
-          @current-change="(n: number) => { filter.pageNum = n; reload(); }"
-          @size-change="(n: number) => { filter.pageSize = n; filter.pageNum = 1; reload(); }"
+          @current-change="
+            (n: number) => {
+              filter.pageNum = n;
+              reload();
+            }
+          "
+          @size-change="
+            (n: number) => {
+              filter.pageSize = n;
+              filter.pageNum = 1;
+              reload();
+            }
+          "
         />
       </el-tab-pane>
 
@@ -186,7 +197,12 @@
           :total="taskTotal"
           :page-size="filter.pageSize"
           :current-page="filter.pageNum"
-          @current-change="(n: number) => { filter.pageNum = n; reload(); }"
+          @current-change="
+            (n: number) => {
+              filter.pageNum = n;
+              reload();
+            }
+          "
         />
       </el-tab-pane>
     </el-tabs>
@@ -229,8 +245,7 @@
     <!-- 下发任务 -->
     <el-dialog v-model="tk.visible" title="离线任务下发" width="640px">
       <el-alert type="info" :closable="false" class="mb12">
-        任务下发会连同它的铃声清单一起下发，并自动补齐 offlinemedia 副本 ——
-        没有副本终端就拿不到文件。
+        任务下发会连同它的铃声清单一起下发，并自动补齐 offlinemedia 副本 —— 没有副本终端就拿不到文件。
       </el-alert>
       <el-form label-width="90px">
         <el-form-item label="任务" required>
@@ -261,8 +276,8 @@
       <el-alert type="error" :closable="false" class="mb12">
         <template #title>这是四条无 WHERE 的全表删除</template>
         <div class="alert-body">
-          会清空 offlinemedia、offlinemediaofterminal、offlinetask、offlinetaskofterminal 四张表，
-          并把 task.offlinestate 全部复位为 0。旧版这个动作只有前端一个 confirm 保护。
+          会清空 offlinemedia、offlinemediaofterminal、offlinetask、offlinetaskofterminal 四张表， 并把 task.offlinestate
+          全部复位为 0。旧版这个动作只有前端一个 confirm 保护。
         </div>
       </el-alert>
       <el-descriptions v-if="summary" :column="2" border size="small" class="mb12">
@@ -275,12 +290,7 @@
       <el-input v-model="pg.confirmText" placeholder="逐字输入：清空全部离线数据" />
       <template #footer>
         <el-button @click="pg.visible = false">取消</el-button>
-        <el-button
-          type="danger"
-          :loading="pg.busy"
-          :disabled="pg.confirmText !== '清空全部离线数据'"
-          @click="submitPurge"
-        >
+        <el-button type="danger" :loading="pg.busy" :disabled="pg.confirmText !== '清空全部离线数据'" @click="submitPurge">
           确认清空
         </el-button>
       </template>
@@ -396,7 +406,7 @@ interface TermNode {
   children?: TermNode[];
 }
 
-const termTreeRef = ref<InstanceType<typeof import("element-plus")["ElTree"]>>();
+const termTreeRef = ref<InstanceType<(typeof import("element-plus"))["ElTree"]>>();
 
 const dp = reactive({
   termKeyword: "",
@@ -442,9 +452,25 @@ const loadDispatchMedia = async () => {
   dp.mediaIds = dp.mediaIds.filter(id => ids.has(id));
 };
 
-const doDispatch = async (mode: "idle" | "immediate") => {
+const DISPATCH_TEXT: Record<string, string> = {
+  idle: "空闲传输",
+  immediate: "立即传输",
+  deleteIdle: "空闲删除",
+  deleteNow: "立即删除"
+};
+
+const doDispatch = async (mode: OfflineMode) => {
   if (!canDispatch.value) return ElMessage.warning("请先选终端和媒体");
-  const text = mode === "idle" ? "空闲传输" : "立即传输";
+  const text = DISPATCH_TEXT[mode] ?? mode;
+  // 删除类动作会让终端把文件删掉，先确认（旧版这两个也是先弹确认框的）
+  if (mode === "deleteIdle" || mode === "deleteNow") {
+    await ElMessageBox.confirm(
+      `将对选中的 ${dp.terminalIds.length} 台终端上的 ${dp.mediaIds.length} 个媒体执行「${text}」，` +
+        `终端上的文件会被删掉，不可恢复。`,
+      text,
+      { type: "warning" }
+    );
+  }
   const { data } = await dispatchOfflineMediaApi(dp.mediaIds, dp.terminalIds, mode);
   ElMessage.success(
     `${text}已下发：${data.mediaCount} 个媒体 × ${data.terminalCount} 台终端，` +
@@ -504,9 +530,7 @@ const submitTask = async () => {
   tk.busy = true;
   try {
     const { data } = await dispatchOfflineTaskApi(tk.taskIds, tk.terminalIds, tk.mode);
-    ElMessage.success(
-      `已下发 ${data.taskCopies} 个任务副本、${data.terminalLinks} 条终端关系、${data.mediaLinks} 条媒体关系`
-    );
+    ElMessage.success(`已下发 ${data.taskCopies} 个任务副本、${data.terminalLinks} 条终端关系、${data.mediaLinks} 条媒体关系`);
     if (data.skippedNoMedia?.length) {
       ElMessage.warning(`任务 ${data.skippedNoMedia.join("、")} 没有铃声清单，下发过去也放不出声`);
     }

@@ -22,20 +22,12 @@
       <el-tab-pane label="全部" name="" />
     </el-tabs>
 
-    <ProTable
-      ref="proTableRef"
-      :columns="columns"
-      :request-api="getTransferListApi"
-      :init-param="initParam"
-      row-key="taskId"
-    >
+    <ProTable ref="proTableRef" :columns="columns" :request-api="getTransferListApi" :init-param="initParam" row-key="taskId">
       <template #tableHeader="scope">
         <div class="header-bar">
           <div class="header-left">
             <el-button :disabled="!scope.isSelected" @click="bulk('idle', scope.selectedListIds)">空闲传输</el-button>
-            <el-button :disabled="!scope.isSelected" @click="bulk('immediate', scope.selectedListIds)">
-              立即传输
-            </el-button>
+            <el-button :disabled="!scope.isSelected" @click="bulk('immediate', scope.selectedListIds)"> 立即传输 </el-button>
             <el-button :disabled="!scope.isSelected" @click="bulk('stop', scope.selectedListIds)">停止传输</el-button>
             <el-button :icon="Download" @click="goOffline">去音乐传输下发</el-button>
           </div>
@@ -48,6 +40,11 @@
       <template #taskName="s">
         {{ s.row.taskName }}
         <el-tag v-if="s.row.sourceMissing" type="danger" size="small" effect="plain" class="ml6">原任务已删除</el-tag>
+      </template>
+
+      <!-- 所属分类：作息方案连它的方案名一起显示（旧版 `作息方案(info)`） -->
+      <template #category="s">
+        {{ s.row.typeText }}<span v-if="s.row.info" class="muted">（{{ s.row.info }}）</span>
       </template>
 
       <template #offlinestate="s">
@@ -122,12 +119,7 @@ import { ElMessage } from "element-plus";
 import { reactive, ref } from "vue";
 import { useRouter } from "vue-router";
 
-import {
-  getTransferDetailApi,
-  getTransferListApi,
-  getTransferMediaApi,
-  transferBulkApi
-} from "@/api/modules/ninemod";
+import { getTransferDetailApi, getTransferListApi, getTransferMediaApi, transferBulkApi } from "@/api/modules/ninemod";
 import type { TransferMediaItem, TransferTask, TransferTerminal } from "@/api/modules/ninemod";
 import ProTable from "@/components/ProTable/index.vue";
 import type { ColumnProps, ProTableInstance } from "@/components/ProTable/interface";
@@ -140,13 +132,16 @@ const proTableRef = ref<ProTableInstance>();
 const columns = reactive<ColumnProps<TransferTask>[]>([
   { type: "selection", fixed: "left", width: 50 },
   { prop: "taskName", label: "任务名称", minWidth: 220 },
+  // 旧版 offlinetask_form.html 这一列叫「所属分类」，作息方案还带着方案名
+  { prop: "category", label: "所属分类", width: 160 },
   { prop: "cycleText", label: "播放周期", width: 120 },
   { prop: "startdate", label: "开始日期", width: 120 },
   { prop: "enddate", label: "结束日期", width: 120 },
   { prop: "playtime", label: "执行时间", width: 110 },
   { prop: "lengthText", label: "播放时长", width: 120 },
   { prop: "projectText", label: "状态", width: 100 },
-  { prop: "offlinestate", label: "离线状态", width: 140 },
+  // 旧版这一列的表头写的是「终端状态」，不是「离线状态」
+  { prop: "offlinestate", label: "终端状态", width: 140 },
   { prop: "operation", label: "操作", fixed: "right", width: 120 }
 ]);
 

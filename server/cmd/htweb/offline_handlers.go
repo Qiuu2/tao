@@ -29,7 +29,8 @@ func failOffline(w http.ResponseWriter, action string, err error) {
 func isOfflineValidationErr(err error) bool {
 	msg := err.Error()
 	for _, kw := range []string{
-		"请选择", "只能是", "最多", "不存在", "重新选择", "未绑定", "不属于", "不正确", "必须",
+		"请选择", "请先", "只能是", "最多", "不存在", "重新选择", "未绑定", "不属于",
+		"不正确", "必须", "无事可做", "不在线", "不认识",
 	} {
 		if strings.Contains(msg, kw) {
 			return true

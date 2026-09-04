@@ -264,11 +264,18 @@ func (s *Service) assertTerminalVisible(ctx context.Context, u *auth.User, termi
 type CloudAction string
 
 const (
-	CloudIdle      CloudAction = "idle"           // 空闲传输
-	CloudImmediate CloudAction = "immediate"      // 立即传输
-	CloudStop      CloudAction = "stop"           // 停止传输
-	CloudClearAll  CloudAction = "clearAll"       // 全部清除（立即删除，媒体 + 任务）
-	CloudClearIdle CloudAction = "clearIdleMedia" // 清除空闲媒体（空闲删除，只动媒体）
+	CloudIdle       CloudAction = "idle"       // 空闲传输
+	CloudImmediate  CloudAction = "immediate"  // 立即传输
+	CloudDeleteIdle CloudAction = "deleteIdle" // 空闲删除
+	CloudDeleteNow  CloudAction = "deleteNow"  // 立即删除
+	CloudStop       CloudAction = "stop"       // 停止传输
+	// CloudClearAll 对应旧版工具栏上的「全部清除」。
+	CloudClearAll CloudAction = "clearAll"
+	// CloudClearTermMedia 对应「清除终端媒体」：这台终端上**不属于任何任务**的媒体
+	// （offlinemediaofterminal 里 taskid = 0 的那些）。
+	CloudClearTermMedia CloudAction = "clearTerminalMedia"
+	// CloudClearIdle 对应「清除空闲媒体」：taskid = 0 且这台终端上**没有任务在用**它的那些。
+	CloudClearIdle CloudAction = "clearIdleMedia"
 )
 
 // CloudBulkResult 逐项回报改了多少行，界面照实说，不做「成功」二字了事。
@@ -282,8 +289,10 @@ type CloudBulkResult struct {
 }
 
 var cloudActionText = map[CloudAction]string{
-	CloudIdle: "空闲传输", CloudImmediate: "立即传输", CloudStop: "停止传输",
-	CloudClearAll: "全部清除", CloudClearIdle: "清除空闲媒体",
+	CloudIdle: "空闲传输", CloudImmediate: "立即传输",
+	CloudDeleteIdle: "空闲删除", CloudDeleteNow: "立即删除",
+	CloudStop: "停止传输", CloudClearAll: "全部清除",
+	CloudClearTermMedia: "清除终端媒体", CloudClearIdle: "清除空闲媒体",
 }
 
 // CloudBulk 对选中终端上**已有的**离线条目整批改状态。
@@ -305,21 +314,47 @@ func (s *Service) CloudBulk(ctx context.Context, u *auth.User,
 		return nil, err
 	}
 
-	// 每个动作要写进 offlinestate 的目标值，以及动不动任务那张表
+	// 每个动作要写进 offlinestate 的目标值，以及它作用在哪些行上。
+	//
+	// ⚠ 旧版 do.php 的 del_all_offline() 里，「空闲传输 / 立即传输 / 空闲删除 /
+	//    立即删除 / 停止传输」这五个动作写的是
+	//        UPDATE offlinemediaofterminal SET offlinestate=? WHERE terminalid=? AND taskid='0'
+	//    也就是**只动这台终端上不属于任何任务的媒体**，并且不碰 offlinetaskofterminal
+	//    （旧版那两句是注释掉的）。任务副本归「任务传送」那一页管，分工是清楚的。
+	//    这里照同一套来 —— 早前这五个动作把任务副本也一起改了，
+	//    等于在这一页悄悄改掉了另一页的东西。
 	var mediaState, taskState State
-	touchTask := true
+	touchTask := false
+	mediaOnlyFree := false // 只作用在 taskid = 0 的媒体行上
+	idleOnly := false      // 再进一步：这台终端上没有任务在用的那些
 	switch action {
 	case CloudIdle:
-		mediaState, taskState = StateIdle, StateIdle
+		mediaState, mediaOnlyFree = StateIdle, true
 	case CloudImmediate:
-		mediaState, taskState = StateImmediate, StateImmediate
+		mediaState, mediaOnlyFree = StateImmediate, true
+	case CloudDeleteIdle:
+		mediaState, mediaOnlyFree = StateDeleteIdle, true
+	case CloudDeleteNow:
+		mediaState, mediaOnlyFree = StateDeleteNow, true
 	case CloudStop:
-		mediaState, taskState = StateStop, StateStop
+		mediaState, mediaOnlyFree = StateStop, true
 	case CloudClearAll:
-		mediaState, taskState = StateDeleteNow, StateDeleteNow
+		// 「全部清除」旧版是把四张离线表整表 DELETE（不分终端）。
+		// 这里改成「给选中终端的所有离线条目打上『立即删除』」——
+		// 真正的删除由后台广播服务看到这个状态后自己完成。
+		// 抢着删行，后台就永远收不到删除指令，终端上的文件会留成孤儿。
+		mediaState, taskState, touchTask = StateDeleteNow, StateDeleteNow, true
+	case CloudClearTermMedia:
+		mediaState, mediaOnlyFree = StateDeleteNow, true
 	case CloudClearIdle:
-		// 「清除空闲媒体」按字面只处理媒体，任务副本不动
-		mediaState, touchTask = StateDeleteIdle, false
+		mediaState, mediaOnlyFree, idleOnly = StateDeleteNow, true, true
+	}
+
+	// 旧版「清除空闲媒体」前先查一遍 netstate，有离线终端就整批拒绝。照搬。
+	if action == CloudClearIdle {
+		if err := s.assertTerminalsOnline(ctx, termIDs); err != nil {
+			return nil, err
+		}
 	}
 
 	tph, targs := placeholders(termIDs)
@@ -329,8 +364,18 @@ func (s *Service) CloudBulk(ctx context.Context, u *auth.User,
 		TerminalCount: len(termIDs), StateText: Text(int(mediaState)),
 	}
 
-	res, err := s.db.ExecContext(ctx,
-		`UPDATE offlinemediaofterminal SET offlinestate = ? WHERE terminalid IN (`+tph+`)`,
+	q := `UPDATE offlinemediaofterminal SET offlinestate = ? WHERE terminalid IN (` + tph + `)`
+	if mediaOnlyFree {
+		q += ` AND taskid = 0`
+	}
+	if idleOnly {
+		// 同一台终端上，这条媒体还被某条任务用着就不算「空闲」
+		q += ` AND NOT EXISTS (SELECT 1 FROM offlinemediaofterminal x
+		       WHERE x.mediaid = offlinemediaofterminal.mediaid
+		         AND x.terminalid = offlinemediaofterminal.terminalid
+		         AND x.taskid <> 0)`
+	}
+	res, err := s.db.ExecContext(ctx, q,
 		append([]interface{}{int(mediaState)}, targs...)...)
 	if err != nil {
 		return nil, fmt.Errorf("%s（媒体）: %w", text, err)
@@ -722,4 +767,41 @@ func (s *Service) TransferDetail(ctx context.Context, u *auth.User, taskID int64
 		out = append(out, t)
 	}
 	return out, rs.Err()
+}
+
+// assertTerminalsOnline 拒绝对离线终端做「清除空闲媒体」。
+//
+// 旧版 del_all_offline() 的 flag=19 分支开头就是这一段：
+//
+//	SELECT netstate FROM terminal WHERE id IN(...)
+//	if($row['netstate']==0) exit_back_function($do_php_prompt['Disconnect']);
+//
+// 理由是清除要靠一条实时指令发到终端上，终端不在线这条指令发不出去，
+// 库里却已经把行删了 —— 终端上的文件就留成了孤儿。
+func (s *Service) assertTerminalsOnline(ctx context.Context, ids []int64) error {
+	ph, args := placeholders(ids)
+	rs, err := s.db.QueryContext(ctx,
+		`SELECT COALESCE(terminalname,''), COALESCE(netstate,0) FROM terminal WHERE id IN (`+ph+`)`, args...)
+	if err != nil {
+		return fmt.Errorf("查询终端在线状态: %w", err)
+	}
+	defer rs.Close()
+	var off []string
+	for rs.Next() {
+		var name string
+		var net int
+		if err := rs.Scan(&name, &net); err != nil {
+			return err
+		}
+		if net != 1 {
+			off = append(off, name)
+		}
+	}
+	if err := rs.Err(); err != nil {
+		return err
+	}
+	if len(off) > 0 {
+		return fmt.Errorf("这些终端不在线，清除指令发不下去：%s", strings.Join(off, "、"))
+	}
+	return nil
 }
