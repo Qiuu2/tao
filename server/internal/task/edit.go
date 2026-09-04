@@ -101,6 +101,15 @@ type LEDSub struct {
 	Text    string `json:"text"`
 	Speed   int    `json:"speed"`
 	LedMode int    `json:"ledmode"`
+	// Devices 是字幕要上到哪几块 LED 屏（旧版表单里的「led设备列表」）。
+	// 空表示不绑设备 —— 旧版此时也只写 task 与字幕，ledoftask 是空的。
+	Devices []LEDDevRef `json:"devices"`
+}
+
+// LEDDevRef 是 ledoftask 的一行：一块 LED 屏挂在哪台终端下。
+type LEDDevRef struct {
+	TerminalID int64 `json:"terminalId"`
+	DeviceID   int64 `json:"deviceId"`
 }
 
 type SaveResult struct {

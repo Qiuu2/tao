@@ -201,6 +201,18 @@ func syncLEDTask(ctx context.Context, tx *sql.Tx, mainID int64, in Input, ownerI
 			return 0, fmt.Errorf("写入 LED 子任务终端: %w", err)
 		}
 	}
+	// 「led设备列表」勾中的屏：ledoftask(taskid, terminalid, deviceid)，
+	// 与旧版 add_ledtask 写的是同一张表。没勾就不写，与旧版一致。
+	for _, d := range in.LED.Devices {
+		if d.DeviceID <= 0 {
+			continue
+		}
+		if _, err := tx.ExecContext(ctx,
+			`INSERT INTO ledoftask (taskid, terminalid, deviceid) VALUES (?,?,?)`,
+			ledID, d.TerminalID, d.DeviceID); err != nil {
+			return 0, fmt.Errorf("写入 LED 设备清单: %w", err)
+		}
+	}
 	return ledID, nil
 }
 
@@ -228,6 +240,23 @@ func (s *Service) loadLEDSub(ctx context.Context, mainID int64) (*LEDSub, error)
 		ORDER BY ls.id LIMIT 1`, ledID).Scan(&out.Text, &out.Speed, &out.LedMode)
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return nil, fmt.Errorf("查询 Led字幕: %w", err)
+	}
+	out.Devices = []LEDDevRef{}
+	rows, err := s.db.QueryContext(ctx,
+		`SELECT terminalid, deviceid FROM ledoftask WHERE taskid = ?`, ledID)
+	if err != nil {
+		return nil, fmt.Errorf("查询 LED 设备清单: %w", err)
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var d LEDDevRef
+		if err := rows.Scan(&d.TerminalID, &d.DeviceID); err != nil {
+			return nil, err
+		}
+		out.Devices = append(out.Devices, d)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
 	}
 	return out, nil
 }

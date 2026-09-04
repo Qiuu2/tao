@@ -37,12 +37,7 @@
               <span class="tree-count">{{ data.taskCount }}</span>
               <span v-if="canFolder" class="tree-ops">
                 <el-icon title="重命名" @click.stop="openFolderRename(data)"><EditPen /></el-icon>
-                <el-icon
-                  v-if="data.canDelete"
-                  class="danger"
-                  title="删除分组"
-                  @click.stop="confirmFolderDelete(data)"
-                >
+                <el-icon v-if="data.canDelete" class="danger" title="删除分组" @click.stop="confirmFolderDelete(data)">
                   <Delete />
                 </el-icon>
               </span>
@@ -213,9 +208,7 @@
           <el-button type="primary" link @click="openMedia(scope.row)">
             媒体<span class="cnt">({{ scope.row.media?.length ?? 0 }})</span>
           </el-button>
-          <el-button type="primary" link :icon="CopyDocument" :disabled="!canCopy" @click="openCopy(scope.row)">
-            复制
-          </el-button>
+          <el-button type="primary" link :icon="CopyDocument" :disabled="!canCopy" @click="openCopy(scope.row)"> 复制 </el-button>
         </template>
       </ProTable>
     </div>
@@ -283,27 +276,26 @@
       </template>
     </el-dialog>
 
-    <!-- 新建 / 编辑任务 -->
-    <el-dialog v-model="dlg.visible" :title="dlg.title" width="900px" top="4vh">
-      <!--
-        分步向导，对齐 :80 的「上一步 / 下一步 / 取消」。
-        ⚠ 用 v-show 而不是 v-if：各步的输入必须始终挂载着，
-          否则切步骤会把没提交的内容连同组件一起销毁。
-      -->
-      <el-steps :active="step" finish-status="success" simple class="mb12">
-        <el-step title="基本信息" />
-        <el-step title="媒体与终端" />
-        <el-step title="时间与播放" />
-      </el-steps>
+    <!--
+      新建 / 修改任务（对照 ok112 的 AddFileTask_form.html / ModifyFileTask_form.html）。
 
-      <el-form :model="dlg.form" label-width="120px">
-        <div v-show="step === 0">
-        <el-divider content-position="left">基本信息</el-divider>
-        <el-row :gutter="12">
+      旧版是一页到底的表单，分五段：
+        任务属性 → 执行时间 → led字幕 + led设备列表 → 媒体文件列表 → 终端列表
+      这里照它排。原先那个「基本信息 / 媒体与终端 / 时间与播放」三步向导取消了 ——
+      旧版没有分步，来回翻页反而看不到全貌。
+
+      末尾多出来的「扩展项」是旧版表单里没有、但库里确实有的几列
+      （方案状态、结束时间、当天停用、本地优先播放）。它们已经在后端写着，
+      藏起来只会让人改不到，所以单独一段列出来并标明旧版没有。
+    -->
+    <el-dialog v-model="dlg.visible" :title="dlg.title" width="960px" top="4vh">
+      <el-form :model="dlg.form" label-width="110px">
+        <el-divider content-position="left">任务属性</el-divider>
+        <el-row :gutter="16">
           <el-col :span="12">
-            <!-- 表单项名称照 :80 的「添加」弹窗（docs/image/oktw/子页规格.txt） -->
-            <el-form-item label="任务名" required>
-              <el-input v-model="dlg.form.taskname" maxlength="85" show-word-limit placeholder="请输入任务名" />
+            <!-- 旧版 maxlength="8"：任务名称最大 8 字节 -->
+            <el-form-item label="任务名称" required>
+              <el-input v-model="dlg.form.taskname" maxlength="8" show-word-limit placeholder="请输入任务名称" />
             </el-form-item>
           </el-col>
           <el-col :span="12">
@@ -314,50 +306,178 @@
             </el-form-item>
           </el-col>
         </el-row>
-        <el-row :gutter="12">
+        <el-row :gutter="16">
           <el-col :span="12">
-            <el-form-item label="方案状态">
-              <!-- 0 = 启用、1 = 停用，与列注释相反，见列表里的说明 -->
-              <el-radio-group v-model="dlg.form.projectstate">
-                <el-radio :value="0">启用</el-radio>
-                <el-radio :value="1">停用</el-radio>
-              </el-radio-group>
+            <el-form-item label="随机播放">
+              <!-- 旧版是一个复选框；⚠ 取值反直觉：0 = 随机、1 = 顺序 -->
+              <el-checkbox v-model="randomOn">选中歌曲将随机播放</el-checkbox>
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="随机播放">
-              <!-- 取值反直觉：0 = 随机，1 = 顺序。旧库如此，不能顺手对调 -->
-              <el-radio-group v-model="dlg.form.israndomplay">
-                <el-radio :value="1">顺序</el-radio>
-                <el-radio :value="0">随机</el-radio>
-              </el-radio-group>
+            <el-form-item label="预开电源">
+              <el-select v-model="dlg.form.power.prepower" style="width: 140px">
+                <el-option v-for="s in prepowerSeconds" :key="s" :label="`${s} 秒`" :value="s" />
+                <el-option v-for="m in [1, 2, 3, 4, 5]" :key="`m${m}`" :label="`${m} 分钟`" :value="m * 60" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+        </el-row>
+        <el-row :gutter="16">
+          <el-col :span="12">
+            <el-form-item label="任务级别">
+              <el-select v-model="dlg.form.playback.priority" style="width: 110px">
+                <el-option v-for="p in priorityOptions" :key="p" :label="String(p)" :value="p" />
+              </el-select>
+              <span class="form-tip">10 为最高级别</span>
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="发送模式">
+              <el-select v-model="dlg.form.power.datasendmodel" style="width: 110px">
+                <el-option label="单播" :value="0" />
+                <el-option label="组播" :value="1" />
+              </el-select>
             </el-form-item>
           </el-col>
         </el-row>
 
-        </div>
-
-        <div v-show="step === 1">
-        <el-divider content-position="left">媒体清单</el-divider>
-        <el-form-item label="选择媒体">
-          <el-select
-            v-model="selectedMediaIds"
-            multiple
-            filterable
-            remote
-            reserve-keyword
-            collapse-tags
-            collapse-tags-tooltip
-            :remote-method="searchMedia"
-            :loading="mediaLoading"
-            placeholder="输入关键字搜索媒体"
-            class="fill"
-          >
-            <el-option v-for="m in mediaOptions" :key="m.id" :label="m.name" :value="m.id">
-              <span>{{ m.name }}</span>
-              <span class="opt-sub">{{ m.folderName }} · {{ fmtDuration(m.timelength) }}</span>
-            </el-option>
+        <!--
+          播放模式照旧版 intervalmode：
+            普通模式 —— 「时长(时:分:秒)」或「循环次数」二选一
+            间隔时间 —— 总时长 + 间隔长度，再选「间隔时长」或「间隔次数」
+          库里没有 intervalmode 这一列，它由 interval_s 是否为 0 反推。
+        -->
+        <el-form-item label="播放模式">
+          <el-select v-model="playMode" style="width: 140px" @change="onPlayModeChange">
+            <el-option label="普通模式" :value="0" />
+            <el-option label="间隔时间" :value="1" />
           </el-select>
+          <el-checkbox v-model="ledOn" class="ml16">led播放</el-checkbox>
+        </el-form-item>
+
+        <el-form-item v-if="playMode === 0" label=" ">
+          <el-radio-group v-model="dlg.form.playback.timelengthtype" class="len-group">
+            <div class="len-line">
+              <el-radio :value="1">时长</el-radio>
+              <HmsInput v-model="durationSec" :disabled="dlg.form.playback.timelengthtype !== 1" />
+            </div>
+            <div class="len-line">
+              <el-radio :value="2">循环次数</el-radio>
+              <!-- el-input-number 改 disabled 后不会更新 aria-disabled，用 key 强制重建 -->
+              <el-input-number
+                :key="`cyc-${dlg.form.playback.timelengthtype}`"
+                v-model="cycleTimes"
+                :min="0"
+                :max="10"
+                :disabled="dlg.form.playback.timelengthtype !== 2"
+                :controls="false"
+                style="width: 90px"
+              />
+              <span class="form-tip">0 是无限循环，最大 10 次</span>
+            </div>
+          </el-radio-group>
+        </el-form-item>
+
+        <template v-else>
+          <el-form-item label="时长">
+            <HmsInput v-model="durationSec" />
+          </el-form-item>
+          <el-form-item label="间隔长度">
+            <HmsInput v-model="dlg.form.playback.interval_s" />
+          </el-form-item>
+          <el-form-item label=" ">
+            <el-radio-group v-model="dlg.form.playback.intplaylengthtype" class="len-group">
+              <div class="len-line">
+                <el-radio :value="1">间隔时长</el-radio>
+                <HmsInput v-model="dlg.form.playback.intplaylength" :disabled="dlg.form.playback.intplaylengthtype !== 1" />
+              </div>
+              <div class="len-line">
+                <el-radio :value="2">间隔次数</el-radio>
+                <el-input-number
+                  :key="`int-${dlg.form.playback.intplaylengthtype}`"
+                  v-model="intCycleTimes"
+                  :min="0"
+                  :max="99"
+                  :disabled="dlg.form.playback.intplaylengthtype !== 2"
+                  :controls="false"
+                  style="width: 90px"
+                />
+              </div>
+            </el-radio-group>
+          </el-form-item>
+        </template>
+
+        <el-divider content-position="left">执行时间</el-divider>
+        <el-row :gutter="16">
+          <el-col :span="8">
+            <el-form-item label="播放时间" required>
+              <el-time-picker v-model="dlg.form.schedule.playtime" value-format="HH:mm:ss" class="fill" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="8">
+            <el-form-item label="开始日期" required>
+              <el-date-picker v-model="dateRange[0]" type="date" value-format="YYYY-MM-DD" class="fill" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="8">
+            <el-form-item label="结束日期" required>
+              <el-date-picker v-model="dateRange[1]" type="date" value-format="YYYY-MM-DD" class="fill" />
+            </el-form-item>
+          </el-col>
+        </el-row>
+        <el-form-item label="任务音量">
+          <el-slider v-model="dlg.form.playback.defaultvolume" :min="0" :max="100" show-input class="vol-slider" />
+        </el-form-item>
+        <el-form-item label="执行模式">
+          <!-- 旧版是「手动 / 每天 / 每星期」下拉，选每星期才出现星期勾选 -->
+          <el-select v-model="runMode" style="width: 140px" @change="onRunModeChange">
+            <el-option label="手动" :value="0" />
+            <el-option label="每天" :value="1" />
+            <el-option label="每星期" :value="2" />
+          </el-select>
+          <el-checkbox-group v-if="runMode === 2" v-model="weekdaySel" class="ml16">
+            <el-checkbox v-for="(w, i) in WEEK" :key="i" :value="i">{{ w }}</el-checkbox>
+          </el-checkbox-group>
+        </el-form-item>
+
+        <template v-if="ledOn">
+          <el-divider content-position="left">led字幕</el-divider>
+          <el-form-item label="LED任务名称">
+            <el-input v-model="dlg.form.led.name" maxlength="8" show-word-limit placeholder="留空则与任务名相同" />
+          </el-form-item>
+          <el-form-item label="led字幕" required>
+            <el-input
+              v-model="dlg.form.led.text"
+              type="textarea"
+              :rows="3"
+              maxlength="341"
+              show-word-limit
+              placeholder="请输入 led 字幕内容"
+            />
+          </el-form-item>
+          <el-form-item label="Led速度">
+            <el-select v-model="dlg.form.led.speed" style="width: 110px">
+              <el-option v-for="n in [0, 1, 2, 3, 4, 5]" :key="n" :label="`${n} 级`" :value="n" />
+            </el-select>
+            <span class="form-tip">0 ~ 5 级</span>
+          </el-form-item>
+          <el-form-item label="led设备列表">
+            <div class="led-dev">
+              <div v-if="!ledDevices.length" class="dlg-note">还没有登记 LED 设备（基础配置 → LED 设备）。</div>
+              <el-checkbox-group v-else v-model="selectedLedDeviceIds">
+                <el-checkbox v-for="d in ledDevices" :key="d.id" :value="d.id">
+                  {{ d.name }}
+                  <span class="opt-sub">{{ d.terminalname || `终端 ${d.terminalId}` }} · {{ d.ip }}</span>
+                </el-checkbox>
+              </el-checkbox-group>
+            </div>
+          </el-form-item>
+        </template>
+
+        <el-divider content-position="left">媒体文件列表</el-divider>
+        <el-form-item label-width="0">
+          <!-- 旧版这里是一棵「媒体库 → 音频文件」的树，不是一条长下拉 -->
+          <MediaTree v-model="selectedMediaIds" :selected-names="selectedMediaNames" height="240px" style="width: 100%" />
         </el-form-item>
         <el-form-item v-if="selectedMediaIds.length" label="播放顺序">
           <div class="sortable">
@@ -371,192 +491,60 @@
           </div>
         </el-form-item>
 
-        <el-divider content-position="left">终端清单</el-divider>
-        <el-form-item label="选择终端">
+        <el-divider content-position="left">终端列表</el-divider>
+        <el-form-item label-width="0">
           <TerminalTree
             v-model="selectedTerminalIds"
             :terminals="terminalOptions"
             :loading="terminalLoading"
             height="260px"
+            style="width: 100%"
             @search="searchTerminals"
           />
         </el-form-item>
 
-        </div>
-
-        <div v-show="step === 2">
-        <el-divider content-position="left">时间安排</el-divider>
-        <el-row :gutter="12">
-          <el-col :span="6">
-            <el-form-item label="开始日期" required>
-              <el-date-picker
-                v-model="dateRange[0]"
-                type="date"
-                value-format="YYYY-MM-DD"
-                placeholder="请选择开始日期"
-                class="fill"
-              />
+        <!-- 旧版表单里没有这几项，但库里有对应的列，放在最后单独一段 -->
+        <el-divider content-position="left">扩展项（旧版表单没有）</el-divider>
+        <el-row :gutter="16">
+          <el-col :span="12">
+            <el-form-item label="方案状态">
+              <!-- 0 = 启用、1 = 停用，与列注释相反 -->
+              <el-radio-group v-model="dlg.form.projectstate">
+                <el-radio :value="0">启用</el-radio>
+                <el-radio :value="1">停用</el-radio>
+              </el-radio-group>
             </el-form-item>
           </el-col>
-          <el-col :span="6">
-            <el-form-item label="结束日期" required>
-              <el-date-picker
-                v-model="dateRange[1]"
-                type="date"
-                value-format="YYYY-MM-DD"
-                placeholder="请选择结束日期"
-                class="fill"
-              />
-            </el-form-item>
-          </el-col>
-          <el-col :span="6">
-            <el-form-item label="播放时间" required>
-              <el-time-picker v-model="dlg.form.schedule.playtime" value-format="HH:mm:ss" class="fill" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="6">
-            <el-form-item label="结束时间">
-              <el-time-picker v-model="dlg.form.schedule.endtime" value-format="HH:mm:ss" class="fill" />
-            </el-form-item>
-          </el-col>
-        </el-row>
-        <el-form-item label="执行模式">
-          <el-checkbox-group v-model="weekdaySel">
-            <el-checkbox v-for="(w, i) in WEEK" :key="i" :value="i">{{ w }}</el-checkbox>
-          </el-checkbox-group>
-        </el-form-item>
-        <el-form-item label="当天停用">
-          <el-date-picker
-            v-model="dlg.form.schedule.disableday"
-            type="date"
-            value-format="YYYY-MM-DD"
-            placeholder="选填，指定当天不执行"
-            clearable
-          />
-        </el-form-item>
-
-        <el-divider content-position="left">播放参数</el-divider>
-        <el-row :gutter="12">
-          <el-col :span="8">
-            <el-form-item label="播放模式">
-              <el-select v-model="dlg.form.playback.timelengthtype" class="fill">
-                <el-option label="普通模式" :value="1" />
-                <el-option label="循环模式" :value="2" />
-              </el-select>
-            </el-form-item>
-          </el-col>
-          <el-col :span="8">
-            <el-form-item :label="dlg.form.playback.timelengthtype === 1 ? '播放时长' : '播放次数'">
-              <el-input-number v-model="dlg.form.playback.timelength" :min="0" :max="86400" class="fill" />
-              <span class="form-tip">{{ dlg.form.playback.timelengthtype === 1 ? "秒" : "次" }}</span>
-            </el-form-item>
-          </el-col>
-          <el-col :span="8">
-            <el-form-item label="任务音量">
-              <el-slider v-model="dlg.form.playback.defaultvolume" :min="0" :max="100" show-input />
-            </el-form-item>
-          </el-col>
-        </el-row>
-        <el-row :gutter="12">
-          <el-col :span="8">
-            <el-form-item label="任务等级">
-              <el-input-number
-                v-model="dlg.form.playback.priority"
-                :min="priorityRange.min"
-                :max="priorityRange.max"
-                class="fill"
-              />
-            </el-form-item>
-          </el-col>
-          <el-col :span="8">
+          <el-col :span="12">
             <el-form-item label="本地优先播放">
               <el-switch v-model="localPlayOn" />
             </el-form-item>
           </el-col>
-          <el-col :span="8">
-            <el-form-item label="发送模式">
-              <el-select v-model="dlg.form.power.datasendmodel" class="fill">
-                <el-option label="单播" :value="0" />
-                <el-option label="组播" :value="1" />
-              </el-select>
+        </el-row>
+        <el-row :gutter="16">
+          <el-col :span="12">
+            <el-form-item label="结束时间">
+              <el-time-picker v-model="dlg.form.schedule.endtime" value-format="HH:mm:ss" class="fill" clearable />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="当天停用">
+              <el-date-picker
+                v-model="dlg.form.schedule.disableday"
+                type="date"
+                value-format="YYYY-MM-DD"
+                placeholder="选填，指定当天不执行"
+                class="fill"
+                clearable
+              />
             </el-form-item>
           </el-col>
         </el-row>
-        <el-row :gutter="12">
-          <el-col :span="8">
-            <el-form-item label="间隔时间(秒)">
-              <el-input-number v-model="dlg.form.playback.interval_s" :min="0" class="fill" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="8">
-            <el-form-item label="间隔播放模式">
-              <el-select v-model="dlg.form.playback.intplaylengthtype" class="fill">
-                <el-option label="按时间" :value="1" />
-                <el-option label="按循环" :value="2" />
-              </el-select>
-            </el-form-item>
-          </el-col>
-          <el-col :span="8">
-            <el-form-item label="间隔播放时长">
-              <el-input-number v-model="dlg.form.playback.intplaylength" :min="0" class="fill" />
-            </el-form-item>
-          </el-col>
-        </el-row>
-        <!--
-          prepower 的单位是「秒」不是分钟：旧界面下拉就是 0/5/…/55 秒 + 1~5 分钟，
-          默认 15 秒。这里沿用同一组取值，避免用户填出旧版下拉给不出的数。
-        -->
-        <el-form-item label="预开电源">
-          <el-select v-model="dlg.form.power.prepower" style="width: 120px">
-            <el-option v-for="s in prepowerSeconds" :key="s" :label="`${s} 秒`" :value="s" />
-            <el-option v-for="m in [1, 2, 3, 4, 5]" :key="`m${m}`" :label="`${m} 分钟`" :value="m * 60" />
-          </el-select>
-        </el-form-item>
-
-        <!--
-          :80 表单里的「led播放 / Led字幕 / Led速度」。
-          打开后会额外建一条 tasktype = 30 的 LED 子任务（sec_task_id 指回本任务），
-          除任务名外整行照抄主任务，终端也跟主任务一致。关掉即删掉那条子任务。
-        -->
-        <el-divider content-position="left">led播放</el-divider>
-        <el-form-item label="led播放">
-          <el-switch v-model="ledOn" />
-        </el-form-item>
-        <template v-if="ledOn">
-          <el-form-item label="LED 任务名称">
-            <el-input v-model="dlg.form.led.name" maxlength="85" show-word-limit placeholder="留空则与任务名相同" />
-          </el-form-item>
-          <el-form-item label="Led字幕" required>
-            <el-input
-              v-model="dlg.form.led.text"
-              type="textarea"
-              :rows="3"
-              maxlength="341"
-              show-word-limit
-              placeholder="请输入Led字幕内容"
-            />
-          </el-form-item>
-          <el-row :gutter="12">
-            <el-col :span="8">
-              <el-form-item label="Led速度">
-                <el-input-number v-model="dlg.form.led.speed" :min="0" :max="10" class="fill" />
-              </el-form-item>
-            </el-col>
-            <el-col :span="8">
-              <el-form-item label="显示模式">
-                <el-input-number v-model="dlg.form.led.ledmode" :min="0" :max="10" class="fill" />
-              </el-form-item>
-            </el-col>
-          </el-row>
-        </template>
-        </div>
       </el-form>
 
       <template #footer>
         <el-button @click="dlg.visible = false">取消</el-button>
-        <el-button :disabled="step === 0" @click="step--">上一步</el-button>
-        <el-button v-if="step < 2" type="primary" @click="step++">下一步</el-button>
-        <el-button v-else type="primary" :loading="dlg.saving" @click="submit">确定</el-button>
+        <el-button type="primary" :loading="dlg.saving" @click="submit">提交</el-button>
       </template>
     </el-dialog>
 
@@ -633,12 +621,7 @@
 
       <template #footer>
         <el-button @click="del.visible = false">取消</el-button>
-        <el-button
-          type="danger"
-          :disabled="!del.preview?.deletable.length"
-          :loading="del.saving"
-          @click="submitDelete"
-        >
+        <el-button type="danger" :disabled="!del.preview?.deletable.length" :loading="del.saving" @click="submitDelete">
           确认删除
         </el-button>
       </template>
@@ -707,7 +690,10 @@ import type {
   TaskRow,
   TaskTerminalOption
 } from "@/api/modules/task";
+import { getLedDevicesApi, type LedDevice } from "@/api/modules/ninemod";
 import ProTable from "@/components/ProTable/index.vue";
+import MediaTree from "@/components/MediaTree/index.vue";
+import HmsInput from "@/components/HmsInput/index.vue";
 import TerminalTree from "@/components/TerminalTree/index.vue";
 import { useAuthStore } from "@/stores/modules/auth";
 import type { ColumnProps, ProTableInstance } from "@/components/ProTable/interface";
@@ -806,13 +792,6 @@ const selectFolder = (id: number) => {
 
 const onFolderChange = (node: TaskFolderNode) => {
   if (node?.id) selectFolder(node.id);
-};
-
-const fmtDuration = (sec: number) => {
-  if (!sec) return "—";
-  const m = Math.floor(sec / 60);
-  const s = sec % 60;
-  return `${m}:${String(s).padStart(2, "0")}`;
 };
 
 /* ---------------- 批量操作 ---------------- */
@@ -996,7 +975,7 @@ const emptyForm = () => ({
   },
   power: { prepower: 0, datasendmodel: 0 },
   // LED 字幕子任务。ledOn 关掉时不提交这一段（后端据此删掉已有的子任务）。
-  led: { name: "", text: "", speed: 1, ledmode: 0 }
+  led: { name: "", text: "", speed: 0, ledmode: 0 }
 });
 
 const dlg = reactive({
@@ -1010,8 +989,60 @@ const dlg = reactive({
 
 const priorityRange = reactive({ min: 0, max: 99 });
 
-/** 新建/修改弹窗的当前步骤（0 基本信息 / 1 媒体与终端 / 2 时间与播放） */
-const step = ref(0);
+/* 旧版是一页到底的表单，没有分步；这里几个 ref 是把界面上的开关映射到库里的列。 */
+
+/** 随机播放复选框。⚠ 取值反直觉：0 = 随机、1 = 顺序 */
+const randomOn = computed({
+  get: () => dlg.form.israndomplay === 0,
+  set: v => (dlg.form.israndomplay = v ? 0 : 1)
+});
+
+/** 播放模式：0 普通、1 间隔时间。库里没有这一列，用 interval_s 是否为 0 反推 */
+const playMode = ref(0);
+const onPlayModeChange = (v: number) => {
+  if (v === 0) {
+    // 回到普通模式就把间隔那几项清掉，免得留着旧值继续生效
+    dlg.form.playback.interval_s = 0;
+    dlg.form.playback.intplaylength = 0;
+    dlg.form.playback.intplaylengthtype = 1;
+  } else {
+    dlg.form.playback.timelengthtype = 1;
+    if (!dlg.form.playback.interval_s) dlg.form.playback.interval_s = 60;
+    if (!dlg.form.playback.intplaylength) dlg.form.playback.intplaylength = 60;
+  }
+};
+
+/**
+ * 「时长」与「循环次数」在库里共用 timelength 一列（按 timelengthtype 区分），
+ * 但界面上是两个各自独立的输入框（旧版 lenghtHour/Min/Senc 与 circleTime 也是分开的）。
+ * 分开存，提交时再按选中的类型合成，免得切换类型时把秒数当次数显示。
+ */
+const durationSec = ref(60);
+const cycleTimes = ref(1);
+const intDurationSec = ref(60);
+const intCycleTimes = ref(1);
+
+/** 把库里的 timelength / intplaylength 拆回两个输入框 */
+const splitLengths = (pb: { timelengthtype: number; timelength: number; intplaylengthtype: number; intplaylength: number }) => {
+  durationSec.value = pb.timelengthtype === 1 ? pb.timelength : 60;
+  cycleTimes.value = pb.timelengthtype === 2 ? pb.timelength : 1;
+  intDurationSec.value = pb.intplaylengthtype === 1 ? pb.intplaylength : 60;
+  intCycleTimes.value = pb.intplaylengthtype === 2 ? pb.intplaylength : 1;
+};
+
+/** 任务级别下拉的取值范围由后端按用户组给 */
+const priorityOptions = computed(() => {
+  const lo = priorityRange.min ?? 0;
+  const hi = priorityRange.max ?? 99;
+  return Array.from({ length: Math.max(0, hi - lo + 1) }, (_, i) => lo + i);
+});
+
+/** 执行模式：0 手动（0000000）、1 每天（1111111）、2 每星期（自己勾） */
+const runMode = ref(1);
+const onRunModeChange = (v: number) => {
+  if (v === 0) weekdaySel.value = [];
+  if (v === 1) weekdaySel.value = [0, 1, 2, 3, 4, 5, 6];
+};
 
 // 开始/结束日期是两个独立的选择器（照 :80），共用这个数组：[0] 开始、[1] 结束。
 // ⚠ 必须 deep —— v-model 改的是数组元素，不是数组本身，浅层 watch 不会触发。
@@ -1037,27 +1068,41 @@ watch(localPlayOn, v => (dlg.form.playback.localplay = v ? 1 : 0));
 /** led播放 开关。关掉时提交 led: null，后端会把已有的 LED 子任务删掉 */
 const ledOn = ref(false);
 
+/* led设备列表（旧版表单里的 ledlists）：勾中的屏写进 ledoftask */
+const ledDevices = ref<LedDevice[]>([]);
+const selectedLedDeviceIds = ref<number[]>([]);
+const loadLedDevices = async () => {
+  const { data } = await getLedDevicesApi("");
+  ledDevices.value = data ?? [];
+};
+
+/** MediaTree 是懒加载的，回填时要把已选媒体的名字一并给它，否则只显示 id */
+const selectedMediaNames = computed(() => selectedMediaIds.value.map(id => ({ mediaId: id, name: mediaLabel(id) })));
+
 const applyMask = (mask: string) => {
   weekdaySel.value = mask.split("").reduce<number[]>((acc, c, i) => (c === "1" ? [...acc, i] : acc), []);
 };
 
 const openCreate = async () => {
   if (!currentFolder.value) return ElMessage.warning("请先在左侧选择一个任务分组");
-  step.value = 0;
-  Object.assign(dlg, { visible: true, isEdit: false, title: "添加", id: 0, saving: false, form: emptyForm() });
+  Object.assign(dlg, { visible: true, isEdit: false, title: "添加任务", id: 0, saving: false, form: emptyForm() });
   dateRange.value = [dlg.form.schedule.startdate, dlg.form.schedule.enddate];
   applyMask(dlg.form.schedule.exemodel);
+  runMode.value = 1;
+  playMode.value = 0;
+  splitLengths(dlg.form.playback);
   localPlayOn.value = false;
+  ledOn.value = false;
+  selectedLedDeviceIds.value = [];
   selectedMediaIds.value = [];
   selectedTerminalIds.value = [];
   priorityRange.min = 0;
   priorityRange.max = 99;
-  await Promise.all([searchMedia(""), searchTerminals("")]);
+  await Promise.all([searchMedia(""), searchTerminals(""), loadLedDevices()]);
 };
 
 const openEdit = async (row: TaskRow) => {
   const { data } = await getTaskApi(row.taskid);
-  step.value = 0;
   Object.assign(dlg, {
     visible: true,
     isEdit: true,
@@ -1094,16 +1139,22 @@ const openEdit = async (row: TaskRow) => {
       led: {
         name: data.led?.name ?? "",
         text: data.led?.text ?? "",
-        speed: data.led?.speed ?? 1,
+        speed: data.led?.speed ?? 0,
         ledmode: data.led?.ledmode ?? 0
       }
     }
   });
   dateRange.value = [data.startdate, data.enddate];
   applyMask(data.exemodel);
+  // 执行模式：全 0 = 手动、全 1 = 每天、其余 = 每星期
+  runMode.value = data.exemodel === "0000000" ? 0 : data.exemodel === "1111111" ? 1 : 2;
+  // 有间隔长度就是「间隔时间」模式
+  playMode.value = data.interval_s > 0 ? 1 : 0;
+  splitLengths(data);
   localPlayOn.value = data.localplay === 1;
   // 有 LED 子任务就把开关打开
   ledOn.value = !!data.led;
+  selectedLedDeviceIds.value = (data.led?.devices ?? []).map(d => d.deviceId);
   priorityRange.min = data.priorityMin;
   priorityRange.max = data.priorityMax;
 
@@ -1112,29 +1163,41 @@ const openEdit = async (row: TaskRow) => {
   data.terminals.forEach(t => (terminalGroupOf[t.terminalId] = t.groupId));
   selectedMediaIds.value = data.media.map(m => m.mediaId);
   selectedTerminalIds.value = data.terminals.map(t => t.terminalId);
-  await Promise.all([searchMedia(""), searchTerminals("")]);
+  await Promise.all([searchMedia(""), searchTerminals(""), loadLedDevices()]);
 };
 
 const submit = async () => {
   const f = dlg.form;
-  // 校验不通过时把步骤切到出问题的那一步，否则用户看不见是哪一项没填
-  if (!f.taskname.trim()) {
-    step.value = 0;
-    return ElMessage.warning("请输入任务名");
-  }
-  if (!f.folderId) {
-    step.value = 0;
-    return ElMessage.warning("请选择所属分组");
-  }
-  if (ledOn.value && !f.led.text.trim()) {
-    step.value = 2;
-    return ElMessage.warning("请输入Led字幕内容");
-  }
+  if (!f.taskname.trim()) return ElMessage.warning("请输入任务名称");
+  if (!f.folderId) return ElMessage.warning("请选择所属分组");
+  if (ledOn.value && !f.led.text.trim()) return ElMessage.warning("请输入 led 字幕内容");
+  if (!selectedMediaIds.value.length) return ElMessage.warning("请在媒体文件列表里选择要播放的媒体");
+  if (!selectedTerminalIds.value.length) return ElMessage.warning("请在终端列表里选择终端");
 
+  const pb = f.playback;
   const payload = {
     ...f,
+    playback: {
+      ...pb,
+      // 时长 / 循环次数按选中的类型合成成 timelength 这一列
+      timelength: pb.timelengthtype === 1 ? durationSec.value : cycleTimes.value,
+      // 普通模式下不写间隔那几项
+      interval_s: playMode.value === 1 ? pb.interval_s : 0,
+      intplaylength: playMode.value === 1 ? (pb.intplaylengthtype === 1 ? intDurationSec.value : intCycleTimes.value) : 0
+    },
     // 关掉 led播放 就传 null —— 服务端据此删掉已有的 LED 子任务
-    led: ledOn.value ? { ...f.led, name: f.led.name.trim(), text: f.led.text.trim() } : null,
+    led: ledOn.value
+      ? {
+          ...f.led,
+          name: f.led.name.trim(),
+          text: f.led.text.trim(),
+          // 勾中的 LED 屏连同它挂着的终端一起提交，服务端写进 ledoftask
+          devices: selectedLedDeviceIds.value.map(id => ({
+            deviceId: id,
+            terminalId: ledDevices.value.find(d => d.id === id)?.terminalId ?? 0
+          }))
+        }
+      : null,
     // sort 按数组下标给，服务端还会再规整一次
     media: selectedMediaIds.value.map((id, i) => ({ mediaId: id, sort: i })),
     terminals: selectedTerminalIds.value.map(id => ({
@@ -1303,6 +1366,31 @@ onMounted(async () => {
 </script>
 
 <style scoped lang="scss">
+/* 「时长 / 循环次数」两行竖排，与旧版那两行单选一致 */
+.len-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+.len-line {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+.led-dev {
+  width: 100%;
+  padding: 6px 10px;
+  background: var(--el-fill-color-lighter);
+  border-radius: 4px;
+}
+.vol-slider {
+  width: 420px;
+}
+.ml16 {
+  margin-left: 16px;
+}
 .task-page {
   display: flex;
   gap: 10px;

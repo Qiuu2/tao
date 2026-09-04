@@ -114,6 +114,8 @@ export interface TaskLEDSub {
   text: string;
   speed: number;
   ledmode: number;
+  /** 字幕要上到哪几块 LED 屏（旧版表单里的「led设备列表」，写进 ledoftask） */
+  devices?: { terminalId: number; deviceId: number }[];
 }
 
 /** 提交体。媒体与终端是对象数组，不是旧版那两条按下标对齐的逗号串 */
