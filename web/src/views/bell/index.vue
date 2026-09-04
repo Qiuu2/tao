@@ -215,13 +215,13 @@
           israndomplay 是写死 0（随机）的。所以这里不摆这个输入框，
           新建时仍按 0 提交；修改时沿用方案里原有的值，不会被清掉。
       -->
-      <el-form :model="dlg.form" label-width="90px">
+      <el-form ref="planFormRef" :model="dlg.form" :rules="planRules" label-width="90px">
         <el-divider content-position="left">任务配置</el-divider>
 
         <el-row :gutter="16">
           <el-col :span="12">
             <!-- 旧版 maxlength="8" -->
-            <el-form-item label="方案名称" required>
+            <el-form-item label="方案名称" prop="planName">
               <el-input v-model="dlg.form.planName" maxlength="8" show-word-limit placeholder="请输入方案名称" />
             </el-form-item>
           </el-col>
@@ -271,12 +271,12 @@
 
         <el-row :gutter="16">
           <el-col :span="12">
-            <el-form-item label="开始日期" required>
+            <el-form-item label="开始日期" prop="startdate">
               <el-date-picker v-model="dateRange[0]" type="date" value-format="YYYY-MM-DD" placeholder="开始日期" class="fill" />
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="结束日期" required>
+            <el-form-item label="结束日期" prop="enddate">
               <el-date-picker v-model="dateRange[1]" type="date" value-format="YYYY-MM-DD" placeholder="结束日期" class="fill" />
             </el-form-item>
           </el-col>
@@ -287,7 +287,7 @@
           （旧版 select#exemodel 的 onChange="displayweek(this)"）。
           每天 = 七位全 1。
         -->
-        <el-form-item label="执行模式">
+        <el-form-item label="执行模式" prop="weekdays">
           <el-select v-model="runMode" style="width: 140px" @change="onRunModeChange">
             <el-option label="每天" :value="1" />
             <el-option label="每星期" :value="2" />
@@ -303,14 +303,33 @@
           <!-- 列名照旧版 coursetable：序号 / 课时名称 / 作息时间 / 作息音乐 / 播放时长 / 操作 -->
           <el-table :data="dlg.items" size="small" border max-height="300">
             <el-table-column type="index" label="序号" width="60" align="center" />
-            <el-table-column label="课时名称" min-width="150">
-              <template #default="{ row }">
-                <el-input v-model="row.taskname" size="small" maxlength="12" placeholder="课时名称" />
+            <el-table-column min-width="150">
+              <template #header><span class="req-star">*</span> 课时名称</template>
+              <template #default="{ row, $index }">
+                <el-input
+                  v-model="row.taskname"
+                  size="small"
+                  maxlength="12"
+                  placeholder="课时名称"
+                  :class="{ 'is-bad': itemErrors[$index]?.taskname }"
+                  @input="itemErrors[$index] && (itemErrors[$index].taskname = '')"
+                />
+                <div v-if="itemErrors[$index]?.taskname" class="cell-err">{{ itemErrors[$index].taskname }}</div>
               </template>
             </el-table-column>
-            <el-table-column label="作息时间" width="130">
-              <template #default="{ row }">
-                <el-time-picker v-model="row.playtime" value-format="HH:mm:ss" size="small" placeholder="00:00:00" class="fill" />
+            <el-table-column width="130">
+              <template #header><span class="req-star">*</span> 作息时间</template>
+              <template #default="{ row, $index }">
+                <el-time-picker
+                  v-model="row.playtime"
+                  value-format="HH:mm:ss"
+                  size="small"
+                  placeholder="00:00:00"
+                  class="fill"
+                  :class="{ 'is-bad': itemErrors[$index]?.playtime }"
+                  @change="itemErrors[$index] && (itemErrors[$index].playtime = '')"
+                />
+                <div v-if="itemErrors[$index]?.playtime" class="cell-err">{{ itemErrors[$index].playtime }}</div>
               </template>
             </el-table-column>
             <el-table-column label="作息音乐" min-width="200">
@@ -356,15 +375,16 @@
               <template #default="{ $index }">
                 <el-button link type="primary" @click="addItemRow">添加</el-button>
                 <el-button link type="primary" @click="copyItemRow($index)">复制</el-button>
-                <el-button link type="danger" @click="dlg.items.splice($index, 1)">删除</el-button>
+                <el-button link type="danger" @click="removeItemRow($index)">删除</el-button>
               </template>
             </el-table-column>
             <template #empty><span class="dlg-note">还没有课时，点「添加任务」加一条</span></template>
           </el-table>
+          <div v-if="itemsError" class="cell-err mt6">{{ itemsError }}</div>
         </template>
 
         <el-divider content-position="left">终端列表</el-divider>
-        <el-form-item label-width="0" :required="!dlg.isEdit">
+        <el-form-item label-width="0" prop="terminals">
           <TerminalTree
             v-model="selectedTerminalIds"
             :terminals="terminals"
@@ -500,8 +520,9 @@
 </template>
 
 <script setup lang="ts" name="bellPlan">
-import { computed, reactive, ref } from "vue";
+import { computed, nextTick, reactive, ref } from "vue";
 import { ElMessage, ElMessageBox } from "element-plus";
+import type { FormInstance, FormRules } from "element-plus";
 import { CirclePlus, Delete, EditPen, View, WarningFilled } from "@element-plus/icons-vue";
 import ProTable from "@/components/ProTable/index.vue";
 import TerminalTree from "@/components/TerminalTree/index.vue";
@@ -657,12 +678,123 @@ const dlg = reactive({
   items: [emptyItemRow()]
 });
 
-const addItemRow = () => dlg.items.push(emptyItemRow());
+const addItemRow = () => {
+  dlg.items.push(emptyItemRow());
+  itemErrors.value.push(emptyItemError());
+};
 /** 复制某一行 —— 旧版每行都有的「复制」按钮 */
 const copyItemRow = (idx: number) => {
   const src = dlg.items[idx];
   if (!src) return;
   dlg.items.splice(idx + 1, 0, { ...src, mediaIds: [...(src.mediaIds ?? [])] });
+  itemErrors.value.splice(idx + 1, 0, emptyItemError());
+};
+const removeItemRow = (idx: number) => {
+  dlg.items.splice(idx, 1);
+  itemErrors.value.splice(idx, 1);
+};
+
+/* ---------------- 必填校验 ----------------
+   旧版 addbelltask.html:checkform() 的做法：方案名称 / 日期 / 执行模式 / 课时名称
+   校验不过就把对应位置的 * 或提示文字刷成红色（terminal_star 是红色样式），
+   并把光标定位过去。这里用 el-form 的 rules 做同一件事，表格里的行则自己维护
+   一份 itemErrors，因为它不在 el-form 的 model 里。 */
+
+/** 旧版 isChinaOrNumbOrLett()：只允许中文、字母、数字 */
+const isNameOk = (v: string) => /^[\u4e00-\u9fa5A-Za-z0-9]+$/.test(v);
+
+const emptyItemError = () => ({ taskname: "", playtime: "" });
+const itemErrors = ref<ReturnType<typeof emptyItemError>[]>([]);
+const itemsError = ref("");
+const planFormRef = ref<FormInstance>();
+
+const planRules: FormRules = {
+  planName: [
+    {
+      required: true,
+      trigger: ["blur", "change"],
+      validator: (_r, _v, cb) => {
+        const v = dlg.form.planName.trim();
+        if (!v) return cb(new Error("请输入方案名称"));
+        if (!isNameOk(v)) return cb(new Error("方案名称只能是中文、字母或数字"));
+        cb();
+      }
+    }
+  ],
+  startdate: [
+    {
+      required: true,
+      trigger: "change",
+      validator: (_r, _v, cb) => (dateRange.value?.[0] ? cb() : cb(new Error("请选择开始日期")))
+    }
+  ],
+  enddate: [
+    {
+      required: true,
+      trigger: "change",
+      validator: (_r, _v, cb) => {
+        const [a, b] = dateRange.value ?? [];
+        if (!b) return cb(new Error("请选择结束日期"));
+        if (a && a > b) return cb(new Error("开始日期不能大于结束日期"));
+        cb();
+      }
+    }
+  ],
+  weekdays: [
+    {
+      required: true,
+      trigger: "change",
+      validator: (_r, _v, cb) => (runMode.value === 2 && !weekdays.value.length ? cb(new Error("请选择星期")) : cb())
+    }
+  ],
+  terminals: [
+    {
+      required: true,
+      trigger: "change",
+      validator: (_r, _v, cb) => (selectedTerminalIds.value.length ? cb() : cb(new Error("请至少选择一个终端")))
+    }
+  ]
+};
+
+/** 校验课时表：空表、课时名称、作息时间，出错就把红字挂到对应单元格上 */
+const validateItems = () => {
+  itemsError.value = "";
+  itemErrors.value = dlg.items.map(() => emptyItemError());
+  if (!dlg.items.length) {
+    itemsError.value = "请至少添加一个课时";
+    return false;
+  }
+  let ok = true;
+  const seen = new Map<string, number>();
+  dlg.items.forEach((it, i) => {
+    const name = (it.taskname ?? "").trim();
+    if (!name) {
+      itemErrors.value[i].taskname = "请输入课时名称";
+      ok = false;
+    } else if (!isNameOk(name)) {
+      itemErrors.value[i].taskname = "只能是中文、字母或数字";
+      ok = false;
+    } else if (seen.has(name)) {
+      // 后端按 (info, taskname) 定位条目，方案内重名会互相覆盖
+      itemErrors.value[i].taskname = `与第 ${seen.get(name)! + 1} 行重名`;
+      ok = false;
+    } else {
+      seen.set(name, i);
+    }
+    if (!/^\d{2}:\d{2}:\d{2}$/.test(it.playtime ?? "")) {
+      itemErrors.value[i].playtime = "请选择作息时间";
+      ok = false;
+    }
+  });
+  return ok;
+};
+
+/** 打开对话框时把上一次留下的红字清掉 */
+const resetPlanErrors = async () => {
+  itemErrors.value = dlg.items.map(() => emptyItemError());
+  itemsError.value = "";
+  await nextTick();
+  planFormRef.value?.clearValidate();
 };
 
 const maskFromWeekdays = () => {
@@ -747,6 +879,8 @@ const applySmart = () => {
   }
   // 覆盖而不是追加：排课是「重排整套」，追加只会和已有条目撞时间
   dlg.items = rows;
+  itemErrors.value = rows.map(() => emptyItemError());
+  itemsError.value = "";
   smart.visible = false;
   ElMessage.success(`已生成 ${rows.length} 条打铃条目，可继续逐条调整，点「确定」才保存`);
 };
@@ -769,6 +903,7 @@ const openCreate = async () => {
   weekdays.value = [0, 1, 2, 3, 4, 5, 6];
   runMode.value = 1; // 默认「每天」，与旧版下拉的第一项一致
   selectedTerminalIds.value = [];
+  await resetPlanErrors();
   await Promise.all([searchTerminals(""), searchMedia("")]);
 };
 
@@ -792,13 +927,18 @@ const openEdit = async (row: BellPlan) => {
   data.terminals.forEach(t => (terminalGroupOf[t.terminalId] = t.groupId));
   // 已删除的终端不回填，否则保存时会被存在性校验挡下
   selectedTerminalIds.value = data.terminals.filter(t => !t.deleted).map(t => t.terminalId);
+  await resetPlanErrors();
   await searchTerminals("");
 };
 
 const submitPlan = async () => {
-  if (!dlg.form.planName.trim()) return ElMessage.warning("请输入作息方案名称");
-  if (!dateRange.value?.[0]) return ElMessage.warning("请选择开始日期");
-  if (!dateRange.value?.[1]) return ElMessage.warning("请选择结束日期");
+  // 两边都跑一遍再判断，好让所有没填的 * 项一次性全标红，而不是修一个冒一个
+  const formOk = await (planFormRef.value?.validate().then(
+    () => true,
+    () => false
+  ) ?? Promise.resolve(true));
+  const itemsOk = dlg.isEdit || validateItems();
+  if (!formOk || !itemsOk) return;
 
   const schedule = {
     startdate: dateRange.value[0],
@@ -824,7 +964,6 @@ const submitPlan = async () => {
       });
       ElMessage.success(`已更新 ${res.data.affectedRows} 行` + (res.data.renamed ? "，方案已改名" : ""));
     } else {
-      if (!dlg.items.length) return ElMessage.warning("请至少添加一个打铃条目");
       const res = await createBellPlanApi({
         planName: dlg.form.planName.trim(),
         schedule,
@@ -1085,5 +1224,37 @@ const confirmDelete = async () => {
 }
 .mt12 {
   margin-top: 12px;
+}
+.mt6 {
+  margin-top: 6px;
+}
+.ml8 {
+  margin-left: 8px;
+}
+.dlg-note {
+  font-size: 12px;
+  color: var(--el-text-color-secondary);
+}
+.len-cell {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+/* 旧版 checkform() 用红色 * 和红字提示必填项，这里照搬 */
+.req-star {
+  margin-right: 2px;
+  color: var(--el-color-danger);
+}
+.cell-err {
+  margin-top: 2px;
+  font-size: 12px;
+  line-height: 1.3;
+  color: var(--el-color-danger);
+}
+.is-bad {
+  :deep(.el-input__wrapper) {
+    box-shadow: 0 0 0 1px var(--el-color-danger) inset;
+  }
 }
 </style>
