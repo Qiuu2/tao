@@ -15,12 +15,7 @@
 -->
 <template>
   <div class="table-box">
-    <ProTable
-      ref="proTableRef"
-      :columns="columns"
-      :request-api="getRemoteListApi"
-      row-key="keyId"
-    >
+    <ProTable ref="proTableRef" :columns="columns" :request-api="getRemoteListApi" row-key="keyId">
       <template #tableHeader="scope">
         <div class="header-bar">
           <!-- 按钮对齐 :80（页面规格.txt「遥控任务」）：添加映射 / 删除映射 -->
@@ -57,7 +52,6 @@
         </template>
         <span v-else class="muted">未绑定任务</span>
       </template>
-
     </ProTable>
 
     <!-- 新建 / 修改 -->
@@ -67,44 +61,60 @@
         <el-form-item label="映射名称" required>
           <el-input v-model="dlg.form.keyName" maxlength="10" show-word-limit placeholder="请输入映射名称" />
         </el-form-item>
+        <!--
+          映射按键是下拉，1~8 —— 旧版 set_task_mapping.html 里就是
+          `for(var i=1; i<=8; i++)` 写死八项，对应遥控器上的八个物理按键。
+        -->
         <el-form-item label="映射按键" required>
-          <el-input-number v-model="dlg.form.keyId" :min="1" :max="999" controls-position="right" style="width: 160px" />
+          <el-select v-model="dlg.form.keyId" class="fill" style="width: 160px">
+            <el-option v-for="k in 8" :key="k" :label="`${k} 键`" :value="k" />
+          </el-select>
         </el-form-item>
+
+        <!--
+          映射任务做成树，按三类分组（文件广播 / 采播 / 终端功放），
+          与旧版那棵 dhtmlxtree 的三支一一对应（keyset_task_mapping.php）。
+
+          ⚠ 一个按键**只能选一个任务**。旧版是勾完了再 alert「只能选择一项」，
+            这里直接做成单选：勾第二个时自动把上一个取消，压根选不出第二项。
+        -->
         <el-form-item label="映射任务" required>
           <div class="pick-bar">
-            <el-radio-group v-model="pickKind" size="small" @change="loadTasks">
-              <el-radio-button label="">全部</el-radio-button>
-              <el-radio-button label="file">文件广播</el-radio-button>
-              <el-radio-button label="collect">采播</el-radio-button>
-              <el-radio-button label="amplifier">终端功放</el-radio-button>
-            </el-radio-group>
             <el-input
               v-model="pickKeyword"
               placeholder="任务名称搜索"
               clearable
               size="small"
-              style="width: 200px"
+              :prefix-icon="Search"
+              style="width: 220px"
               @input="loadTasks"
             />
+            <span class="dlg-note">{{ pickedTaskName ? `已选：${pickedTaskName}` : "未选择任务" }}</span>
           </div>
-          <el-select
-            v-model="selectedTaskIds"
-            multiple
-            filterable
-            collapse-tags
-            collapse-tags-tooltip
-            :loading="taskLoading"
-            placeholder="选择要绑定的任务（最多 20 条）"
-            class="fill"
+          <el-tree
+            ref="taskTreeRef"
+            v-loading="taskLoading"
+            class="rk-tree"
+            :data="taskTree"
+            :props="{ label: 'label', children: 'children' }"
+            node-key="key"
+            show-checkbox
+            check-strictly
+            check-on-click-node
+            :expand-on-click-node="false"
+            :default-expand-all="true"
+            @check="onTaskCheck"
           >
-            <el-option v-for="t in pickTasks" :key="t.taskId" :label="t.taskName" :value="t.taskId">
-              <span>{{ t.taskName }}</span>
-              <span class="opt-sub">{{ t.kindText }}</span>
-              <el-tag v-if="t.usedBy && t.usedBy !== dlg.originalKeyId" size="small" type="warning" effect="plain" class="opt-tag">
-                已绑在 {{ t.usedBy }} 键
-              </el-tag>
-            </el-option>
-          </el-select>
+            <template #default="{ data }">
+              <span class="rk-node">
+                <span class="rk-label">{{ data.label }}</span>
+                <el-tag v-if="data.usedBy && data.usedBy !== dlg.originalKeyId" size="small" type="warning" effect="plain">
+                  已绑在 {{ data.usedBy }} 键
+                </el-tag>
+                <span v-if="data.count !== undefined" class="rk-count">{{ data.count }}</span>
+              </span>
+            </template>
+          </el-tree>
         </el-form-item>
       </el-form>
 
@@ -117,9 +127,9 @@
 </template>
 
 <script setup lang="tsx" name="remote">
-import { Delete } from "@element-plus/icons-vue";
+import { Search } from "@element-plus/icons-vue";
 import { ElMessage, ElMessageBox } from "element-plus";
-import { computed, onMounted, reactive, ref } from "vue";
+import { computed, nextTick, onMounted, reactive, ref } from "vue";
 
 import { createRemoteApi, deleteRemotesApi, getRemoteListApi, getRemoteTasksApi } from "@/api/modules/basecfg";
 import type { RemoteKey, RemotePickTask } from "@/api/modules/basecfg";
@@ -151,15 +161,69 @@ const refresh = () => proTableRef.value?.getTableList();
 
 const pickTasks = ref<RemotePickTask[]>([]);
 const taskLoading = ref(false);
-const pickKind = ref("");
 const pickKeyword = ref("");
-const selectedTaskIds = ref<number[]>([]);
+/** 选中的任务。一个按键只能绑一条，所以是单值不是数组 */
+const pickedTaskId = ref(0);
+const taskTreeRef = ref();
+
+/**
+ * 任务树：按三类分组，与旧版 keyset_task_mapping.php 建的那棵树一一对应。
+ *
+ *   文件广播   tasktype IN (2,15) AND info=''
+ *   采播管理   tasktype = 3
+ *   终端功放   tasktype = 5 AND sec_task_id=0 AND prepower=0
+ *
+ * 后端一次把三类都返回（每条带 kind / kindText），这里按 kind 归组。
+ * 空的分类不显示 —— 与「增补终端」那棵树同一个处理。
+ */
+const taskTree = computed(() => {
+  const groups = new Map<string, { key: string; label: string; count: number; children: any[] }>();
+  for (const t of pickTasks.value) {
+    let g = groups.get(t.kind);
+    if (!g) {
+      g = { key: `g:${t.kind}`, label: t.kindText || t.kind, count: 0, children: [] };
+      groups.set(t.kind, g);
+    }
+    g.children.push({ key: `t:${t.taskId}`, label: t.taskName, taskId: t.taskId, usedBy: t.usedBy });
+    g.count++;
+  }
+  return [...groups.values()];
+});
+
+const pickedTaskName = computed(() => pickTasks.value.find(t => t.taskId === pickedTaskId.value)?.taskName ?? "");
+
+/**
+ * 单选：勾上新的就把旧的取消。
+ *
+ * ⚠ check-strictly 必须开着，否则勾叶子会连带把分类节点也勾上，
+ *   setCheckedKeys 再把整组子节点全勾中，一个按键就绑上一整类任务了。
+ */
+const onTaskCheck = (node: any) => {
+  if (node.taskId === undefined) {
+    // 分类节点不是可选项，点了就撤销
+    taskTreeRef.value?.setCheckedKeys(pickedTaskId.value ? [`t:${pickedTaskId.value}`] : []);
+    return;
+  }
+  const checked = taskTreeRef.value?.getCheckedKeys() ?? [];
+  if (!checked.includes(node.key)) {
+    // 取消勾选
+    pickedTaskId.value = 0;
+    taskTreeRef.value?.setCheckedKeys([]);
+    return;
+  }
+  pickedTaskId.value = node.taskId;
+  taskTreeRef.value?.setCheckedKeys([node.key]);
+};
 
 const loadTasks = async () => {
   taskLoading.value = true;
   try {
-    const { data } = await getRemoteTasksApi(pickKind.value, pickKeyword.value);
+    // 树上三类都要有，所以不按 kind 过滤，只用关键字
+    const { data } = await getRemoteTasksApi("", pickKeyword.value);
     pickTasks.value = data ?? [];
+    // 重新拉之后把已选项的勾恢复回去（搜索会把树整棵换掉）
+    await nextTick();
+    taskTreeRef.value?.setCheckedKeys(pickedTaskId.value ? [`t:${pickedTaskId.value}`] : []);
   } finally {
     taskLoading.value = false;
   }
@@ -186,8 +250,7 @@ const openCreate = async () => {
     originalKeyId: 0,
     form: { keyId: 1, keyName: "" }
   });
-  selectedTaskIds.value = [];
-  pickKind.value = "";
+  pickedTaskId.value = 0;
   pickKeyword.value = "";
   await loadTasks();
 };
@@ -199,11 +262,12 @@ const openCreate = async () => {
 
 const submit = async () => {
   if (!dlg.form.keyName.trim()) return ElMessage.warning("请输入名称");
-  if (!selectedTaskIds.value.length) return ElMessage.warning("请至少选择一条任务");
+  if (!pickedTaskId.value) return ElMessage.warning("请选择一个任务");
   const payload = {
     keyId: dlg.form.keyId,
     keyName: dlg.form.keyName.trim(),
-    taskIds: selectedTaskIds.value
+    // 接口仍收数组（表结构一个键可以有多行），但界面只让选一条
+    taskIds: [pickedTaskId.value]
   };
   dlg.saving = true;
   try {
@@ -221,11 +285,10 @@ const submit = async () => {
 const doDelete = async (raw: (string | number)[]) => {
   const ids = toIds(raw);
   if (!ids.length) return ElMessage.warning("请先勾选遥控任务");
-  await ElMessageBox.confirm(
-    `确认删除选中的 ${ids.length} 个遥控键？删除后按这些键将不再触发任何任务。`,
-    "删除遥控任务",
-    { type: "warning", confirmButtonText: "确认删除" }
-  );
+  await ElMessageBox.confirm(`确认删除选中的 ${ids.length} 个遥控键？删除后按这些键将不再触发任何任务。`, "删除遥控任务", {
+    type: "warning",
+    confirmButtonText: "确认删除"
+  });
   const { data } = await deleteRemotesApi(ids);
   ElMessage.success(`已删除 ${data.deleted} 条绑定`);
   refresh();
@@ -235,6 +298,32 @@ onMounted(() => loadTasks());
 </script>
 
 <style scoped lang="scss">
+.rk-tree {
+  width: 100%;
+  height: 300px;
+  overflow: auto;
+  border: 1px solid var(--el-border-color-light);
+  border-radius: 4px;
+}
+.rk-node {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  min-width: 0;
+}
+.rk-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.rk-count {
+  flex: none;
+  padding: 0 5px;
+  font-size: 12px;
+  color: var(--el-text-color-secondary);
+  background: var(--el-fill-color-light);
+  border-radius: 8px;
+}
 .header-bar {
   display: flex;
   flex-wrap: wrap;

@@ -63,12 +63,17 @@ var (
 const (
 	// keyname varchar(32)
 	nameLimit = 32
-	// 一个按键最多绑多少条任务。旧版无限制，但遥控器按一下要顺序执行，
-	// 绑几十条既没有意义也会把后台队列塞满。
-	maxTasks = 20
-	// 遥控器按键号的合理范围。旧版不校验，负数和 0 都能存进去。
+	// 一个按键只能绑**一条**任务。
+	//
+	// 旧版界面就是这么限的：set_task_mapping.html 的 checkform() 数勾了几个，
+	// `if(count > 1) { alert("只能选择一项"); return false; }`。
+	// 遥控器按一下就该有一件确定的事发生，绑两条的语义（同时放？依次放？）
+	// 旧版后台也没定义。
+	maxTasks = 1
+	// 遥控器按键号的范围。旧版界面的下拉是 `for(var i=1; i<=8; i++)` 写死 8 个，
+	// 对应遥控器上的 8 个物理按键；后端原来放到 999，界面上根本按不出来。
 	minKey = 1
-	maxKey = 999
+	maxKey = 8
 
 	nameLock = "htweb_remote_keyid"
 )
@@ -318,7 +323,7 @@ func (s *Service) validate(ctx context.Context, in *Input) error {
 		return fmt.Errorf("请至少选择一条任务")
 	}
 	if len(in.TaskIDs) > maxTasks {
-		return fmt.Errorf("一个遥控键最多绑定 %d 条任务", maxTasks)
+		return fmt.Errorf("一个遥控键只能绑定 1 条任务")
 	}
 	seen := map[int64]bool{}
 	for _, id := range in.TaskIDs {
