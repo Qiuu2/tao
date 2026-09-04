@@ -860,7 +860,7 @@ func insertLEDSub(ctx context.Context, tx *sql.Tx, in PlanInput, it *ItemInput,
 	if err != nil {
 		return 0, err
 	}
-	sub := &task.LEDSub{Name: it.TaskName, Text: strings.TrimSpace(in.LED.Text), Speed: in.LED.Speed}
+	sub := &task.LEDSub{Name: it.TaskName, Text: task.NormalizeLEDText(in.LED.Text), Speed: in.LED.Speed}
 	if err := task.WriteLEDContent(ctx, tx, ledID, sub); err != nil {
 		return 0, err
 	}

@@ -450,13 +450,21 @@
         <template v-if="qtEdit.ledOn">
           <el-divider content-position="left">LED 字幕</el-divider>
           <el-form-item label="上屏文字" required>
-            <el-input v-model="qtEdit.ledText" maxlength="120" show-word-limit placeholder="要在 LED 屏上滚动的文字" />
+            <!-- 多行只是为了长句子好读好改；存库时换行会被去掉（旧版 do.php 也是这么处理的） -->
+            <el-input
+              v-model="qtEdit.ledText"
+              type="textarea"
+              :rows="3"
+              maxlength="120"
+              show-word-limit
+              placeholder="要在 LED 屏上滚动的文字"
+            />
           </el-form-item>
           <el-form-item label="LED速度">
             <el-select v-model="qtEdit.ledSpeed" style="width: 110px">
               <el-option v-for="n in [0, 1, 2, 3, 4, 5]" :key="n" :label="`${n} 级`" :value="n" />
             </el-select>
-            <!-- 旧版没有这个输入框，写库时把 speed 写死成 5，所以默认值也取 5 -->
+            <!-- 旧版没有这个输入框，写库时把 speed 写死成 5；这里可选，默认 0 级 -->
             <span class="form-tip">0 ~ 5 级</span>
           </el-form-item>
         </template>
@@ -1507,7 +1515,7 @@ const qtEdit = reactive({
   selectedMedia: [] as { mediaId: number; name: string }[],
   terminalIds: [] as number[],
   ledText: "",
-  ledSpeed: 5,
+  ledSpeed: 0,
   keyOptions: [] as ShortcutKeyOption[],
   audioSources: [] as QuickAudioSource[],
   candidates: [] as TerminalRow[]
@@ -1552,7 +1560,7 @@ const openQuickEdit = async (detail: QuickTaskDetail | null) => {
   qtEdit.selectedMedia = detail?.media ? detail.media.map(m => ({ mediaId: m.mediaId, name: m.name })) : [];
   qtEdit.terminalIds = detail?.terminalIds ? [...detail.terminalIds] : [];
   qtEdit.ledText = detail?.led?.text ?? "";
-  qtEdit.ledSpeed = detail?.led?.speed ?? 5;
+  qtEdit.ledSpeed = detail?.led?.speed ?? 0;
   qtEdit.visible = true;
   qtEdit.loading = true;
   try {

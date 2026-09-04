@@ -51,9 +51,19 @@ const (
 	ledSentenceType = 1
 )
 
+// NormalizeLEDText 去掉字幕里的换行。
+//
+// 界面上的字幕框是多行的（长句子读着方便），但换行不该跟着进库：
+// 旧版 do.php 写 ledsentence 之前就把 \r\n 全 str_replace 掉了，
+// 上屏的是一条连续滚动的文字，库里留着换行只会让后台服务拿到一个带控制字符的串。
+func NormalizeLEDText(s string) string {
+	r := strings.NewReplacer("\r\n", "", "\r", "", "\n", "")
+	return strings.TrimSpace(r.Replace(s))
+}
+
 func (in *LEDSub) normalize(mainName string) error {
 	in.Name = strings.TrimSpace(in.Name)
-	in.Text = strings.TrimSpace(in.Text)
+	in.Text = NormalizeLEDText(in.Text)
 	if in.Name == "" {
 		in.Name = mainName
 	}
@@ -138,7 +148,7 @@ func WriteLEDContent(ctx context.Context, tx *sql.Tx, ledID int64, led *LEDSub) 
 	// ⚠ mediaid 存的是 media.id
 	if _, err := tx.ExecContext(ctx,
 		`INSERT INTO ledsentence (text, mediaid, speed, type, mediaseq, ledmode) VALUES (?,?,?,?,?,?)`,
-		led.Text, mediaID, led.Speed, ledSentenceType, 0, led.LedMode); err != nil {
+		NormalizeLEDText(led.Text), mediaID, led.Speed, ledSentenceType, 0, led.LedMode); err != nil {
 		return fmt.Errorf("写入 Led字幕: %w", err)
 	}
 	return nil

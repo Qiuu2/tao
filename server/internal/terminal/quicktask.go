@@ -9,6 +9,7 @@ import (
 
 	"htweb/internal/auth"
 	"htweb/internal/store"
+	"htweb/internal/task"
 )
 
 // 快捷任务（ok112 的 view_quickplay / setquickplay / modifyquickplay
@@ -784,7 +785,7 @@ func writeQuickLED(ctx context.Context, tx *sql.Tx, u *auth.User,
 	if _, err := tx.ExecContext(ctx, `
 		INSERT INTO ledsentence (text, mediaid, speed, type, mediaseq, ledmode)
 		VALUES (?,?,?,1,0,?)`,
-		in.LED.Text, ledMediaID, in.LED.Speed, in.LED.LedMode); err != nil {
+		task.NormalizeLEDText(in.LED.Text), ledMediaID, in.LED.Speed, in.LED.LedMode); err != nil {
 		return fmt.Errorf("写入 LED 字幕: %w", err)
 	}
 	for _, id := range in.LED.TerminalIDs {

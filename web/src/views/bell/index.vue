@@ -361,8 +361,11 @@
           </el-col>
         </el-row>
         <el-form-item v-if="dlg.form.ledOn" label="LED字幕" prop="ledText">
+          <!-- 多行只是为了长句子好读好改；存库时换行会被去掉（旧版 do.php 也是这么处理的） -->
           <el-input
             v-model="dlg.form.ledText"
+            type="textarea"
+            :rows="3"
             maxlength="200"
             show-word-limit
             placeholder="要在 LED 屏上滚动的文字"
@@ -823,7 +826,7 @@ const dlg = reactive({
     /* LED 字幕：方案级，勾上才会给每个课时挂 LED 子任务 */
     ledOn: false,
     ledText: "",
-    ledSpeed: 5
+    ledSpeed: 0
   },
   items: [emptyItemRow()]
 });
@@ -1232,7 +1235,7 @@ const openCreate = async () => {
       playback: { defaultvolume: 80, priority: 10, prepower: 15, datasendmodel: 0, israndomplay: 0 },
       ledOn: false,
       ledText: "",
-      ledSpeed: 5
+      ledSpeed: 0
     },
     items: [emptyItemRow()]
   });
@@ -1265,7 +1268,7 @@ const openEdit = async (row: BellPlan, mode: "edit" | "batch" = "edit") => {
       playback: { ...data.playback },
       ledOn: !!data.led?.text,
       ledText: data.led?.text ?? "",
-      ledSpeed: data.led?.speed ?? 5
+      ledSpeed: data.led?.speed ?? 0
     },
     items: data.items.map(it => ({
       taskid: it.taskid,
