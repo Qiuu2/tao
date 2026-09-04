@@ -1120,17 +1120,17 @@ func (s *Service) UpdateItem(ctx context.Context, u *auth.User, planName string,
 	return volume, nil
 }
 
-// SetItemDates 把选中的条目挪到新的日期时间段。
+// SetItemSchedule 把选中的条目挪到新的日期时间段，并改它们的执行星期。
 //
-// 旧版「统一播放时间」（sechotime.php）是把方案里的条目按打铃时间列出来、勾中若干条
-// 再统一改；那个页面上改的是星期掩码，这里改的是起止日期，做法一样：
-// 只动 startdate/enddate，条目的名称、打铃时间、铃声一概不碰。
+// 对应旧版「统一播放时间」（sechotime.php）：把方案里的条目按打铃时间列出来、
+// 勾中若干条再统一改 —— 旧版那页改的是星期掩码，这里日期段和星期掩码一起改。
+// 只动 startdate/enddate/exemodel，条目的名称、打铃时间、铃声一概不碰。
 //
 // 功放子任务必须跟着主条目一起改 —— 漏掉它，提前开电源的那条就还留在旧日期上，
 // 到了新日期功放不会提前打开。
 // 返回改动到的 taskid（含功放子任务）与方案音量：调用方发通知时要原样带上 &volume=。
-func (s *Service) SetItemDates(ctx context.Context, u *auth.User, planName string,
-	ids []int64, startDate, endDate string) ([]int64, int, error) {
+func (s *Service) SetItemSchedule(ctx context.Context, u *auth.User, planName string,
+	ids []int64, startDate, endDate, exeModel string) ([]int64, int, error) {
 
 	if _, err := s.assertPlan(ctx, u, planName); err != nil {
 		return nil, 0, err
@@ -1143,6 +1143,9 @@ func (s *Service) SetItemDates(ctx context.Context, u *auth.User, planName strin
 	}
 	if endDate < startDate {
 		return nil, 0, fmt.Errorf("结束日期不能早于开始日期")
+	}
+	if !reExeModel.MatchString(exeModel) {
+		return nil, 0, fmt.Errorf("星期掩码必须是 7 位的 0/1 字符串，例如 1111100")
 	}
 	ph, args := placeholders(ids)
 
@@ -1177,9 +1180,9 @@ func (s *Service) SetItemDates(ctx context.Context, u *auth.User, planName strin
 	all := append(append([]int64{}, own...), subs...)
 	allPH, allArgs := placeholders(all)
 	if _, err := tx.ExecContext(ctx,
-		`UPDATE task SET startdate = ?, enddate = ? WHERE taskid IN (`+allPH+`)`,
-		append([]interface{}{startDate, endDate}, allArgs...)...); err != nil {
-		return nil, 0, fmt.Errorf("修改条目日期: %w", err)
+		`UPDATE task SET startdate = ?, enddate = ?, exemodel = ? WHERE taskid IN (`+allPH+`)`,
+		append([]interface{}{startDate, endDate, exeModel}, allArgs...)...); err != nil {
+		return nil, 0, fmt.Errorf("修改条目排期: %w", err)
 	}
 	if err := tx.Commit(); err != nil {
 		return nil, 0, fmt.Errorf("提交事务: %w", err)

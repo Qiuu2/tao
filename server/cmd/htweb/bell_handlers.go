@@ -233,23 +233,24 @@ func (a *app) handleBellItemDelete(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-type bellItemDatesReq struct {
+type bellItemSchedReq struct {
 	PlanName  string  `json:"planName"`
 	IDs       []int64 `json:"ids"`
 	StartDate string  `json:"startdate"`
 	EndDate   string  `json:"enddate"`
+	ExeModel  string  `json:"exemodel"`
 }
 
-// handleBellItemDates 把勾中的条目挪到新的日期时间段（列表页的「智能排课」）。
-func (a *app) handleBellItemDates(w http.ResponseWriter, r *http.Request) {
-	var in bellItemDatesReq
+// handleBellItemSchedule 把勾中的条目挪到新的日期时间段并改执行星期（列表页的「智能排课」）。
+func (a *app) handleBellItemSchedule(w http.ResponseWriter, r *http.Request) {
+	var in bellItemSchedReq
 	if !httpx.DecodeJSON(w, r, &in) {
 		return
 	}
-	changed, volume, err := a.bells.SetItemDates(
-		r.Context(), auth.From(r.Context()), in.PlanName, in.IDs, in.StartDate, in.EndDate)
+	changed, volume, err := a.bells.SetItemSchedule(
+		r.Context(), auth.From(r.Context()), in.PlanName, in.IDs, in.StartDate, in.EndDate, in.ExeModel)
 	if err != nil {
-		failBell(w, "修改条目日期", err)
+		failBell(w, "修改条目排期", err)
 		return
 	}
 	// 日期变了也要通知后台服务重新装载，否则它还按旧日期跑
@@ -258,7 +259,7 @@ func (a *app) handleBellItemDates(w http.ResponseWriter, r *http.Request) {
 	}
 	httpx.OK(w, map[string]interface{}{
 		"planName": in.PlanName, "changed": len(in.IDs), "changedTasks": changed,
-		"startdate": in.StartDate, "enddate": in.EndDate,
+		"startdate": in.StartDate, "enddate": in.EndDate, "exemodel": in.ExeModel,
 	})
 }
 

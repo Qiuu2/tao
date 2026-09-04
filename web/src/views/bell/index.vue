@@ -168,6 +168,17 @@
           />
           <span class="sched-note">勾中的课时会一起改到这个日期段，打铃时间与铃声不变</span>
         </div>
+        <!-- 星期照旧版 sechotime.php 那页：周日排在第一个，与 exemodel 的位序一致 -->
+        <div class="sched-pick">
+          <span class="sched-label">新执行星期</span>
+          <el-checkbox-group v-model="sched.weekdays">
+            <el-checkbox v-for="(w, i) in weekLabels" :key="i" :value="i">{{ w }}</el-checkbox>
+          </el-checkbox-group>
+          <el-divider direction="vertical" />
+          <el-button link type="primary" @click="sched.weekdays = [0, 1, 2, 3, 4, 5, 6]">每天</el-button>
+          <el-button link type="primary" @click="sched.weekdays = [1, 2, 3, 4, 5]">工作日</el-button>
+          <span class="sched-note">默认是方案现在的星期，不想改就别动</span>
+        </div>
       </div>
 
       <el-table
@@ -213,11 +224,17 @@
         </el-table-column>
         <el-table-column label="执行" width="148" align="center">
           <template #default="{ row }">
-            <span v-if="row.exemodel === '1111111'" class="muted">每天</span>
-            <span v-else-if="row.exemodel === '0000000'" class="muted">手动</span>
-            <template v-else>
-              <span v-for="(w, i) in weekLabels" :key="i" class="wk" :class="{ on: row.exemodel?.[i] === '1' }">{{ w }}</span>
-            </template>
+            <div :class="{ 'date-chg': isChecked(row) && schedMask !== row.exemodel }">
+              <span v-if="row.exemodel === '1111111'" class="muted">每天</span>
+              <span v-else-if="row.exemodel === '0000000'" class="muted">手动</span>
+              <template v-else>
+                <span v-for="(w, i) in weekLabels" :key="i" class="wk" :class="{ on: row.exemodel?.[i] === '1' }">
+                  {{ w }}
+                </span>
+              </template>
+            </div>
+            <!-- 新星期用文字，别再摆一排格子：一行放不下会把行撑成三行 -->
+            <div v-if="isChecked(row) && schedMask !== row.exemodel" class="date-new">→ {{ schedWeekText }}</div>
           </template>
         </el-table-column>
         <el-table-column label="当前日期段" width="176" align="center">
@@ -585,7 +602,7 @@ import {
   getBellPlanListApi,
   previewDeleteBellPlanApi,
   setBellPlanStateApi,
-  setBellItemDatesApi,
+  setBellItemScheduleApi,
   setBellPlanVolumeApi,
   updateBellItemApi,
   updateBellPlanApi,
@@ -1029,14 +1046,19 @@ const resetPlanErrors = async () => {
   planFormRef.value?.clearValidate();
 };
 
+/** exemodel（7 位 0/1，第 0 位是周日）→ 勾中的星期下标 */
+const maskToDays = (mask: string) => {
+  const days: number[] = [];
+  for (let i = 0; i < 7 && i < (mask ?? "").length; i++) if (mask[i] === "1") days.push(i);
+  return days;
+};
 const maskFromWeekdays = () => {
   const arr = Array(7).fill("0");
   weekdays.value.forEach(i => (arr[i] = "1"));
   return arr.join("");
 };
 const applyMask = (mask: string) => {
-  weekdays.value = [];
-  for (let i = 0; i < 7 && i < mask.length; i++) if (mask[i] === "1") weekdays.value.push(i);
+  weekdays.value = maskToDays(mask);
   // 七天全勾就是「每天」，否则是「每星期」
   runMode.value = weekdays.value.length === 7 ? 1 : 2;
 };
@@ -1076,12 +1098,27 @@ const sched = reactive({
   list: [] as BellItem[],
   checked: [] as BellItem[],
   range: [today(), today()] as [string, string],
+  weekdays: [0, 1, 2, 3, 4, 5, 6] as number[],
   /** 方案里各课时的日期段不一致时给个提醒 —— 逐条改日期本来就会造成这种局面 */
   mixed: false,
   rangeText: ""
 });
 
 const isChecked = (row: BellItem) => sched.checked.some(r => r.taskid === row.taskid);
+/** 勾选框拼成 exemodel：7 位 0/1，第 0 位是周日 */
+const schedMask = computed(() => {
+  const arr = Array(7).fill("0");
+  sched.weekdays.forEach(i => (arr[i] = "1"));
+  return arr.join("");
+});
+const schedWeekText = computed(() => {
+  if (schedMask.value === "1111111") return "每天";
+  if (!sched.weekdays.length) return "未选";
+  return [...sched.weekdays]
+    .sort((a, b) => a - b)
+    .map(i => weekLabels[i])
+    .join("");
+});
 const lenText = (sec: number) => {
   const p = (n: number) => String(n).padStart(2, "0");
   return `${p(Math.floor(sec / 3600))}:${p(Math.floor((sec % 3600) / 60))}:${p(sec % 60)}`;
@@ -1093,7 +1130,7 @@ const openSchedule = async (raw: Record<string, any>) => {
   const { data } = await getBellPlanApi(planName);
   // 后端已按 playtime 排好序，这里再排一次，免得将来接口顺序变了界面跟着乱
   const list = [...data.items].sort((a, b) => a.playtime.localeCompare(b.playtime) || a.taskid - b.taskid);
-  const ranges = new Set(list.map(it => `${it.startdate}~${it.enddate}`));
+  const ranges = new Set(list.map(it => `${it.startdate}~${it.enddate}|${it.exemodel}`));
   Object.assign(sched, {
     visible: true,
     saving: false,
@@ -1101,6 +1138,8 @@ const openSchedule = async (raw: Record<string, any>) => {
     list,
     checked: [],
     range: [data.schedule.startdate || today(), data.schedule.enddate || today()],
+    // 星期默认就是方案现在的值，用户不动它，点确定也不会把星期改掉
+    weekdays: maskToDays(data.schedule.exemodel),
     mixed: ranges.size > 1,
     rangeText: list.length ? `${data.schedule.startdate} ~ ${data.schedule.enddate}` : "—"
   });
@@ -1109,16 +1148,21 @@ const openSchedule = async (raw: Record<string, any>) => {
 };
 
 const submitSchedule = async () => {
-  if (!sched.checked.length) return ElMessage.warning("请先勾选要改日期的课时");
+  if (!sched.checked.length) return ElMessage.warning("请先勾选要改的课时");
   const [start, end] = sched.range ?? [];
   if (!start || !end) return ElMessage.warning("请选择新的日期时间段");
   if (start > end) return ElMessage.warning("开始日期不能晚于结束日期");
+  if (!sched.weekdays.length) return ElMessage.warning("请至少选择一个执行星期");
 
   sched.saving = true;
   try {
     const ids = sched.checked.map(r => r.taskid);
-    const { data } = await setBellItemDatesApi(sched.planName, ids, start, end);
-    ElMessage.success(`已把 ${data.changed} 个课时改到 ${start} ~ ${end}`);
+    const { data } = await setBellItemScheduleApi(sched.planName, ids, {
+      startdate: start,
+      enddate: end,
+      exemodel: schedMask.value
+    });
+    ElMessage.success(`已把 ${data.changed} 个课时改到 ${start} ~ ${end}（${schedWeekText.value}）`);
     // 就地刷新，好让「当前日期段」这一列立刻显示新值
     await openSchedule({ planName: sched.planName });
     refresh();

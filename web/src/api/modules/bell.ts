@@ -200,12 +200,16 @@ export const addBellItemApi = (planName: string, item: BellItemForm) =>
 export const updateBellItemApi = (planName: string, taskId: number, item: BellItemForm) =>
   http.put<{ taskid: number }>(PORT1 + `/api/bell-plans/items/${taskId}`, { planName, item });
 
-/** 智能排课：把勾中的条目挪到新的日期时间段 */
-export const setBellItemDatesApi = (planName: string, ids: number[], startdate: string, enddate: string) => {
-  return http.put<{ planName: string; changed: number; changedTasks: number[]; startdate: string; enddate: string }>(
-    PORT1 + `/api/bell-plans/items/dates`,
-    { planName, ids, startdate, enddate }
-  );
+/** 智能排课：把勾中的条目挪到新的日期时间段，并改它们的执行星期 */
+export const setBellItemScheduleApi = (planName: string, ids: number[], schedule: BellSchedule) => {
+  return http.put<{
+    planName: string;
+    changed: number;
+    changedTasks: number[];
+    startdate: string;
+    enddate: string;
+    exemodel: string;
+  }>(PORT1 + `/api/bell-plans/items/schedule`, { planName, ids, ...schedule });
 };
 
 export const deleteBellItemsApi = (planName: string, ids: number[]) => {
