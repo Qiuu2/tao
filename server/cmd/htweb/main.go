@@ -388,6 +388,7 @@ func (a *app) routes() http.Handler {
 	mux.HandleFunc("POST /api/bell-plans/items", bel(a.handleBellItemAdd))
 	mux.HandleFunc("PUT /api/bell-plans/items/{id}", bel(a.handleBellItemUpdate))
 	mux.HandleFunc("DELETE /api/bell-plans/items", bel(a.handleBellItemDelete))
+	mux.HandleFunc("PUT /api/bell-plans/items/dates", bel(a.handleBellItemDates))
 
 	// —— 日志（业务域十一，F-54 / F-55）——
 	//

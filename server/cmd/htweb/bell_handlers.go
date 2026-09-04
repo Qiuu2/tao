@@ -233,6 +233,35 @@ func (a *app) handleBellItemDelete(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+type bellItemDatesReq struct {
+	PlanName  string  `json:"planName"`
+	IDs       []int64 `json:"ids"`
+	StartDate string  `json:"startdate"`
+	EndDate   string  `json:"enddate"`
+}
+
+// handleBellItemDates 把勾中的条目挪到新的日期时间段（列表页的「智能排课」）。
+func (a *app) handleBellItemDates(w http.ResponseWriter, r *http.Request) {
+	var in bellItemDatesReq
+	if !httpx.DecodeJSON(w, r, &in) {
+		return
+	}
+	changed, volume, err := a.bells.SetItemDates(
+		r.Context(), auth.From(r.Context()), in.PlanName, in.IDs, in.StartDate, in.EndDate)
+	if err != nil {
+		failBell(w, "修改条目日期", err)
+		return
+	}
+	// 日期变了也要通知后台服务重新装载，否则它还按旧日期跑
+	for _, id := range changed {
+		a.notifier.TaskSaved(r.Context(), notify.TaskUpdated, id, volume)
+	}
+	httpx.OK(w, map[string]interface{}{
+		"planName": in.PlanName, "changed": len(in.IDs), "changedTasks": changed,
+		"startdate": in.StartDate, "enddate": in.EndDate,
+	})
+}
+
 // ---------- F-50 启停 ----------
 
 type bellStateReq struct {

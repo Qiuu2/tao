@@ -53,6 +53,10 @@ export interface BellItem {
   taskid: number;
   taskname: string;
   playtime: string;
+  /** 起止日期与星期掩码理论上是方案级的，但「智能排课」可以按条目改，所以逐条目也给一份 */
+  startdate: string;
+  enddate: string;
+  exemodel: string;
   timelengthtype: number;
   timelength: number;
   projectstate: number;
@@ -196,10 +200,14 @@ export const addBellItemApi = (planName: string, item: BellItemForm) =>
 export const updateBellItemApi = (planName: string, taskId: number, item: BellItemForm) =>
   http.put<{ taskid: number }>(PORT1 + `/api/bell-plans/items/${taskId}`, { planName, item });
 
-export const deleteBellItemsApi = (planName: string, ids: number[]) => {
-  return http.delete<{ deleted: number; planRemoved: boolean }>(
-    PORT1 + `/api/bell-plans/items`,
-    {},
-    { data: { planName, ids } }
+/** 智能排课：把勾中的条目挪到新的日期时间段 */
+export const setBellItemDatesApi = (planName: string, ids: number[], startdate: string, enddate: string) => {
+  return http.put<{ planName: string; changed: number; changedTasks: number[]; startdate: string; enddate: string }>(
+    PORT1 + `/api/bell-plans/items/dates`,
+    { planName, ids, startdate, enddate }
   );
+};
+
+export const deleteBellItemsApi = (planName: string, ids: number[]) => {
+  return http.delete<{ deleted: number; planRemoved: boolean }>(PORT1 + `/api/bell-plans/items`, {}, { data: { planName, ids } });
 };

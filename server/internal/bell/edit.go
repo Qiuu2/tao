@@ -81,6 +81,11 @@ type Item struct {
 	PowerPlayTime string `json:"powerPlayTime"`
 	// DuplicateTime 表示同方案里还有别的条目排在同一时刻（只提示，不拦截）。
 	DuplicateTime bool `json:"duplicateTime"`
+	// 起止日期与星期掩码理论上组内一致（方案级），但可以被「智能排课」按条目改掉，
+	// 所以这里逐条目也给一份，界面才好显示各条目当前排在哪个日期段。
+	StartDate string `json:"startdate"`
+	EndDate   string `json:"enddate"`
+	ExeModel  string `json:"exemodel"`
 }
 
 // Detail 是方案编辑页需要的全部数据。
@@ -163,6 +168,7 @@ func (s *Service) Get(ctx context.Context, u *auth.User, planName string) (*Deta
 			return nil, err
 		}
 		it.StateText = stateText(it.ProjectState)
+		it.StartDate, it.EndDate, it.ExeModel = a.start, a.end, a.exe
 		it.Media = []task.MediaItem{}
 		ids = append(ids, it.TaskID)
 		times[it.PlayTime]++
@@ -1112,6 +1118,73 @@ func (s *Service) UpdateItem(ctx context.Context, u *auth.User, planName string,
 		return 0, fmt.Errorf("提交事务: %w", err)
 	}
 	return volume, nil
+}
+
+// SetItemDates 把选中的条目挪到新的日期时间段。
+//
+// 旧版「统一播放时间」（sechotime.php）是把方案里的条目按打铃时间列出来、勾中若干条
+// 再统一改；那个页面上改的是星期掩码，这里改的是起止日期，做法一样：
+// 只动 startdate/enddate，条目的名称、打铃时间、铃声一概不碰。
+//
+// 功放子任务必须跟着主条目一起改 —— 漏掉它，提前开电源的那条就还留在旧日期上，
+// 到了新日期功放不会提前打开。
+// 返回改动到的 taskid（含功放子任务）与方案音量：调用方发通知时要原样带上 &volume=。
+func (s *Service) SetItemDates(ctx context.Context, u *auth.User, planName string,
+	ids []int64, startDate, endDate string) ([]int64, int, error) {
+
+	if _, err := s.assertPlan(ctx, u, planName); err != nil {
+		return nil, 0, err
+	}
+	if len(ids) == 0 {
+		return nil, 0, fmt.Errorf("请至少选择一个课时")
+	}
+	if !reDate.MatchString(startDate) || !reDate.MatchString(endDate) {
+		return nil, 0, fmt.Errorf("起止日期格式不正确，应为 YYYY-MM-DD")
+	}
+	if endDate < startDate {
+		return nil, 0, fmt.Errorf("结束日期不能早于开始日期")
+	}
+	ph, args := placeholders(ids)
+
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, 0, fmt.Errorf("开启事务: %w", err)
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	// 只改属于本方案的条目：传别的方案的 taskid 进来不能生效
+	own, err := collectIDs(ctx, tx,
+		`SELECT taskid FROM task WHERE taskid IN (`+ph+`) AND info = ? AND `+planScope(""),
+		append(args, planName)...)
+	if err != nil {
+		return nil, 0, err
+	}
+	if len(own) == 0 {
+		return nil, 0, ErrNotFound
+	}
+	var volume int
+	if err := tx.QueryRowContext(ctx,
+		`SELECT COALESCE(defaultvolume,80) FROM task WHERE taskid = ?`, own[0]).Scan(&volume); err != nil {
+		return nil, 0, fmt.Errorf("查询音量: %w", err)
+	}
+	subPH, subArgs := placeholders(own)
+	subs, err := collectIDs(ctx, tx,
+		`SELECT taskid FROM task WHERE sec_task_id IN (`+subPH+`) AND tasktype = ?`,
+		append(subArgs, PowerType)...)
+	if err != nil {
+		return nil, 0, err
+	}
+	all := append(append([]int64{}, own...), subs...)
+	allPH, allArgs := placeholders(all)
+	if _, err := tx.ExecContext(ctx,
+		`UPDATE task SET startdate = ?, enddate = ? WHERE taskid IN (`+allPH+`)`,
+		append([]interface{}{startDate, endDate}, allArgs...)...); err != nil {
+		return nil, 0, fmt.Errorf("修改条目日期: %w", err)
+	}
+	if err := tx.Commit(); err != nil {
+		return nil, 0, fmt.Errorf("提交事务: %w", err)
+	}
+	return all, volume, nil
 }
 
 // DeleteItems 删若干条目（对应旧 delonebellplan）。

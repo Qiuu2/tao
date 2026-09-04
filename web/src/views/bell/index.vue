@@ -74,7 +74,13 @@
             >
               批量修改
             </el-button>
-            <el-button type="primary" :disabled="!btn.add" @click="openSmart">智能排课</el-button>
+            <el-button
+              type="primary"
+              :disabled="!btn.edit || scope.selectedList.length !== 1"
+              @click="openSchedule(scope.selectedList[0])"
+            >
+              智能排课
+            </el-button>
           </div>
           <div class="header-right">
             <el-tag v-if="scopeNote" type="info" size="small" effect="plain">{{ scopeNote }}</el-tag>
@@ -122,7 +128,6 @@
         只能改，不能靠「删掉重建」——重建会连同方案里的全部条目一起丢。
       -->
       <template #operation="scope">
-        <el-button type="primary" link :icon="View" @click="openItems(scope.row)">查看任务</el-button>
         <el-button type="primary" link :icon="EditPen" :disabled="!btn.edit" @click="openEdit(scope.row)">修改</el-button>
       </template>
     </ProTable>
@@ -137,66 +142,99 @@
     </el-dialog>
 
     <!--
-      智能排课：按「第一节开始时间 + 单节时长 + 课间时长 + 节数」推算出各节的打铃时刻，
-      一次生成整套打铃条目，省得一条条填。
-      ⚠ 它只是把条目**填进下面那张表**，并不直接落库 —— 生成后还能改，
-        点「确定」保存方案时才写库，和手工添加走完全同一条路径。
+      智能排课：把方案里的课时按打铃时间顺序摊开，勾中若干条，统一挪到新的日期时间段。
+      对应旧版「统一播放时间」页（sechotime.php）——那一页也是先按 playtime 排好序，
+      勾中若干条再统一改，只不过旧版改的是星期，这里改的是起止日期。
     -->
-    <el-dialog v-model="smart.visible" title="智能排课" width="560px">
-      <el-form :model="smart" label-width="120px">
-        <el-form-item label="第一节开始">
-          <el-time-picker v-model="smart.firstTime" value-format="HH:mm:ss" :clearable="false" class="fill" />
-        </el-form-item>
-        <el-row :gutter="12">
-          <el-col :span="12">
-            <el-form-item label="单节时长">
-              <el-input-number v-model="smart.lessonMin" :min="1" :max="240" class="fill" />
-              <span class="form-tip">分钟</span>
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="课间时长">
-              <el-input-number v-model="smart.breakMin" :min="0" :max="240" class="fill" />
-              <span class="form-tip">分钟</span>
-            </el-form-item>
-          </el-col>
-        </el-row>
-        <el-row :gutter="12">
-          <el-col :span="12">
-            <el-form-item label="节数">
-              <el-input-number v-model="smart.count" :min="1" :max="30" class="fill" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="名称前缀">
-              <el-input v-model="smart.prefix" maxlength="20" placeholder="例如：第" />
-            </el-form-item>
-          </el-col>
-        </el-row>
-        <el-form-item label="生成内容">
-          <el-checkbox v-model="smart.withStart">上课铃</el-checkbox>
-          <el-checkbox v-model="smart.withEnd">下课铃</el-checkbox>
-        </el-form-item>
-        <el-form-item label="铃声">
-          <el-select
-            v-model="smart.mediaIds"
-            multiple
-            filterable
-            remote
-            reserve-keyword
-            collapse-tags
-            :remote-method="searchMedia"
-            :loading="mediaLoading"
-            placeholder="媒体名称搜索"
-            class="fill"
-          >
-            <el-option v-for="m in medias" :key="m.id" :label="m.name" :value="m.id" />
-          </el-select>
-        </el-form-item>
-      </el-form>
+    <el-dialog v-model="sched.visible" :title="`智能排课：${sched.planName}`" width="940px" top="6vh">
+      <div class="sched-head">
+        <div class="sched-sum">
+          <span class="sched-plan">{{ sched.planName }}</span>
+          <el-tag size="small" effect="plain">{{ sched.list.length }} 个课时</el-tag>
+          <el-tag size="small" type="info" effect="plain">当前 {{ sched.rangeText }}</el-tag>
+          <el-tag v-if="sched.mixed" size="small" type="warning" effect="plain">各课时日期不一致</el-tag>
+        </div>
+        <div class="sched-pick">
+          <span class="sched-label">新日期时间段</span>
+          <el-date-picker
+            v-model="sched.range"
+            type="daterange"
+            value-format="YYYY-MM-DD"
+            range-separator="至"
+            start-placeholder="开始日期"
+            end-placeholder="结束日期"
+            :clearable="false"
+            style="width: 300px"
+          />
+          <span class="sched-note">勾中的课时会一起改到这个日期段，打铃时间与铃声不变</span>
+        </div>
+      </div>
+
+      <el-table
+        ref="schedTableRef"
+        :data="sched.list"
+        size="small"
+        border
+        stripe
+        max-height="420"
+        row-key="taskid"
+        @selection-change="rows => (sched.checked = rows as BellItem[])"
+      >
+        <el-table-column type="selection" width="42" align="center" />
+        <el-table-column type="index" label="序号" width="56" align="center" />
+        <el-table-column label="作息时间" width="112" align="center">
+          <template #default="{ row }">
+            <span class="time-cell">{{ row.playtime }}</span>
+            <el-tooltip v-if="row.duplicateTime" content="方案内还有别的课时排在同一时刻" placement="top">
+              <el-icon class="warn-icon"><WarningFilled /></el-icon>
+            </el-tooltip>
+          </template>
+        </el-table-column>
+        <el-table-column prop="taskname" label="课时名称" min-width="118" show-overflow-tooltip />
+        <el-table-column label="铃声" min-width="116">
+          <template #default="{ row }">
+            <span v-if="!row.media?.length" class="muted">未设置</span>
+            <el-tag
+              v-for="m in row.media"
+              :key="m.mediaId"
+              size="small"
+              :type="m.deleted ? 'danger' : 'info'"
+              effect="plain"
+              class="media-tag"
+            >
+              {{ m.name }}
+            </el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column label="播放时长" width="96" align="center">
+          <template #default="{ row }">
+            {{ row.timelengthtype === 1 ? lenText(row.timelength) : `${row.timelength} 次` }}
+          </template>
+        </el-table-column>
+        <el-table-column label="执行" width="148" align="center">
+          <template #default="{ row }">
+            <span v-if="row.exemodel === '1111111'" class="muted">每天</span>
+            <span v-else-if="row.exemodel === '0000000'" class="muted">手动</span>
+            <template v-else>
+              <span v-for="(w, i) in weekLabels" :key="i" class="wk" :class="{ on: row.exemodel?.[i] === '1' }">{{ w }}</span>
+            </template>
+          </template>
+        </el-table-column>
+        <el-table-column label="当前日期段" width="176" align="center">
+          <template #default="{ row }">
+            <span :class="{ 'date-chg': isChecked(row) }">{{ row.startdate }} ~ {{ row.enddate }}</span>
+            <div v-if="isChecked(row) && sched.range?.[0]" class="date-new">→ {{ sched.range[0] }} ~ {{ sched.range[1] }}</div>
+          </template>
+        </el-table-column>
+        <template #empty><span class="dlg-note">这个方案还没有课时</span></template>
+      </el-table>
+
       <template #footer>
-        <el-button @click="smart.visible = false">取消</el-button>
-        <el-button type="primary" @click="applySmart">生成条目</el-button>
+        <span class="sched-foot">已勾选 {{ sched.checked.length }} / {{ sched.list.length }}</span>
+        <el-button type="primary" :loading="sched.saving" @click="submitSchedule">确定</el-button>
+        <el-button @click="schedTableRef?.toggleAllSelection()">全选</el-button>
+        <el-button @click="schedTableRef?.clearSelection()">取消</el-button>
+        <el-button @click="sched.visible = false">返回</el-button>
       </template>
     </el-dialog>
 
@@ -505,100 +543,6 @@
       </template>
     </el-dialog>
 
-    <!-- 条目管理 -->
-    <el-drawer v-model="items.visible" :title="`打铃条目 —— ${items.planName}`" size="60%">
-      <div class="drawer-bar">
-        <!-- 按钮与列名照 :80 的「查看任务」弹窗 -->
-        <el-button type="primary" :icon="CirclePlus" :disabled="!btn.item" @click="openItemEdit(null)"> 添加任务 </el-button>
-        <el-button type="danger" :icon="Delete" :disabled="!btn.item || !items.checked.length" @click="removeItems">
-          删除任务{{ items.checked.length ? `(${items.checked.length})` : "" }}
-        </el-button>
-      </div>
-      <el-table :data="items.list" row-key="taskid" @selection-change="rows => (items.checked = rows.map(r => r.taskid))">
-        <el-table-column type="selection" width="46" />
-        <el-table-column prop="taskname" label="任务名称" min-width="140" />
-        <el-table-column label="播放时间" width="130">
-          <template #default="{ row }">
-            {{ row.playtime }}
-            <el-tooltip v-if="row.duplicateTime" content="方案内还有别的条目排在同一时刻" placement="top">
-              <el-icon class="warn-icon"><WarningFilled /></el-icon>
-            </el-tooltip>
-          </template>
-        </el-table-column>
-        <el-table-column label="播放时长" width="120">
-          <template #default="{ row }">
-            {{ row.timelengthtype === 1 ? `${row.timelength} 秒` : `${row.timelength} 次` }}
-          </template>
-        </el-table-column>
-        <el-table-column label="铃声名称" min-width="180">
-          <template #default="{ row }">
-            <span v-if="!row.media?.length" class="muted">未设置</span>
-            <el-tag
-              v-for="m in row.media"
-              :key="m.mediaId"
-              size="small"
-              :type="m.deleted ? 'danger' : 'info'"
-              effect="plain"
-              class="media-tag"
-            >
-              {{ m.name }}
-            </el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column label="功放子任务" width="120">
-          <template #default="{ row }">
-            <span v-if="row.powerTaskId">{{ row.powerPlayTime }}</span>
-            <span v-else class="muted">—</span>
-          </template>
-        </el-table-column>
-        <el-table-column label="操作" width="90" fixed="right">
-          <template #default="{ row }">
-            <el-button type="primary" link :icon="EditPen" :disabled="!btn.item" @click="openItemEdit(row)"> 修改 </el-button>
-          </template>
-        </el-table-column>
-      </el-table>
-    </el-drawer>
-
-    <!-- 单条条目编辑 -->
-    <el-dialog v-model="itemDlg.visible" :title="itemDlg.title" width="620px">
-      <el-form :model="itemDlg.form" label-width="100px">
-        <el-form-item label="任务名称" required>
-          <el-input v-model="itemDlg.form.taskname" maxlength="80" show-word-limit placeholder="请输入任务名称" />
-        </el-form-item>
-        <el-form-item label="播放时间" required>
-          <el-time-picker v-model="itemDlg.form.playtime" value-format="HH:mm:ss" class="fill" />
-        </el-form-item>
-        <el-form-item label="播放类型">
-          <el-radio-group v-model="itemDlg.form.timelengthtype">
-            <el-radio :value="1">按时长播放</el-radio>
-            <el-radio :value="2">按次数播放</el-radio>
-          </el-radio-group>
-        </el-form-item>
-        <el-form-item label="播放时长/次数">
-          <el-input-number v-model="itemDlg.form.timelength" :min="0" :max="86400" />
-        </el-form-item>
-        <el-form-item label="作息音乐">
-          <el-select
-            v-model="itemDlg.form.mediaIds"
-            multiple
-            filterable
-            remote
-            reserve-keyword
-            :remote-method="searchMedia"
-            :loading="mediaLoading"
-            placeholder="媒体名称搜索"
-            class="fill"
-          >
-            <el-option v-for="m in medias" :key="m.id" :label="m.name" :value="m.id" />
-          </el-select>
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <el-button @click="itemDlg.visible = false">取消</el-button>
-        <el-button type="primary" :loading="itemDlg.saving" @click="submitItem">确定</el-button>
-      </template>
-    </el-dialog>
-
     <!-- 删除确认 -->
     <el-dialog v-model="del.visible" title="删除作息方案" width="560px">
       <el-alert type="error" :closable="false" class="mb12"> 将删除方案「{{ del.planName }}」的全部内容，不可恢复。 </el-alert>
@@ -626,7 +570,7 @@
 import { computed, nextTick, reactive, ref } from "vue";
 import { ElMessage, ElMessageBox } from "element-plus";
 import type { ElTable, FormInstance, FormRules } from "element-plus";
-import { CirclePlus, Delete, EditPen, View, WarningFilled } from "@element-plus/icons-vue";
+import { CirclePlus, Delete, EditPen, WarningFilled } from "@element-plus/icons-vue";
 import ProTable from "@/components/ProTable/index.vue";
 import TerminalTree from "@/components/TerminalTree/index.vue";
 import { useAuthStore } from "@/stores/modules/auth";
@@ -641,6 +585,7 @@ import {
   getBellPlanListApi,
   previewDeleteBellPlanApi,
   setBellPlanStateApi,
+  setBellItemDatesApi,
   setBellPlanVolumeApi,
   updateBellItemApi,
   updateBellPlanApi,
@@ -1121,56 +1066,65 @@ const submitVolume = async () => {
   }
 };
 
-/* ---------------- 智能排课 ---------------- */
+/* ---------------- 智能排课：把课时统一挪到新日期段 ---------------- */
 
-const smart = reactive({
+const schedTableRef = ref<InstanceType<typeof ElTable>>();
+const sched = reactive({
   visible: false,
-  firstTime: "08:00:00",
-  lessonMin: 45,
-  breakMin: 10,
-  count: 8,
-  prefix: "第",
-  withStart: true,
-  withEnd: true,
-  mediaIds: [] as number[]
+  saving: false,
+  planName: "",
+  list: [] as BellItem[],
+  checked: [] as BellItem[],
+  range: [today(), today()] as [string, string],
+  /** 方案里各课时的日期段不一致时给个提醒 —— 逐条改日期本来就会造成这种局面 */
+  mixed: false,
+  rangeText: ""
 });
 
-/** 打开智能排课。它是在「添加方案」弹窗之上用的，所以先确保那张表单开着。 */
-const openSmart = async () => {
-  if (!dlg.visible || dlg.isEdit) await openCreate();
-  smart.visible = true;
-  if (!medias.value.length) await searchMedia("");
-};
-
-/** 把 "HH:mm:ss" 加上若干分钟，跨零点绕回当天 */
-const addMinutes = (t: string, min: number) => {
-  const [h, m, s] = t.split(":").map(Number);
-  const total = (h * 3600 + m * 60 + s + min * 60 + 86400) % 86400;
+const isChecked = (row: BellItem) => sched.checked.some(r => r.taskid === row.taskid);
+const lenText = (sec: number) => {
   const p = (n: number) => String(n).padStart(2, "0");
-  return `${p(Math.floor(total / 3600))}:${p(Math.floor((total % 3600) / 60))}:${p(total % 60)}`;
+  return `${p(Math.floor(sec / 3600))}:${p(Math.floor((sec % 3600) / 60))}:${p(sec % 60)}`;
 };
 
-const applySmart = () => {
-  if (!smart.withStart && !smart.withEnd) return ElMessage.warning("请至少勾一种铃（上课铃 / 下课铃）");
-  const rows: ReturnType<typeof emptyItemRow>[] = [];
-  let t = smart.firstTime;
-  for (let i = 1; i <= smart.count; i++) {
-    if (smart.withStart) {
-      rows.push({ ...emptyItemRow(), taskname: `${smart.prefix}${i}节上课`, playtime: t, mediaIds: [...smart.mediaIds] });
-    }
-    const end = addMinutes(t, smart.lessonMin);
-    if (smart.withEnd) {
-      rows.push({ ...emptyItemRow(), taskname: `${smart.prefix}${i}节下课`, playtime: end, mediaIds: [...smart.mediaIds] });
-    }
-    t = addMinutes(end, smart.breakMin);
+const openSchedule = async (raw: Record<string, any>) => {
+  const planName = String(raw?.planName ?? "");
+  if (!planName) return;
+  const { data } = await getBellPlanApi(planName);
+  // 后端已按 playtime 排好序，这里再排一次，免得将来接口顺序变了界面跟着乱
+  const list = [...data.items].sort((a, b) => a.playtime.localeCompare(b.playtime) || a.taskid - b.taskid);
+  const ranges = new Set(list.map(it => `${it.startdate}~${it.enddate}`));
+  Object.assign(sched, {
+    visible: true,
+    saving: false,
+    planName,
+    list,
+    checked: [],
+    range: [data.schedule.startdate || today(), data.schedule.enddate || today()],
+    mixed: ranges.size > 1,
+    rangeText: list.length ? `${data.schedule.startdate} ~ ${data.schedule.enddate}` : "—"
+  });
+  await nextTick();
+  schedTableRef.value?.clearSelection();
+};
+
+const submitSchedule = async () => {
+  if (!sched.checked.length) return ElMessage.warning("请先勾选要改日期的课时");
+  const [start, end] = sched.range ?? [];
+  if (!start || !end) return ElMessage.warning("请选择新的日期时间段");
+  if (start > end) return ElMessage.warning("开始日期不能晚于结束日期");
+
+  sched.saving = true;
+  try {
+    const ids = sched.checked.map(r => r.taskid);
+    const { data } = await setBellItemDatesApi(sched.planName, ids, start, end);
+    ElMessage.success(`已把 ${data.changed} 个课时改到 ${start} ~ ${end}`);
+    // 就地刷新，好让「当前日期段」这一列立刻显示新值
+    await openSchedule({ planName: sched.planName });
+    refresh();
+  } finally {
+    sched.saving = false;
   }
-  // 覆盖而不是追加：排课是「重排整套」，追加只会和已有条目撞时间
-  dlg.items = rows;
-  itemErrors.value = rows.map(() => emptyItemError());
-  itemsError.value = "";
-  selectedItems.value = [];
-  smart.visible = false;
-  ElMessage.success(`已生成 ${rows.length} 条打铃条目，可继续逐条调整，点「确定」才保存`);
 };
 
 const openCreate = async () => {
@@ -1465,95 +1419,6 @@ const submitBatch = async () => {
   }
 };
 
-/* ---------------- 条目管理 ---------------- */
-
-const items = reactive({
-  visible: false,
-  planName: "",
-  list: [] as BellItem[],
-  checked: [] as number[]
-});
-
-const loadItems = async (planName: string) => {
-  const { data } = await getBellPlanApi(planName);
-  items.planName = planName;
-  items.list = data.items ?? [];
-  items.checked = [];
-};
-
-const openItems = async (row: BellPlan) => {
-  await loadItems(row.planName);
-  await searchMedia("");
-  items.visible = true;
-};
-
-const itemDlg = reactive({
-  visible: false,
-  saving: false,
-  title: "",
-  taskid: 0,
-  form: { taskname: "", playtime: "08:00:00", timelengthtype: 2, timelength: 1, mediaIds: [] as number[] }
-});
-
-const openItemEdit = (row: BellItem | null) => {
-  itemDlg.visible = true;
-  itemDlg.saving = false;
-  if (!row) {
-    itemDlg.title = "添加打铃条目";
-    itemDlg.taskid = 0;
-    itemDlg.form = { taskname: "", playtime: "08:00:00", timelengthtype: 2, timelength: 1, mediaIds: [] };
-    return;
-  }
-  itemDlg.title = `修改条目：${row.taskname}`;
-  itemDlg.taskid = row.taskid;
-  itemDlg.form = {
-    taskname: row.taskname,
-    playtime: row.playtime,
-    timelengthtype: row.timelengthtype,
-    timelength: row.timelength,
-    mediaIds: row.media.filter(m => !m.deleted).map(m => m.mediaId)
-  };
-};
-
-const submitItem = async () => {
-  if (!itemDlg.form.taskname.trim()) return ElMessage.warning("请输入条目名称");
-  const payload = {
-    taskname: itemDlg.form.taskname.trim(),
-    playtime: itemDlg.form.playtime,
-    timelengthtype: itemDlg.form.timelengthtype,
-    timelength: itemDlg.form.timelength,
-    media: itemDlg.form.mediaIds.map((id, i) => ({ mediaId: id, sort: i }))
-  };
-  itemDlg.saving = true;
-  try {
-    if (itemDlg.taskid) {
-      await updateBellItemApi(items.planName, itemDlg.taskid, payload);
-    } else {
-      await addBellItemApi(items.planName, payload);
-    }
-    ElMessage.success("保存成功");
-    itemDlg.visible = false;
-    await loadItems(items.planName);
-    refresh();
-  } finally {
-    itemDlg.saving = false;
-  }
-};
-
-const removeItems = async () => {
-  if (!items.checked.length) return;
-  await ElMessageBox.confirm(`确定删除选中的 ${items.checked.length} 个条目？`, "提示", { type: "warning" });
-  const { data } = await deleteBellItemsApi(items.planName, items.checked);
-  ElMessage.success(`已删除 ${data.deleted} 个条目`);
-  if (data.planRemoved) {
-    ElMessage.warning("最后一个条目已删除，该方案随之消失");
-    items.visible = false;
-  } else {
-    await loadItems(items.planName);
-  }
-  refresh();
-};
-
 /* ---------------- 启停 / 复制 / 删除 ---------------- */
 
 const del = reactive({
@@ -1717,6 +1582,77 @@ const confirmDelete = async () => {
   display: flex;
   gap: 6px;
   align-items: center;
+}
+/* ---- 智能排课 ---- */
+.sched-head {
+  padding: 12px 14px;
+  margin-bottom: 12px;
+  background: var(--el-fill-color-lighter);
+  border: 1px solid var(--el-border-color-lighter);
+  border-radius: 6px;
+}
+.sched-sum {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  padding-bottom: 10px;
+  margin-bottom: 10px;
+  border-bottom: 1px dashed var(--el-border-color);
+}
+.sched-plan {
+  margin-right: 2px;
+  font-size: 15px;
+  font-weight: 600;
+}
+.sched-pick {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+.sched-label {
+  font-weight: 500;
+  color: var(--el-text-color-primary);
+}
+.sched-note {
+  font-size: 12px;
+  color: var(--el-text-color-secondary);
+}
+.sched-foot {
+  float: left;
+  padding-left: 4px;
+  font-size: 13px;
+  line-height: 32px;
+  color: var(--el-text-color-secondary);
+}
+.time-cell {
+  font-family: ui-monospace, sfmono-regular, menlo, monospace;
+  font-weight: 500;
+  letter-spacing: 0.3px;
+}
+.wk {
+  display: inline-block;
+  width: 17px;
+  margin-right: 1px;
+  white-space: nowrap;
+  font-size: 12px;
+  line-height: 17px;
+  color: var(--el-text-color-placeholder);
+  text-align: center;
+  border-radius: 3px;
+  &.on {
+    color: #fff;
+    background: var(--el-color-primary);
+  }
+}
+.date-chg {
+  color: var(--el-text-color-placeholder);
+  text-decoration: line-through;
+}
+.date-new {
+  font-weight: 500;
+  color: var(--el-color-primary);
 }
 .batch-bar {
   display: flex;
