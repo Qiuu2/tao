@@ -62,24 +62,13 @@
           <div class="header-bar">
             <div class="header-left">
               <!--
-                按钮清单照 :80（页面规格.txt「文件广播」）：
-                添加 / 批量编辑 / 删除 / 执行 / 停止 / 暂停 / 恢复 / 启用 / 停用 /
-                紧急设置 / 取消紧急设置 / 设置音量。
-                「批量添加终端」是我们多出来的一个，收在「批量编辑」下拉里。
+                按钮清单照旧版 FileTaskManager_from.html：
+                添加 / 修改 / 删除 / 执行 / 停止 / 暂停 / 恢复 / 启用 / 停用 /
+                紧急设置 / 取消紧急设置 / 调整音量。
+                旧版没有「批量编辑」这样的下拉，所以不摆；
+                「批量添加终端」在终端管理的批量操作里，那边留着。
               -->
               <el-button type="primary" :icon="CirclePlus" :disabled="!canAdd" @click="openCreate">添加</el-button>
-
-              <el-dropdown :disabled="!canEdit || !scope.isSelected" @command="c => onMoreCmd(c, scope.selectedListIds)">
-                <el-button type="primary" :disabled="!canEdit || !scope.isSelected">
-                  批量编辑<el-icon class="el-icon--right"><ArrowDown /></el-icon>
-                </el-button>
-                <template #dropdown>
-                  <el-dropdown-menu>
-                    <el-dropdown-item command="volume">设置音量</el-dropdown-item>
-                    <el-dropdown-item command="sync">批量添加终端</el-dropdown-item>
-                  </el-dropdown-menu>
-                </template>
-              </el-dropdown>
 
               <el-button
                 type="danger"
@@ -284,9 +273,9 @@
       这里照它排。原先那个「基本信息 / 媒体与终端 / 时间与播放」三步向导取消了 ——
       旧版没有分步，来回翻页反而看不到全貌。
 
-      末尾多出来的「扩展项」是旧版表单里没有、但库里确实有的几列
-      （方案状态、结束时间、当天停用、本地优先播放）。它们已经在后端写着，
-      藏起来只会让人改不到，所以单独一段列出来并标明旧版没有。
+      旧版表单里没有的几列（方案状态、结束时间、当天停用、本地优先播放）不摆到表单上：
+      新建时用默认值，修改时原样带回去再提交，不会被清掉。
+      方案状态另有工具条上的「启用 / 停用」可改。
     -->
     <el-dialog v-model="dlg.visible" :title="dlg.title" width="960px" top="4vh">
       <el-form :model="dlg.form" label-width="110px">
@@ -451,9 +440,22 @@
 
         <template v-if="ledOn">
           <el-divider content-position="left">led字幕</el-divider>
-          <el-form-item label="LED任务名称">
-            <el-input v-model="dlg.form.led.name" maxlength="8" show-word-limit placeholder="留空则与任务名相同" />
-          </el-form-item>
+          <!-- 名称与速度并成一行，速度排在字幕上面 -->
+          <el-row :gutter="16">
+            <el-col :span="12">
+              <el-form-item label="LED任务名称">
+                <el-input v-model="dlg.form.led.name" maxlength="8" show-word-limit placeholder="留空则与任务名相同" />
+              </el-form-item>
+            </el-col>
+            <el-col :span="12">
+              <el-form-item label="Led速度">
+                <el-select v-model="dlg.form.led.speed" style="width: 110px">
+                  <el-option v-for="n in [0, 1, 2, 3, 4, 5]" :key="n" :label="`${n} 级`" :value="n" />
+                </el-select>
+                <span class="form-tip">0 ~ 5 级</span>
+              </el-form-item>
+            </el-col>
+          </el-row>
           <el-form-item label="led字幕" required>
             <el-input
               v-model="dlg.form.led.text"
@@ -464,15 +466,11 @@
               placeholder="请输入 led 字幕内容"
             />
           </el-form-item>
-          <el-form-item label="Led速度">
-            <el-select v-model="dlg.form.led.speed" style="width: 110px">
-              <el-option v-for="n in [0, 1, 2, 3, 4, 5]" :key="n" :label="`${n} 级`" :value="n" />
-            </el-select>
-            <span class="form-tip">0 ~ 5 级</span>
-          </el-form-item>
           <el-form-item label="led设备列表">
             <div class="led-dev">
-              <div v-if="!ledDevices.length" class="dlg-note">还没有登记 LED 设备（基础配置 → LED 设备）。</div>
+              <div v-if="!ledDevices.length" class="dlg-note">
+                还没有登记 LED 设备 —— 先到「云广播管理 → led播放 → LED 设备」登记，这里才能勾选要上屏的设备。
+              </div>
               <el-checkbox-group v-else v-model="selectedLedDeviceIds">
                 <el-checkbox v-for="d in ledDevices" :key="d.id" :value="d.id">
                   {{ d.name }}
@@ -483,68 +481,36 @@
           </el-form-item>
         </template>
 
-        <el-divider content-position="left">媒体文件列表</el-divider>
-        <el-form-item label-width="0">
-          <!-- 旧版这里是一棵「媒体库 → 音频文件」的树，不是一条长下拉 -->
-          <MediaTree v-model="selectedMediaIds" :selected-names="selectedMediaNames" height="240px" style="width: 100%" />
-        </el-form-item>
-        <el-form-item v-if="selectedMediaIds.length" label="播放顺序">
-          <div class="sortable">
-            <div v-for="(id, i) in selectedMediaIds" :key="id" class="sort-item">
-              <span class="sort-idx">{{ i + 1 }}</span>
-              <span class="sort-name">{{ mediaLabel(id) }}</span>
-              <el-button link :icon="ArrowUp" :disabled="i === 0" @click="moveMedia(i, -1)" />
-              <el-button link :icon="ArrowDown" :disabled="i === selectedMediaIds.length - 1" @click="moveMedia(i, 1)" />
-              <el-button link type="danger" :icon="Close" @click="selectedMediaIds.splice(i, 1)" />
-            </div>
-          </div>
-        </el-form-item>
-
-        <el-divider content-position="left">终端列表</el-divider>
-        <el-form-item label-width="0">
-          <TerminalTree
-            v-model="selectedTerminalIds"
-            :terminals="terminalOptions"
-            :loading="terminalLoading"
-            height="260px"
-            style="width: 100%"
-            @search="searchTerminals"
-          />
-        </el-form-item>
-
-        <!-- 旧版表单里没有这几项，但库里有对应的列，放在最后单独一段 -->
-        <el-divider content-position="left">扩展项（旧版表单没有）</el-divider>
+        <!-- 媒体与终端两棵树并排，与旧版表单左右两栏的排法一致 -->
         <el-row :gutter="16">
           <el-col :span="12">
-            <el-form-item label="方案状态">
-              <!-- 0 = 启用、1 = 停用，与列注释相反 -->
-              <el-radio-group v-model="dlg.form.projectstate">
-                <el-radio :value="0">启用</el-radio>
-                <el-radio :value="1">停用</el-radio>
-              </el-radio-group>
+            <el-divider content-position="left">媒体文件列表</el-divider>
+            <el-form-item label-width="0">
+              <!-- 旧版这里是一棵「媒体库 → 音频文件」的树，不是一条长下拉 -->
+              <MediaTree v-model="selectedMediaIds" :selected-names="selectedMediaNames" height="300px" style="width: 100%" />
+            </el-form-item>
+            <el-form-item v-if="selectedMediaIds.length" label-width="0">
+              <div class="sortable">
+                <div v-for="(id, i) in selectedMediaIds" :key="id" class="sort-item">
+                  <span class="sort-idx">{{ i + 1 }}</span>
+                  <span class="sort-name">{{ mediaLabel(id) }}</span>
+                  <el-button link :icon="ArrowUp" :disabled="i === 0" @click="moveMedia(i, -1)" />
+                  <el-button link :icon="ArrowDown" :disabled="i === selectedMediaIds.length - 1" @click="moveMedia(i, 1)" />
+                  <el-button link type="danger" :icon="Close" @click="selectedMediaIds.splice(i, 1)" />
+                </div>
+              </div>
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="本地优先播放">
-              <el-switch v-model="localPlayOn" />
-            </el-form-item>
-          </el-col>
-        </el-row>
-        <el-row :gutter="16">
-          <el-col :span="12">
-            <el-form-item label="结束时间">
-              <el-time-picker v-model="dlg.form.schedule.endtime" value-format="HH:mm:ss" class="fill" clearable />
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="当天停用">
-              <el-date-picker
-                v-model="dlg.form.schedule.disableday"
-                type="date"
-                value-format="YYYY-MM-DD"
-                placeholder="选填，指定当天不执行"
-                class="fill"
-                clearable
+            <el-divider content-position="left">终端列表</el-divider>
+            <el-form-item label-width="0">
+              <TerminalTree
+                v-model="selectedTerminalIds"
+                :terminals="terminalOptions"
+                :loading="terminalLoading"
+                height="300px"
+                style="width: 100%"
+                @search="searchTerminals"
               />
             </el-form-item>
           </el-col>
@@ -572,26 +538,6 @@
       <template #footer>
         <el-button @click="cp.visible = false">取消</el-button>
         <el-button type="primary" :loading="cp.saving" @click="submitCopy">确定</el-button>
-      </template>
-    </el-dialog>
-
-    <!-- 批量添加终端 -->
-    <el-dialog v-model="sync.visible" title="批量添加终端" width="560px">
-      <el-alert type="info" :closable="false" show-icon class="mb12">
-        把选中的终端追加到 {{ sync.taskIds.length }} 条任务上；已在清单里的终端会跳过。
-      </el-alert>
-      <TerminalTree
-        v-model="sync.terminalIds"
-        :terminals="terminalOptions"
-        :loading="terminalLoading"
-        height="300px"
-        @search="searchTerminals"
-      />
-      <template #footer>
-        <el-button @click="sync.visible = false">取消</el-button>
-        <el-button type="primary" :disabled="!sync.terminalIds.length" :loading="sync.saving" @click="submitSync">
-          确定
-        </el-button>
       </template>
     </el-dialog>
 
@@ -687,7 +633,6 @@ import {
   setTaskEmergencyApi,
   setTaskProjectStateApi,
   setTaskVolumeApi,
-  syncTaskTerminalsApi,
   updateTaskApi
 } from "@/api/modules/task";
 import type {
@@ -855,13 +800,6 @@ const onMoreCmd = async (cmd: string, raw: (string | number)[]) => {
   if (!ids.length) return ElMessage.warning("请先勾选任务");
   if (cmd === "pause" || cmd === "resume") return control(cmd as TaskAction, raw);
   if (cmd === "volume") return openVolume(raw);
-  if (cmd === "sync") {
-    sync.taskIds = ids;
-    sync.terminalIds = [];
-    sync.visible = true;
-    await searchTerminals("");
-    return;
-  }
   const enable = cmd === "enable";
   const { data } = await setTaskProjectStateApi(ids, enable);
   reportControl(data, enable ? "启用方案" : "停用方案");
@@ -1071,9 +1009,6 @@ watch(weekdaySel, v => {
   dlg.form.schedule.exemodel = Array.from({ length: 7 }, (_, i) => (v.includes(i) ? "1" : "0")).join("");
 });
 
-const localPlayOn = ref(false);
-watch(localPlayOn, v => (dlg.form.playback.localplay = v ? 1 : 0));
-
 /** led播放 开关。关掉时提交 led: null，后端会把已有的 LED 子任务删掉 */
 const ledOn = ref(false);
 
@@ -1100,7 +1035,6 @@ const openCreate = async () => {
   runMode.value = 1;
   playMode.value = 0;
   splitLengths(dlg.form.playback);
-  localPlayOn.value = false;
   ledOn.value = false;
   selectedLedDeviceIds.value = [];
   selectedMediaIds.value = [];
@@ -1160,7 +1094,6 @@ const openEdit = async (row: TaskRow) => {
   // 有间隔长度就是「间隔时间」模式
   playMode.value = data.interval_s > 0 ? 1 : 0;
   splitLengths(data);
-  localPlayOn.value = data.localplay === 1;
   // 有 LED 子任务就把开关打开
   ledOn.value = !!data.led;
   selectedLedDeviceIds.value = (data.led?.devices ?? []).map(d => d.deviceId);
@@ -1261,22 +1194,6 @@ const submitCopy = async () => {
     loadFolders();
   } finally {
     cp.saving = false;
-  }
-};
-
-/* ---------------- 批量添加终端 ---------------- */
-
-const sync = reactive({ visible: false, saving: false, taskIds: [] as number[], terminalIds: [] as number[] });
-
-const submitSync = async () => {
-  sync.saving = true;
-  try {
-    const { data } = await syncTaskTerminalsApi(sync.taskIds, sync.terminalIds);
-    sync.visible = false;
-    ElMessage.success(`已新增 ${data.added} 条终端关联`);
-    refresh();
-  } finally {
-    sync.saving = false;
   }
 };
 
