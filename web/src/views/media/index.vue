@@ -159,14 +159,21 @@
         <el-form-item label="名称" required>
           <el-input v-model="folderDlg.name" maxlength="60" show-word-limit placeholder="请输入文件夹名称" />
         </el-form-item>
-        <el-form-item label="是否共享">
+        <!--
+          「是否共享」只在**修改**时给 —— 右键菜单那一项本来就叫「重命名 / 共享设置」。
+          新建时不问：ok112 的 filefolderadd.html 虽然摆了个勾选框，但 do.php 里
+          未勾选就是 0，新目录默认私有；建的时候还没内容，共享与否没什么可决定的，
+          需要共享再进「修改」改一次。
+        -->
+        <el-form-item v-if="folderDlg.isEdit" label="是否共享">
           <el-switch v-model="folderDlg.shared" active-text="共享（全员可见）" inactive-text="私有（仅自己可见）" />
         </el-form-item>
       </el-form>
-      <div class="dlg-tip">
+      <div v-if="folderDlg.isEdit" class="dlg-tip">
         共享目录全员可见；私有目录仅创建者可见。<br />
         注意：目录内的媒体仍按「仅显示我上传的」过滤，共享的是目录本身。
       </div>
+      <div v-else class="dlg-tip">新目录默认<b>私有</b>（仅自己可见）。需要共享的话，建好后右键「重命名 / 共享设置」再改。</div>
       <template #footer>
         <el-button @click="folderDlg.visible = false">取消</el-button>
         <el-button type="primary" :loading="folderDlg.loading" @click="submitFolder">确定</el-button>
@@ -554,7 +561,8 @@ const submitFolder = async () => {
       ElMessage.success("修改成功");
     } else {
       const parent = currentNode.value!;
-      await createFolderApi({ name, parentId: parent.id, shared: folderDlg.shared });
+      // 新建不问共享，一律私有（与 ok112 未勾选时的取值一致）
+      await createFolderApi({ name, parentId: parent.id, shared: false });
       ElMessage.success("创建成功");
     }
     folderDlg.visible = false;
