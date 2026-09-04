@@ -66,6 +66,14 @@
             >
               复制方案
             </el-button>
+            <el-button
+              type="warning"
+              plain
+              :disabled="!btn.edit || scope.selectedList.length !== 1"
+              @click="openBatch(scope.selectedList[0])"
+            >
+              批量修改
+            </el-button>
             <el-button type="primary" :disabled="!btn.add" @click="openSmart">智能排课</el-button>
           </div>
           <div class="header-right">
@@ -192,8 +200,8 @@
       </template>
     </el-dialog>
 
-    <!-- 新建方案 / 修改方案级属性 -->
-    <el-dialog v-model="dlg.visible" :title="dlg.title" width="860px" top="5vh">
+    <!-- 添加方案 / 修改方案 / 批量修改：旧版三个页面，字段几乎一样，这里合成一个对话框 -->
+    <el-dialog v-model="dlg.visible" :title="dlg.title" width="860px" top="5vh" :before-close="closeDialog">
       <el-alert v-if="dlg.mixedAttrs.length" type="warning" :closable="false" class="mb12">
         方案内以下属性各条目取值不一致：{{ dlg.mixedAttrs.join("、") }}。 保存后会统一成下面填写的值。
       </el-alert>
@@ -254,7 +262,7 @@
           <el-col :span="12">
             <el-form-item label="任务级别">
               <el-select v-model="dlg.form.playback.priority" style="width: 110px">
-                <el-option v-for="p in priorityOptions" :key="p" :label="String(p)" :value="p" />
+                <el-option v-for="p in priorityOptions" :key="p.value" :label="p.label" :value="p.value" />
               </el-select>
               <span class="dlg-note ml8">（10最高）</span>
             </el-form-item>
@@ -313,7 +321,65 @@
           「删除」同样是真删：已经入库的行连库里的任务一起删，没入库的只去掉这一行。
         -->
         <el-divider content-position="left">方案任务</el-divider>
-        <el-table :data="dlg.items" size="small" border max-height="300" @selection-change="onItemSelectionChange">
+        <!--
+          批量修改专用的「统一设置」栏，位置照旧版 modifybellall.html：
+          它把三样东西摆在课时表头上 —— 作息音乐、播放时长，各自带一个「启用」勾选框，
+          勾了才会把这个统一值刷到所有勾中的课时上，没勾就保持各行原样。
+        -->
+        <div v-if="dlg.mode === 'batch'" class="batch-bar">
+          <el-checkbox v-model="batch.enableMedia">统一作息音乐</el-checkbox>
+          <el-select
+            v-model="batch.mediaId"
+            filterable
+            remote
+            reserve-keyword
+            size="small"
+            :disabled="!batch.enableMedia"
+            :remote-method="searchMedia"
+            :loading="mediaLoading"
+            placeholder="媒体名称搜索"
+            style="width: 220px"
+          >
+            <el-option v-for="m in medias" :key="m.id" :label="m.name" :value="m.id" />
+          </el-select>
+          <el-divider direction="vertical" />
+          <el-checkbox v-model="batch.enableLen">统一播放时长</el-checkbox>
+          <el-select v-model="batch.lenType" size="small" :disabled="!batch.enableLen" style="width: 74px">
+            <el-option label="时长" :value="1" />
+            <el-option label="次数" :value="2" />
+          </el-select>
+          <el-time-picker
+            v-if="batch.lenType === 1"
+            v-model="batch.lenHms"
+            value-format="HH:mm:ss"
+            size="small"
+            :disabled="!batch.enableLen"
+            placeholder="时:分:秒"
+            style="width: 116px"
+          />
+          <template v-else>
+            <!-- el-input-number 改 disabled 后不会更新 aria-disabled，用 key 强制重建，免得读屏软件读成禁用 -->
+            <el-input-number
+              :key="`len-${batch.enableLen}`"
+              v-model="batch.lenTimes"
+              :min="0"
+              :max="99"
+              :disabled="!batch.enableLen"
+              size="small"
+              :controls="false"
+              style="width: 70px"
+            />
+            <span class="dlg-note">次</span>
+          </template>
+        </div>
+        <el-table
+          ref="itemTableRef"
+          :data="dlg.items"
+          size="small"
+          border
+          max-height="300"
+          @selection-change="onItemSelectionChange"
+        >
           <el-table-column type="selection" width="40" align="center" />
           <el-table-column type="index" label="序号" width="46" align="center" />
           <el-table-column min-width="120">
@@ -347,7 +413,11 @@
           </el-table-column>
           <el-table-column label="作息音乐" min-width="134">
             <template #default="{ row }">
+              <span v-if="dlg.mode === 'batch'" :class="{ muted: !batchMediaName(row) }">{{
+                batchMediaName(row) || "未设置"
+              }}</span>
               <el-select
+                v-else
                 v-model="row.mediaIds"
                 multiple
                 filterable
@@ -368,7 +438,8 @@
           <!-- 旧版「播放时长」是个弹层：选时长就是 时/分/秒 三个下拉，选次数是 00~99 -->
           <el-table-column label="播放时长" width="204">
             <template #default="{ row }">
-              <div class="len-cell">
+              <span v-if="dlg.mode === 'batch'">{{ batchLenText(row) }}</span>
+              <div v-else class="len-cell">
                 <el-select v-model="row.timelengthtype" size="small" style="width: 74px" @change="onLenTypeChange(row)">
                   <el-option label="时长" :value="1" />
                   <el-option label="次数" :value="2" />
@@ -401,14 +472,17 @@
               <el-button link type="primary" :loading="row.busy" @click="saveOneItem($index)">
                 {{ row.taskid ? "修改" : "添加" }}
               </el-button>
-              <el-button link type="primary" @click="copyItemRow($index)">复制</el-button>
+              <el-button v-if="dlg.mode !== 'batch'" link type="primary" @click="copyItemRow($index)">复制</el-button>
               <el-button link type="danger" @click="removeItemAt($index)">删除</el-button>
             </template>
           </el-table-column>
           <template #empty><span class="dlg-note">还没有课时，点「添加任务」加一条</span></template>
         </el-table>
         <div v-if="itemsError" class="cell-err mt6">{{ itemsError }}</div>
-        <el-divider content-position="left">终端列表</el-divider>
+        <el-divider content-position="left">
+          终端列表
+          <el-checkbox v-if="dlg.mode === 'batch'" v-model="batch.enableTerminal" class="ml8">统一终端列表</el-checkbox>
+        </el-divider>
         <el-form-item label-width="0" prop="terminals">
           <TerminalTree
             v-model="selectedTerminalIds"
@@ -422,8 +496,12 @@
       </el-form>
 
       <template #footer>
-        <el-button @click="dlg.visible = false">取消</el-button>
-        <el-button type="primary" :loading="dlg.saving" @click="submitPlan">确定</el-button>
+        <template v-if="dlg.mode === 'batch'">
+          <el-button type="primary" :loading="dlg.saving" @click="submitBatch">修改</el-button>
+          <el-button @click="selectAllItems">全选</el-button>
+          <el-button @click="clearItemSelection">取消</el-button>
+        </template>
+        <el-button @click="closeDialog">返回</el-button>
       </template>
     </el-dialog>
 
@@ -547,7 +625,7 @@
 <script setup lang="ts" name="bellPlan">
 import { computed, nextTick, reactive, ref } from "vue";
 import { ElMessage, ElMessageBox } from "element-plus";
-import type { FormInstance, FormRules } from "element-plus";
+import type { ElTable, FormInstance, FormRules } from "element-plus";
 import { CirclePlus, Delete, EditPen, View, WarningFilled } from "@element-plus/icons-vue";
 import ProTable from "@/components/ProTable/index.vue";
 import TerminalTree from "@/components/TerminalTree/index.vue";
@@ -680,7 +758,15 @@ const runMode = ref(1);
 const priorityOptions = computed(() => {
   const lo = dlg.priorityMin ?? 0;
   const hi = dlg.priorityMax ?? 99;
-  return Array.from({ length: Math.max(0, hi - lo + 1) }, (_, i) => lo + i);
+  const list = Array.from({ length: Math.max(0, hi - lo + 1) }, (_, i) => ({ value: lo + i, label: String(lo + i) }));
+  // 别人建的方案可能带着一个当前用户选不到的级别，列出来标明白，
+  // 否则下拉框只显示一个数字，看不出它已经超出范围（后端也会拦下）
+  const cur = dlg.form.playback.priority;
+  if (!list.some(o => o.value === cur)) {
+    list.push({ value: cur, label: `${cur}（超出你的可选范围 ${lo}~${hi}）` });
+    list.sort((a, b) => a.value - b.value);
+  }
+  return list;
 });
 
 const onRunModeChange = (v: number) => {
@@ -728,6 +814,8 @@ const onLenTypeChange = (row: ItemRow) => {
 const dlg = reactive({
   visible: false,
   saving: false,
+  /** create = 添加方案、edit = 修改方案、batch = 批量修改（旧版三个页面） */
+  mode: "create" as "create" | "edit" | "batch",
   isEdit: false,
   title: "",
   originalName: "",
@@ -1089,6 +1177,7 @@ const openCreate = async () => {
   Object.assign(dlg, {
     visible: true,
     saving: false,
+    mode: "create",
     isEdit: false,
     title: "添加方案",
     originalName: "",
@@ -1104,17 +1193,19 @@ const openCreate = async () => {
   weekdays.value = [0, 1, 2, 3, 4, 5, 6];
   runMode.value = 1; // 默认「每天」，与旧版下拉的第一项一致
   selectedTerminalIds.value = [];
+  markHeaderClean();
   await resetPlanErrors();
   await Promise.all([searchTerminals(""), searchMedia("")]);
 };
 
-const openEdit = async (row: BellPlan) => {
+const openEdit = async (row: BellPlan, mode: "edit" | "batch" = "edit") => {
   const { data } = await getBellPlanApi(row.planName);
   Object.assign(dlg, {
     visible: true,
     saving: false,
+    mode,
     isEdit: true,
-    title: `修改方案：${data.planName}`,
+    title: `${mode === "batch" ? "批量修改" : "修改方案"}：${data.planName}`,
     originalName: data.planName,
     // 旧版 modifybell.html 的「确定」是连终端一起写回去的
     applyTerminals: true,
@@ -1148,8 +1239,23 @@ const openEdit = async (row: BellPlan) => {
   data.terminals.forEach(t => (terminalGroupOf[t.terminalId] = t.groupId));
   // 已删除的终端不回填，否则保存时会被存在性校验挡下
   selectedTerminalIds.value = data.terminals.filter(t => !t.deleted).map(t => t.terminalId);
+  markHeaderClean();
   await resetPlanErrors();
   await searchTerminals("");
+};
+
+/** 批量修改：和修改方案同一个对话框，只是多了「统一设置」那一栏（旧版 bellmodifyall.php） */
+const openBatch = async (row: Record<string, any>) => {
+  Object.assign(batch, {
+    enableMedia: false,
+    mediaId: undefined,
+    enableLen: false,
+    lenType: 2,
+    lenTimes: 1,
+    lenHms: "00:00:30",
+    enableTerminal: false
+  });
+  await openEdit(row as BellPlan, "batch");
 };
 
 /** 方案头里的排期与终端清单，行内保存和整体提交共用 */
@@ -1165,21 +1271,45 @@ const terminalsForm = () =>
     area: "11111111"
   }));
 
-/**
- * 「确定」：把还没入库的课时补进去，再落方案级属性。
- *
- * 旧版 checkform() 会跳过已经用行内「添加」存过的行，只提交剩下的，这里同理。
- * 方案还不存在时才走一次性创建；已经存在（修改方案，或新建时行内已经存过）
- * 就先补课时、再用页面上的方案头统一刷一遍，免得页头改了却没生效。
- */
-const submitPlan = async () => {
-  // 两边都跑一遍再判断，好让所有没填的 * 项一次性全标红，而不是修一个冒一个
+/* ----- 方案头的「脏」判断 -----
+   旧版的添加/修改页底部没有提交按钮（那段 HTML 是注释掉的），方案头是跟着
+   每次行内「添加/修改」一起送出去的。这里照做：行内保存前先把改过的方案头
+   落一次；离开时如果还有没落的改动，明确问一句，而不是像旧版那样默默丢掉。 */
+const headerSnapshot = ref("");
+const headerFingerprint = () =>
+  JSON.stringify({
+    name: dlg.form.planName.trim(),
+    playback: dlg.form.playback,
+    schedule: scheduleForm(),
+    terminals: [...selectedTerminalIds.value].sort((a, b) => a - b)
+  });
+const markHeaderClean = () => (headerSnapshot.value = headerFingerprint());
+const headerDirty = computed(() => !!currentPlanName.value && headerFingerprint() !== headerSnapshot.value);
+
+/** 把方案头写回库（方案级：整组条目一起改，含改名） */
+const flushHeader = async () => {
+  if (!currentPlanName.value || !headerDirty.value) return null;
+  const res = await updateBellPlanApi({
+    planName: currentPlanName.value,
+    newPlanName: dlg.form.planName.trim(),
+    schedule: scheduleForm(),
+    playback: dlg.form.playback,
+    terminals: terminalsForm(),
+    applyTerminals: dlg.mode === "batch" ? batch.enableTerminal : true
+  });
+  if (res.data.renamed) {
+    if (dlg.mode === "create") dlg.savedPlanName = res.data.planName;
+    else dlg.originalName = res.data.planName;
+  }
+  markHeaderClean();
+  return res.data;
+};
+
+/** 把还没入库的课时一次性补进去（原来的「确定」按钮做的事） */
+const saveAllPending = async () => {
   const formOk = await validateHeader();
   const itemsOk = validateItems();
-  if (!formOk || !itemsOk) return;
-
-  const schedule = scheduleForm();
-  const terminals = terminalsForm();
+  if (!formOk || !itemsOk) return false;
   const pending = dlg.items.filter(it => !it.taskid);
 
   dlg.saving = true;
@@ -1190,32 +1320,144 @@ const submitPlan = async () => {
         it.taskid = res.data.taskIds?.[0] ?? 0;
         (res.data.warnings ?? []).forEach(w => ElMessage.warning(w));
       }
-      const res = await updateBellPlanApi({
-        planName: currentPlanName.value,
-        newPlanName: dlg.form.planName.trim(),
-        schedule,
-        playback: dlg.form.playback,
-        terminals,
-        applyTerminals: dlg.applyTerminals
-      });
+      const upd = await flushHeader();
       const parts: string[] = [];
       if (pending.length) parts.push(`新增 ${pending.length} 个课时`);
-      if (res.data.affectedRows) parts.push(`更新 ${res.data.affectedRows} 行`);
-      if (res.data.renamed) parts.push("方案已改名");
+      if (upd?.affectedRows) parts.push(`更新 ${upd.affectedRows} 行`);
+      if (upd?.renamed) parts.push("方案已改名");
       ElMessage.success(parts.length ? `已${parts.join("，")}` : "方案已保存");
     } else {
       const res = await createBellPlanApi({
         planName: dlg.form.planName.trim(),
-        schedule,
+        schedule: scheduleForm(),
         playback: dlg.form.playback,
-        terminals,
+        terminals: terminalsForm(),
         items: dlg.items.map(itemPayload)
       });
       dlg.items.forEach((it, i) => (it.taskid = res.data.taskIds?.[i] ?? 0));
       dlg.savedPlanName = res.data.planName;
+      markHeaderClean();
       ElMessage.success(`已创建 ${res.data.createdItems} 个条目`);
       (res.data.warnings ?? []).forEach(w => ElMessage.warning(w));
     }
+    refresh();
+    return true;
+  } finally {
+    dlg.saving = false;
+  }
+};
+
+/** 有没有填过东西 —— 用来判断「什么都没写」时可以直接关掉 */
+const hasAnyInput = () => !!dlg.form.planName.trim() || dlg.items.some(it => it.taskname.trim());
+
+/**
+ * 「返回」。旧版这两个页面没有提交按钮，离开就是离开；这里多问一句，
+ * 免得刚填的东西无声无息地没了。
+ */
+const closeDialog = async () => {
+  const pending = dlg.items.filter(it => !it.taskid).length;
+  const dirty = headerDirty.value;
+  if (currentPlanName.value && (dirty || pending)) {
+    const what = [dirty ? "方案属性有改动" : "", pending ? `${pending} 行课时还没添加` : ""].filter(Boolean).join("，");
+    try {
+      await ElMessageBox.confirm(`${what}，返回后不会保存。`, "还有没保存的改动", {
+        confirmButtonText: "保存并返回",
+        cancelButtonText: "直接返回",
+        distinguishCancelAndClose: true,
+        type: "warning"
+      });
+    } catch (e) {
+      // 点右上角的 × 表示「我再想想」，留在对话框里
+      if (e === "close") return;
+      dlg.visible = false;
+      return;
+    }
+    if (!(await saveAllPending())) return;
+  } else if (!currentPlanName.value && hasAnyInput()) {
+    try {
+      await ElMessageBox.confirm("方案还没有任何课时入库，返回后填的内容会丢弃。", "还没有保存", {
+        confirmButtonText: "保存并返回",
+        cancelButtonText: "直接返回",
+        distinguishCancelAndClose: true,
+        type: "warning"
+      });
+    } catch (e) {
+      if (e === "close") return;
+      dlg.visible = false;
+      return;
+    }
+    if (!(await saveAllPending())) return;
+  }
+  dlg.visible = false;
+};
+
+/* ---------------- 批量修改（旧版 bellmodifyall.php） ---------------- */
+
+const itemTableRef = ref<InstanceType<typeof ElTable>>();
+const batch = reactive({
+  enableMedia: false,
+  mediaId: undefined as number | undefined,
+  enableLen: false,
+  lenType: 2,
+  lenTimes: 1,
+  lenHms: "00:00:30",
+  enableTerminal: false
+});
+
+/** 批量修改时课时表里那两格是只读的：启用了统一设置就显示统一值，否则显示这一行原来的值 */
+const batchMediaName = (row: ItemRow) => {
+  const ids = batch.enableMedia ? (batch.mediaId ? [batch.mediaId] : []) : row.mediaIds;
+  // 统一铃声勾了但还没选，就先显示成「未设置」
+  return ids.map(id => medias.value.find(m => m.id === id)?.name ?? `#${id}`).join("、");
+};
+const batchLenText = (row: ItemRow) => {
+  if (batch.enableLen) return batch.lenType === 1 ? batch.lenHms : `${batch.lenTimes} 次`;
+  return row.timelengthtype === 1 ? row.lengthhms : `${row.timelength} 次`;
+};
+
+const selectAllItems = () => dlg.items.forEach(r => itemTableRef.value?.toggleRowSelection(r, true));
+const clearItemSelection = () => itemTableRef.value?.clearSelection();
+
+/**
+ * 批量修改的「修改」：对**勾中的**课时统一应用
+ * —— 各行自己的名称/时间 + 勾了「统一」的铃声、播放时长，
+ * 外加方案头（旧版是逐行写同一份方案头，新版方案头本来就是方案级的，一次落到底）。
+ */
+const submitBatch = async () => {
+  const formOk = await validateHeader();
+  if (!formOk) return;
+  const picked = selectedItems.value.filter(r => r.taskid);
+  const fresh = selectedItems.value.filter(r => !r.taskid);
+  if (!picked.length && !fresh.length) return ElMessage.warning("请先勾选要修改的课时");
+  if (batch.enableMedia && !batch.mediaId) return ElMessage.warning("勾了「统一作息音乐」，请选择一个铃声");
+  let ok = true;
+  selectedItems.value.forEach(r => {
+    const i = dlg.items.indexOf(r);
+    if (i >= 0 && !validateItemAt(i)) ok = false;
+  });
+  if (!ok) return;
+
+  dlg.saving = true;
+  try {
+    for (const row of selectedItems.value) {
+      const payload = itemPayload(row);
+      if (batch.enableMedia) payload.media = [{ mediaId: batch.mediaId!, sort: 0 }];
+      if (batch.enableLen) {
+        payload.timelengthtype = batch.lenType;
+        payload.timelength = batch.lenType === 1 ? hmsToSec(batch.lenHms) : batch.lenTimes;
+      }
+      if (row.taskid) {
+        await updateBellItemApi(currentPlanName.value, row.taskid, payload);
+      } else {
+        const res = await addBellItemApi(currentPlanName.value, payload);
+        row.taskid = res.data.taskIds?.[0] ?? 0;
+      }
+    }
+    const upd = await flushHeader();
+    const parts = [`已修改 ${picked.length} 个课时`];
+    if (fresh.length) parts.push(`新增 ${fresh.length} 个`);
+    if (upd?.renamed) parts.push("方案已改名");
+    ElMessage.success(parts.join("，"));
     dlg.visible = false;
     refresh();
   } finally {
@@ -1475,6 +1717,16 @@ const confirmDelete = async () => {
   display: flex;
   gap: 6px;
   align-items: center;
+}
+.batch-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  padding: 8px 10px;
+  margin-bottom: 8px;
+  background: var(--el-fill-color-lighter);
+  border-radius: 4px;
 }
 
 /* 旧版 checkform() 用红色 * 和红字提示必填项，这里照搬 */
