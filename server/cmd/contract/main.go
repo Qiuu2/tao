@@ -70,20 +70,26 @@ func main() {
 	check("C-07 priority 恒写 0（该列未使用）", pri == 0, pri, "0")
 	check("C-08 userid 为真实上传者", uid > 0, uid, ">0")
 
-	// C-06 的正确检查方式
+	// C-06 拆成两半查
 	//
-	// 契约要求 Web 侧「上传时写 0」，真实值由后台 C 服务扫描后回填。
-	// 因此事后核对时这几列**应该已经是非 0** —— 那恰恰证明 UDP 通知联动生效了。
-	// 如果一直是 0，反而说明后台没收到通知（或没在跑），是需要排查的问题。
-	scanned := tl > 0 || sm > 0 || br > 0
+	// channel/sample/bitrate 由 Web 在上传时按转码产物的实测值写入 ——
+	// 它们不是估计值，是我们命令 ffmpeg 产出的固定格式（128kbps 立体声，
+	// 提示音目录 16000Hz、其余 44100Hz），上传完就该是对的。
+	//
+	// timelength 仍写 0，由后台 C 服务扫描回填 —— 播放时长要跟后台一套算法，
+	// 自己算会对不上。所以事后核对时它**应该已经变成非 0**，那正说明
+	// UDP 通知联动生效了；一直是 0 反而说明后台没收到通知（或没在跑）。
 	fmt.Println()
-	if scanned {
-		fmt.Printf("  ✓ %-36s timelength=%d channel=%d sample=%d bitrate=%d\n",
-			"C-06 后台已回填媒体元数据", tl, ch, sm, br)
+	check("C-06 channel 上传时写实测值", ch == 2, ch, "2")
+	check("C-06 sample 上传时写实测值", sm == 44100 || sm == 16000, sm, "44100 或 16000")
+	check("C-06 bitrate 上传时写实测值", br == 128000, br, "128000")
+
+	if tl > 0 {
+		fmt.Printf("  ✓ %-36s timelength=%d\n", "C-06 后台已回填播放时长", tl)
 		fmt.Printf("      └─ 说明 UDP 通知已送达后台 C 服务并触发扫描，联动链路正常\n")
 	} else {
 		pass = false
-		fmt.Printf("  ⚠ %-36s 四列仍全为 0\n", "C-06 后台尚未回填")
+		fmt.Printf("  ⚠ %-36s timelength 仍为 0\n", "C-06 后台尚未回填播放时长")
 		fmt.Printf("      └─ 可能刚上传（稍候重试），也可能是 UDP 通知未送达 / 后台服务未运行\n")
 	}
 

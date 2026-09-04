@@ -78,8 +78,8 @@ func NewUploader(db *sql.DB, mediaRoot, ffmpegPath string, maxUploadMB int64) *U
 //	C-03 media.size 单位是 KB（字节数 ÷ 1024）
 //	C-04 media.typeid 上传后固定写 'mp3'
 //	C-05 media.filename 固定格式 /backup/mediadata/<数字>.mp3
-//	C-06 timelength/channel/sample/bitrate 一律写 0，由后台 C 服务扫描回填
-//	     —— 绝不能自作聪明用 ffprobe 填真值，那会与后台算法不一致
+//	C-06 timelength 写 0，由后台 C 服务扫描回填 —— 播放时长要与后台算法一致。
+//	     channel/sample/bitrate 写**转码产物实测出来的值**（见下）
 //	C-07 media.priority 恒写 0（该列注释标注"未使用"）
 //	C-08 media.userid 写真实上传者，否则普通用户在旧 Web 看不到自己上传的媒体
 func (u *Uploader) Upload(
@@ -194,6 +194,20 @@ func (u *Uploader) Upload(
 	}
 	res.TargetFormat = outInfo.String()
 
+	// 这三列写实测值，不写 0。
+	//
+	// 手册 §7.2 的 C-06 原文是「timelength/channel/sample/bitrate 上传时写 0，
+	// 不得自行用 ffprobe 填值」，理由是「与后台算法不一致 → 播放时长判定错乱」。
+	// 那条理由只对 timelength 成立：时长要跟后台一套算法，差一秒就对不上，
+	// 所以 timelength 仍然写 0。
+	//
+	// channel/sample/bitrate 是另一回事 —— 它们不是「测出来的估计值」，而是
+	// 我们**命令 ffmpeg 产出**的固定格式，上面刚刚认过头核对过。旧版
+	// upload.php 本来也在上传时就写这三列，现网数据也确实是
+	// channel=2 / sample=44100 / bitrate=128000。写 0 反而是在等后台补一件
+	// 已经确定的事，中间那段时间列表里的码率显示是空的。
+	//
+	// ⚠ 注意单位：bitrate 列存的是 bps（现网 128000），不是 kbps。
 	sizeKB := st.Size() / 1024
 	res.SizeKB = sizeKB
 
@@ -220,8 +234,9 @@ func (u *Uploader) Upload(
 		r, insErr := u.db.ExecContext(ctx, `
 			INSERT INTO media (name, size, typeid, priority, filename, folderid,
 			                   timelength, channel, sample, bitrate, userid)
-			VALUES (?, ?, 'mp3', 0, ?, ?, 0, 0, 0, 0, ?)`,
-			baseName, sizeKB, targetRel, folderID, user.ID)
+			VALUES (?, ?, 'mp3', 0, ?, ?, 0, ?, ?, ?, ?)`,
+			baseName, sizeKB, targetRel, folderID,
+			outInfo.Channels, outInfo.SampleRate, outInfo.BitrateKbps*1000, user.ID)
 		if insErr != nil {
 			_ = os.Remove(targetAbs)
 			res.Message = "写入媒体记录失败: " + insErr.Error()
@@ -238,10 +253,12 @@ func (u *Uploader) Upload(
 
 	default:
 		// 同名覆盖：保持原 id 与 userid 不变，只替换文件与需要重算的字段。
-		// timelength/sample/bitrate 重置为 0，等后台重新扫描（契约 C-06）。
+		// timelength 归零等后台重新扫描；channel/sample/bitrate 按新产物实测值写。
 		_, upErr := u.db.ExecContext(ctx, `
-			UPDATE media SET size = ?, filename = ?, timelength = 0, sample = 0, bitrate = 0
-			WHERE id = ?`, sizeKB, targetRel, existingID)
+			UPDATE media SET size = ?, filename = ?, timelength = 0,
+			                 channel = ?, sample = ?, bitrate = ?
+			WHERE id = ?`, sizeKB, targetRel,
+			outInfo.Channels, outInfo.SampleRate, outInfo.BitrateKbps*1000, existingID)
 		if upErr != nil {
 			_ = os.Remove(targetAbs)
 			res.Message = "更新媒体记录失败: " + upErr.Error()

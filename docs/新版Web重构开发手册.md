@@ -2235,7 +2235,8 @@ terminal.id ──┬──> terminalofgroup.terminalid ──> serverplaystream
 | C-03 | `media.size` 单位 **KB**（字节 ÷ 1024） | 旧列表大小显示错乱 |
 | C-04 | `media.typeid` 上传后固定写 `'mp3'` | 后台解码器判定错误 |
 | C-05 | `media.filename` 固定 `/backup/mediadata/<数字>.mp3` | 后台定位不到物理文件 |
-| C-06 | **`media.timelength`/`channel`/`sample`/`bitrate` 上传时写 0**，等后台回填。**不得自行用 ffprobe 填值** | 与后台算法不一致 → 播放时长判定错乱 |
+| C-06 | **`media.timelength` 上传时写 0**，等后台回填。**不得自行用 ffprobe 填时长** | 与后台算法不一致 → 播放时长判定错乱 |
+| C-06b | `media.channel`/`sample`/`bitrate` 上传时按**转码产物实测值**写入（`2` / `44100`，提示音目录 `16000` / `128000`，单位 bps） | 写 0 会让列表里的码率一直空着，等后台补一件已经确定的事 |
 | C-07 | `media.priority` 恒写 `0`（该列"未使用"） | 语义歧义 |
 | C-08 | `media.userid` 写真实上传者 `book_admin.id` | 普通用户在旧 Web 看不到自己上传的媒体 |
 | C-09 | `filefolder.userid` 写真实创建者 **用户 ID（不是用户组 ID）** | 归属判定错乱 |
