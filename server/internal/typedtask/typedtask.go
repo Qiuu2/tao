@@ -204,6 +204,15 @@ type Item struct {
 	SourceName string `json:"sourceName,omitempty"`
 	// 文字语音 / LED：要播的文本
 	Text string `json:"text,omitempty"`
+
+	// 间隔播放（文字语音 / led播放 的「播放模式」）。旧版列表里有「播放模式」一列，
+	// 判据就是 intplaylengthtype：0 = 普通模式，非 0 = 间隔时间。
+	IntervalS    int    `json:"interval_s"`
+	IntPlayLen   int    `json:"intplaylength"`
+	IntPlayLenTy int    `json:"intplaylengthtype"`
+	PlayModeText string `json:"playModeText,omitempty"`
+	// TypeText 是旧版文字语音列表里的「任务类型」列（tasktype 15/17/19 三选一）
+	TypeText string `json:"typeText,omitempty"`
 }
 
 type ListResult struct {
@@ -294,7 +303,9 @@ func (s *Service) List(ctx context.Context, u *auth.User, k Kind, q Query) (*Lis
 		       (SELECT COUNT(*) FROM terminaloftask ot WHERE ot.taskid = t.taskid),
 		       COALESCE(t.priority,0), COALESCE(t.bandrate,0),
 		       COALESCE(t.samplerate,0), COALESCE(t.playfileid,0),
-		       COALESCE(t.prepower,0), COALESCE(t.datasendmodel,0)
+		       COALESCE(t.prepower,0), COALESCE(t.datasendmodel,0),
+		       COALESCE(t.interval_s,0), COALESCE(t.intplaylength,0),
+		       COALESCE(t.intplaylengthtype,0)
 		FROM task t
 		LEFT JOIN book_admin b ON b.id = t.task_user_id`+where+
 		" ORDER BY "+order+" LIMIT ? OFFSET ?", listArgs...)
@@ -314,7 +325,8 @@ func (s *Service) List(ctx context.Context, u *auth.User, k Kind, q Query) (*Lis
 			&it.Cmd, &it.CmdArgs, &it.ParentID,
 			&it.UserID, &it.UserName, &it.TerminalCount,
 			&it.Priority, &it.BandRate, &it.SampleRate, &it.PlayFileID,
-			&it.Prepower, &it.DataSendModel); err != nil {
+			&it.Prepower, &it.DataSendModel,
+			&it.IntervalS, &it.IntPlayLen, &it.IntPlayLenTy); err != nil {
 			return nil, fmt.Errorf("扫描%s任务行: %w", sp.Title, err)
 		}
 		it.StateText = stateText(it.State)
@@ -322,6 +334,8 @@ func (s *Service) List(ctx context.Context, u *auth.User, k Kind, q Query) (*Lis
 		it.CycleText = cycleText(it.ExeModel)
 		it.LengthText = lengthText(it.TimeLengthType, it.TimeLength)
 		it.CanModify = u.IsAdmin || it.UserID == u.ID
+		it.PlayModeText = playModeText(it.IntPlayLenTy)
+		it.TypeText = taskTypeText(it.TaskType)
 		if k == KindAmplifier {
 			it.SwitchText = switchText(it.Cmd)
 		}
@@ -452,6 +466,39 @@ func switchText(cmd int64) string {
 	return "打开"
 }
 
+// playModeText 是旧版列表里的「播放模式」一列。
+// 判据是 intplaylengthtype：普通模式落库是 0，间隔模式是 1（按时长）或 2（按次数）。
+func playModeText(ty int) string {
+	if ty == 0 {
+		return "普通模式"
+	}
+	return "间隔时间"
+}
+
+// taskTypeText 是旧版文字语音列表里的「任务类型」一列。
+// tasktype 的中文名取自旧版 addmanager.html 里那串 if/elseif。
+func taskTypeText(t int) string {
+	switch t {
+	case 1:
+		return "作息方案"
+	case 2:
+		return "文件广播"
+	case 3:
+		return "采播管理"
+	case 4:
+		return "电话采播"
+	case 5:
+		return "终端功放"
+	case 10:
+		return "网络电台"
+	case 15, 17, 19:
+		return "文字语音"
+	case 24, 30:
+		return "led播放"
+	}
+	return fmt.Sprintf("类型 %d", t)
+}
+
 // exemodel 是周日打头的 7 位掩码（第 1 位 = 周日），标签顺序要跟它对齐。
 var weekNames = [7]string{"日", "一", "二", "三", "四", "五", "六"}
 
@@ -520,13 +567,19 @@ type ControlResult struct {
 type Action string
 
 const (
-	ActionStart Action = "start"
-	ActionStop  Action = "stop"
+	ActionStart  Action = "start"
+	ActionStop   Action = "stop"
+	ActionPause  Action = "pause"
+	ActionResume Action = "resume"
 )
 
 func ParseAction(s string) (Action, bool) {
 	a := Action(s)
-	return a, a == ActionStart || a == ActionStop
+	switch a {
+	case ActionStart, ActionStop, ActionPause, ActionResume:
+		return a, true
+	}
+	return a, false
 }
 
 type controlRow struct {
@@ -617,23 +670,33 @@ func (s *Service) Control(ctx context.Context, u *auth.User, n *notify.Notifier,
 
 	// state：3 = 立即执行，2 = 停止。与 task 包 applyState 同一套取值，
 	// 也与旧版 `UPDATE task SET state='3'` / `state='2'` 一致。
-	state := 3
-	if action == ActionStop {
-		state = 2
-	}
-	dph, dargs := placeholders(doable)
-	if _, err := s.db.ExecContext(ctx,
-		`UPDATE task SET state = ? WHERE taskid IN (`+dph+`)`,
-		append([]interface{}{state}, dargs...)...); err != nil {
-		return nil, fmt.Errorf("更新任务状态: %w", err)
+	//
+	// ⚠ 暂停与恢复**不落库** —— 与 task 包和旧版一致，这两个动作纯粹是发给
+	// 后台服务的实时指令，task.state 由后台自己维护。
+	if action == ActionStart || action == ActionStop {
+		state := 3
+		if action == ActionStop {
+			state = 2
+		}
+		dph, dargs := placeholders(doable)
+		if _, err := s.db.ExecContext(ctx,
+			`UPDATE task SET state = ? WHERE taskid IN (`+dph+`)`,
+			append([]interface{}{state}, dargs...)...); err != nil {
+			return nil, fmt.Errorf("更新任务状态: %w", err)
+		}
 	}
 	out.Succeeded = doable
 
 	// 通知必须在数据库改完之后发
-	if action == ActionStart {
+	switch action {
+	case ActionStart:
 		n.TaskStarted(ctx, doable)
-	} else {
+	case ActionStop:
 		n.TaskChanged(ctx, notify.TaskStop, doable)
+	case ActionPause:
+		n.TaskChanged(ctx, notify.TaskPause, doable)
+	case ActionResume:
+		n.TaskChanged(ctx, notify.TaskResume, doable)
 	}
 	out.Notified = true
 	return out, nil

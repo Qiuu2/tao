@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"htweb/internal/auth"
+	"htweb/internal/notify"
 	"htweb/internal/store"
 )
 
@@ -101,9 +102,15 @@ func validateLED(in *LEDInput) error {
 	if in.Text == "" {
 		return fmt.Errorf("LED 显示文字不能为空")
 	}
-	if len(in.Text) > ledTextLimit {
-		return fmt.Errorf("LED 显示文字过长：按 UTF-8 计 %d 字节，上限 %d 字节（约 341 个汉字）",
-			len(in.Text), ledTextLimit)
+	// 整段的上限按切分后的段数算：每段 ≤ ledsentence.text 的 1024 字节。
+	if len(in.Text) > textLimit {
+		return fmt.Errorf("LED 显示文字过长：按 UTF-8 计 %d 字节，上限 %d 字节", len(in.Text), textLimit)
+	}
+	for i, c := range splitTTSText(normalizeTTSText(in.Text)) {
+		if len(c) > ledTextLimit {
+			return fmt.Errorf("LED 显示文字第 %d 段过长：按 UTF-8 计 %d 字节，上限 %d 字节（约 341 个汉字）",
+				i+1, len(c), ledTextLimit)
+		}
 	}
 	if in.Speed < ledSpeedMin || in.Speed > ledSpeedMax {
 		return fmt.Errorf("滚动速度必须在 %d ~ %d 之间", ledSpeedMin, ledSpeedMax)
@@ -132,14 +139,37 @@ func (s *Service) taskLED(ctx context.Context, taskID int64) (*LEDDetail, error)
 	d := &LEDDetail{Devices: []LEDBind{}}
 	// ⚠ 关联键是 ledsentence.mediaid = mediaoftask.mediaid（两边都是 media.id），
 	//    不是 ledsentence.id。理由见文件头 N-20。
-	err := s.db.QueryRowContext(ctx, `
+	// 一段长文字在库里是多条 ledsentence（旧版 str_split_utf8 切的），
+	// 按 mediaseq 拼回来才是表单里那一段。speed / ledmode 全段一致，取第一条的。
+	srs, err := s.db.QueryContext(ctx, `
 		SELECT ls.id, COALESCE(ls.text,''), COALESCE(ls.speed,0), COALESCE(ls.ledmode,0)
 		FROM ledsentence ls
 		WHERE ls.mediaid IN (SELECT mediaid FROM mediaoftask WHERE taskid = ?)
-		ORDER BY ls.id LIMIT 1`, taskID).
-		Scan(&d.SentenceID, &d.Text, &d.Speed, &d.LedMode)
+		ORDER BY ls.mediaseq, ls.id`, taskID)
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return nil, fmt.Errorf("查询 LED 文本: %w", err)
+	}
+	if err == nil {
+		var parts []string
+		for srs.Next() {
+			var id int64
+			var text string
+			var speed, mode int
+			if err := srs.Scan(&id, &text, &speed, &mode); err != nil {
+				srs.Close()
+				return nil, err
+			}
+			if len(parts) == 0 {
+				d.SentenceID, d.Speed, d.LedMode = id, speed, mode
+			}
+			parts = append(parts, text)
+		}
+		cerr := srs.Err()
+		srs.Close()
+		if cerr != nil {
+			return nil, cerr
+		}
+		d.Text = strings.Join(parts, "")
 	}
 	d.ModeText = ledModeText(d.LedMode)
 
@@ -228,14 +258,18 @@ func writeLED(ctx context.Context, tx *sql.Tx, taskID int64, in Input) error {
 	}
 	if _, err := tx.ExecContext(ctx,
 		`INSERT INTO mediaoftask (mediaid, taskid, sort) VALUES (?,?,?)`,
-		mediaID, taskID, 1); err != nil {
+		mediaID, taskID, 0); err != nil {
 		return fmt.Errorf("绑定 LED 媒体: %w", err)
 	}
-	// mediaseq 写 0，与现网四条既有数据一致
-	if _, err := tx.ExecContext(ctx,
-		`INSERT INTO ledsentence (text, mediaid, speed, type, mediaseq, ledmode) VALUES (?,?,?,?,?,?)`,
-		led.Text, mediaID, led.Speed, ledSentenceType, 0, led.LedMode); err != nil {
-		return fmt.Errorf("写入 LED 文本: %w", err)
+	// 旧版 do.php 的 ledaddplaytask_msg 把 textarea 交给 str_split_utf8()，
+	// 切成若干条 ledsentence，mediaseq 从 0 递增（短文字只会切出一条，
+	// 与现网四条既有数据一致）。这里复用文字语音那套同源的切法。
+	for i, c := range splitTTSText(normalizeTTSText(led.Text)) {
+		if _, err := tx.ExecContext(ctx,
+			`INSERT INTO ledsentence (text, mediaid, speed, type, mediaseq, ledmode) VALUES (?,?,?,?,?,?)`,
+			c, mediaID, led.Speed, ledSentenceType, i, led.LedMode); err != nil {
+			return fmt.Errorf("写入 LED 文本: %w", err)
+		}
 	}
 	for _, d := range led.Devices {
 		if _, err := tx.ExecContext(ctx,
@@ -479,4 +513,230 @@ func (s *Service) DeleteLEDDevices(ctx context.Context, ids []int64) (int, error
 		return 0, fmt.Errorf("提交事务: %w", err)
 	}
 	return int(n), nil
+}
+
+// ---------- LED 任务分组的增删改与复制 ----------
+//
+// 对应旧版 ledtaskmanager 工具栏上的「创建目录 / 修改目录 / 删除目录 / 复制目录」。
+// 落库语句照抄 do.php：
+//
+//	创建  INSERT INTO ledtaskfree(name,parentid,userid) VALUES (…)，同一父目录下重名要拦
+//	修改  UPDATE ledtaskfree SET name=?,userid=? WHERE id=?，与其它目录重名要拦
+//	删除  先删目录（含子目录）下的任务，再 DELETE FROM ledtaskfree WHERE id=? OR parentid=?
+//	复制  把源目录里的任务整条复制到目标目录（旧版 set_led_copy.php）
+
+const ledFolderNameLimit = 60
+
+func (s *Service) checkFolderOwner(ctx context.Context, u *auth.User, id int64) error {
+	var owner int64
+	err := s.db.QueryRowContext(ctx,
+		`SELECT COALESCE(userid,0) FROM ledtaskfree WHERE id = ?`, id).Scan(&owner)
+	if errors.Is(err, sql.ErrNoRows) {
+		return fmt.Errorf("LED 任务分组不存在")
+	}
+	if err != nil {
+		return fmt.Errorf("查询 LED 任务分组: %w", err)
+	}
+	if !u.IsAdmin && owner != u.ID {
+		return ErrNoPermission
+	}
+	return nil
+}
+
+func normFolderName(name string) (string, error) {
+	name = strings.TrimSpace(name)
+	if name == "" {
+		return "", fmt.Errorf("目录名称不能为空")
+	}
+	if len([]rune(name)) > ledFolderNameLimit {
+		return "", fmt.Errorf("目录名称最多 %d 个字", ledFolderNameLimit)
+	}
+	return name, nil
+}
+
+// CreateLEDFolder 建一个 LED 任务分组。parentID = 0 是顶级目录。
+func (s *Service) CreateLEDFolder(ctx context.Context, u *auth.User, name string, parentID int64) (int64, error) {
+	name, err := normFolderName(name)
+	if err != nil {
+		return 0, err
+	}
+	if parentID > 0 {
+		if err := s.checkFolderOwner(ctx, u, parentID); err != nil {
+			return 0, err
+		}
+	}
+	// 旧版的重名判据：同一父目录下不能同名
+	var n int
+	if err := s.db.QueryRowContext(ctx,
+		`SELECT COUNT(*) FROM ledtaskfree WHERE name = ? AND COALESCE(parentid,0) = ?`,
+		name, parentID).Scan(&n); err != nil {
+		return 0, fmt.Errorf("目录重名校验: %w", err)
+	}
+	if n > 0 {
+		return 0, fmt.Errorf("同一目录下已有同名目录")
+	}
+	res, err := s.db.ExecContext(ctx,
+		`INSERT INTO ledtaskfree (name, parentid, userid) VALUES (?,?,?)`,
+		name, parentID, u.ID)
+	if err != nil {
+		return 0, fmt.Errorf("创建目录: %w", err)
+	}
+	return res.LastInsertId()
+}
+
+// RenameLEDFolder 改目录名。
+func (s *Service) RenameLEDFolder(ctx context.Context, u *auth.User, id int64, name string) error {
+	name, err := normFolderName(name)
+	if err != nil {
+		return err
+	}
+	if err := s.checkFolderOwner(ctx, u, id); err != nil {
+		return err
+	}
+	// 旧版这里的判据是「除自己以外不能有同名目录」，比创建时更严一档，照搬
+	var n int
+	if err := s.db.QueryRowContext(ctx,
+		`SELECT COUNT(*) FROM ledtaskfree WHERE id <> ? AND name = ?`, id, name).Scan(&n); err != nil {
+		return fmt.Errorf("目录重名校验: %w", err)
+	}
+	if n > 0 {
+		return fmt.Errorf("已有同名目录")
+	}
+	if _, err := s.db.ExecContext(ctx,
+		`UPDATE ledtaskfree SET name = ? WHERE id = ?`, name, id); err != nil {
+		return fmt.Errorf("修改目录: %w", err)
+	}
+	return nil
+}
+
+// LEDFolderTasks 列出一个目录（含其子目录）下的 LED 任务 id。
+func (s *Service) ledFolderTaskIDs(ctx context.Context, id int64) ([]int64, error) {
+	rs, err := s.db.QueryContext(ctx, `
+		SELECT t.taskid FROM task t
+		WHERE COALESCE(t.sec_task_id,0) = 0 AND t.tasktype IN (24,30)
+		  AND (t.parentid = ? OR t.parentid IN (SELECT id FROM ledtaskfree WHERE parentid = ?))`,
+		id, id)
+	if err != nil {
+		return nil, fmt.Errorf("查询目录下的任务: %w", err)
+	}
+	defer rs.Close()
+	out := []int64{}
+	for rs.Next() {
+		var v int64
+		if err := rs.Scan(&v); err != nil {
+			return nil, err
+		}
+		out = append(out, v)
+	}
+	return out, rs.Err()
+}
+
+// DeleteLEDFolder 删目录。旧版是「目录删除后目录中的任务一起被删除」，
+// 这里先把任务走一遍正规的 Delete（连带 media / ledsentence / ledoftask /
+// terminaloftask 一起清干净），再删目录本身及其子目录。
+func (s *Service) DeleteLEDFolder(ctx context.Context, u *auth.User, id int64) (*DeleteResult, error) {
+	if err := s.checkFolderOwner(ctx, u, id); err != nil {
+		return nil, err
+	}
+	ids, err := s.ledFolderTaskIDs(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	out := &DeleteResult{Deleted: []int64{}, Blocked: []Blocked{}}
+	if len(ids) > 0 {
+		out, err = s.Delete(ctx, u, KindLED, ids)
+		if err != nil {
+			return nil, err
+		}
+		if len(out.Blocked) > 0 {
+			return out, fmt.Errorf("目录里有 %d 条任务删不掉，目录未删除", len(out.Blocked))
+		}
+	}
+	if _, err := s.db.ExecContext(ctx,
+		`DELETE FROM ledtaskfree WHERE id = ? OR parentid = ?`, id, id); err != nil {
+		return nil, fmt.Errorf("删除目录: %w", err)
+	}
+	return out, nil
+}
+
+// CopyLEDFolder 把源目录里的 LED 任务整条复制到目标目录（旧版「复制目录」）。
+//
+// 复制的是任务本体 + 终端绑定 + LED 文字 + LED 屏绑定，
+// 任务名后面补「-副本」并在重名时加序号 —— 同类任务不允许重名（checkNameFree）。
+func (s *Service) CopyLEDFolder(ctx context.Context, u *auth.User, n *notify.Notifier, fromID, toID int64) (int, error) {
+	if fromID == toID {
+		return 0, fmt.Errorf("源目录与目标目录不能是同一个")
+	}
+	if err := s.checkFolderOwner(ctx, u, fromID); err != nil {
+		return 0, err
+	}
+	if err := s.checkFolderOwner(ctx, u, toID); err != nil {
+		return 0, err
+	}
+	ids, err := s.ledFolderTaskIDs(ctx, fromID)
+	if err != nil {
+		return 0, err
+	}
+	sp, _ := s.spec(KindLED)
+	copied := 0
+	for _, id := range ids {
+		d, err := s.Get(ctx, u, KindLED, id)
+		if err != nil {
+			// 复制过程中源任务被别人删了，跳过就好，不该让整批失败
+			if errors.Is(err, ErrNotFound) {
+				continue
+			}
+			return copied, err
+		}
+		name, err := s.freeCopyName(ctx, sp, d.TaskName)
+		if err != nil {
+			return copied, err
+		}
+		in := Input{
+			TaskName: name, StartDate: d.StartDate, EndDate: d.EndDate,
+			PlayTime: d.PlayTime, TimeLengthType: d.TimeLengthType, TimeLength: d.TimeLength,
+			ExeModel: d.ExeModel, Volume: d.Volume, ProjectState: d.ProjectState,
+			FolderID: toID, Prepower: d.Prepower, Priority: d.Priority,
+			DataSendModel: d.DataSendModel,
+			IntervalS:     d.IntervalS, IntPlayLen: d.IntPlayLen, IntPlayLenTy: d.IntPlayLenTy,
+		}
+		for _, t := range d.Terminals {
+			if t.Deleted {
+				continue
+			}
+			in.Terminals = append(in.Terminals, Terminal{TerminalID: t.TerminalID, Area: t.Area, GroupID: t.GroupID})
+		}
+		if d.LED != nil {
+			led := &LEDInput{Text: d.LED.Text, Speed: d.LED.Speed, LedMode: d.LED.LedMode}
+			for _, b := range d.LED.Devices {
+				if b.Deleted {
+					continue
+				}
+				led.Devices = append(led.Devices, LEDBind{TerminalID: b.TerminalID, DeviceID: b.DeviceID})
+			}
+			in.LED = led
+		}
+		if _, err := s.Create(ctx, u, n, KindLED, in); err != nil {
+			return copied, fmt.Errorf("复制任务「%s」: %w", d.TaskName, err)
+		}
+		copied++
+	}
+	return copied, nil
+}
+
+// freeCopyName 给复制出来的任务找一个不重名的名字：「原名-副本」，再冲突就加序号。
+func (s *Service) freeCopyName(ctx context.Context, sp spec, base string) (string, error) {
+	for i := 0; i < 100; i++ {
+		name := base + "-副本"
+		if i > 0 {
+			name = fmt.Sprintf("%s-副本%d", base, i+1)
+		}
+		if len(name) > 255 {
+			return "", fmt.Errorf("任务名「%s」加上「-副本」后超长，改短再复制", base)
+		}
+		if err := s.checkNameFree(ctx, sp, name, 0); err == nil {
+			return name, nil
+		}
+	}
+	return "", fmt.Errorf("任务名「%s」的副本太多了，先清理一下", base)
 }

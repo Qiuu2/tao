@@ -525,6 +525,9 @@ func (a *app) routes() http.Handler {
 	// 四个页面共用一套路由，类别放在路径的 {kind} 上
 	// （amplifier / collect / tts / led）。它们都是 task 表的视图，按 taskpriv。
 	mux.HandleFunc("GET /api/typed-tasks/terminals", req(a.handleTypedTerminals))
+	mux.HandleFunc("GET /api/typed-tasks/prompts", req(a.handleTypedPrompts))
+	mux.HandleFunc("GET /api/typed-tasks/priority-range", req(a.handleTypedPriorityRange))
+	mux.HandleFunc("GET /api/typed-tasks/{kind}/sources", req(a.handleTypedSources))
 	mux.HandleFunc("GET /api/typed-tasks/{kind}", req(a.handleTypedList))
 	mux.HandleFunc("GET /api/typed-tasks/{kind}/{id}", req(a.handleTypedGet))
 	mux.HandleFunc("POST /api/typed-tasks/{kind}", tsk(a.handleTypedCreate))
@@ -535,6 +538,10 @@ func (a *app) routes() http.Handler {
 
 	// LED 专属：任务分组与 LED 屏设备
 	mux.HandleFunc("GET /api/led/folders", req(a.handleLEDFolders))
+	mux.HandleFunc("POST /api/led/folders", tsk(a.handleLEDFolderCreate))
+	mux.HandleFunc("PUT /api/led/folders/{id}", tsk(a.handleLEDFolderRename))
+	mux.HandleFunc("DELETE /api/led/folders/{id}", tsk(a.handleLEDFolderDelete))
+	mux.HandleFunc("POST /api/led/folders:copy", tsk(a.handleLEDFolderCopy))
 	mux.HandleFunc("GET /api/led/devices", req(a.handleLEDDeviceList))
 	mux.HandleFunc("POST /api/led/devices", tsk(a.handleLEDDeviceCreate))
 	mux.HandleFunc("PUT /api/led/devices/{id}", tsk(a.handleLEDDeviceUpdate))

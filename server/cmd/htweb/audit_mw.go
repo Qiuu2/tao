@@ -83,9 +83,13 @@ var auditLabels = map[string]string{
 	"PUT /api/typed-tasks/{kind}/project-state":    "启用/停用方案",
 	"DELETE /api/typed-tasks/{kind}":               "删除任务",
 
-	"POST /api/led/devices":     "新建LED设备",
-	"PUT /api/led/devices/{id}": "修改LED设备",
-	"DELETE /api/led/devices":   "删除LED设备",
+	"POST /api/led/folders":        "新建LED目录",
+	"PUT /api/led/folders/{id}":    "修改LED目录",
+	"DELETE /api/led/folders/{id}": "删除LED目录",
+	"POST /api/led/folders:copy":   "复制LED目录",
+	"POST /api/led/devices":        "新建LED设备",
+	"PUT /api/led/devices/{id}":    "修改LED设备",
+	"DELETE /api/led/devices":      "删除LED设备",
 
 	"POST /api/enable-plans":     "新建启用计划",
 	"PUT /api/enable-plans/{id}": "修改启用计划",

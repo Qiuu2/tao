@@ -87,6 +87,40 @@ func (a *app) handleTypedTerminals(w http.ResponseWriter, r *http.Request) {
 	httpx.OK(w, list)
 }
 
+// handleTypedSources 是「采播终端 / tts终端」下拉的候选列表，按终端型号筛。
+func (a *app) handleTypedSources(w http.ResponseWriter, r *http.Request) {
+	k, ok := kindFromPath(w, r)
+	if !ok {
+		return
+	}
+	list, err := a.typed.SourceTerminals(r.Context(), k)
+	if err != nil {
+		a.failTyped(w, "查询采播终端", err)
+		return
+	}
+	httpx.OK(w, list)
+}
+
+// handleTypedPrompts 是文字语音的「提示音」下拉（旧版写死的 9 号媒体目录）。
+func (a *app) handleTypedPrompts(w http.ResponseWriter, r *http.Request) {
+	list, err := a.typed.PromptMedia(r.Context())
+	if err != nil {
+		a.failTyped(w, "查询提示音", err)
+		return
+	}
+	httpx.OK(w, list)
+}
+
+// handleTypedPriorityRange 是「任务级别」下拉的可选区间（由用户组级别决定）。
+func (a *app) handleTypedPriorityRange(w http.ResponseWriter, r *http.Request) {
+	lo, hi, err := a.typed.PriorityRange(r.Context(), auth.From(r.Context()))
+	if err != nil {
+		a.failTyped(w, "查询任务等级区间", err)
+		return
+	}
+	httpx.OK(w, map[string]interface{}{"priorityMin": lo, "priorityMax": hi})
+}
+
 // typedReq 是四种类别共用的请求体。用不到的字段留空即可。
 type typedReq struct {
 	TaskName       string `json:"taskName"`
@@ -109,10 +143,23 @@ type typedReq struct {
 	Switch           int   `json:"switch"`
 	Channel          int   `json:"channel"`
 	SourceTerminalID int64 `json:"sourceTerminalId"`
+	// 采播的「音频设置」：采样率 / 比特率
+	SampleRate int `json:"samplerate"`
+	BandRate   int `json:"bandrate"`
 
-	Terminals []typedtask.Terminal      `json:"terminals"`
-	Sentences []typedtask.SentenceInput `json:"sentences"`
-	LED       *typedtask.LEDInput       `json:"led"`
+	// 间隔播放（文字语音 / led播放 的「播放模式」）
+	IntervalS    int `json:"interval_s"`
+	IntPlayLen   int `json:"intplaylength"`
+	IntPlayLenTy int `json:"intplaylengthtype"`
+
+	// 文字语音：一个 textarea + 一组全局参数（旧版就是这么一套）
+	Text      string `json:"text"`
+	MusicMode int    `json:"musicmode"`
+	TTSSpeed  int    `json:"ttsSpeed"`
+	PromptID  int64  `json:"promptId"`
+
+	Terminals []typedtask.Terminal `json:"terminals"`
+	LED       *typedtask.LEDInput  `json:"led"`
 }
 
 func (t typedReq) toInput() typedtask.Input {
@@ -124,7 +171,10 @@ func (t typedReq) toInput() typedtask.Input {
 		FolderID: t.FolderID, Switch: t.Switch, Channel: t.Channel,
 		Prepower: t.Prepower, Priority: t.Priority, DataSendModel: t.DataSendModel,
 		SourceTerminalID: t.SourceTerminalID,
-		Terminals:        t.Terminals, Sentences: t.Sentences, LED: t.LED,
+		SampleRate:       t.SampleRate, BandRate: t.BandRate,
+		IntervalS: t.IntervalS, IntPlayLen: t.IntPlayLen, IntPlayLenTy: t.IntPlayLenTy,
+		Text: t.Text, MusicMode: t.MusicMode, TTSSpeed: t.TTSSpeed, PromptID: t.PromptID,
+		Terminals: t.Terminals, LED: t.LED,
 	}
 }
 
@@ -235,6 +285,71 @@ func (a *app) handleLEDFolders(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	httpx.OK(w, list)
+}
+
+type ledFolderReq struct {
+	Name     string `json:"name"`
+	ParentID int64  `json:"parentid"`
+}
+
+func (a *app) handleLEDFolderCreate(w http.ResponseWriter, r *http.Request) {
+	var in ledFolderReq
+	if !httpx.DecodeJSON(w, r, &in) {
+		return
+	}
+	id, err := a.typed.CreateLEDFolder(r.Context(), auth.From(r.Context()), in.Name, in.ParentID)
+	if err != nil {
+		a.failTyped(w, "创建 LED 目录", err)
+		return
+	}
+	httpx.OK(w, map[string]interface{}{"id": id})
+}
+
+func (a *app) handleLEDFolderRename(w http.ResponseWriter, r *http.Request) {
+	id, ok := pathID(w, r)
+	if !ok {
+		return
+	}
+	var in ledFolderReq
+	if !httpx.DecodeJSON(w, r, &in) {
+		return
+	}
+	if err := a.typed.RenameLEDFolder(r.Context(), auth.From(r.Context()), id, in.Name); err != nil {
+		a.failTyped(w, "修改 LED 目录", err)
+		return
+	}
+	httpx.OK(w, map[string]interface{}{"id": id})
+}
+
+func (a *app) handleLEDFolderDelete(w http.ResponseWriter, r *http.Request) {
+	id, ok := pathID(w, r)
+	if !ok {
+		return
+	}
+	res, err := a.typed.DeleteLEDFolder(r.Context(), auth.From(r.Context()), id)
+	if err != nil {
+		a.failTyped(w, "删除 LED 目录", err)
+		return
+	}
+	httpx.OK(w, res)
+}
+
+type ledFolderCopyReq struct {
+	FromID int64 `json:"fromId"`
+	ToID   int64 `json:"toId"`
+}
+
+func (a *app) handleLEDFolderCopy(w http.ResponseWriter, r *http.Request) {
+	var in ledFolderCopyReq
+	if !httpx.DecodeJSON(w, r, &in) {
+		return
+	}
+	n, err := a.typed.CopyLEDFolder(r.Context(), auth.From(r.Context()), a.notifier, in.FromID, in.ToID)
+	if err != nil {
+		a.failTyped(w, "复制 LED 目录", err)
+		return
+	}
+	httpx.OK(w, map[string]interface{}{"copied": n})
 }
 
 func (a *app) handleLEDDeviceList(w http.ResponseWriter, r *http.Request) {

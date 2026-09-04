@@ -33,8 +33,10 @@ import (
 // 不删就会在文件管理里留下一条永远找不到文件的孤儿记录。
 
 type Sentence struct {
-	ID       int64  `json:"id"`
-	Name     string `json:"name"`
+	ID   int64  `json:"id"`
+	Name string `json:"name"`
+	// MediaID 只在 type=0（提示音）的那一条上有意义，指向一条真实媒体。
+	MediaID  int64  `json:"mediaId"`
 	Content  string `json:"content"`
 	Seq      int    `json:"mediaseq"`
 	Speed    int    `json:"speed"`
@@ -45,18 +47,15 @@ type Sentence struct {
 	TypeText string `json:"typeText"`
 }
 
-type SentenceInput struct {
-	Content string `json:"content"`
-	Speed   int    `json:"speed"`
-	Volume  int    `json:"volume"`
-	Male    int    `json:"male"`
-	Pitch   int    `json:"pitch"`
-}
-
 // ttssentence.type 的取值来自列注释：0:音乐，1:约定文字，2:输入文字。
-// 新版只做「输入文字」—— 另外两种要配合 ttstext 表（现网 0 行）和媒体库，
-// 旧版界面上也没有入口。
-const sentenceTypeInput = 2
+//
+//	type = 2  正文，content 里是要念的文字（旧版的 textarea）
+//	type = 0  提示音，content 为空、mediaid 指向一条真实媒体
+//	          （旧版只有在「tts终端」选到服务器本机时才出现这一项）
+const (
+	sentenceTypeMusic = 0
+	sentenceTypeInput = 2
+)
 
 func sentenceTypeText(v int) string {
 	switch v {
@@ -73,50 +72,111 @@ func sentenceTypeText(v int) string {
 const (
 	// ttssentence.content 是 varchar(1400)
 	contentLimit = 1400
+	// 整个 textarea 的上限。旧版没有校验，但一条任务切出来的段数不能没有边界，
+	// 按 maxSentences 段 × 每段上限折算。
+	textLimit    = 8000
 	maxSentences = 20
 	// speed / volume 的列注释写的是 -50~100 / -100~100，
-	// 但现网数据是 5、50（speed）与 80（volume），显然按 0~100 用。
+	// 旧版表单是 0~100 的滑块（默认 50），现网数据是 5、50（speed）与 80（volume）。
 	// 这里按列注释的**并集**放宽，不比旧版更严 —— 旧版一个字都不校验。
 	speedMin, speedMax   = -50, 100
 	volumeMin, volumeMax = -100, 100
-	pitchMin, pitchMax   = 0, 100
+	// musicmode：旧版下拉的四个取值
+	musicModeMax = 3
 )
 
-func validateSentences(in []SentenceInput) error {
-	if len(in) == 0 {
-		return fmt.Errorf("请至少输入一段要播报的文字")
-	}
-	if len(in) > maxSentences {
-		return fmt.Errorf("一条语音任务最多 %d 段文字", maxSentences)
-	}
-	for i, s := range in {
-		c := strings.TrimSpace(s.Content)
-		if c == "" {
-			return fmt.Errorf("第 %d 段播报文字不能为空", i+1)
+// splitTTSText 复刻旧版 str_split_utf8()：把一整段文字切成若干条 ttssentence。
+//
+// 旧版的规则是「按字节累计，超过 500 字节后遇到标点就断，超过 600 字节直接断」，
+// 并且**不在 UTF-8 字符中间断开**。这里用 rune 遍历实现同一套语义 ——
+// 一段短文字（现场绝大多数情况）只会切出一条，与旧版结果完全一致。
+func splitTTSText(text string) []string {
+	const (
+		softLimit = 500
+		hardLimit = 600
+	)
+	out := []string{}
+	var buf strings.Builder
+	flush := func() {
+		if c := strings.TrimSpace(buf.String()); c != "" {
+			out = append(out, c)
 		}
+		buf.Reset()
+	}
+	for _, r := range text {
+		buf.WriteRune(r)
+		n := buf.Len()
+		if n >= hardLimit {
+			flush()
+			continue
+		}
+		if n >= softLimit && isBreakRune(r) {
+			flush()
+		}
+	}
+	flush()
+	return out
+}
+
+// isBreakRune 是旧版那串 ord() 判断对应的标点集合
+// （33 '!'、44 ','、46 '.'、59 ';'、63 '?'，以及 227/239/250 打头的中日韩标点）。
+func isBreakRune(r rune) bool {
+	switch r {
+	case '!', ',', '.', ';', '?':
+		return true
+	case '。', '，', '！', '？', '；', '、', '：':
+		return true
+	}
+	return false
+}
+
+// normalizeTTSText 复刻旧版落库前的那串 str_replace：
+// 去掉 <br/>、换行、顿号和残留的 </b>，反斜杠也一并去掉。
+func normalizeTTSText(text string) string {
+	rep := strings.NewReplacer(
+		"<br/>", "", "<br />", "", "<BR/>", "",
+		"\r\n", "", "\r", "", "\n", "",
+		"、", "", "</b>", "", "</B>", "", "\\", "",
+	)
+	return rep.Replace(text)
+}
+
+// validateTTS 校验「一个 textarea + 一组全局参数」这套输入。
+func validateTTS(in *Input) error {
+	in.Text = normalizeTTSText(in.Text)
+	if strings.TrimSpace(in.Text) == "" {
+		return fmt.Errorf("请输入文字语音内容")
+	}
+	if len(in.Text) > textLimit {
+		return fmt.Errorf("文字语音内容过长：按 UTF-8 计 %d 字节，上限 %d 字节", len(in.Text), textLimit)
+	}
+	segs := splitTTSText(in.Text)
+	if len(segs) == 0 {
+		return fmt.Errorf("请输入文字语音内容")
+	}
+	if len(segs) > maxSentences {
+		return fmt.Errorf("文字语音内容切分后有 %d 段，超过 %d 段的上限", len(segs), maxSentences)
+	}
+	for i, c := range segs {
 		if len(c) > contentLimit {
-			return fmt.Errorf("第 %d 段播报文字过长：按 UTF-8 计 %d 字节，上限 %d 字节（约 466 个汉字）",
-				i+1, len(c), contentLimit)
+			return fmt.Errorf("第 %d 段文字过长：按 UTF-8 计 %d 字节，上限 %d 字节", i+1, len(c), contentLimit)
 		}
-		if s.Speed < speedMin || s.Speed > speedMax {
-			return fmt.Errorf("第 %d 段语速必须在 %d ~ %d 之间", i+1, speedMin, speedMax)
-		}
-		if s.Volume < volumeMin || s.Volume > volumeMax {
-			return fmt.Errorf("第 %d 段音量必须在 %d ~ %d 之间", i+1, volumeMin, volumeMax)
-		}
-		if s.Pitch < pitchMin || s.Pitch > pitchMax {
-			return fmt.Errorf("第 %d 段语调必须在 %d ~ %d 之间", i+1, pitchMin, pitchMax)
-		}
-		if s.Male != 0 && s.Male != 1 {
-			return fmt.Errorf("第 %d 段发音人只能是 0（女声）或 1（男声）", i+1)
-		}
+	}
+	if in.TTSSpeed < speedMin || in.TTSSpeed > speedMax {
+		return fmt.Errorf("播放速率必须在 %d ~ %d 之间", speedMin, speedMax)
+	}
+	if in.Volume < volumeMin || in.Volume > volumeMax {
+		return fmt.Errorf("任务音量必须在 %d ~ %d 之间", volumeMin, volumeMax)
+	}
+	if in.MusicMode < 0 || in.MusicMode > musicModeMax {
+		return fmt.Errorf("声音模式只能是 0（女声）/ 1（男声）/ 2（英语男声）/ 3（英语女声）")
 	}
 	return nil
 }
 
 func (s *Service) taskSentences(ctx context.Context, taskID int64) ([]Sentence, error) {
 	rs, err := s.db.QueryContext(ctx, `
-		SELECT ts.id, COALESCE(ts.name,''), COALESCE(ts.content,''),
+		SELECT ts.id, COALESCE(ts.name,''), COALESCE(ts.mediaid,0), COALESCE(ts.content,''),
 		       COALESCE(ts.mediaseq,0), COALESCE(ts.speed,0), COALESCE(ts.volume,0),
 		       COALESCE(ts.male,0), COALESCE(ts.pitch,50), COALESCE(ts.type,2)
 		FROM ttssentence ts
@@ -129,7 +189,7 @@ func (s *Service) taskSentences(ctx context.Context, taskID int64) ([]Sentence, 
 	out := []Sentence{}
 	for rs.Next() {
 		var s Sentence
-		if err := rs.Scan(&s.ID, &s.Name, &s.Content, &s.Seq,
+		if err := rs.Scan(&s.ID, &s.Name, &s.MediaID, &s.Content, &s.Seq,
 			&s.Speed, &s.Volume, &s.Male, &s.Pitch, &s.Type); err != nil {
 			return nil, err
 		}
@@ -215,21 +275,37 @@ func writeSentences(ctx context.Context, tx *sql.Tx, taskID int64, in Input) err
 	if err != nil {
 		return err
 	}
+	// sort 写 0，与旧版 `INSERT INTO mediaoftask(mediaid, taskid, sort) VALUES (…,'0')` 一致
 	if _, err := tx.ExecContext(ctx,
 		`INSERT INTO mediaoftask (mediaid, taskid, sort) VALUES (?,?,?)`,
-		mediaID, taskID, 1); err != nil {
+		mediaID, taskID, 0); err != nil {
 		return fmt.Errorf("绑定语音媒体: %w", err)
 	}
-	for i, s := range in.Sentences {
-		// ⚠ sentenceid 存的是 mediaid，不是 ttssentence 自己的 id。
-		// 列名骗人，但旧版读写都是这么用的，改不得（红线禁止改表）。
+
+	seq := 0
+	// 提示音排在最前面：type=0、content 为空、mediaid 指向那条真实媒体。
+	// 旧版只在「tts终端」选到服务器本机时才写这一条。
+	if in.PromptID > 0 {
 		if _, err := tx.ExecContext(ctx, `
-			INSERT INTO ttssentence (name, sentenceid, type, mediaid, content, mediaseq, speed, volume, male, pitch)
-			VALUES (?,?,?,?,?,?,?,?,?,?)`,
-			in.TaskName, mediaID, sentenceTypeInput, 0,
-			strings.TrimSpace(s.Content), i+1, s.Speed, s.Volume, s.Male, s.Pitch); err != nil {
+			INSERT INTO ttssentence (name, sentenceid, type, mediaid, content, mediaseq, speed, volume, male)
+			VALUES (?,?,?,?,?,?,?,?,?)`,
+			in.TaskName, mediaID, sentenceTypeMusic, in.PromptID, "",
+			seq, in.TTSSpeed, in.Volume, in.MusicMode); err != nil {
+			return fmt.Errorf("写入提示音: %w", err)
+		}
+		seq++
+	}
+	// 正文按 ≤600 字节切段，每段的 speed / volume / male 都取表单上那一组全局参数。
+	// ⚠ mediaseq 从 0 开始（旧版 $gettempi 初值就是 0）。
+	for _, c := range splitTTSText(in.Text) {
+		if _, err := tx.ExecContext(ctx, `
+			INSERT INTO ttssentence (name, sentenceid, type, mediaid, content, mediaseq, speed, volume, male)
+			VALUES (?,?,?,?,?,?,?,?,?)`,
+			in.TaskName, mediaID, sentenceTypeInput, 0, c,
+			seq, in.TTSSpeed, in.Volume, in.MusicMode); err != nil {
 			return fmt.Errorf("写入播报文字: %w", err)
 		}
+		seq++
 	}
 	return nil
 }

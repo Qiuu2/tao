@@ -35,12 +35,23 @@ type Terminal struct {
 type Detail struct {
 	Item
 	Terminals []DetailTerminal `json:"terminals"`
-	// 文字语音专用
+	// 文字语音专用。Sentences 是库里那几条 ttssentence 的原样，
+	// Text / MusicMode / TTSSpeed / PromptID 则是把它们还原成旧版表单上的那一组输入
+	// （旧版只有一个 textarea 加一组全局参数，落库时才切成多条）。
 	Sentences []Sentence `json:"sentences,omitempty"`
+	Text      string     `json:"ttsText,omitempty"`
+	MusicMode int        `json:"musicmode"`
+	TTSSpeed  int        `json:"ttsSpeed"`
+	PromptID  int64      `json:"promptId"`
 	// LED 专用
 	LED *LEDDetail `json:"led,omitempty"`
+	// PriorityMin / PriorityMax 是当前用户被允许的任务等级区间，供界面直接约束下拉。
+	PriorityMin int `json:"priorityMin"`
+	PriorityMax int `json:"priorityMax"`
 }
 
+// DetailTerminal 既给编辑弹窗回填终端，也供列表上那个「终端」链接弹出的表用 ——
+// 旧版那张表是 终端名称 | 终端类型 | 网络状态 | 设备状态 | 终端IP | 音量。
 type DetailTerminal struct {
 	TerminalID   int64  `json:"terminalId"`
 	TerminalName string `json:"terminalname"`
@@ -48,6 +59,9 @@ type DetailTerminal struct {
 	Area         string `json:"area"`
 	GroupID      int64  `json:"groupId"`
 	NetState     int    `json:"netstate"`
+	DeviceState  int    `json:"devicestate"`
+	IP           string `json:"ip"`
+	Volume       int    `json:"volume"`
 	Deleted      bool   `json:"deleted"`
 }
 
@@ -68,7 +82,9 @@ func (s *Service) Get(ctx context.Context, u *auth.User, k Kind, id int64) (*Det
 		       COALESCE(t.task_user_id,0), COALESCE(b.username,''),
 		       COALESCE(t.priority,0), COALESCE(t.bandrate,0),
 		       COALESCE(t.samplerate,0), COALESCE(t.playfileid,0),
-		       COALESCE(t.prepower,0), COALESCE(t.datasendmodel,0)
+		       COALESCE(t.prepower,0), COALESCE(t.datasendmodel,0),
+		       COALESCE(t.interval_s,0), COALESCE(t.intplaylength,0),
+		       COALESCE(t.intplaylengthtype,0)
 		FROM task t
 		LEFT JOIN book_admin b ON b.id = t.task_user_id
 		WHERE t.taskid = ? LIMIT 1`, id).
@@ -77,7 +93,8 @@ func (s *Service) Get(ctx context.Context, u *auth.User, k Kind, id int64) (*Det
 			&d.ExeModel, &d.Volume, &d.TimeLength, &d.TimeLengthType,
 			&d.Cmd, &d.CmdArgs, &d.ParentID, &d.UserID, &d.UserName,
 			&d.Priority, &d.BandRate, &d.SampleRate, &d.PlayFileID,
-			&d.Prepower, &d.DataSendModel)
+			&d.Prepower, &d.DataSendModel,
+			&d.IntervalS, &d.IntPlayLen, &d.IntPlayLenTy)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, ErrNotFound
 	}
@@ -102,6 +119,8 @@ func (s *Service) Get(ctx context.Context, u *auth.User, k Kind, id int64) (*Det
 	d.ProjectText = projectText(d.ProjectState)
 	d.CycleText = cycleText(d.ExeModel)
 	d.LengthText = lengthText(d.TimeLengthType, d.TimeLength)
+	d.PlayModeText = playModeText(d.IntPlayLenTy)
+	d.TypeText = taskTypeText(d.TaskType)
 	d.CanModify = true
 	if k == KindAmplifier {
 		d.SwitchText = switchText(d.Cmd)
@@ -113,6 +132,9 @@ func (s *Service) Get(ctx context.Context, u *auth.User, k Kind, id int64) (*Det
 	}
 	d.Terminals = terms
 	d.TerminalCount = len(terms)
+	if lo, hi, err := s.priorityRange(ctx, u.ID); err == nil {
+		d.PriorityMin, d.PriorityMax = lo, hi
+	}
 
 	switch k {
 	case KindTTS:
@@ -121,6 +143,21 @@ func (s *Service) Get(ctx context.Context, u *auth.User, k Kind, id int64) (*Det
 			return nil, err
 		}
 		d.Sentences = ss
+		// 还原成旧版表单上的那一组输入：正文按 mediaseq 拼回一段，
+		// speed / male 取第一条正文的值（落库时本来就是全段一致的），
+		// type=0 的那一条是提示音，它的 mediaid 才是提示音媒体 id。
+		var parts []string
+		for _, x := range ss {
+			if x.Type == sentenceTypeMusic {
+				d.PromptID = x.MediaID
+				continue
+			}
+			if len(parts) == 0 {
+				d.MusicMode, d.TTSSpeed = x.Male, x.Speed
+			}
+			parts = append(parts, x.Content)
+		}
+		d.Text = strings.Join(parts, "")
 		// 文字语音可能挂着一条 LED 字幕子任务，回填给编辑弹窗
 		led, err := s.loadLEDSub(ctx, id)
 		if err != nil {
@@ -151,7 +188,8 @@ func (s *Service) taskTerminals(ctx context.Context, taskID int64) ([]DetailTerm
 	rs, err := s.db.QueryContext(ctx, `
 		SELECT ot.terminalid, t.id IS NOT NULL, COALESCE(t.terminalname,''),
 		       COALESCE(tt.name,''), COALESCE(ot.area,''), COALESCE(ot.groupid,0),
-		       COALESCE(t.netstate,0)
+		       COALESCE(t.netstate,0), COALESCE(t.devicestate,0),
+		       COALESCE(t.ip,''), COALESCE(t.volume,0)
 		FROM terminaloftask ot
 		LEFT JOIN terminal t ON t.id = ot.terminalid
 		LEFT JOIN terminaltype tt ON tt.id = t.typeid
@@ -166,7 +204,8 @@ func (s *Service) taskTerminals(ctx context.Context, taskID int64) ([]DetailTerm
 		var t DetailTerminal
 		var exists bool
 		if err := rs.Scan(&t.TerminalID, &exists, &t.TerminalName,
-			&t.TypeName, &t.Area, &t.GroupID, &t.NetState); err != nil {
+			&t.TypeName, &t.Area, &t.GroupID, &t.NetState,
+			&t.DeviceState, &t.IP, &t.Volume); err != nil {
 			return nil, err
 		}
 		t.Deleted = !exists
@@ -210,13 +249,31 @@ type Input struct {
 	// 功放：Switch 0=打开 1=关闭；Channel 通道号
 	Switch  int
 	Channel int
-	// 采播：SourceTerminalID 采播源终端
+	// 采播：SourceTerminalID 采播源终端，SampleRate 采样率，BandRate 比特率。
+	// 旧版 AddAdmManger.html 的「音频设置」一栏就是这四项（采播终端 / 终端通道 /
+	// 采样率 / 比特率），落库分别是 task.cmd / cmdargs / samplerate / bandrate。
 	SourceTerminalID int64
+	SampleRate       int
+	BandRate         int
+
+	// 间隔播放（文字语音 / led播放 的「播放模式」）。
+	//   IntervalS    间隔时长（秒）           → task.interval_s
+	//   IntPlayLen   间隔总时长（秒）或次数    → task.intplaylength
+	//   IntPlayLenTy 1 = 按间隔时长、2 = 按次数 → task.intplaylengthtype
+	// 普通模式三项全 0，与旧版这几个页面不 POST 这些字段时落库的结果一致。
+	IntervalS    int
+	IntPlayLen   int
+	IntPlayLenTy int
 
 	Terminals []Terminal
 
-	// 文字语音
-	Sentences []SentenceInput
+	// 文字语音。旧版表单只有**一个** textarea 加一组全局参数
+	// （声音模式 / 播放速率 / 提示音），落库时按 ≤600 字节切成多条 ttssentence，
+	// 每条的 speed / volume / male 都相同。这里照同一套来。
+	Text      string
+	MusicMode int   // ttssentence.male：0 女声 1 男声 2 英语男声 3 英语女声
+	TTSSpeed  int   // ttssentence.speed：旧版是 0~100 的滑块，默认 50
+	PromptID  int64 // 提示音媒体 id（tts 终端选服务器时才有），0 = 不用
 	// LED
 	LED *LEDInput
 }
@@ -240,17 +297,38 @@ func normPerKind(k Kind, in *Input) {
 	if in.Prepower > 86399 {
 		in.Prepower = 86399
 	}
-	// priority 列是 int，旧版新建时一律写 3；这里允许 1~13，越界回落到 3
-	if in.Priority < 1 || in.Priority > 13 {
+	// priority 的允许区间由用户组级别决定（与 task 包同一套口径），
+	// 在 validate() 里按 priorityRange() 校验，这里只兜住明显越界的值。
+	if in.Priority < 0 || in.Priority > 109 {
 		in.Priority = 3
 	}
 	// datasendmodel 只有 0（单播）/ 1（组播）两个取值
 	if in.DataSendModel != 1 {
 		in.DataSendModel = 0
 	}
+
+	// 音频设置只有采播有（旧版 AddAdmManger.html 的「音频设置」一栏）
+	if k != KindCollect {
+		in.SampleRate = 0
+		in.BandRate = 0
+	}
+
+	// 间隔播放只有文字语音与 led播放 有（旧版表单里的「播放模式：普通 / 间隔时间」）
+	if k != KindTTS && k != KindLED {
+		in.IntervalS, in.IntPlayLen, in.IntPlayLenTy = 0, 0, 0
+	}
+	if in.IntPlayLenTy != 1 && in.IntPlayLenTy != 2 {
+		// 普通模式：三项全 0，与旧版不 POST 这几个字段时落库的结果一致
+		in.IntervalS, in.IntPlayLen, in.IntPlayLenTy = 0, 0, 0
+	}
+
+	// 文字语音的全局参数只有文字语音用得上
+	if k != KindTTS {
+		in.Text, in.MusicMode, in.TTSSpeed, in.PromptID = "", 0, 0, 0
+	}
 }
 
-func (s *Service) validate(ctx context.Context, u *auth.User, k Kind, in *Input) error {
+func (s *Service) validate(ctx context.Context, u *auth.User, k Kind, in *Input, oldPriority *int) error {
 	sp, _ := s.spec(k)
 
 	normPerKind(k, in)
@@ -296,6 +374,21 @@ func (s *Service) validate(ctx context.Context, u *auth.User, k Kind, in *Input)
 	if in.ProjectState != StateEnabled && in.ProjectState != StateDisabled {
 		return fmt.Errorf("方案状态只能是 0（启用）或 1（停用）")
 	}
+	// 任务等级：旧版这几个表单的下拉是 $getlevel..109，也就是「用户组级别决定下限」。
+	// 这里沿用 task 包 priorityRange() 的口径 —— 同一套 usergroup.level 编码。
+	//
+	// ⚠ 只在**本次提交改动了这一列**时才校验：现网旧数据里这几类任务的 priority
+	// 是 3 / 13，落在任何一个用户的允许区间之外，一律校验会让这些行连改都改不了
+	// （与 task 包的做法一致）。
+	if oldPriority == nil || *oldPriority != in.Priority {
+		lo, hi, err := s.priorityRange(ctx, u.ID)
+		if err != nil {
+			return err
+		}
+		if in.Priority < lo || in.Priority > hi {
+			return fmt.Errorf("任务等级必须在 %d ~ %d 之间（由所属用户组级别决定）", lo, hi)
+		}
+	}
 	if in.TimeLengthType != 1 && in.TimeLengthType != 2 {
 		return fmt.Errorf("时长类型只能是 1（按时间）或 2（按次数）")
 	}
@@ -304,6 +397,18 @@ func (s *Service) validate(ctx context.Context, u *auth.User, k Kind, in *Input)
 	}
 	if in.DurationSec < 0 || in.DurationSec > 86399 {
 		return fmt.Errorf("持续时长必须在 0 ~ 86399 秒之间")
+	}
+	// 间隔播放：intplaylengthtype 1 = 按间隔总时长、2 = 按每次循环次数
+	if in.IntPlayLenTy != 0 {
+		if in.IntervalS <= 0 || in.IntervalS > 86399 {
+			return fmt.Errorf("间隔时长必须在 1 ~ 86399 秒之间")
+		}
+		if in.IntPlayLenTy == 1 && (in.IntPlayLen <= 0 || in.IntPlayLen > 86399) {
+			return fmt.Errorf("间隔总时长必须在 1 ~ 86399 秒之间")
+		}
+		if in.IntPlayLenTy == 2 && (in.IntPlayLen <= 0 || in.IntPlayLen > 999) {
+			return fmt.Errorf("每次循环次数必须在 1 ~ 999 之间")
+		}
 	}
 
 	switch k {
@@ -330,8 +435,15 @@ func (s *Service) validate(ctx context.Context, u *auth.User, k Kind, in *Input)
 		if in.Channel < 0 || in.Channel > 255 {
 			return fmt.Errorf("通道号必须在 0 ~ 255 之间")
 		}
+		// 采样率 / 比特率：旧版是两个固定选项的下拉，取值就是这两组
+		if !allowedSampleRate(in.SampleRate) {
+			return fmt.Errorf("采样率取值不在允许的范围内")
+		}
+		if !allowedBandRate(in.BandRate) {
+			return fmt.Errorf("比特率取值不在允许的范围内")
+		}
 	case KindTTS:
-		if err := validateSentences(in.Sentences); err != nil {
+		if err := validateTTS(in); err != nil {
 			return err
 		}
 	case KindLED:
@@ -466,7 +578,7 @@ func (s *Service) Create(ctx context.Context, u *auth.User, n *notify.Notifier,
 	if err != nil {
 		return 0, err
 	}
-	if err := s.validate(ctx, u, k, &in); err != nil {
+	if err := s.validate(ctx, u, k, &in, nil); err != nil {
 		return 0, err
 	}
 
@@ -515,10 +627,12 @@ func (s *Service) Update(ctx context.Context, u *auth.User, nt *notify.Notifier,
 		return err
 	}
 	// 先确认存在、类型对、归属对
-	if _, err := s.Get(ctx, u, k, id); err != nil {
+	cur, err := s.Get(ctx, u, k, id)
+	if err != nil {
 		return err
 	}
-	if err := s.validate(ctx, u, k, &in); err != nil {
+	oldPriority := cur.Priority
+	if err := s.validate(ctx, u, k, &in, &oldPriority); err != nil {
 		return err
 	}
 
@@ -548,13 +662,17 @@ func (s *Service) Update(ctx context.Context, u *auth.User, nt *notify.Notifier,
 		                startdate = ?, enddate = ?, playtime = ?, endtime = ?,
 		                exemodel = ?, defaultvolume = ?, projectstate = ?,
 		                prepower = ?, priority = ?, datasendmodel = ?,
-		                cmd = ?, cmdargs = ?, parentid = ?
+		                cmd = ?, cmdargs = ?, parentid = ?,
+		                bandrate = ?, samplerate = ?,
+		                interval_s = ?, intplaylength = ?, intplaylengthtype = ?
 		WHERE taskid = ?`,
 		in.TaskName, in.TimeLengthType, in.TimeLength,
 		in.StartDate, in.EndDate, in.PlayTime, endTime,
 		in.ExeModel, in.Volume, in.ProjectState,
 		in.Prepower, in.Priority, in.DataSendModel,
-		cmd, cmdargs, in.FolderID, id); err != nil {
+		cmd, cmdargs, in.FolderID,
+		in.BandRate, in.SampleRate,
+		in.IntervalS, in.IntPlayLen, in.IntPlayLenTy, id); err != nil {
 		return fmt.Errorf("修改任务: %w", err)
 	}
 
@@ -620,15 +738,14 @@ func insertTask(ctx context.Context, tx *sql.Tx, sp spec, k Kind, in Input, user
 	// 只是把 $_POST 拼接换成参数绑定。
 	// state 固定写 0（准备）：新建的任务不该一落库就处于「立即执行」。
 	//
-	// ⚠ interval_s / intplaylength / intplaylengthtype 必须**显式写 0**，不能走列默认值。
+	// ⚠ interval_s / intplaylength / intplaylengthtype 必须**显式写**，不能走列默认值。
 	//
-	// 这三列是「间隔播放」的配置，四个页面都没有对应的输入。
-	// 旧版那条共用 INSERT 把 $intervallength / $allintervallen / $intervaltype 一路带下来，
-	// 这几个页面不 POST 它们，PHP 里就是空串，落库被 MySQL 归成 0 —— 即 0/0/0。
-	// 而列默认值是 interval_s=0、intplaylength=**1**、intplaylengthtype=**2**，
-	// 不写就会得到 0/1/2，和旧版产出的行不一样（新版缺陷 N-17）。
+	// 这三列是「间隔播放」的配置：文字语音与 led播放 的表单里有「播放模式：普通 / 间隔时间」，
+	// 选间隔时才有值；终端功放与采播没有这一项，normPerKind() 会把它们强制归零。
+	// 列默认值是 interval_s=0、intplaylength=**1**、intplaylengthtype=**2**，
+	// 普通模式下不显式写 0 就会得到 0/1/2，和旧版产出的行不一样（新版缺陷 N-17）。
 	//
-	// 判据是现网数据：这四类任务已有的行里 intplaylength **无一例外是 0**
+	// 判据是现网数据：普通模式的行里 intplaylength **无一例外是 0**
 	// （tasktype 15 / 19 / 30 全是 0），也就是后台服务一直以来见到的就是 0。
 	res, err := tx.ExecContext(ctx, `
 		INSERT INTO task
@@ -637,11 +754,12 @@ func insertTask(ctx context.Context, tx *sql.Tx, sp spec, k Kind, in Input, user
 		   priority, tasktype, channel, bandrate, samplerate, cmd, cmdargs,
 		   playfileid, info, defaultvolume, task_user_id, sec_task_id, parentid,
 		   interval_s, intplaylength, intplaylengthtype)
-		VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,0,0,0)`,
+		VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
 		in.TaskName, 1, in.ProjectState, in.TimeLengthType, in.TimeLength, in.Prepower,
 		in.DataSendModel, 0, in.StartDate, in.EndDate, in.PlayTime, endTime, in.ExeModel,
-		in.Priority, sp.NewType, 0, 0, 0, cmd, cmdargs,
-		0, "", in.Volume, userID, 0, in.FolderID)
+		in.Priority, sp.NewType, 0, in.BandRate, in.SampleRate, cmd, cmdargs,
+		0, "", in.Volume, userID, 0, in.FolderID,
+		in.IntervalS, in.IntPlayLen, in.IntPlayLenTy)
 	if err != nil {
 		return 0, fmt.Errorf("新建任务: %w", err)
 	}
@@ -738,4 +856,126 @@ func (s *Service) TerminalOptions(ctx context.Context, u *auth.User, keyword str
 		out = append(out, o)
 	}
 	return out, rs.Err()
+}
+
+// allowedSampleRate / allowedBandRate 对齐旧版 AddAdmManger.html 里那两个下拉的取值。
+// 0 表示「没填」，与旧版不 POST 时落库的结果一致，一律放行。
+func allowedSampleRate(v int) bool {
+	switch v {
+	case 0, 8000, 11025, 16000, 44100, 48000, 64000, 88200, 96000, 128000, 256000, 320000:
+		return true
+	}
+	return false
+}
+
+func allowedBandRate(v int) bool {
+	switch v {
+	case 0, 8, 16, 32, 64, 128:
+		return true
+	}
+	return false
+}
+
+// SourceTerminals 列出「采播终端 / tts终端」下拉里的候选终端。
+//
+// 旧版这两个下拉不是全量终端，而是按终端型号筛出来的：
+//
+//	采播管理  addadmtask.php   typeid IN (8, 0, 25, 31)
+//	文字语音  taskttsadd.php   typeid IN (0, 22, 32)
+//
+// 其中 typeid = 0 是服务器本机 —— 文字语音只有选到它时才出现「提示音」那一项，
+// 所以这里把 typeid 一并带出去，界面据此决定要不要显示提示音。
+func (s *Service) SourceTerminals(ctx context.Context, k Kind) ([]TerminalOption, error) {
+	var types []int
+	switch k {
+	case KindCollect:
+		types = []int{8, 0, 25, 31}
+	case KindTTS:
+		types = []int{0, 22, 32}
+	default:
+		return []TerminalOption{}, nil
+	}
+	ph := strings.TrimSuffix(strings.Repeat("?,", len(types)), ",")
+	args := make([]interface{}, len(types))
+	for i, v := range types {
+		args[i] = v
+	}
+	rs, err := s.db.QueryContext(ctx, `
+		SELECT t.id, COALESCE(t.terminalname,''), COALESCE(t.typeid,0), COALESCE(tt.name,''),
+		       COALESCE(t.ip,''), COALESCE(t.netstate,0), COALESCE(t.groupid,0), ''
+		FROM terminal t
+		LEFT JOIN terminaltype tt ON tt.id = t.typeid
+		WHERE t.typeid IN (`+ph+`)
+		ORDER BY t.id`, args...)
+	if err != nil {
+		return nil, fmt.Errorf("查询采播终端: %w", err)
+	}
+	defer rs.Close()
+	out := []TerminalOption{}
+	for rs.Next() {
+		var o TerminalOption
+		if err := rs.Scan(&o.ID, &o.Name, &o.TypeID, &o.TypeName,
+			&o.IP, &o.NetState, &o.GroupID, &o.GroupName); err != nil {
+			return nil, err
+		}
+		out = append(out, o)
+	}
+	return out, rs.Err()
+}
+
+// PromptMedia 列出「提示音」下拉里的媒体。
+//
+// 旧版 taskttsadd.php 写死 `media.folderid = 9` —— 9 号目录就是提示音目录。
+// 这里照搬这个判据，不去猜别的目录。
+const promptFolderID = 9
+
+type PromptMedia struct {
+	ID         int64  `json:"id"`
+	Name       string `json:"name"`
+	TimeLength int    `json:"timelength"`
+}
+
+func (s *Service) PromptMedia(ctx context.Context) ([]PromptMedia, error) {
+	rs, err := s.db.QueryContext(ctx, `
+		SELECT m.id, COALESCE(m.name,''), COALESCE(m.timelength,0)
+		FROM media m WHERE m.folderid = ? ORDER BY m.id DESC`, promptFolderID)
+	if err != nil {
+		return nil, fmt.Errorf("查询提示音: %w", err)
+	}
+	defer rs.Close()
+	out := []PromptMedia{}
+	for rs.Next() {
+		var m PromptMedia
+		if err := rs.Scan(&m.ID, &m.Name, &m.TimeLength); err != nil {
+			return nil, err
+		}
+		out = append(out, m)
+	}
+	return out, rs.Err()
+}
+
+// priorityRange 计算某个用户被允许的任务等级区间。
+//
+// 与 task 包同一套口径：usergroup.level 是复合编码，十位 = 组级别，
+// 允许区间就是 [组级别*10, 组级别*10+9]。旧版这几个表单的下拉写的是
+// `for(level=$getlevel; level<=109; level++)`，下限同样来自组级别。
+func (s *Service) priorityRange(ctx context.Context, userID int64) (int, int, error) {
+	var level int
+	err := s.db.QueryRowContext(ctx, `
+		SELECT COALESCE(g.level,0) FROM book_admin b
+		LEFT JOIN usergroup g ON g.id = b.usergroupid
+		WHERE b.id = ? LIMIT 1`, userID).Scan(&level)
+	if errors.Is(err, sql.ErrNoRows) {
+		return 0, 99, nil
+	}
+	if err != nil {
+		return 0, 0, fmt.Errorf("查询用户组级别: %w", err)
+	}
+	tens := level / 10
+	return tens * 10, tens*10 + 9, nil
+}
+
+// PriorityRange 是当前用户能选的任务等级区间，供「添加」弹窗直接约束下拉。
+func (s *Service) PriorityRange(ctx context.Context, u *auth.User) (int, int, error) {
+	return s.priorityRange(ctx, u.ID)
 }

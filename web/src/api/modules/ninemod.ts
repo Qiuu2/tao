@@ -59,6 +59,14 @@ export interface TypedTask {
   sourceName?: string;
   /** 文字语音 / LED：要播的文字 */
   text?: string;
+  /** 间隔播放（文字语音 / led播放 的「播放模式」） */
+  interval_s: number;
+  intplaylength: number;
+  intplaylengthtype: number;
+  /** intplaylengthtype 的中文说法：普通模式 / 间隔时间 */
+  playModeText?: string;
+  /** tasktype 的中文说法，文字语音列表里的「任务类型」一列 */
+  typeText?: string;
 }
 
 export interface TypedTerminal {
@@ -103,8 +111,17 @@ export interface LedDetail {
 
 export interface TypedDetail extends TypedTask {
   terminals: TypedTerminal[];
+  /** 库里那几条 ttssentence 的原样 */
   sentences?: TtsSentence[];
+  /** 还原成旧版表单上的那一段正文（多条 ttssentence 按 mediaseq 拼回来） */
+  ttsText?: string;
+  musicmode: number;
+  ttsSpeed: number;
+  promptId: number;
   led?: LedDetail;
+  /** 当前用户被允许的任务等级区间 */
+  priorityMin: number;
+  priorityMax: number;
 }
 
 export interface TypedTerminalOption {
@@ -138,8 +155,22 @@ export interface TypedSaveBody {
   switch: number;
   channel: number;
   sourceTerminalId: number;
+  /** 采播的「音频设置」 */
+  samplerate: number;
+  bandrate: number;
+  /** 间隔播放 */
+  interval_s: number;
+  intplaylength: number;
+  intplaylengthtype: number;
+  /** 文字语音：一个 textarea + 一组全局参数 */
+  text: string;
+  musicmode: number;
+  ttsSpeed: number;
+  promptId: number;
+  prepower: number;
+  priority: number;
+  datasendmodel: number;
   terminals: { terminalId: number; area: string; groupId: number }[];
-  sentences: { content: string; speed: number; volume: number; male: number; pitch: number }[];
   led: { text: string; speed: number; ledmode: number; devices: { terminalId: number; deviceId: number }[] } | null;
 }
 
@@ -153,7 +184,24 @@ export const createTypedApi = (kind: TypedKind, data: TypedSaveBody) =>
   http.post<{ taskId: number }>(PORT1 + `/api/typed-tasks/${kind}`, data);
 export const updateTypedApi = (kind: TypedKind, id: number, data: TypedSaveBody) =>
   http.put<{ updated: boolean }>(PORT1 + `/api/typed-tasks/${kind}/${id}`, data);
-export const controlTypedApi = (kind: TypedKind, action: "start" | "stop", ids: number[]) =>
+export interface PromptMedia {
+  id: number;
+  name: string;
+  timelength: number;
+}
+
+/** 「采播终端 / tts终端」下拉的候选：旧版按 terminal.typeid 筛出来的那一批 */
+export const getTypedSourcesApi = (kind: TypedKind) =>
+  http.get<TypedTerminalOption[]>(PORT1 + `/api/typed-tasks/${kind}/sources`, {}, { loading: false });
+/** 「任务级别」下拉的可选区间（由用户组级别决定） */
+export const getTypedPriorityRangeApi = () =>
+  http.get<{ priorityMin: number; priorityMax: number }>(PORT1 + `/api/typed-tasks/priority-range`, {}, { loading: false });
+/** 文字语音的「提示音」候选（旧版写死的 9 号媒体目录） */
+export const getPromptMediaApi = () => http.get<PromptMedia[]>(PORT1 + `/api/typed-tasks/prompts`, {}, { loading: false });
+
+export type TypedAction = "start" | "stop" | "pause" | "resume";
+
+export const controlTypedApi = (kind: TypedKind, action: TypedAction, ids: number[]) =>
   http.put<TypedControlResult>(PORT1 + `/api/typed-tasks/${kind}/control/${action}`, { ids });
 export const setTypedStateApi = (kind: TypedKind, ids: number[], enable: boolean) =>
   http.put<TypedControlResult>(PORT1 + `/api/typed-tasks/${kind}/project-state`, { ids, enable });
@@ -185,13 +233,20 @@ export interface LedDevice {
 }
 
 export const getLedFoldersApi = () => http.get<LedFolder[]>(PORT1 + `/api/led/folders`, {}, { loading: false });
+export const createLedFolderApi = (name: string, parentid = 0) =>
+  http.post<{ id: number }>(PORT1 + `/api/led/folders`, { name, parentid });
+export const renameLedFolderApi = (id: number, name: string) =>
+  http.put<{ id: number }>(PORT1 + `/api/led/folders/${id}`, { name });
+export const deleteLedFolderApi = (id: number) =>
+  http.delete<{ deleted: number[]; blocked: any[] }>(PORT1 + `/api/led/folders/${id}`, {});
+export const copyLedFolderApi = (fromId: number, toId: number) =>
+  http.post<{ copied: number }>(PORT1 + `/api/led/folders:copy`, { fromId, toId });
 export const getLedDevicesApi = (keyword = "") =>
   http.get<LedDevice[]>(PORT1 + `/api/led/devices`, { keyword }, { loading: false });
 export const createLedDeviceApi = (data: Partial<LedDevice>) => http.post<{ id: number }>(PORT1 + `/api/led/devices`, data);
 export const updateLedDeviceApi = (id: number, data: Partial<LedDevice>) =>
   http.put<{ updated: boolean }>(PORT1 + `/api/led/devices/${id}`, data);
-export const deleteLedDevicesApi = (ids: number[]) =>
-  http.delete<{ deleted: number }>(PORT1 + `/api/led/devices`, { ids });
+export const deleteLedDevicesApi = (ids: number[]) => http.delete<{ deleted: number }>(PORT1 + `/api/led/devices`, { ids });
 
 /* ==================================================================
    启用管理
@@ -266,8 +321,7 @@ export interface EnableSaveForm {
 export const getEnableApi = (id: number) => http.get<EnableSlot>(PORT1 + `/api/enable-plans/${id}`, {}, { loading: false });
 export const getEnableTasksApi = (keyword = "") =>
   http.get<EnablePickTask[]>(PORT1 + `/api/enable-plans/tasks`, { keyword }, { loading: false });
-export const createEnableApi = (data: EnableSaveForm) =>
-  http.post<EnableSaveResult>(PORT1 + `/api/enable-plans`, data);
+export const createEnableApi = (data: EnableSaveForm) => http.post<EnableSaveResult>(PORT1 + `/api/enable-plans`, data);
 export const updateEnableApi = (id: number, data: EnableSaveForm) =>
   http.put<EnableSaveResult>(PORT1 + `/api/enable-plans/${id}`, data);
 export const deleteEnableApi = (ids: number[]) => http.delete<{ deleted: number }>(PORT1 + `/api/enable-plans`, { ids });
@@ -322,12 +376,9 @@ export const getSoundDeviceOptionsApi = (keyword = "") =>
   http.get<SoundDevice[]>(PORT1 + `/api/sound/devices/options`, { keyword }, { loading: false });
 export const createSoundDeviceApi = (data: { name: string; ip: string; devaddr: number; sendport: number }) =>
   http.post<{ id: number }>(PORT1 + `/api/sound/devices`, data);
-export const updateSoundDeviceApi = (
-  id: number,
-  data: { name: string; ip: string; devaddr: number; sendport: number }
-) => http.put<{ updated: boolean }>(PORT1 + `/api/sound/devices/${id}`, data);
-export const deleteSoundDevicesApi = (ids: number[]) =>
-  http.delete<{ deleted: number }>(PORT1 + `/api/sound/devices`, { ids });
+export const updateSoundDeviceApi = (id: number, data: { name: string; ip: string; devaddr: number; sendport: number }) =>
+  http.put<{ updated: boolean }>(PORT1 + `/api/sound/devices/${id}`, data);
+export const deleteSoundDevicesApi = (ids: number[]) => http.delete<{ deleted: number }>(PORT1 + `/api/sound/devices`, { ids });
 
 export const getSoundGroupsApi = (params: any) =>
   http.get<ResPage<SoundGroup> & { scopeNote: string }>(PORT1 + `/api/sound/groups`, params);
@@ -340,10 +391,9 @@ export const createSoundGroupApi = (data: { name: string; terminalIds: number[];
 export const updateSoundGroupApi = (id: number, data: { name: string; terminalIds: number[]; deviceIds: number[] }) =>
   http.put<{ updated: boolean }>(PORT1 + `/api/sound/groups/${id}`, data);
 export const deleteSoundGroupsApi = (ids: number[]) =>
-  http.delete<{ deleted: number[]; resetTerminals: number; resetDevices: number; blocked: any[] }>(
-    PORT1 + `/api/sound/groups`,
-    { ids }
-  );
+  http.delete<{ deleted: number[]; resetTerminals: number; resetDevices: number; blocked: any[] }>(PORT1 + `/api/sound/groups`, {
+    ids
+  });
 
 /* ==================================================================
    云广播终端 / 任务传送
