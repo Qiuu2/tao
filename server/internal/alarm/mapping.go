@@ -216,10 +216,15 @@ func (s *Service) validate(ctx context.Context, u *auth.User, in *MappingInput) 
 	}
 
 	// 报警主机：必须存在，且必须是报警主机类型
-	var typeID, channels int
-	err := s.db.QueryRowContext(ctx,
-		`SELECT typeid, COALESCE(channel,0) FROM terminal WHERE id = ? LIMIT 1`,
-		in.AlarmTerminalID).Scan(&typeID, &channels)
+	//
+	// ⚠ 路数必须和下拉用的是同一套算法（effectiveChannels），否则会出现
+	//   「下拉里能选到第 16 路，提交却说超范围」这种自相矛盾的情况。
+	var typeID, deviceChannels, typeSwitchCount int
+	err := s.db.QueryRowContext(ctx, `
+		SELECT t.typeid, COALESCE(t.channel,0), COALESCE(tt.switchcount,0)
+		FROM terminal t LEFT JOIN terminaltype tt ON tt.id = t.typeid
+		WHERE t.id = ? LIMIT 1`,
+		in.AlarmTerminalID).Scan(&typeID, &deviceChannels, &typeSwitchCount)
 	if errors.Is(err, sql.ErrNoRows) {
 		return fmt.Errorf("报警主机不存在")
 	}
@@ -229,9 +234,10 @@ func (s *Service) validate(ctx context.Context, u *auth.User, in *MappingInput) 
 	if typeID != TypeAlarmHost {
 		return fmt.Errorf("所选终端不是报警主机，不能配置报警映射")
 	}
+	channels := effectiveChannels(deviceChannels, typeSwitchCount)
 	// 通道从 1 开始编号 —— 旧界面的 JS 是 for(i=0;i<channelnum;i++){value = i+1}
 	if channels <= 0 {
-		return fmt.Errorf("该报警主机的通道数为 0，请先在终端管理里设置通道数")
+		return fmt.Errorf("该报警主机的通道数为 0：终端未上报路数，其型号也没有声明开关路数")
 	}
 	if in.AlarmChannel < 1 || in.AlarmChannel > channels {
 		return fmt.Errorf("通道号必须在 1 ~ %d 之间", channels)

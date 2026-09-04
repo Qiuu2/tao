@@ -15,11 +15,12 @@ type HostOption struct {
 	ID   int64  `json:"id"`
 	Name string `json:"name"`
 	IP   string `json:"ip"`
-	// Channels 是该主机的通道数，界面据此生成 1..Channels 的通道下拉。
+	// Channels 是该主机可配的报警输入路数，界面据此生成 1..Channels 的通道下拉。
+	// 取值规则见 effectiveChannels。
 	Channels int `json:"channels"`
-	// TypeSwitchCount 是该终端**类型**声明的开关路数。
-	// 与 Channels 常常对不上（现网类型 7 声明 16 路，四台主机实际是 2/32/32/32），
-	// 旧界面用的是 terminal.channel，这里沿用，把类型值一并带出来供排查。
+	// DeviceChannels 是 terminal.channel 的原值，TypeSwitchCount 是终端**类型**
+	// 声明的开关路数。两个都带出来，便于排查「为什么是这么多路」。
+	DeviceChannels  int `json:"deviceChannels"`
 	TypeSwitchCount int `json:"typeSwitchCount"`
 	NetState        int `json:"netstate"`
 	// GroupID / GroupName 是终端分区，供界面把主机选择器排成树。
@@ -59,13 +60,45 @@ func (s *Service) AlarmHosts(ctx context.Context, u *auth.User) ([]HostOption, e
 	out := []HostOption{}
 	for rs.Next() {
 		var h HostOption
-		if err := rs.Scan(&h.ID, &h.Name, &h.IP, &h.Channels,
+		if err := rs.Scan(&h.ID, &h.Name, &h.IP, &h.DeviceChannels,
 			&h.TypeSwitchCount, &h.NetState, &h.GroupID, &h.GroupName); err != nil {
 			return nil, err
 		}
+		h.Channels = effectiveChannels(h.DeviceChannels, h.TypeSwitchCount)
 		out = append(out, h)
 	}
 	return out, rs.Err()
+}
+
+// effectiveChannels 算一台报警主机到底有几路可配的报警输入。
+//
+// 两个来源，单看哪一个都会算错：
+//
+//	terminaltype.switchcount  这个**型号**支持几路（类型 7 声明 16）
+//	terminal.channel          这台**设备**自己报的路数
+//
+// terminal.channel 的麻烦在于它是全表通用的一列，默认值 2 —— 演示库里
+// 十三台终端清一色是 2，那是「立体声两个声道」的意思，跟报警输入无关。
+// 一台从没报过真值的报警主机就停在 2 上，只照它算，16 路的机器只能配 2 路。
+//
+// 反过来只认 switchcount 也不行：注释里记着现网四台 7 型主机的 channel 是
+// 2/32/32/32，有三台**比类型声明的 16 还多**，按 16 算会少掉一半输入。
+//
+// 所以取「型号支持的路数」打底，设备报得更多就以设备为准。
+//
+// ⚠ 与 ok112 不同：setalarmkeymap.php 只读 terminal.channel
+//
+//	（`SELECT channel FROM terminal WHERE id=? AND typeid='7'`），
+//	于是那台 channel=2 的主机在旧界面上就只能配 2 路。这里不照搬这个缺陷。
+func effectiveChannels(deviceChannels, typeSwitchCount int) int {
+	n := typeSwitchCount
+	if deviceChannels > n {
+		n = deviceChannels
+	}
+	if n < 0 {
+		return 0
+	}
+	return n
 }
 
 // AreaOption 是报警分区下拉项。
