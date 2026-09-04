@@ -450,9 +450,7 @@ func (a *app) handleEnableGet(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	// 返回整个「时间槽」：同一时刻的启用行与停用行合起来给界面，
-	// 这样编辑弹窗才能像 :80 那样逐条显示是启用还是停用。
-	it, err := a.enables.GetSlot(r.Context(), id)
+	it, err := a.enables.Get(r.Context(), id)
 	if err != nil {
 		a.failEnable(w, "查询启用计划", err)
 		return
@@ -470,21 +468,16 @@ func (a *app) handleEnableTasks(w http.ResponseWriter, r *http.Request) {
 	httpx.OK(w, list)
 }
 
-// enableReq 是表格式提交：同一时间点，哪些任务启用、哪些停用。
-//
-// ⚠ 落库时按状态拆成最多两条 enabletask 记录 —— enstate 是整行一个值，
-//
-//	一条记录装不下两种意图。详见 enable 包里 Save() 的注释。
+// enableReq 是表格式提交：同一时间点 + 一串任务，每条任务各自启用或停用。
+// 与旧版 tijiaoselects() 提交的 (allSel, get_radio) 两串并列值一一对应。
 type enableReq struct {
-	StartDate string  `json:"startdate"`
-	StartTime string  `json:"starttime"`
-	Enable    []int64 `json:"enable"`
-	Disable   []int64 `json:"disable"`
+	StartDate string              `json:"startdate"`
+	StartTime string              `json:"starttime"`
+	Tasks     []enable.TaskAction `json:"tasks"`
 }
 
-func (e enableReq) toInput() enable.SaveInput {
-	return enable.SaveInput{StartDate: e.StartDate, StartTime: e.StartTime,
-		Enable: e.Enable, Disable: e.Disable}
+func (e enableReq) toInput() enable.Input {
+	return enable.Input{StartDate: e.StartDate, StartTime: e.StartTime, Tasks: e.Tasks}
 }
 
 func (a *app) handleEnableCreate(w http.ResponseWriter, r *http.Request) {
@@ -492,12 +485,12 @@ func (a *app) handleEnableCreate(w http.ResponseWriter, r *http.Request) {
 	if !httpx.DecodeJSON(w, r, &in) {
 		return
 	}
-	res, err := a.enables.Save(r.Context(), 0, in.toInput())
+	newID, err := a.enables.Create(r.Context(), in.toInput())
 	if err != nil {
 		a.failEnable(w, "新建启用计划", err)
 		return
 	}
-	httpx.OK(w, res)
+	httpx.OK(w, map[string]interface{}{"id": newID})
 }
 
 func (a *app) handleEnableUpdate(w http.ResponseWriter, r *http.Request) {
@@ -509,12 +502,11 @@ func (a *app) handleEnableUpdate(w http.ResponseWriter, r *http.Request) {
 	if !httpx.DecodeJSON(w, r, &in) {
 		return
 	}
-	res, err := a.enables.Save(r.Context(), id, in.toInput())
-	if err != nil {
+	if err := a.enables.Update(r.Context(), id, in.toInput()); err != nil {
 		a.failEnable(w, "修改启用计划", err)
 		return
 	}
-	httpx.OK(w, res)
+	httpx.OK(w, map[string]interface{}{"id": id})
 }
 
 func (a *app) handleEnableDelete(w http.ResponseWriter, r *http.Request) {

@@ -253,28 +253,32 @@ export const deleteLedDevicesApi = (ids: number[]) => http.delete<{ deleted: num
    ================================================================== */
 
 /**
- * ⚠ enabletask.enstate：1 = 到点启用、0 = 到点停用。
- * 与 task.projectstate（0=启用）相反，与 holidaytime.projectstate（1=启用）一致。
- * 三张表两种约定，只能逐表记住。
+ * ⚠ enabletask.enstate 与 taskid 是**两串并列的逗号分隔值**，逐项对应，
+ *   取值 0 = 启用、1 = 停用（与 task.projectstate 一致，
+ *   与 holidaytime.projectstate（1=启用）相反）。
  */
-export const ENABLE_ACTION_ENABLE = 1;
-export const ENABLE_ACTION_DISABLE = 0;
+export const ENABLE_ACTION_ENABLE = 0;
+export const ENABLE_ACTION_DISABLE = 1;
 
 export interface EnableTaskRef {
   taskId: number;
   taskName: string;
   tasktype: number;
+  typeText: string;
   info: string;
+  /** 0 = 启用、1 = 停用 */
+  action: number;
+  actionText: string;
   missing: boolean;
 }
 
 export interface EnablePlan {
   id: number;
-  enstate: number;
-  actionText: string;
   startdate: string;
   starttime: string;
   tasks: EnableTaskRef[];
+  enableCount: number;
+  disableCount: number;
   /** 计划时间已过。后台执行后不会自动清理，历史记录会一直堆着。 */
   expired: boolean;
 }
@@ -285,45 +289,24 @@ export interface EnablePickTask {
   tasktype: number;
   typeText: string;
   info: string;
+  /** ⚠ task.projectstate：0 = 启用、1 = 停用。弹窗用它给单选按钮设初值 */
   projectstate: number;
   stateText: string;
-}
-
-export const getEnableListApi = (params: any) => http.get<ResPage<EnablePlan>>(PORT1 + `/api/enable-plans`, params);
-/**
- * 一个「时间点」的完整启停安排。
- *
- * ⚠ `enabletask.enstate` 是整行一个值，一条记录只能全启用或全停用。
- *   所以同一时刻的启用行与停用行由服务端合并成这一个对象返回，
- *   保存时再按状态拆回最多两条记录。
- */
-export interface EnableSlot {
-  id: number;
-  startdate: string;
-  starttime: string;
-  enable: EnableTaskRef[];
-  disable: EnableTaskRef[];
-}
-
-export interface EnableSaveResult {
-  created: number[];
-  updated: number[];
-  deleted: number[];
 }
 
 export interface EnableSaveForm {
   startdate: string;
   starttime: string;
-  enable: number[];
-  disable: number[];
+  tasks: { taskId: number; action: number }[];
 }
 
-export const getEnableApi = (id: number) => http.get<EnableSlot>(PORT1 + `/api/enable-plans/${id}`, {}, { loading: false });
+export const getEnableListApi = (params: any) => http.get<ResPage<EnablePlan>>(PORT1 + `/api/enable-plans`, params);
+export const getEnableApi = (id: number) => http.get<EnablePlan>(PORT1 + `/api/enable-plans/${id}`, {}, { loading: false });
 export const getEnableTasksApi = (keyword = "") =>
   http.get<EnablePickTask[]>(PORT1 + `/api/enable-plans/tasks`, { keyword }, { loading: false });
-export const createEnableApi = (data: EnableSaveForm) => http.post<EnableSaveResult>(PORT1 + `/api/enable-plans`, data);
+export const createEnableApi = (data: EnableSaveForm) => http.post<{ id: number }>(PORT1 + `/api/enable-plans`, data);
 export const updateEnableApi = (id: number, data: EnableSaveForm) =>
-  http.put<EnableSaveResult>(PORT1 + `/api/enable-plans/${id}`, data);
+  http.put<{ id: number }>(PORT1 + `/api/enable-plans/${id}`, data);
 export const deleteEnableApi = (ids: number[]) => http.delete<{ deleted: number }>(PORT1 + `/api/enable-plans`, { ids });
 
 /* ==================================================================

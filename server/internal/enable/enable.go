@@ -1,25 +1,42 @@
-// Package enable 实现启用管理（旧版 enableManager / displayenablemanager.php）。
+// Package enable 实现启用管理（旧版 displayenablemanager.php + enableadd.php / enablemodify.php）。
 //
 // # 这张表管什么
 //
 //	enabletask (id, enstate, startdate, starttime, taskid, flag)
 //
-// 一条记录 = 「到了某年某月某日某时某分某秒，把这一批任务批量启用或停用」。
-// 也就是定时的批量启停计划。后台 C 服务扫这张表，到点执行。
+// 一条记录 = 「到了某年某月某日某时某分某秒，把这一批任务按各自的安排启用或停用」。
+// 后台 C 服务扫这张表，到点执行。
 //
-// # ⚠ 这张表的三个字段类型都不像它们的用途
+// # ⚠ enstate 和 taskid 是**两串并列的逗号分隔值**
 //
-//	id       int(4) unsigned **zerofill**   → 查出来是 "0001" 这种补零字符串
-//	enstate  varchar(1024) DEFAULT '0'      → 只存 "0"/"1"，却给了 1024 字节
-//	taskid   varchar(2048)                  → 存的是**逗号分隔的任务 id 列表**
+// 这一点很容易看错。旧版 addmanager.html 的「提交」按钮走的是 tijiaoselects()：
 //
-// `taskid` 是一列多值 —— 典型的反范式，但红线禁止改表。
-// 新版读的时候把它拆开、按 id 去 task 表补名字，写的时候拼回去，
-// 并且**拒绝写入任何不能解析成正整数的片段**，免得脏字符串把后台的解析搞崩。
+//	for(i=0;i<document.bellform.id.length;i++){
+//	    allSel   = allSel   + "," + 这一行的 taskid;
+//	    get_radio= get_radio+ "," + (这一行选了「启用」? "0" : "1");
+//	}
+//	window.location.href = "do.php?act=yesornoenable&get_radio="+get_radio+"&allSel="+allSel+…
 //
-// 表上还有一个坑：`UNIQUE KEY (id)` 而**没有 PRIMARY KEY**。
-// zerofill + 无主键的组合意味着 `WHERE id = 1` 与 `WHERE id = '0001'` 都能命中，
-// 但排序和分页行为不如主键稳定。新版一律按 id 绑整数。
+// 落到 do.php 的 yesornoenable() 就是一条：
+//
+//	INSERT INTO enabletask(enstate,startdate,starttime,taskid,flag)
+//	VALUES('$get_radio','$startdate','$starttime','$allSel','0')
+//
+// 所以 `enstate` 里存的是 "0,1,0,0,1" 这样与 `taskid` **逐项对应**的一串，
+// 不是整行一个值 —— 列类型 varchar(1024) 也正是为此。
+//
+// # ⚠ 0 = 启用、1 = 停用
+//
+// 旧版列表 enableManager_form.html 里写着 `<{if $info[loop].enstate ==0}>启用<{else}>停用`，
+// 表单里那个（已被注释掉的）下拉也是 `<option value="0">启用</option>`。
+// 与 `task.projectstate` 同一套约定，和 `holidaytime.projectstate`（1=启用）相反。
+//
+// # 表结构上的另外两个坑（不改表，只在读写时绕开）
+//
+//	taskid 是 varchar(2048)：超长会被静默截断，而截断处很可能落在某个 id 中间 ——
+//	       后台就会解析出一个别的任务。所以保存前按字节数挡住。
+//	id 是 int(4) unsigned zerofill 且只有 UNIQUE KEY 没有 PRIMARY KEY：
+//	       查出来是 "0001" 这种补零字符串，一律 CAST 成整数用。
 //
 // # flag 是什么
 //
@@ -48,13 +65,13 @@ func New(db *sql.DB) *Service { return &Service{db: db} }
 
 var ErrNotFound = errors.New("启用计划不存在")
 
-// enstate 的两个取值。旧版表单字段叫 enabledisable / get_radio，只发 "0" / "1"。
+// enstate 里每一项的取值。
 //
-// ⚠ 这里 1 = 启用、0 = 停用，和 task.projectstate（0=启用）**相反**，
-// 和 holidaytime.projectstate（1=启用）一致。三张表两种约定，只能逐表记住。
+// ⚠ 0 = 启用、1 = 停用，与 task.projectstate 一致，
+// 与 holidaytime.projectstate（1=启用）相反。三张表两种约定，只能逐表记住。
 const (
-	ActionEnable  = 1 // 到点把这批任务启用
-	ActionDisable = 0 // 到点把这批任务停用
+	ActionEnable  = 0 // 到点把这条任务启用
+	ActionDisable = 1 // 到点把这条任务停用
 )
 
 // taskidLimit 是 enabletask.taskid 的 varchar(2048)。
@@ -62,35 +79,44 @@ const (
 // 后台解析出一个不存在的任务 id，或者更糟，解析出一个**别的**任务。
 const taskidLimit = 2048
 
+// enstateLimit 是 enabletask.enstate 的 varchar(1024)。
+// 它与 taskid 逐项对应，taskid 装得下时它一般也装得下，但还是各查各的。
+const enstateLimit = 1024
+
 const maxTasks = 200
-
-type Task struct {
-	TaskID   int64  `json:"taskId"`
-	TaskName string `json:"taskName"`
-	TaskType int    `json:"tasktype"`
-	Info     string `json:"info"`
-	// Missing 表示这个 id 在 task 表里已经找不到了。
-	// 旧版删任务时不清理 enabletask，所以现网很可能出现悬空 id。
-	Missing bool `json:"missing"`
-}
-
-type Item struct {
-	ID         int64  `json:"id"`
-	Action     int    `json:"enstate"`
-	ActionText string `json:"actionText"`
-	StartDate  string `json:"startdate"`
-	StartTime  string `json:"starttime"`
-	Tasks      []Task `json:"tasks"`
-	// Expired 表示计划时间已经过去。后台执行过之后旧版不会清理，
-	// 所以列表里会一直堆着历史记录 —— 标出来让人知道哪些还会生效。
-	Expired bool `json:"expired"`
-}
 
 func actionText(v int) string {
 	if v == ActionEnable {
 		return "启用"
 	}
 	return "停用"
+}
+
+type Task struct {
+	TaskID   int64  `json:"taskId"`
+	TaskName string `json:"taskName"`
+	TaskType int    `json:"tasktype"`
+	TypeText string `json:"typeText"`
+	Info     string `json:"info"`
+	// Action 是这条任务到点要做什么：0 启用、1 停用。
+	Action     int    `json:"action"`
+	ActionText string `json:"actionText"`
+	// Missing 表示这个 id 在 task 表里已经找不到了。
+	// 旧版删任务时不清理 enabletask，所以现网很可能出现悬空 id。
+	Missing bool `json:"missing"`
+}
+
+type Item struct {
+	ID        int64  `json:"id"`
+	StartDate string `json:"startdate"`
+	StartTime string `json:"starttime"`
+	Tasks     []Task `json:"tasks"`
+	// EnableCount / DisableCount 是给列表上那一列做摘要用的
+	EnableCount  int `json:"enableCount"`
+	DisableCount int `json:"disableCount"`
+	// Expired 表示计划时间已经过去。后台执行过之后旧版不会清理，
+	// 所以列表里会一直堆着历史记录 —— 标出来让人知道哪些还会生效。
+	Expired bool `json:"expired"`
 }
 
 type Query struct {
@@ -136,7 +162,7 @@ func (s *Service) List(ctx context.Context, q Query) (*ListResult, error) {
 
 	items := make([]Item, 0, q.Pager.PageSize)
 	allIDs := map[int64]bool{}
-	rawTasks := make([][]int64, 0, q.Pager.PageSize)
+	raw := make([][]idAction, 0, q.Pager.PageSize)
 	now := time.Now()
 
 	for rs.Next() {
@@ -145,16 +171,15 @@ func (s *Service) List(ctx context.Context, q Query) (*ListResult, error) {
 		if err := rs.Scan(&it.ID, &enstate, &it.StartDate, &it.StartTime, &taskids); err != nil {
 			return nil, fmt.Errorf("扫描启用计划行: %w", err)
 		}
-		// enstate 是 varchar，脏值一律按「停用」处理 —— 宁可少放一次广播，
-		// 也不要把一个解析不了的值当成「启用」。
-		if strings.TrimSpace(enstate) == "1" {
-			it.Action = ActionEnable
-		}
-		it.ActionText = actionText(it.Action)
-		ids := parseIDs(taskids)
-		rawTasks = append(rawTasks, ids)
-		for _, id := range ids {
-			allIDs[id] = true
+		pairs := parseRow(taskids, enstate)
+		raw = append(raw, pairs)
+		for _, p := range pairs {
+			allIDs[p.id] = true
+			if p.action == ActionEnable {
+				it.EnableCount++
+			} else {
+				it.DisableCount++
+			}
 		}
 		if t, err := time.ParseInLocation("2006-01-02 15:04:05",
 			it.StartDate+" "+it.StartTime, time.Local); err == nil {
@@ -172,29 +197,75 @@ func (s *Service) List(ctx context.Context, q Query) (*ListResult, error) {
 		return nil, err
 	}
 	for i := range items {
-		for _, id := range rawTasks[i] {
-			t, ok := names[id]
-			if !ok {
-				t = Task{TaskID: id, TaskName: "(任务已删除)", Missing: true}
-			}
-			items[i].Tasks = append(items[i].Tasks, t)
-		}
+		items[i].Tasks = fillTasks(raw[i], names)
 	}
 	return &ListResult{Items: items, Total: total}, nil
 }
 
-// parseIDs 把 "70001,70002" 拆成 id 列表。
-// 解析不了的片段直接丢掉 —— 这一列是 varchar，旧数据里什么都可能有。
-func parseIDs(s string) []int64 {
-	out := []int64{}
+// idAction 是 taskid / enstate 两串并列值拆开之后的一对。
+type idAction struct {
+	id     int64
+	action int
+}
+
+// parseRow 把 "70001,70002" + "0,1" 拆成逐条的 (任务, 动作)。
+//
+// 兼容两种历史写法：
+//   - enstate 与 taskid 等长 → 逐项对应（旧版「提交」按钮写出来的）
+//   - enstate 只有一项       → 整行一个值，套用到所有任务
+//     （旧版那条已被注释掉的表单路径 addenable 写出来的）
+//
+// 解析不了的片段直接丢掉 —— 这两列都是 varchar，旧数据里什么都可能有。
+// 缺失的动作按「停用」处理：宁可少放一次广播，也不要把解析不了的值当成「启用」。
+func parseRow(taskids, enstate string) []idAction {
+	ids := []int64{}
 	seen := map[int64]bool{}
-	for _, p := range strings.Split(s, ",") {
+	for _, p := range strings.Split(taskids, ",") {
 		v, err := strconv.ParseInt(strings.TrimSpace(p), 10, 64)
 		if err != nil || v <= 0 || seen[v] {
 			continue
 		}
 		seen[v] = true
-		out = append(out, v)
+		ids = append(ids, v)
+	}
+	states := []int{}
+	for _, p := range strings.Split(enstate, ",") {
+		p = strings.TrimSpace(p)
+		if p == "" {
+			continue
+		}
+		if p == "0" {
+			states = append(states, ActionEnable)
+		} else {
+			states = append(states, ActionDisable)
+		}
+	}
+	out := make([]idAction, 0, len(ids))
+	for i, id := range ids {
+		a := ActionDisable
+		switch {
+		case len(states) == len(ids):
+			a = states[i]
+		case len(states) == 1:
+			a = states[0]
+		case i < len(states):
+			a = states[i]
+		}
+		out = append(out, idAction{id: id, action: a})
+	}
+	return out
+}
+
+func fillTasks(pairs []idAction, names map[int64]Task) []Task {
+	out := make([]Task, 0, len(pairs))
+	for _, p := range pairs {
+		t, ok := names[p.id]
+		if !ok {
+			t = Task{TaskID: p.id, TaskName: "(任务已删除)", Missing: true}
+		}
+		t.Action = p.action
+		t.ActionText = actionText(p.action)
+		out = append(out, t)
 	}
 	return out
 }
@@ -222,6 +293,7 @@ func (s *Service) taskNames(ctx context.Context, ids map[int64]bool) (map[int64]
 		if err := rs.Scan(&t.TaskID, &t.TaskName, &t.TaskType, &t.Info); err != nil {
 			return nil, err
 		}
+		t.TypeText = typeText(t.TaskType)
 		out[t.TaskID] = t
 	}
 	return out, rs.Err()
@@ -253,107 +325,117 @@ func (s *Service) Get(ctx context.Context, id int64) (*Item, error) {
 	if err != nil {
 		return nil, fmt.Errorf("查询启用计划: %w", err)
 	}
-	if strings.TrimSpace(enstate) == "1" {
-		it.Action = ActionEnable
+	pairs := parseRow(taskids, enstate)
+	ids := map[int64]bool{}
+	for _, p := range pairs {
+		ids[p.id] = true
+		if p.action == ActionEnable {
+			it.EnableCount++
+		} else {
+			it.DisableCount++
+		}
 	}
-	it.ActionText = actionText(it.Action)
-
-	ids := parseIDs(taskids)
-	names, err := s.taskNames(ctx, toSet(ids))
+	names, err := s.taskNames(ctx, ids)
 	if err != nil {
 		return nil, err
 	}
-	it.Tasks = []Task{}
-	for _, tid := range ids {
-		t, ok := names[tid]
-		if !ok {
-			t = Task{TaskID: tid, TaskName: "(任务已删除)", Missing: true}
-		}
-		it.Tasks = append(it.Tasks, t)
+	it.Tasks = fillTasks(pairs, names)
+	if t, err := time.ParseInLocation("2006-01-02 15:04:05",
+		it.StartDate+" "+it.StartTime, time.Local); err == nil {
+		it.Expired = t.Before(time.Now())
 	}
 	return &it, nil
 }
 
-func toSet(ids []int64) map[int64]bool {
-	m := map[int64]bool{}
-	for _, id := range ids {
-		m[id] = true
-	}
-	return m
-}
-
 // ---------- 新建 / 修改 ----------
 
+// Input 是「一个时间点 + 一串任务，每条任务各自启用或停用」——
+// 与旧版 tijiaoselects() 提交的 (allSel, get_radio) 两串值一一对应。
 type Input struct {
-	Action    int
 	StartDate string
 	StartTime string
-	TaskIDs   []int64
+	Tasks     []TaskAction
+}
+
+type TaskAction struct {
+	TaskID int64 `json:"taskId"`
+	Action int   `json:"action"`
 }
 
 func (s *Service) validate(ctx context.Context, in *Input) error {
-	if in.Action != ActionEnable && in.Action != ActionDisable {
-		return fmt.Errorf("操作只能是启用(1)或停用(0)")
-	}
 	in.StartDate = strings.TrimSpace(in.StartDate)
 	in.StartTime = strings.TrimSpace(in.StartTime)
-
 	if _, err := time.Parse("2006-01-02", in.StartDate); err != nil {
-		return fmt.Errorf("执行日期格式不正确，必须是 YYYY-MM-DD")
+		return fmt.Errorf("开始日期格式不正确，必须是 YYYY-MM-DD")
 	}
 	if _, err := time.Parse("15:04:05", in.StartTime); err != nil {
-		return fmt.Errorf("执行时间格式不正确，必须是 HH:MM:SS")
+		return fmt.Errorf("开始时间格式不正确，必须是 HH:MM:SS")
 	}
-	if len(in.TaskIDs) == 0 {
+	if len(in.Tasks) == 0 {
 		return fmt.Errorf("请至少选择一条任务")
 	}
-	if len(in.TaskIDs) > maxTasks {
+	if len(in.Tasks) > maxTasks {
 		return fmt.Errorf("一个启用计划最多绑定 %d 条任务", maxTasks)
 	}
 	seen := map[int64]bool{}
-	for _, id := range in.TaskIDs {
-		if id <= 0 {
+	ids := make([]int64, 0, len(in.Tasks))
+	for i := range in.Tasks {
+		t := &in.Tasks[i]
+		if t.TaskID <= 0 {
 			return fmt.Errorf("任务列表里有非法的任务 ID")
 		}
-		if seen[id] {
+		if seen[t.TaskID] {
 			return fmt.Errorf("任务列表里有重复的任务")
 		}
-		seen[id] = true
+		seen[t.TaskID] = true
+		if t.Action != ActionEnable && t.Action != ActionDisable {
+			return fmt.Errorf("每条任务只能设为启用(0)或停用(1)")
+		}
+		ids = append(ids, t.TaskID)
 	}
 	// 逐条确认任务存在。旧版一条都不查：任务删掉之后计划还在，
 	// 到点后台去启用一个不存在的任务。
-	ph, args := placeholders(in.TaskIDs)
+	ph, args := placeholders(ids)
 	var n int
 	if err := s.db.QueryRowContext(ctx,
 		`SELECT COUNT(*) FROM task WHERE taskid IN (`+ph+`)`, args...).Scan(&n); err != nil {
 		return fmt.Errorf("校验任务: %w", err)
 	}
-	if n != len(in.TaskIDs) {
+	if n != len(ids) {
 		return fmt.Errorf("任务列表里有已不存在的任务，请重新选择")
 	}
-	// 拼出来的字符串必须装得下 varchar(2048)。
+	// 拼出来的两串都必须装得下各自的 varchar。
 	// 截断会落在某个 id 中间，后台解析出一个**别的**任务 —— 这比报错危险得多。
-	if len(joinIDs(in.TaskIDs)) > taskidLimit {
+	taskCol, stateCol := serialize(in.Tasks)
+	if len(taskCol) > taskidLimit {
 		return fmt.Errorf("选中的任务过多，任务 ID 列表超出 %d 字节上限，请拆成多条计划", taskidLimit)
+	}
+	if len(stateCol) > enstateLimit {
+		return fmt.Errorf("选中的任务过多，启停标志列表超出 %d 字节上限，请拆成多条计划", enstateLimit)
 	}
 	return nil
 }
 
-func joinIDs(ids []int64) string {
-	parts := make([]string, len(ids))
-	for i, id := range ids {
-		parts[i] = strconv.FormatInt(id, 10)
+// serialize 把逐条的 (任务, 动作) 拼成 taskid / enstate 两串并列值，
+// 顺序一一对应 —— 这正是旧版 allSel / get_radio 的写法。
+func serialize(list []TaskAction) (string, string) {
+	ids := make([]string, len(list))
+	states := make([]string, len(list))
+	for i, t := range list {
+		ids[i] = strconv.FormatInt(t.TaskID, 10)
+		states[i] = strconv.Itoa(t.Action)
 	}
-	return strings.Join(parts, ",")
+	return strings.Join(ids, ","), strings.Join(states, ",")
 }
 
 func (s *Service) Create(ctx context.Context, in Input) (int64, error) {
 	if err := s.validate(ctx, &in); err != nil {
 		return 0, err
 	}
+	taskCol, stateCol := serialize(in.Tasks)
 	res, err := s.db.ExecContext(ctx,
 		`INSERT INTO enabletask (enstate, startdate, starttime, taskid, flag) VALUES (?,?,?,?,?)`,
-		strconv.Itoa(in.Action), in.StartDate, in.StartTime, joinIDs(in.TaskIDs), 0)
+		stateCol, in.StartDate, in.StartTime, taskCol, 0)
 	if err != nil {
 		return 0, fmt.Errorf("新建启用计划: %w", err)
 	}
@@ -367,242 +449,14 @@ func (s *Service) Update(ctx context.Context, id int64, in Input) error {
 	if err := s.validate(ctx, &in); err != nil {
 		return err
 	}
+	taskCol, stateCol := serialize(in.Tasks)
 	// flag 不在 UPDATE 里：旧版新增时恒写 0，之后从不修改，这里保持不动。
 	if _, err := s.db.ExecContext(ctx,
 		`UPDATE enabletask SET enstate = ?, startdate = ?, starttime = ?, taskid = ? WHERE id = ?`,
-		strconv.Itoa(in.Action), in.StartDate, in.StartTime, joinIDs(in.TaskIDs), id); err != nil {
+		stateCol, in.StartDate, in.StartTime, taskCol, id); err != nil {
 		return fmt.Errorf("修改启用计划: %w", err)
 	}
 	return nil
-}
-
-// ---------- 逐条设置启用/停用（:80 的表格式勾选）----------
-//
-// :80 的「添加启用管理」是一张任务表格，每条任务单独勾「是否启用」，
-// 外加「全选启用 / 全选停用」两个按钮。
-//
-// ⚠ 而 `enabletask.enstate` 是**整行一个值**、`taskid` 是一串 id ——
-//    一条记录只能全启用或全停用，表结构如此，红线禁止改表。
-//
-// 所以这里的做法是：界面照 :80 逐条勾，**保存时按状态拆成最多两条记录**
-// （启用的一条、停用的一条），日期时间相同。这不是绕过表结构，
-// 而是把「一个时间点要做两件事」如实地写成两行 —— 后台扫表时本来就是逐行执行的。
-//
-// 修改时同理：以被编辑那条记录的**原日期时间**为一个「时间槽」，
-// 槽里最多维护两行（启用一行、停用一行）：某一侧变空就删掉那行，
-// 原本没有的一侧就新建。所以反复编辑不会越攒越多。
-
-// SaveInput 是表格式保存的入参：同一时间点，哪些任务要启用、哪些要停用。
-type SaveInput struct {
-	StartDate string
-	StartTime string
-	Enable    []int64
-	Disable   []int64
-}
-
-// SaveResult 如实回报这次动了哪几行，界面照实说。
-type SaveResult struct {
-	Created []int64 `json:"created"`
-	Updated []int64 `json:"updated"`
-	Deleted []int64 `json:"deleted"`
-}
-
-func (s *Service) validateSave(ctx context.Context, in *SaveInput) error {
-	in.StartDate = strings.TrimSpace(in.StartDate)
-	in.StartTime = strings.TrimSpace(in.StartTime)
-	if _, err := time.Parse("2006-01-02", in.StartDate); err != nil {
-		return fmt.Errorf("开始日期格式不正确，必须是 YYYY-MM-DD")
-	}
-	if _, err := time.Parse("15:04:05", in.StartTime); err != nil {
-		return fmt.Errorf("开始时间格式不正确，必须是 HH:MM:SS")
-	}
-	if len(in.Enable)+len(in.Disable) == 0 {
-		return fmt.Errorf("请至少选择一条任务")
-	}
-	// 同一条任务不能既启用又停用 —— 那是两条互相打架的指令
-	inEnable := map[int64]bool{}
-	for _, id := range in.Enable {
-		inEnable[id] = true
-	}
-	for _, id := range in.Disable {
-		if inEnable[id] {
-			return fmt.Errorf("同一条任务不能同时设为启用和停用")
-		}
-	}
-	all := append(append([]int64{}, in.Enable...), in.Disable...)
-	for _, group := range [][]int64{in.Enable, in.Disable} {
-		if len(group) > maxTasks {
-			return fmt.Errorf("同一种操作最多绑定 %d 条任务", maxTasks)
-		}
-		if len(joinIDs(group)) > taskidLimit {
-			return fmt.Errorf("选中的任务过多，任务 ID 列表超出 %d 字节上限，请拆开设置", taskidLimit)
-		}
-	}
-	seen := map[int64]bool{}
-	for _, id := range all {
-		if id <= 0 {
-			return fmt.Errorf("任务列表里有非法的任务 ID")
-		}
-		if seen[id] {
-			return fmt.Errorf("任务列表里有重复的任务")
-		}
-		seen[id] = true
-	}
-	ph, args := placeholders(all)
-	var n int
-	if err := s.db.QueryRowContext(ctx,
-		`SELECT COUNT(*) FROM task WHERE taskid IN (`+ph+`)`, args...).Scan(&n); err != nil {
-		return fmt.Errorf("校验任务: %w", err)
-	}
-	if n != len(all) {
-		return fmt.Errorf("任务列表里有已不存在的任务，请重新选择")
-	}
-	return nil
-}
-
-// slotRow 是时间槽里已有的一行。
-type slotRow struct {
-	id     int64
-	action int
-}
-
-// slotRows 找出与给定日期时间相同的已有记录（最多关心两行：启用一行、停用一行）。
-func (s *Service) slotRows(ctx context.Context, date, tm string) ([]slotRow, error) {
-	rs, err := s.db.QueryContext(ctx, `
-		SELECT CAST(id AS UNSIGNED), COALESCE(enstate,'0')
-		FROM enabletask
-		WHERE CAST(startdate AS CHAR) = ? AND CAST(starttime AS CHAR) = ?
-		ORDER BY id`, date, tm)
-	if err != nil {
-		return nil, fmt.Errorf("查询同一时间点的启用计划: %w", err)
-	}
-	defer rs.Close()
-	out := []slotRow{}
-	for rs.Next() {
-		var r slotRow
-		var st string
-		if err := rs.Scan(&r.id, &st); err != nil {
-			return nil, err
-		}
-		if strings.TrimSpace(st) == "1" {
-			r.action = ActionEnable
-		}
-		out = append(out, r)
-	}
-	return out, rs.Err()
-}
-
-// Save 新建或修改一个「时间点」的启停安排。editID = 0 表示新建。
-func (s *Service) Save(ctx context.Context, editID int64, in SaveInput) (*SaveResult, error) {
-	if err := s.validateSave(ctx, &in); err != nil {
-		return nil, err
-	}
-
-	out := &SaveResult{Created: []int64{}, Updated: []int64{}, Deleted: []int64{}}
-
-	// 修改时以**原来的**日期时间定位同槽的记录；新建时槽是空的。
-	existing := []slotRow{}
-	if editID > 0 {
-		cur, err := s.Get(ctx, editID)
-		if err != nil {
-			return nil, err
-		}
-		rows, err := s.slotRows(ctx, cur.StartDate, cur.StartTime)
-		if err != nil {
-			return nil, err
-		}
-		existing = rows
-	}
-	// 每种状态只认槽里的第一行；同状态的重复行（历史脏数据）不动它们，
-	// 免得一次编辑顺手改掉别人建的记录。
-	pick := func(action int) int64 {
-		for _, r := range existing {
-			if r.action == action {
-				return r.id
-			}
-		}
-		return 0
-	}
-
-	tx, err := s.db.BeginTx(ctx, nil)
-	if err != nil {
-		return nil, fmt.Errorf("开启事务: %w", err)
-	}
-	defer func() { _ = tx.Rollback() }()
-
-	for _, g := range []struct {
-		action int
-		ids    []int64
-	}{{ActionEnable, in.Enable}, {ActionDisable, in.Disable}} {
-		id := pick(g.action)
-		switch {
-		case len(g.ids) > 0 && id > 0:
-			// flag 不在 UPDATE 里：旧版新增时恒写 0，之后从不修改
-			if _, err := tx.ExecContext(ctx,
-				`UPDATE enabletask SET enstate = ?, startdate = ?, starttime = ?, taskid = ? WHERE id = ?`,
-				strconv.Itoa(g.action), in.StartDate, in.StartTime, joinIDs(g.ids), id); err != nil {
-				return nil, fmt.Errorf("修改启用计划: %w", err)
-			}
-			out.Updated = append(out.Updated, id)
-		case len(g.ids) > 0:
-			res, err := tx.ExecContext(ctx,
-				`INSERT INTO enabletask (enstate, startdate, starttime, taskid, flag) VALUES (?,?,?,?,?)`,
-				strconv.Itoa(g.action), in.StartDate, in.StartTime, joinIDs(g.ids), 0)
-			if err != nil {
-				return nil, fmt.Errorf("新建启用计划: %w", err)
-			}
-			newID, _ := res.LastInsertId()
-			out.Created = append(out.Created, newID)
-		case id > 0:
-			// 这一侧被清空了：把对应的那行删掉，而不是留一条空 taskid 的记录
-			if _, err := tx.ExecContext(ctx,
-				`DELETE FROM enabletask WHERE id = ?`, id); err != nil {
-				return nil, fmt.Errorf("删除启用计划: %w", err)
-			}
-			out.Deleted = append(out.Deleted, id)
-		}
-	}
-
-	if err := tx.Commit(); err != nil {
-		return nil, fmt.Errorf("提交事务: %w", err)
-	}
-	return out, nil
-}
-
-// SlotDetail 是编辑弹窗需要的数据：这个时间点上，哪些任务启用、哪些停用。
-type SlotDetail struct {
-	ID        int64  `json:"id"`
-	StartDate string `json:"startdate"`
-	StartTime string `json:"starttime"`
-	Enable    []Task `json:"enable"`
-	Disable   []Task `json:"disable"`
-}
-
-// GetSlot 读一个时间槽的完整安排（把同一时刻的启用行与停用行合起来给界面）。
-func (s *Service) GetSlot(ctx context.Context, id int64) (*SlotDetail, error) {
-	cur, err := s.Get(ctx, id)
-	if err != nil {
-		return nil, err
-	}
-	out := &SlotDetail{ID: id, StartDate: cur.StartDate, StartTime: cur.StartTime,
-		Enable: []Task{}, Disable: []Task{}}
-
-	rows, err := s.slotRows(ctx, cur.StartDate, cur.StartTime)
-	if err != nil {
-		return nil, err
-	}
-	for _, r := range rows {
-		it, err := s.Get(ctx, r.id)
-		if err != nil {
-			return nil, err
-		}
-		if r.action == ActionEnable {
-			out.Enable = append(out.Enable, it.Tasks...)
-		} else {
-			out.Disable = append(out.Disable, it.Tasks...)
-		}
-	}
-	return out, nil
 }
 
 func (s *Service) Delete(ctx context.Context, ids []int64) (int, error) {
@@ -626,41 +480,46 @@ type PickTask struct {
 	TaskType int    `json:"tasktype"`
 	TypeText string `json:"typeText"`
 	Info     string `json:"info"`
-	// State 是任务当前的启用状态（task.projectstate，⚠ 0 = 启用）。
+	// State 是任务当前的启用状态（task.projectstate，0 = 启用）。
+	// 旧版 addmanager.html 用它给每一行的单选按钮设初值。
 	State     int    `json:"projectstate"`
 	StateText string `json:"stateText"`
 }
 
 // typeText 把 tasktype 翻成人话。取值依据是 task 表 tasktype 列的注释
-// 「1-作息 2-文件 3-采播 4-电话 5-功放」，加上各页面实测到的扩展类型。
+// 「1-作息 2-文件 3-采播 4-电话 5-功放」，加上旧版 addmanager.html 里那串
+// if/elseif 用到的扩展类型。
 func typeText(t int) string {
 	switch t {
 	case 1:
-		return "作息条目"
+		return "作息方案"
 	case 2, 7:
 		return "文件广播"
 	case 3:
-		return "采播"
+		return "采播管理"
 	case 4:
 		return "电话采播"
 	case 5:
 		return "终端功放"
 	case 9:
 		return "电源子任务"
+	case 10:
+		return "网络电台"
 	case 13:
 		return "系统任务"
 	case 15, 17, 19:
 		return "文字语音"
 	case 24, 30:
-		return "LED 播放"
+		return "led播放"
 	}
 	return fmt.Sprintf("类型 %d", t)
 }
 
 // PickTasks 列出可以放进启用计划的任务。
 //
-// 旧版 enableadd.php 的候选是**全部任务**，这里保持一致 ——
-// 「哪些任务可以被定时启停」没有业务上的限制。
+// 旧版 enableadd.php 的候选是**全部任务**，而且是整张表一次列出来、
+// 每行一个「启用 / 停用」单选 —— 不是先挑再设。这里保持一致：
+// 一次把候选全给界面，让它照旧版那样铺成一张表。
 // 普通用户只看自己的，与任务模块同一套口径。
 func (s *Service) PickTasks(ctx context.Context, isAdmin bool, userID int64, keyword string) ([]PickTask, error) {
 	cond := &store.Cond{}
@@ -685,7 +544,7 @@ func (s *Service) PickTasks(ctx context.Context, isAdmin bool, userID int64, key
 			return nil, err
 		}
 		p.TypeText = typeText(p.TaskType)
-		// ⚠ task.projectstate：0 = 启用、1 = 停用（与 enabletask.enstate 相反）
+		// task.projectstate：0 = 启用、1 = 停用
 		if p.State == 0 {
 			p.StateText = "启用"
 		} else {

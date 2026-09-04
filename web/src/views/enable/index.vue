@@ -1,25 +1,26 @@
 <!--
-  启用管理
+  启用管理（旧版 displayenablemanager.php + enableadd.php / enablemodify.php）
 
-  一条记录 = 「到了某年某月某日某时某分某秒，把这一批任务批量启用或停用」。
+  一条记录 = 「到了某年某月某日某时某分某秒，把这一批任务按各自的安排启用或停用」。
   后台扫 enabletask 表，到点执行。
 
-  ⚠ enstate：1 = 启用、0 = 停用。
-     和 task.projectstate（0=启用）相反，和 holidaytime.projectstate（1=启用）一致。
-     三张表两种约定，只能逐表记住。
+  ⚠ enstate 与 taskid 是**两串并列的逗号分隔值**，逐项对应，
+     取值 0 = 启用、1 = 停用（和 task.projectstate 一致，
+     和 holidaytime.projectstate（1=启用）相反）。
+     旧版「提交」按钮 tijiaoselects() 拼的就是这两串，详见 server/internal/enable。
 
-  表结构上的两个坑（不改表，只在读写时绕开）：
-    · taskid 是 varchar(2048)，存的是**逗号分隔的任务 id 列表**。
-      超长会被静默截断，而截断处很可能落在某个 id 中间 ——
-      后台就会解析出一个别的任务。所以保存前按字节数挡住。
-    · id 是 zerofill，查出来是 "0001" 这种补零字符串，一律 CAST 成整数用。
+  弹窗照旧版 addmanager.html：一张**全部任务**的表，每行一个「启用 / 停用」单选，
+  单选的初值取自这条任务当前的 projectstate；底下三个按钮
+  「全选启用 / 全选停用 / 提交」。旧版的「启用/停用」总下拉和表单 submit
+  在模板里是被注释掉的，这里不做。
 -->
 <template>
   <div class="table-box">
     <ProTable ref="proTableRef" :columns="columns" :request-api="getEnableListApi" row-key="id">
       <template #tableHeader="scope">
         <div class="header-bar">
-          <!-- 按钮对齐 :80（页面规格.txt「启用管理」）：添加 / 删除 -->
+          <!-- 按钮照旧版 enableManager_form.html：全选 / 取消 / 添加 / 修改 / 删除
+               （全选与取消由 ProTable 的复选框代劳，修改是行内按钮） -->
           <div class="header-left">
             <el-button type="primary" :disabled="!canEdit" @click="openCreate">添加</el-button>
             <el-button type="danger" :disabled="!canEdit || !scope.isSelected" @click="doDelete(scope.selectedListIds)">
@@ -32,10 +33,6 @@
         </div>
       </template>
 
-      <template #enstate="s">
-        <el-tag :type="s.row.enstate === 1 ? 'success' : 'warning'" size="small">{{ s.row.actionText }}</el-tag>
-      </template>
-
       <template #starttime="s">
         {{ s.row.starttime }}
         <el-tag v-if="s.row.expired" type="info" size="small" effect="plain" class="ml6">已过期</el-tag>
@@ -44,16 +41,16 @@
       <template #tasks="s">
         <template v-if="s.row.tasks?.length">
           <el-tag
-            v-for="t in s.row.tasks?.slice(0, 6)"
+            v-for="t in s.row.tasks?.slice(0, 8)"
             :key="t.taskId"
-            :type="t.missing ? 'danger' : 'primary'"
+            :type="t.missing ? 'danger' : t.action === 0 ? 'success' : 'warning'"
             size="small"
             effect="plain"
             class="task-tag"
           >
-            {{ t.taskName }}
+            {{ t.taskName }} · {{ t.actionText }}
           </el-tag>
-          <span v-if="s.row.tasks?.length > 6" class="muted">…共 {{ s.row.tasks?.length }} 条</span>
+          <span v-if="s.row.tasks?.length > 8" class="muted">…共 {{ s.row.tasks?.length }} 条</span>
         </template>
         <span v-else class="muted">未绑定任务</span>
       </template>
@@ -68,83 +65,75 @@
       <el-form :model="form" label-width="110px">
         <el-row :gutter="18">
           <el-col :span="12">
-            <!-- 表单项名称照 :80 的「添加启用管理」弹窗：开始日期 / 开始时间 / 选择任务 -->
             <el-form-item label="开始日期" required>
-              <el-date-picker v-model="form.startdate" type="date" value-format="YYYY-MM-DD" :clearable="false" class="fill" />
+              <el-date-picker
+                v-model="form.startdate"
+                type="date"
+                value-format="YYYY-MM-DD"
+                placeholder="请选择开始日期"
+                :clearable="false"
+                class="fill"
+              />
+              <div v-if="err.startdate" class="err">{{ err.startdate }}</div>
             </el-form-item>
           </el-col>
           <el-col :span="12">
             <el-form-item label="开始时间" required>
-              <el-time-picker v-model="form.starttime" value-format="HH:mm:ss" :clearable="false" class="fill" />
+              <el-time-picker
+                v-model="form.starttime"
+                value-format="HH:mm:ss"
+                placeholder="请选择开始时间"
+                :clearable="false"
+                class="fill"
+              />
             </el-form-item>
           </el-col>
         </el-row>
 
-        <!--
-          :80 是一张任务表格，每条单独勾「是否启用」，外加「全选启用 / 全选停用」。
-          ⚠ enabletask.enstate 是**整行**一个值、taskid 是一串 id ——
-            一条记录装不下两种意图。所以保存时按状态**拆成最多两条记录**
-            （启用一条、停用一条，日期时间相同）。这不是绕过表结构，
-            而是把「一个时间点要做两件事」如实写成两行，后台本来就是逐行执行的。
-        -->
         <!-- ⚠ 表格必须包一层 width:100% 的块，否则会被 el-form-item 的 flex 压扁 -->
-        <el-form-item label="选择任务" required>
+        <el-form-item label="任务名称" required>
           <div class="pick-wrap">
-          <div class="pick-bar">
-            <el-input
-              v-model="pickKeyword"
-              placeholder="搜索任务名称"
-              clearable
-              size="small"
-              style="width: 220px"
-              @input="loadTasks"
-            />
-            <el-select
-              v-model="picking"
-              multiple
-              filterable
-              collapse-tags
-              collapse-tags-tooltip
-              :loading="taskLoading"
-              placeholder="从这里挑任务加进下表"
-              size="small"
-              style="width: 280px"
-              @change="onPick"
-            >
-              <el-option v-for="t in pickTasks" :key="t.taskId" :label="t.taskName" :value="t.taskId">
-                <span>{{ t.taskName }}</span>
-                <span class="opt-sub">{{ t.typeText }} · 当前{{ t.stateText }}</span>
-              </el-option>
-            </el-select>
-            <el-button size="small" type="primary" :disabled="!rows.length" @click="setAll(1)">全选启用</el-button>
-            <el-button size="small" type="warning" :disabled="!rows.length" @click="setAll(0)">全选停用</el-button>
-          </div>
+            <div class="pick-bar">
+              <el-input
+                v-model="pickKeyword"
+                placeholder="搜索任务名称"
+                clearable
+                size="small"
+                style="width: 240px"
+                @input="() => loadTasks()"
+              />
+              <div class="grow"></div>
+              <el-button size="small" type="primary" :disabled="!rows.length" @click="setAll(0)">全选启用</el-button>
+              <el-button size="small" type="warning" :disabled="!rows.length" @click="setAll(1)">全选停用</el-button>
+            </div>
 
-          <el-table :data="rows" size="small" max-height="300" class="mt8" empty-text="还没有选任务">
-            <el-table-column prop="taskName" label="任务名称" min-width="200" show-overflow-tooltip />
-            <el-table-column prop="typeText" label="任务类型" width="120" />
-            <el-table-column label="是否启用" width="180">
-              <template #default="{ row }">
-                <el-radio-group v-model="row.enstate" size="small">
-                  <el-radio-button :value="1">启用</el-radio-button>
-                  <el-radio-button :value="0">停用</el-radio-button>
-                </el-radio-group>
-              </template>
-            </el-table-column>
-            <el-table-column label="操作" width="80">
-              <template #default="{ $index }">
-                <el-button type="danger" link :icon="Delete" @click="rows.splice($index, 1)" />
-              </template>
-            </el-table-column>
-          </el-table>
-
+            <el-table :data="rows" size="small" max-height="360" class="mt8" v-loading="taskLoading" empty-text="没有可选的任务">
+              <el-table-column type="index" label="选项" width="70" />
+              <el-table-column prop="taskName" label="任务名称" min-width="220" show-overflow-tooltip />
+              <el-table-column prop="typeText" label="任务类型" width="130" />
+              <el-table-column label="操作" width="190">
+                <template #default="{ row }">
+                  <el-radio-group v-model="row.action" size="small">
+                    <el-radio-button :value="0">启用</el-radio-button>
+                    <el-radio-button :value="1">停用</el-radio-button>
+                  </el-radio-group>
+                </template>
+              </el-table-column>
+              <el-table-column label="计入本次" width="100">
+                <template #default="{ row }">
+                  <el-checkbox v-model="row.picked" />
+                </template>
+              </el-table-column>
+            </el-table>
+            <div class="tip">勾上「计入本次」的任务才会写进这条计划；单选按钮的初值取自这条任务当前的启停状态。</div>
+            <div v-if="err.tasks" class="err">{{ err.tasks }}</div>
           </div>
         </el-form-item>
       </el-form>
 
       <template #footer>
         <el-button @click="dlg.visible = false">取消</el-button>
-        <el-button type="primary" :loading="dlg.saving" @click="submit">确定</el-button>
+        <el-button type="primary" :loading="dlg.saving" @click="submit">提交</el-button>
       </template>
     </el-dialog>
   </div>
@@ -163,7 +152,7 @@ import {
   getEnableTasksApi,
   updateEnableApi
 } from "@/api/modules/ninemod";
-import type { EnablePickTask, EnablePlan } from "@/api/modules/ninemod";
+import type { EnablePlan } from "@/api/modules/ninemod";
 import ProTable from "@/components/ProTable/index.vue";
 import { useAuthStore } from "@/stores/modules/auth";
 import type { ColumnProps, ProTableInstance } from "@/components/ProTable/interface";
@@ -174,114 +163,111 @@ const toIds = (raw: (string | number)[]) => (raw ?? []).map(Number).filter(n => 
 
 const proTableRef = ref<ProTableInstance>();
 
-// 列清单对齐 :80：任务名称 | 起始日期 | 播放时间 | 操作，无搜索区。
-// :80 把「任务名称」放第一列 —— 我们一条计划可以绑多条任务，所以这一列是任务标签的集合。
-// 「动作」是我们多的一列：一条计划到点是启用还是停用，不写出来根本看不出来。
+// 列清单照旧版 enableManager_form.html：任务名称 | 起始日期 | 播放时间。
+// （模板里还有一列「状态」，但整块是被注释掉的，所以不列。）
 const columns = reactive<ColumnProps<EnablePlan>[]>([
   { type: "selection", fixed: "left", width: 50 },
-  { prop: "tasks", label: "任务名称", minWidth: 340 },
+  { prop: "tasks", label: "任务名称", minWidth: 380 },
   { prop: "startdate", label: "起始日期", width: 150 },
-  { prop: "starttime", label: "播放时间", width: 130 },
-  { prop: "enstate", label: "动作", width: 110 },
+  { prop: "starttime", label: "播放时间", width: 150 },
   { prop: "operation", label: "操作", fixed: "right", width: 140 }
 ]);
 
 const refresh = () => proTableRef.value?.getTableList();
 
-/* ---------------- 任务选择 ---------------- */
+/* ---------------- 弹窗里的任务表 ---------------- */
 
-const pickTasks = ref<EnablePickTask[]>([]);
+/** 弹窗里那张表的一行：一条任务 + 它到点是启用还是停用 + 这次要不要写进去 */
+interface Row {
+  taskId: number;
+  taskName: string;
+  typeText: string;
+  /** 0 = 启用、1 = 停用（与 enabletask.enstate 同一套取值） */
+  action: number;
+  picked: boolean;
+}
+
+const rows = ref<Row[]>([]);
 const taskLoading = ref(false);
 const pickKeyword = ref("");
-/** 下拉里当前勾着的 id，仅用于「往表里加」，加完就清空 */
-const picking = ref<number[]>([]);
+const form = reactive({ startdate: "", starttime: "08:00:00" });
+const dlg = reactive({ visible: false, saving: false, isEdit: false, title: "", id: 0 });
+const err = reactive({ startdate: "", tasks: "" });
+const clearErr = () => Object.keys(err).forEach(k => ((err as any)[k] = ""));
 
-const loadTasks = async () => {
+/**
+ * 拉全部候选任务铺成表（旧版就是整张表一次列出来的）。
+ * chosen 是回填用的：编辑时把已存计划里那几条的状态与勾选恢复回去。
+ */
+const loadTasks = async (chosen?: Map<number, number>) => {
   taskLoading.value = true;
   try {
     const { data } = await getEnableTasksApi(pickKeyword.value);
-    pickTasks.value = data ?? [];
+    rows.value = (data ?? []).map(t => ({
+      taskId: t.taskId,
+      taskName: t.taskName,
+      typeText: t.typeText,
+      // 单选初值取这条任务当前的 projectstate（旧版 addmanager.html 就是这么设的）
+      action: chosen?.has(t.taskId) ? (chosen.get(t.taskId) as number) : t.projectstate,
+      picked: chosen?.has(t.taskId) ?? false
+    }));
   } finally {
     taskLoading.value = false;
   }
 };
 
-/* ---------------- 新建 / 修改 ---------------- */
-
-/** 弹窗里那张表的一行：一条任务 + 它到点是启用还是停用 */
-interface Row {
-  taskId: number;
-  taskName: string;
-  typeText: string;
-  enstate: number;
-}
-
-const rows = ref<Row[]>([]);
-const form = reactive({ startdate: "", starttime: "08:00:00" });
-const dlg = reactive({ visible: false, saving: false, isEdit: false, title: "", id: 0 });
-
-/** 从下拉挑中的任务追加到表里，默认「启用」；已在表里的跳过 */
-const onPick = (ids: number[]) => {
-  for (const id of ids) {
-    if (rows.value.some(r => r.taskId === id)) continue;
-    const t = pickTasks.value.find(x => x.taskId === id);
-    if (!t) continue;
-    rows.value.push({ taskId: id, taskName: t.taskName, typeText: t.typeText, enstate: 1 });
-  }
-  picking.value = [];
-};
-
-const setAll = (v: number) => rows.value.forEach(r => (r.enstate = v));
+const setAll = (v: number) =>
+  rows.value.forEach(r => {
+    r.action = v;
+    r.picked = true;
+  });
 
 const openCreate = async () => {
+  clearErr();
   Object.assign(form, { startdate: new Date().toISOString().slice(0, 10), starttime: "08:00:00" });
-  rows.value = [];
-  picking.value = [];
   pickKeyword.value = "";
   Object.assign(dlg, { visible: true, saving: false, isEdit: false, title: "添加启用管理", id: 0 });
   await loadTasks();
 };
 
 const openEdit = async (row: EnablePlan) => {
-  // 接口返回的是整个「时间槽」：同一时刻的启用行与停用行合在一起
+  clearErr();
   const { data } = await getEnableApi(row.id);
   Object.assign(form, { startdate: data.startdate, starttime: data.starttime });
-  const mk = (list: typeof data.enable, enstate: number) =>
-    (list ?? [])
-      // 已删除的任务不回填，否则保存时会被服务端的存在性校验挡下来
-      .filter(t => !t.missing)
-      .map(t => ({ taskId: t.taskId, taskName: t.taskName, typeText: "", enstate }));
-  rows.value = [...mk(data.enable, 1), ...mk(data.disable, 0)];
-  const dropped =
-    (data.enable ?? []).filter(t => t.missing).length + (data.disable ?? []).filter(t => t.missing).length;
-  picking.value = [];
   pickKeyword.value = "";
+  // 已删除的任务不回填，否则保存时会被服务端的存在性校验挡下来
+  const chosen = new Map<number, number>();
+  (data.tasks ?? []).filter(t => !t.missing).forEach(t => chosen.set(t.taskId, t.action));
+  const dropped = (data.tasks ?? []).filter(t => t.missing).length;
   Object.assign(dlg, { visible: true, saving: false, isEdit: true, title: `修改启用管理 #${data.id}`, id: data.id });
-  await loadTasks();
-  // 类型文字在候选列表里才有，回填完再补上
-  rows.value.forEach(r => {
-    r.typeText = pickTasks.value.find(t => t.taskId === r.taskId)?.typeText ?? "";
-  });
-  if (dropped) ElMessage.warning(`这个时间点上有 ${dropped} 条任务已被删除，已自动移除`);
+  await loadTasks(chosen);
+  if (dropped) ElMessage.warning(`这条计划里有 ${dropped} 条任务已被删除，已自动移除`);
 };
 
 const submit = async () => {
-  if (!form.startdate) return ElMessage.warning("请选择开始日期");
-  if (!rows.value.length) return ElMessage.warning("请至少选择一条任务");
+  clearErr();
+  let bad = false;
+  if (!form.startdate) {
+    err.startdate = "请选择开始日期";
+    bad = true;
+  }
+  const picked = rows.value.filter(r => r.picked);
+  if (!picked.length) {
+    err.tasks = "请至少勾选一条任务";
+    bad = true;
+  }
+  if (bad) return ElMessage.warning("带 * 的项还没填完");
+
   const body = {
-    ...form,
-    enable: rows.value.filter(r => r.enstate === 1).map(r => r.taskId),
-    disable: rows.value.filter(r => r.enstate === 0).map(r => r.taskId)
+    startdate: form.startdate,
+    starttime: form.starttime,
+    tasks: picked.map(r => ({ taskId: r.taskId, action: r.action }))
   };
   dlg.saving = true;
   try {
-    const { data } = dlg.isEdit ? await updateEnableApi(dlg.id, body) : await createEnableApi(body);
-    // 如实说明落库拆成了几条 —— 界面上一个时间点，库里可能是两行
-    const parts: string[] = [];
-    if (data.created.length) parts.push(`新增 ${data.created.length} 条`);
-    if (data.updated.length) parts.push(`更新 ${data.updated.length} 条`);
-    if (data.deleted.length) parts.push(`删除 ${data.deleted.length} 条`);
-    ElMessage.success(`保存成功${parts.length ? "（" + parts.join("，") + "）" : ""}`);
+    if (dlg.isEdit) await updateEnableApi(dlg.id, body);
+    else await createEnableApi(body);
+    ElMessage.success("保存成功");
     dlg.visible = false;
     refresh();
   } finally {
@@ -325,19 +311,26 @@ onMounted(() => loadTasks());
 .task-tag {
   margin: 2px 6px 2px 0;
 }
-.opt-sub {
-  margin-left: 10px;
-  font-size: 12px;
-  color: var(--el-text-color-secondary);
-}
 .tip {
   margin-top: 4px;
   font-size: 12px;
   line-height: 1.7;
   color: var(--el-text-color-secondary);
 }
+.err {
+  margin-top: 2px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--el-color-danger);
+}
 .fill {
   width: 100%;
+}
+.ml6 {
+  margin-left: 6px;
+}
+.mt8 {
+  margin-top: 8px;
 }
 .pick-wrap {
   width: 100%;
@@ -347,14 +340,9 @@ onMounted(() => loadTasks());
   flex-wrap: wrap;
   gap: 8px;
   align-items: center;
+  width: 100%;
 }
-.mt8 {
-  margin-top: 8px;
-}
-.mb8 {
-  margin-bottom: 8px;
-}
-.ml6 {
-  margin-left: 6px;
+.grow {
+  flex: 1;
 }
 </style>
