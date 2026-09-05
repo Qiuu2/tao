@@ -25,18 +25,12 @@
           <div class="header-left">
             <!-- :80 这一页顶部只有「添加」，取消映射放在行内操作里 -->
             <el-button type="primary" :disabled="!canEdit" @click="openCreate">添加</el-button>
-            <el-button
-              type="danger"
-              :disabled="!canEdit || !scope.isSelected"
-              @click="confirmDelete(scope.selectedListIds)"
-            >
+            <el-button type="danger" :disabled="!canEdit || !scope.isSelected" @click="confirmDelete(scope.selectedListIds)">
               删除
             </el-button>
           </div>
           <div class="header-right">
-            <el-tag v-if="invalidCount" type="danger" size="small" effect="plain">
-              {{ invalidCount }} 条异常配置
-            </el-tag>
+            <el-tag v-if="invalidCount" type="danger" size="small" effect="plain"> {{ invalidCount }} 条异常配置 </el-tag>
             <el-tag v-if="scopeNote" type="info" size="small" effect="plain">{{ scopeNote }}</el-tag>
           </div>
         </div>
@@ -72,13 +66,7 @@
 
       <template #operation="scope">
         <el-button type="primary" link :icon="EditPen" :disabled="!canEdit" @click="openEdit(scope.row)">修改</el-button>
-        <el-button
-          type="danger"
-          link
-          :icon="Delete"
-          :disabled="!canEdit"
-          @click="confirmDelete([scope.row.id])"
-        >
+        <el-button type="danger" link :icon="Delete" :disabled="!canEdit" @click="confirmDelete([scope.row.id])">
           取消
         </el-button>
       </template>
@@ -128,7 +116,6 @@
             </el-option>
           </el-select>
         </el-form-item>
-
       </el-form>
 
       <template #footer>
@@ -140,7 +127,7 @@
 </template>
 
 <script setup lang="tsx" name="alarmMapping">
-import { CirclePlus, Delete, EditPen } from "@element-plus/icons-vue";
+import { Delete, EditPen } from "@element-plus/icons-vue";
 import { ElMessage, ElMessageBox } from "element-plus";
 import { computed, onMounted, reactive, ref } from "vue";
 
@@ -153,12 +140,7 @@ import {
   getAlarmMediaApi,
   updateAlarmMappingApi
 } from "@/api/modules/alarm";
-import type {
-  AlarmAreaOption,
-  AlarmHostOption,
-  AlarmMapping,
-  AlarmMediaOption
-} from "@/api/modules/alarm";
+import type { AlarmAreaOption, AlarmHostOption, AlarmMapping, AlarmMediaOption } from "@/api/modules/alarm";
 import ProTable from "@/components/ProTable/index.vue";
 import TerminalTreeSelect from "@/components/TerminalTree/Select.vue";
 import { useAuthStore } from "@/stores/modules/auth";
@@ -201,11 +183,18 @@ const onSortChange = ({ prop, order }: { prop: string; order: string | null }) =
 // 所以那个标记挪到「媒体名称」列里就地显示，不单占一列。
 const columns = reactive<ColumnProps<AlarmMapping>[]>([
   { type: "selection", fixed: "left", width: 50 },
-  { prop: "alarmTerminalName", label: "报警主机名称", minWidth: 160 },
-  { prop: "info", label: "报警映射名称", minWidth: 160, showOverflowTooltip: true },
-  { prop: "alarmAreaName", label: "报警分区名称", minWidth: 150 },
-  { prop: "mediaName", label: "媒体名称", minWidth: 180 },
-  { prop: "alarmChannel", label: "通道", width: 110 },
+  {
+    prop: "alarmTerminalName",
+    label: "报警主机",
+    minWidth: 160,
+    search: { el: "input", key: "keyword", props: { placeholder: "报警主机 / 映射分区 / 映射名称" } }
+  },
+  // 列序照旧版 alarmmanager/alarmmanager_form.html 的表头：
+  // 报警主机 | 映射名称 | 映射通道 | 映射分区 | 报警媒体 | 分区终端
+  { prop: "info", label: "映射名称", minWidth: 160, showOverflowTooltip: true },
+  { prop: "alarmChannel", label: "映射通道", width: 110 },
+  { prop: "alarmAreaName", label: "映射分区", minWidth: 150 },
+  { prop: "mediaName", label: "报警媒体", minWidth: 180 },
   { prop: "areaTerminalCount", label: "分区终端", width: 120 },
   { prop: "operation", label: "操作", fixed: "right", width: 140 }
 ]);
@@ -262,7 +251,6 @@ const dlg = reactive({
 
 const currentHost = computed(() => hosts.value.find(h => h.id === dlg.form.alarmTerminalId));
 const channelCount = computed(() => currentHost.value?.channels ?? 0);
-const typeSwitchCount = computed(() => currentHost.value?.typeSwitchCount ?? 0);
 
 // 换主机后原来的通道号可能超出新主机的范围，直接清掉让用户重选
 const onHostChange = () => {
@@ -327,11 +315,10 @@ const submit = async () => {
 const confirmDelete = async (raw: (string | number)[]) => {
   const ids = toIds(raw);
   if (!ids.length) return ElMessage.warning("请先勾选映射");
-  await ElMessageBox.confirm(
-    `取消 ${ids.length} 条报警映射后，对应通道触发时将不再播放任何内容。是否继续？`,
-    "取消报警映射",
-    { type: "warning", confirmButtonText: "确定取消映射" }
-  );
+  await ElMessageBox.confirm(`取消 ${ids.length} 条报警映射后，对应通道触发时将不再播放任何内容。是否继续？`, "取消报警映射", {
+    type: "warning",
+    confirmButtonText: "确定取消映射"
+  });
   const { data } = await deleteAlarmMappingsApi(ids);
   if (data.skipped?.length) {
     ElMessage.warning(`已取消 ${data.deleted.length} 条，${data.skipped.length} 条无权操作或已不存在`);

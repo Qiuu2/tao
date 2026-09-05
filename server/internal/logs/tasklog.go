@@ -5,6 +5,7 @@ import (
 	"context"
 	"database/sql"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -59,6 +60,13 @@ var reTaskLog = regexp.MustCompile(`^log(\d{4}-\d{2}-\d{2})\.html$`)
 // ErrTaskLogDisabled 表示没有配置任务日志目录。
 var ErrTaskLogDisabled = fmt.Errorf("未配置任务日志目录，请在 config.yaml 的 logs.task_dir 里指定")
 
+// ErrTaskLogDirMissing 表示配置的目录当前不存在。
+//
+// 这不一定是配错了：后台 C 服务是**写第一条日志时**才建 datelog 目录的，
+// 刚装好还没跑过任务的机器上它就是不存在。列表接口把它当成「一个文件都没有」，
+// 页面照常打开并说明原因；删除、读取这类要求目录真实存在的操作仍然报错。
+var ErrTaskLogDirMissing = fmt.Errorf("任务日志目录不存在")
+
 type TaskLogService struct {
 	dir string
 	loc *time.Location
@@ -84,6 +92,9 @@ func (t *TaskLogService) root() (string, error) {
 		return "", fmt.Errorf("解析任务日志目录: %w", err)
 	}
 	st, err := os.Stat(abs)
+	if os.IsNotExist(err) {
+		return abs, fmt.Errorf("%w：%s", ErrTaskLogDirMissing, abs)
+	}
 	if err != nil {
 		return "", fmt.Errorf("任务日志目录不可访问: %w", err)
 	}
@@ -128,6 +139,9 @@ type TaskLogList struct {
 	Today     string        `json:"today"`
 	// DirWritable 为 false 时删除接口一定失败，界面据此把按钮禁掉并说明原因。
 	DirWritable bool `json:"dirWritable"`
+	// Note 是「一个文件都没有」时的原因说明（目前只有「目录还不存在」这一种）。
+	// 空串表示目录正常。
+	Note string `json:"note"`
 }
 
 // dirWritable 实探目录能不能写：建一个临时文件再删掉。
@@ -152,6 +166,15 @@ func dirWritable(dir string) bool {
 // 这里是「列和删口径一致」，不会出现列不到却被删掉的情况）。
 func (t *TaskLogService) ListFiles(ctx context.Context, from, to string) (*TaskLogList, error) {
 	root, err := t.root()
+	if errors.Is(err, ErrTaskLogDirMissing) {
+		// 目录还没被后台服务建出来 —— 当成空列表，不是故障。
+		// 旧版这里会直接 PHP warning 然后渲染半张页面。
+		return &TaskLogList{
+			Dir: root, Files: []TaskLogFile{}, Today: t.today(),
+			Note: "任务日志目录还不存在（" + root + "）。后台服务写第一条任务日志时会自动建出来；" +
+				"如果这台机器早就在跑任务了，那多半是 config.yaml 的 logs.task_dir 配错了。",
+		}, nil
+	}
 	if err != nil {
 		return nil, err
 	}

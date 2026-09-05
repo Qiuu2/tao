@@ -158,8 +158,14 @@ const proTableRef = ref<ProTableInstance>();
 // 修改接口（PUT /api/remote-keys/{id}）还在，要把入口加回来只需补一列。
 const columns = reactive<ColumnProps<RemoteKey>[]>([
   { type: "selection", fixed: "left", width: 50 },
-  { prop: "keyName", label: "任务名称", minWidth: 200 },
-  { prop: "keyId", label: "按键映射", width: 130 },
+  // 列名照旧版 task_mapping/task_mapping_form.html 的表头：映射名称 | 映射按键 | 映射任务
+  {
+    prop: "keyName",
+    label: "映射名称",
+    minWidth: 200,
+    search: { el: "input", key: "keyword", props: { placeholder: "按映射名称搜索" } }
+  },
+  { prop: "keyId", label: "映射按键", width: 130 },
   { prop: "tasks", label: "映射任务", minWidth: 420 }
 ]);
 

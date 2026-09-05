@@ -88,9 +88,7 @@
       <div class="line">
         <span class="lbl">本地当前时间：</span>
         <span class="local-time">{{ browserTime }}</span>
-        <el-button :loading="clockBusy" :disabled="!canSetClock" @click="setClock('browser')">
-          同步当前时间
-        </el-button>
+        <el-button :loading="clockBusy" :disabled="!canSetClock" @click="setClock('browser')"> 同步当前时间 </el-button>
       </div>
 
       <div class="line">
@@ -104,12 +102,8 @@
             :disabled="!canConfig || !!st?.readOnly"
           />
         </div>
-        <el-button :loading="saving.gps" :disabled="!canConfig || !!st?.readOnly" @click="saveGps">
-          北斗校时
-        </el-button>
-        <el-button :loading="saving.gps" :disabled="!canConfig || !!st?.readOnly" @click="clearGps">
-          不校时
-        </el-button>
+        <el-button :loading="saving.gps" :disabled="!canConfig || !!st?.readOnly" @click="saveGps"> 北斗校时 </el-button>
+        <el-button :loading="saving.gps" :disabled="!canConfig || !!st?.readOnly" @click="clearGps"> 不校时 </el-button>
       </div>
     </div>
   </div>
@@ -121,12 +115,7 @@ import { computed, onMounted, onUnmounted, ref, reactive } from "vue";
 
 import TerminalTreeSelect from "@/components/TerminalTree/Select.vue";
 
-import {
-  getTimeStateApi,
-  getTimeTerminalsApi,
-  setGpsTerminalApi,
-  setServerClockApi
-} from "@/api/modules/basecfg";
+import { getTimeStateApi, getTimeTerminalsApi, setGpsTerminalApi, setServerClockApi } from "@/api/modules/basecfg";
 import type { TimeState, TimeTerminal } from "@/api/modules/basecfg";
 import { useAuthStore } from "@/stores/modules/auth";
 
@@ -231,10 +220,7 @@ const daysInMonth = computed(() => new Date(cf.year, cf.month, 0).getDate());
 const canSetClock = computed(() => !!st.value?.canSetClock && !st.value?.readOnly);
 
 const setClock = async (from: "manual" | "browser") => {
-  const t =
-    from === "browser"
-      ? new Date()
-      : new Date(cf.year, cf.month - 1, cf.day, cf.hour, cf.minute, cf.second);
+  const t = from === "browser" ? new Date() : new Date(cf.year, cf.month - 1, cf.day, cf.hour, cf.minute, cf.second);
   const p = (n: number) => String(n).padStart(2, "0");
   const text =
     `${t.getFullYear()}-${p(t.getMonth() + 1)}-${p(t.getDate())} ` +

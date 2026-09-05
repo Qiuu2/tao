@@ -89,13 +89,7 @@
         </el-form-item>
 
         <el-form-item label="确认密码" :required="!dlg.isEdit">
-          <el-input
-            v-model="dlg.form.confirmPassword"
-            type="password"
-            show-password
-            maxlength="20"
-            autocomplete="new-password"
-          />
+          <el-input v-model="dlg.form.confirmPassword" type="password" show-password maxlength="20" autocomplete="new-password" />
         </el-form-item>
 
         <el-form-item label="所属用户组" required>
@@ -137,12 +131,7 @@
             ⚠ 这个接口是一次性全量返回的（没有 keyword 参数），所以不监听 @search，
               树组件的搜索框在这里只会白跑一趟。传 :searchable="false" 把它藏掉。
           -->
-          <TerminalTree
-            v-model="selectedTerminalIds"
-            :terminals="terminalNodes"
-            height="280px"
-            :searchable="false"
-          />
+          <TerminalTree v-model="selectedTerminalIds" :terminals="terminalNodes" height="280px" :searchable="false" />
         </el-form-item>
       </el-form>
 
@@ -175,9 +164,7 @@
 
       <template #footer>
         <el-button @click="del.visible = false">取消</el-button>
-        <el-button type="danger" :disabled="!del.ids.length" :loading="del.loading" @click="confirmDelete">
-          确认删除
-        </el-button>
+        <el-button type="danger" :disabled="!del.ids.length" :loading="del.loading" @click="confirmDelete"> 确认删除 </el-button>
       </template>
     </el-dialog>
   </div>

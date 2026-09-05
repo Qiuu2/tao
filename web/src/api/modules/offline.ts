@@ -79,11 +79,9 @@ export interface OfflinePurgeResult {
   tasksReset: number;
 }
 
-export const getOfflineStatesApi = () =>
-  http.get<OfflineStateDef[]>(PORT1 + `/api/offline/states`, {}, { loading: false });
+export const getOfflineStatesApi = () => http.get<OfflineStateDef[]>(PORT1 + `/api/offline/states`, {}, { loading: false });
 
-export const getOfflineSummaryApi = () =>
-  http.get<OfflineSummary>(PORT1 + `/api/offline/summary`, {}, { loading: false });
+export const getOfflineSummaryApi = () => http.get<OfflineSummary>(PORT1 + `/api/offline/summary`, {}, { loading: false });
 
 export const getOfflineMediaStatusApi = (params: any) =>
   http.get<{ list: OfflineMediaStatus[]; total: number; pageNum: number; pageSize: number }>(

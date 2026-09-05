@@ -26,11 +26,7 @@
           <div class="header-left">
             <!-- :80 这一页顶部只有「添加」一个按钮，删除放在行内操作里 -->
             <el-button type="primary" :disabled="!canEdit" @click="openCreate">添加</el-button>
-            <el-button
-              type="danger"
-              :disabled="!canEdit || !scope.isSelected"
-              @click="openDelete(scope.selectedListIds)"
-            >
+            <el-button type="danger" :disabled="!canEdit || !scope.isSelected" @click="openDelete(scope.selectedListIds)">
               删除
             </el-button>
           </div>
@@ -50,13 +46,7 @@
       </template>
 
       <template #operation="scope">
-        <el-button
-          type="primary"
-          link
-          :icon="EditPen"
-          :disabled="!canEdit || !scope.row.canModify"
-          @click="openEdit(scope.row)"
-        >
+        <el-button type="primary" link :icon="EditPen" :disabled="!canEdit || !scope.row.canModify" @click="openEdit(scope.row)">
           修改
         </el-button>
         <el-button
@@ -137,7 +127,7 @@
 </template>
 
 <script setup lang="tsx" name="alarmArea">
-import { CirclePlus, Delete, EditPen } from "@element-plus/icons-vue";
+import { Delete, EditPen } from "@element-plus/icons-vue";
 import { ElMessage, ElMessageBox, ElNotification } from "element-plus";
 import { computed, onMounted, reactive, ref } from "vue";
 
@@ -182,7 +172,12 @@ const onSortChange = ({ prop, order }: { prop: string; order: string | null }) =
 // 分区名称 | 分区描述 | 分区终端 | 创建时间 | 操作，无搜索区。
 const columns = reactive<ColumnProps<AlarmArea>[]>([
   { type: "selection", fixed: "left", width: 50 },
-  { prop: "name", label: "分区名称", minWidth: 200 },
+  {
+    prop: "name",
+    label: "分区名称",
+    minWidth: 200,
+    search: { el: "input", key: "keyword", props: { placeholder: "按分区名称搜索" } }
+  },
   { prop: "info", label: "分区描述", minWidth: 220, showOverflowTooltip: true },
   { prop: "terminalCount", label: "分区终端", width: 130 },
   { prop: "createTime", label: "创建时间", width: 180 },

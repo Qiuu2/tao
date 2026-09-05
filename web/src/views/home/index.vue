@@ -169,9 +169,7 @@
         <header class="panel-hd">
           紧急广播
           <div class="hd-actions">
-            <el-button size="small" type="primary" plain :disabled="!isSuper" @click="openEmergencyBind">
-              绑定任务
-            </el-button>
+            <el-button size="small" type="primary" plain :disabled="!isSuper" @click="openEmergencyBind"> 绑定任务 </el-button>
           </div>
         </header>
         <div class="panel-bd">
@@ -191,9 +189,7 @@
               </span>
             </div>
           </div>
-          <div class="muted small mt8">
-            四个槽位是固定的，只能改「每个槽位绑哪个文件广播任务」，不能增删。
-          </div>
+          <div class="muted small mt8">四个槽位是固定的，只能改「每个槽位绑哪个文件广播任务」，不能增删。</div>
         </div>
       </section>
     </div>
@@ -258,7 +254,12 @@
         :total="tasksTotal"
         :page-size="bq.pageSize"
         :current-page="bq.pageNum"
-        @current-change="(n: number) => { bq.pageNum = n; loadTasks(); }"
+        @current-change="
+          (n: number) => {
+            bq.pageNum = n;
+            loadTasks();
+          }
+        "
       />
     </section>
 
@@ -296,9 +297,7 @@
 
     <!-- 绑定紧急广播 -->
     <el-dialog v-model="ed.visible" title="绑定紧急广播" width="560px">
-      <el-alert type="info" :closable="false" class="mb12">
-        四个槽位固定，留空表示解绑。同样只能绑文件广播任务。
-      </el-alert>
+      <el-alert type="info" :closable="false" class="mb12"> 四个槽位固定，留空表示解绑。同样只能绑文件广播任务。 </el-alert>
       <el-form label-width="80px">
         <el-form-item v-for="s in cfg?.emergency ?? []" :key="s.key" :label="s.name">
           <el-select v-model="ed.slots[s.key]" clearable filterable placeholder="未绑定" class="fill">

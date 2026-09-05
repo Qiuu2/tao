@@ -29,11 +29,7 @@
           <!-- 按钮对齐 :80（页面规格.txt「终端分区」）：添加 / 删除 -->
           <div class="header-left">
             <el-button type="primary" :disabled="!canEdit" @click="openCreate">添加</el-button>
-            <el-button
-              type="danger"
-              :disabled="!canEdit || !scope.isSelected"
-              @click="openDelete(scope.selectedListIds)"
-            >
+            <el-button type="danger" :disabled="!canEdit || !scope.isSelected" @click="openDelete(scope.selectedListIds)">
               删除
             </el-button>
           </div>
@@ -49,13 +45,7 @@
       </template>
 
       <template #operation="scope">
-        <el-button
-          type="primary"
-          link
-          :icon="EditPen"
-          :disabled="!canEdit || !scope.row.canModify"
-          @click="openEdit(scope.row)"
-        >
+        <el-button type="primary" link :icon="EditPen" :disabled="!canEdit || !scope.row.canModify" @click="openEdit(scope.row)">
           修改
         </el-button>
         <el-button
@@ -115,9 +105,7 @@
         <el-table-column label="影响面" min-width="300">
           <template #default="{ row }">
             <el-tag v-if="row.impact?.terminals" size="small" class="mr4">成员终端 {{ row.impact?.terminals }} 台</el-tag>
-            <el-tag v-if="row.impact?.tasks" type="danger" size="small">
-              {{ row.impact?.tasks }} 条任务的分区号将被复位
-            </el-tag>
+            <el-tag v-if="row.impact?.tasks" type="danger" size="small"> {{ row.impact?.tasks }} 条任务的分区号将被复位 </el-tag>
             <span v-if="!row.impact?.terminals && !row.impact?.tasks" class="muted">空分区</span>
           </template>
         </el-table-column>
@@ -186,7 +174,14 @@ const onSortChange = ({ prop, order }: { prop: string; order: string | null }) =
 // 这个影响面在删除确认弹窗里照旧列出来，不会因为列表上看不见就悄悄发生。
 const columns = reactive<ColumnProps<Zone>[]>([
   { type: "selection", fixed: "left", width: 50 },
-  { prop: "name", label: "分类名称", minWidth: 200 },
+  // 列名照旧版 StreamManager/streammanager_form.html 的表头：分区名称 | 分区描述 | 创建时间 | 操作
+  // 搜索框也是旧版就有的（搜索条件 → 分区名称）
+  {
+    prop: "name",
+    label: "分区名称",
+    minWidth: 200,
+    search: { el: "input", key: "keyword", props: { placeholder: "按分区名称搜索" } }
+  },
   { prop: "info", label: "分区描述", minWidth: 220, showOverflowTooltip: true },
   { prop: "terminalCount", label: "终端列表", width: 130 },
   { prop: "createTime", label: "创建时间", width: 180 },
@@ -271,11 +266,11 @@ const submit = async () => {
     t => selectedTerminalIds.value.includes(t.id) && t.currentZoneId > 0 && t.currentZoneId !== dlg.id
   );
   if (moving.length) {
-    await ElMessageBox.confirm(
-      `有 <b>${moving.length}</b> 台终端当前属于别的分区，保存后会被移过来。确认继续？`,
-      "二次确认",
-      { type: "warning", dangerouslyUseHTMLString: true, confirmButtonText: "确认" }
-    );
+    await ElMessageBox.confirm(`有 <b>${moving.length}</b> 台终端当前属于别的分区，保存后会被移过来。确认继续？`, "二次确认", {
+      type: "warning",
+      dangerouslyUseHTMLString: true,
+      confirmButtonText: "确认"
+    });
   }
   dlg.saving = true;
   try {

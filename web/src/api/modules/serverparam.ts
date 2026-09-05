@@ -169,8 +169,7 @@ export interface AutoRestart {
   exemodel: string;
 }
 
-export const getAutoRestartApi = () =>
-  http.get<AutoRestart>(PORT1 + `/api/server/auto-restart`, {}, { loading: false });
+export const getAutoRestartApi = () => http.get<AutoRestart>(PORT1 + `/api/server/auto-restart`, {}, { loading: false });
 
 /**
  * exemodel 允许**不传**。
@@ -206,8 +205,7 @@ export interface VersionState {
   reason: string;
 }
 
-export const getServerVersionApi = () =>
-  http.get<VersionState>(PORT1 + `/api/server/version`, {}, { loading: false });
+export const getServerVersionApi = () => http.get<VersionState>(PORT1 + `/api/server/version`, {}, { loading: false });
 
 /** ⚠ 会重建 audioserver 容器，期间广播中断。只有超管调得动。 */
 export const switchServerVersionApi = (id: number) =>

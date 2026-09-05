@@ -1089,6 +1089,7 @@ func (a *app) handleMediaList(w http.ResponseWriter, r *http.Request) {
 		FolderID:  folderID,
 		SearchKey: q.Get("searchKey"),
 		Keyword:   strings.TrimSpace(q.Get("keyword")),
+		TypeID:    strings.TrimSpace(q.Get("typeid")),
 		OrderBy:   q.Get("orderBy"),
 		Order:     q.Get("order"),
 		Pager:     pager,

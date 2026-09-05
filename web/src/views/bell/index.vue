@@ -698,11 +698,19 @@ const onSortChange = ({ prop, order }: { prop: string; order: string | null }) =
 const columns = reactive<ColumnProps<BellPlan>[]>([
   // :80 这一页的表头有勾选框，顶部按钮作用在勾选行上 —— 加上 selection 列
   { type: "selection", fixed: "left", width: 50 },
-  { prop: "planName", label: "方案名称", minWidth: 220, sortable: "custom" },
+  {
+    prop: "planName",
+    label: "方案名称",
+    minWidth: 220,
+    sortable: "custom",
+    search: { el: "input", key: "keyword", props: { placeholder: "按方案名称搜索" } }
+  },
   { prop: "startdate", label: "起始日期", width: 130, sortable: "custom" },
   { prop: "enddate", label: "结束日期", width: 130, sortable: "custom" },
   { prop: "projectstate", label: "状态", width: 110, sortable: "custom" },
   { prop: "itemCount", label: "任务数", width: 110, sortable: "custom" },
+  // 旧版 BellManager/bellManager_form.html 的表头里「任务数」后面还有一列「所属用户」
+  { prop: "ownerUserName", label: "所属用户", width: 110 },
   { prop: "operation", label: "终端属性", fixed: "right", width: 200 }
 ]);
 

@@ -126,12 +126,18 @@ var searchWhitelist = map[string]string{
 const ttsFilter = "media.typeid <> 'tts' AND media.filename <> 'tts'"
 
 type ListQuery struct {
-	FolderID  int64
+	FolderID int64
+	// SearchKey 是旧版那个「选择类型…」下拉的选项：name（媒体名称）/ typeid（媒体类型）。
+	// ⚠ 留空时按 name 处理 —— 界面上只有一个搜索框时不会带这个参数，
+	//   照旧当成「什么都不筛」会让搜索框看起来完全没反应。
 	SearchKey string
 	Keyword   string
-	OrderBy   string
-	Order     string
-	Pager     store.Pager
+	// TypeID 是「媒体类型」这一路筛选，与 Keyword 各走各的、可以同时用。
+	// 旧版那个下拉一次只能选一种，这里两个搜索框并列，更省事。
+	TypeID  string
+	OrderBy string
+	Order   string
+	Pager   store.Pager
 }
 
 // List 查询指定文件夹下的媒体。
@@ -150,8 +156,17 @@ func (s *Service) List(ctx context.Context, u *auth.User, q ListQuery) (*ListRes
 	// 文件管理是唯一的例外：媒体库是共用素材库，谁传的文件别人都要能拿来做任务。
 	// 能不能删仍然只看归属（见 write.go 的 Delete）。规则的权威定义在 folder.VisibleCond。
 
-	if col, ok := searchWhitelist[q.SearchKey]; ok && q.Keyword != "" {
-		cond.Add(col+" LIKE ? ESCAPE '\\\\'", store.EscapeLike(q.Keyword))
+	if q.Keyword != "" {
+		key := q.SearchKey
+		if key == "" {
+			key = "name" // 只有一个搜索框时的默认口径
+		}
+		if col, ok := searchWhitelist[key]; ok {
+			cond.Add(col+" LIKE ? ESCAPE '\\\\'", store.EscapeLike(q.Keyword))
+		}
+	}
+	if q.TypeID != "" {
+		cond.Add("media.typeid LIKE ? ESCAPE '\\\\'", store.EscapeLike(q.TypeID))
 	}
 
 	where := cond.Where()

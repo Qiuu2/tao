@@ -118,9 +118,11 @@ import { Operation, Refresh, Search } from "@element-plus/icons-vue";
 import { ElTable } from "element-plus";
 import Sortable from "sortablejs";
 import { computed, onMounted, provide, reactive, ref, unref, watch } from "vue";
+import { useRoute } from "vue-router";
 
 import { BreakPoint } from "@/components/Grid/interface";
 import { ColumnProps, TypeProps } from "@/components/ProTable/interface";
+import { ColPrefMap, loadColPrefs, saveColPrefs } from "@/utils/tablePrefs";
 import SearchForm from "@/components/SearchForm/index.vue";
 import { useSelection } from "@/hooks/useSelection";
 import { useTable } from "@/hooks/useTable";
@@ -144,6 +146,9 @@ export interface ProTableProps {
   toolButton?: ("refresh" | "setting" | "search")[] | boolean; // 是否显示表格功能按钮 ==> 非必传（默认为true）
   rowKey?: string; // 行数据的 Key，用来优化 Table 的渲染，当表格数据多选时，所指定的 id ==> 非必传（默认为 id）
   searchCol?: number | Record<BreakPoint, number>; // 表格搜索项 每列占比配置 ==> 非必传 { xs: 1, sm: 2, md: 2, lg: 3, xl: 4 }
+  // 列设置存本地时用的表标识 ==> 非必传（默认取当前路由 path）。
+  // 一个页面里有两张以上表格时必须显式传，否则它们会共用同一份列设置。
+  tableKey?: string;
 }
 
 // 接受父组件参数，配置默认值
@@ -283,6 +288,46 @@ const colSetting = tableColumns!.filter(item => {
   return !columnTypes.includes(type!) && prop !== "operation" && isSetting;
 });
 const openColSetting = () => colRef.value.openColSetting();
+
+/*
+  列设置存本地（见 utils/tablePrefs.ts）。
+
+  抽屉里改的是 tableColumns 里那两个开关，本身只活在内存里，刷新就回默认。
+  这里进页面时先把存过的设置套上去，之后一有改动就写回 localStorage。
+
+  只认列的 prop：记录里没有的列按代码里的默认值走，代码里已经删掉的列直接忽略 ——
+  这样后端加列、改列名都不会被一条旧记录带偏。
+*/
+const route = useRoute();
+const colPrefKey = computed(() => props.tableKey || route.path || "unknown");
+
+const applyColPrefs = () => {
+  const prefs = loadColPrefs(colPrefKey.value);
+  colSetting.forEach(col => {
+    const p = prefs[col.prop!];
+    if (!p) return;
+    if (typeof p.show === "boolean") col.isShow = p.show;
+    if (typeof p.sortable === "boolean") col.sortable = p.sortable;
+  });
+};
+applyColPrefs();
+
+// 只把**与默认不同**的列写进去，记录不会随着列数越滚越大
+const collectColPrefs = (): ColPrefMap => {
+  const out: ColPrefMap = {};
+  colSetting.forEach(col => {
+    const pref: ColPrefMap[string] = {};
+    if (col.isShow === false) pref.show = false;
+    if (col.sortable) pref.sortable = true;
+    if (Object.keys(pref).length) out[col.prop!] = pref;
+  });
+  return out;
+};
+
+watch(
+  () => colSetting.map(c => `${c.prop}:${c.isShow}:${c.sortable}`).join("|"),
+  () => saveColPrefs(colPrefKey.value, collectColPrefs())
+);
 
 // 定义 emit 事件
 const emit = defineEmits<{

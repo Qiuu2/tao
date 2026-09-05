@@ -711,8 +711,11 @@ const columns = reactive<ColumnProps<TaskRow>[]>([
   //
   // 原来的「起止日期」合成列拆成开始/结束两列；「清单」「创建者」两列去掉 ——
   // 清单内容在展开行里能看全，创建者在编辑弹窗里。
-  { prop: "taskname", label: "广播任务名称", minWidth: 160, sortable: "custom", search: { el: "input", key: "keyword" } },
-  { prop: "weekdays", label: "执行模式", minWidth: 130 },
+  // 列名逐个照 ok112 的 FileAd/FileTaskManager_from.html + language/chinese.php：
+  // 文件广播任务|播放周期|开始日期|结束日期|执行时间|播放时长|状态|播放模式|音量|任务级别|所属用户|正在播放|终端属性
+  // 「终端属性」在旧版是一个「浏览」链接，这里已经做成操作列里的「终端(N)」，不再单列一列。
+  { prop: "taskname", label: "文件广播任务", minWidth: 160, sortable: "custom", search: { el: "input", key: "keyword" } },
+  { prop: "weekdays", label: "播放周期", minWidth: 130 },
   { prop: "startdate", label: "开始日期", width: 115 },
   { prop: "enddate", label: "结束日期", width: 115 },
   { prop: "playtime", label: "执行时间", width: 100, sortable: "custom" },
@@ -721,7 +724,8 @@ const columns = reactive<ColumnProps<TaskRow>[]>([
   { prop: "playModeText", label: "播放模式", width: 95 },
   { prop: "defaultvolume", label: "音量", width: 70 },
   { prop: "priority", label: "任务级别", width: 90, sortable: "custom" },
-  { prop: "state", label: "播放状态", width: 110, sortable: "custom" },
+  { prop: "ownerUserName", label: "所属用户", width: 110 },
+  { prop: "state", label: "正在播放", width: 110, sortable: "custom" },
   { prop: "operation", label: "操作", fixed: "right", width: 190 }
 ]);
 

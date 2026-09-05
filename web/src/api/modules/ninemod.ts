@@ -205,7 +205,7 @@ export const controlTypedApi = (kind: TypedKind, action: TypedAction, ids: numbe
 export const setTypedStateApi = (kind: TypedKind, ids: number[], enable: boolean) =>
   http.put<TypedControlResult>(PORT1 + `/api/typed-tasks/${kind}/project-state`, { ids, enable });
 export const deleteTypedApi = (kind: TypedKind, ids: number[]) =>
-  http.delete<{ deleted: number[]; blocked: any[] }>(PORT1 + `/api/typed-tasks/${kind}`, { ids });
+  http.delete<{ deleted: number[]; blocked: any[] }>(PORT1 + `/api/typed-tasks/${kind}`, {}, { data: { ids } });
 
 /* ---------------- LED 分组与设备 ---------------- */
 
@@ -245,7 +245,8 @@ export const getLedDevicesApi = (keyword = "") =>
 export const createLedDeviceApi = (data: Partial<LedDevice>) => http.post<{ id: number }>(PORT1 + `/api/led/devices`, data);
 export const updateLedDeviceApi = (id: number, data: Partial<LedDevice>) =>
   http.put<{ updated: boolean }>(PORT1 + `/api/led/devices/${id}`, data);
-export const deleteLedDevicesApi = (ids: number[]) => http.delete<{ deleted: number }>(PORT1 + `/api/led/devices`, { ids });
+export const deleteLedDevicesApi = (ids: number[]) =>
+  http.delete<{ deleted: number }>(PORT1 + `/api/led/devices`, {}, { data: { ids } });
 
 /* ==================================================================
    启用管理
@@ -306,7 +307,8 @@ export const getEnableTasksApi = (keyword = "") =>
 export const createEnableApi = (data: EnableSaveForm) => http.post<{ id: number }>(PORT1 + `/api/enable-plans`, data);
 export const updateEnableApi = (id: number, data: EnableSaveForm) =>
   http.put<{ id: number }>(PORT1 + `/api/enable-plans/${id}`, data);
-export const deleteEnableApi = (ids: number[]) => http.delete<{ deleted: number }>(PORT1 + `/api/enable-plans`, { ids });
+export const deleteEnableApi = (ids: number[]) =>
+  http.delete<{ deleted: number }>(PORT1 + `/api/enable-plans`, {}, { data: { ids } });
 
 /* ==================================================================
    噪声设备 / 声场分区
@@ -360,7 +362,8 @@ export const createSoundDeviceApi = (data: { name: string; ip: string; devaddr: 
   http.post<{ id: number }>(PORT1 + `/api/sound/devices`, data);
 export const updateSoundDeviceApi = (id: number, data: { name: string; ip: string; devaddr: number; sendport: number }) =>
   http.put<{ updated: boolean }>(PORT1 + `/api/sound/devices/${id}`, data);
-export const deleteSoundDevicesApi = (ids: number[]) => http.delete<{ deleted: number }>(PORT1 + `/api/sound/devices`, { ids });
+export const deleteSoundDevicesApi = (ids: number[]) =>
+  http.delete<{ deleted: number }>(PORT1 + `/api/sound/devices`, {}, { data: { ids } });
 
 export const getSoundGroupsApi = (params: any) =>
   http.get<ResPage<SoundGroup> & { scopeNote: string }>(PORT1 + `/api/sound/groups`, params);
@@ -373,9 +376,11 @@ export const createSoundGroupApi = (data: { name: string; terminalIds: number[];
 export const updateSoundGroupApi = (id: number, data: { name: string; terminalIds: number[]; deviceIds: number[] }) =>
   http.put<{ updated: boolean }>(PORT1 + `/api/sound/groups/${id}`, data);
 export const deleteSoundGroupsApi = (ids: number[]) =>
-  http.delete<{ deleted: number[]; resetTerminals: number; resetDevices: number; blocked: any[] }>(PORT1 + `/api/sound/groups`, {
-    ids
-  });
+  http.delete<{ deleted: number[]; resetTerminals: number; resetDevices: number; blocked: any[] }>(
+    PORT1 + `/api/sound/groups`,
+    {},
+    { data: { ids } }
+  );
 
 /* ==================================================================
    云广播终端 / 任务传送

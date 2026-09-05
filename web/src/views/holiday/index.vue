@@ -17,13 +17,7 @@
 -->
 <template>
   <div class="table-box">
-    <ProTable
-      ref="proTableRef"
-      :columns="columns"
-      :request-api="getHolidayListApi"
-      :init-param="initParam"
-      row-key="id"
-    >
+    <ProTable ref="proTableRef" :columns="columns" :request-api="getHolidayListApi" :init-param="initParam" row-key="id">
       <!-- 按钮文案与顺序对齐 :80（docs/image/oktw/05-节假日管理.png）：
            添加节假日 / 删除 / 批量启用 / 批量禁用，实心彩色。 -->
       <template #tableHeader="scope">
@@ -33,18 +27,10 @@
             <el-button type="danger" :disabled="!canEdit || !scope.isSelected" @click="doDelete(scope.selectedListIds)">
               删除
             </el-button>
-            <el-button
-              type="primary"
-              :disabled="!canEdit || !scope.isSelected"
-              @click="setState(scope.selectedListIds, true)"
-            >
+            <el-button type="primary" :disabled="!canEdit || !scope.isSelected" @click="setState(scope.selectedListIds, true)">
               批量启用
             </el-button>
-            <el-button
-              type="warning"
-              :disabled="!canEdit || !scope.isSelected"
-              @click="setState(scope.selectedListIds, false)"
-            >
+            <el-button type="warning" :disabled="!canEdit || !scope.isSelected" @click="setState(scope.selectedListIds, false)">
               批量禁用
             </el-button>
           </div>
@@ -64,9 +50,7 @@
       </template>
 
       <template #operation="scope">
-        <el-button type="primary" link :icon="EditPen" :disabled="!canEdit" @click="openEdit(scope.row)">
-          修改
-        </el-button>
+        <el-button type="primary" link :icon="EditPen" :disabled="!canEdit" @click="openEdit(scope.row)"> 修改 </el-button>
         <el-button
           v-if="scope.row.projectstate === HOLIDAY_ENABLED"
           type="warning"
@@ -76,12 +60,8 @@
         >
           停用
         </el-button>
-        <el-button v-else type="success" link :disabled="!canEdit" @click="setState([scope.row.id], true)">
-          启用
-        </el-button>
-        <el-button type="danger" link :icon="Delete" :disabled="!canEdit" @click="doDelete([scope.row.id])">
-          删除
-        </el-button>
+        <el-button v-else type="success" link :disabled="!canEdit" @click="setState([scope.row.id], true)"> 启用 </el-button>
+        <el-button type="danger" link :icon="Delete" :disabled="!canEdit" @click="doDelete([scope.row.id])"> 删除 </el-button>
       </template>
     </ProTable>
 
@@ -271,11 +251,10 @@ const setState = async (raw: (string | number)[], enable: boolean) => {
 const doDelete = async (raw: (string | number)[]) => {
   const ids = toIds(raw);
   if (!ids.length) return ElMessage.warning("请先勾选节假日");
-  await ElMessageBox.confirm(
-    `确认删除选中的 ${ids.length} 条节假日？删除后这几天将恢复正常打铃。`,
-    "删除节假日",
-    { type: "warning", confirmButtonText: "确认删除" }
-  );
+  await ElMessageBox.confirm(`确认删除选中的 ${ids.length} 条节假日？删除后这几天将恢复正常打铃。`, "删除节假日", {
+    type: "warning",
+    confirmButtonText: "确认删除"
+  });
   const { data } = await deleteHolidaysApi(ids);
   ElMessage.success(`已删除 ${data.deleted} 条`);
   refresh();

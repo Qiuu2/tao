@@ -75,7 +75,11 @@ export const updateZoneApi = (id: number, data: { name: string; info: string; te
   http.put<{ updated: boolean }>(PORT1 + `/api/zones/${id}`, data);
 export const previewDeleteZonesApi = (ids: number[]) =>
   http.get<ZonePreview>(PORT1 + `/api/zones/delete-preview`, { ids: ids.join(",") }, { loading: false });
-export const deleteZonesApi = (ids: number[]) => http.delete<ZoneDeleteResult>(PORT1 + `/api/zones`, { ids });
+// ⚠ DELETE 带参数必须走 `http.delete(url, {}, { data: ... })`：
+// 第二个参数是 **query string**，后端这些接口读的是 **JSON body**，
+// 写成 http.delete(url, { ids }) 会发出一个没有 body 的请求，
+// 后端解析 body 直接 EOF，报「请求参数格式错误」—— 界面上表现为删除按钮点了没反应。
+export const deleteZonesApi = (ids: number[]) => http.delete<ZoneDeleteResult>(PORT1 + `/api/zones`, {}, { data: { ids } });
 
 /* ==================== 节假日 ==================== */
 
@@ -118,7 +122,8 @@ export const updateHolidayApi = (id: number, data: HolidayForm) =>
   http.put<{ updated: boolean }>(PORT1 + `/api/holidays/${id}`, data);
 export const setHolidayStateApi = (ids: number[], enable: boolean) =>
   http.put<{ affected: number }>(PORT1 + `/api/holidays/state`, { ids, enable });
-export const deleteHolidaysApi = (ids: number[]) => http.delete<{ deleted: number }>(PORT1 + `/api/holidays`, { ids });
+export const deleteHolidaysApi = (ids: number[]) =>
+  http.delete<{ deleted: number }>(PORT1 + `/api/holidays`, {}, { data: { ids } });
 
 /* ==================== 遥控任务 ==================== */
 
@@ -147,15 +152,15 @@ export interface RemotePickTask {
 }
 
 export const getRemoteListApi = (params: any) => http.get<ResPage<RemoteKey>>(PORT1 + `/api/remote-keys`, params);
-export const getRemoteApi = (keyId: number) =>
-  http.get<RemoteKey>(PORT1 + `/api/remote-keys/${keyId}`, {}, { loading: false });
+export const getRemoteApi = (keyId: number) => http.get<RemoteKey>(PORT1 + `/api/remote-keys/${keyId}`, {}, { loading: false });
 export const getRemoteTasksApi = (kind = "", keyword = "") =>
   http.get<RemotePickTask[]>(PORT1 + `/api/remote-keys/tasks`, { kind, keyword }, { loading: false });
 export const createRemoteApi = (data: { keyId: number; keyName: string; taskIds: number[] }) =>
   http.post<{ keyId: number }>(PORT1 + `/api/remote-keys`, data);
 export const updateRemoteApi = (keyId: number, data: { keyId: number; keyName: string; taskIds: number[] }) =>
   http.put<{ updated: boolean }>(PORT1 + `/api/remote-keys/${keyId}`, data);
-export const deleteRemotesApi = (ids: number[]) => http.delete<{ deleted: number }>(PORT1 + `/api/remote-keys`, { ids });
+export const deleteRemotesApi = (ids: number[]) =>
+  http.delete<{ deleted: number }>(PORT1 + `/api/remote-keys`, {}, { data: { ids } });
 
 /* ==================== 时间设置 ==================== */
 
@@ -208,8 +213,7 @@ export const getTimeTerminalsApi = (keyword = "") =>
   http.get<TimeTerminal[]>(PORT1 + `/api/time/terminals`, { keyword }, { loading: false });
 export const setNtpApi = (ntpserver: string) =>
   http.put<{ updated: boolean; note: string }>(PORT1 + `/api/time/ntp`, { ntpserver });
-export const setGpsTerminalApi = (terminalId: number) =>
-  http.put<{ updated: boolean }>(PORT1 + `/api/time/gps`, { terminalId });
+export const setGpsTerminalApi = (terminalId: number) => http.put<{ updated: boolean }>(PORT1 + `/api/time/gps`, { terminalId });
 /**
  * 设置服务器系统时间。time 是 "YYYY-MM-DD HH:MM:SS"。
  *

@@ -93,14 +93,21 @@ func (s *Service) ListMappings(ctx context.Context, u *auth.User, q MappingQuery
 	if c, args := mappingVisibleCond(u); c != "" {
 		cond.Add(c, args...)
 	}
-	switch q.SearchKey {
-	case "terminalname":
-		if q.Keyword != "" {
-			cond.Add(`t.terminalname LIKE ? ESCAPE '\\'`, store.EscapeLike(q.Keyword))
-		}
-	case "alarmname":
-		if q.Keyword != "" {
-			cond.Add(`a.name LIKE ? ESCAPE '\\'`, store.EscapeLike(q.Keyword))
+	// 旧版 alarmmanager.php 的搜索是一个「选择类型…」下拉（报警主机 / 映射分区）
+	// 加一个关键字框。这里保留 searchKey 这两个取值，另外补一条默认分支：
+	// ⚠ 界面上只有一个搜索框、不带 searchKey 时，旧的写法两个 case 都不命中，
+	//   搜索框按下去毫无反应。默认按「报警主机名 或 映射分区名」一起模糊匹配。
+	if q.Keyword != "" {
+		kw := store.EscapeLike(q.Keyword)
+		switch q.SearchKey {
+		case "terminalname":
+			cond.Add(`t.terminalname LIKE ? ESCAPE '\\'`, kw)
+		case "alarmname":
+			cond.Add(`a.name LIKE ? ESCAPE '\\'`, kw)
+		default:
+			// 映射自己的名字在 alarmgroupmap.info 这一列上（表里没有 name 列）
+			cond.Add(`(t.terminalname LIKE ? ESCAPE '\\' OR a.name LIKE ? ESCAPE '\\'
+			           OR m.info LIKE ? ESCAPE '\\')`, kw, kw, kw)
 		}
 	}
 

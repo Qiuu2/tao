@@ -92,7 +92,11 @@
               </span>
             </div>
 
-            <el-alert v-if="files && !files.dirWritable" type="info" :closable="false" class="mb12">
+            <!-- 目录还没建出来：这不是故障，说清楚就行，别让人以为日志丢了 -->
+            <el-alert v-if="files?.note" type="info" :closable="false" show-icon class="mb12">
+              {{ files.note }}
+            </el-alert>
+            <el-alert v-else-if="files && !files.dirWritable" type="info" :closable="false" class="mb12">
               当前服务进程对该目录没有写权限，清理功能不可用。
             </el-alert>
 
@@ -159,12 +163,7 @@
           <el-input-number v-model="tclr.keepDays" :min="1" :max="3650" @change="previewTaskClear" />
         </el-form-item>
         <el-form-item v-if="tclr.mode === 'beforeDate'" label="截止日期">
-          <el-date-picker
-            v-model="tclr.beforeDate"
-            type="date"
-            value-format="YYYY-MM-DD"
-            @change="previewTaskClear"
-          />
+          <el-date-picker v-model="tclr.beforeDate" type="date" value-format="YYYY-MM-DD" @change="previewTaskClear" />
         </el-form-item>
       </el-form>
 
@@ -178,12 +177,7 @@
       </el-alert>
       <template #footer>
         <el-button @click="tclr.visible = false">取消</el-button>
-        <el-button
-          type="danger"
-          :loading="tclr.busy"
-          :disabled="!tclr.preview?.count"
-          @click="confirmTaskClear"
-        >
+        <el-button type="danger" :loading="tclr.busy" :disabled="!tclr.preview?.count" @click="confirmTaskClear">
           确认删除{{ tclr.preview?.count ? `(${tclr.preview.count})` : "" }}
         </el-button>
       </template>
@@ -191,9 +185,7 @@
 
     <!-- 任务日志内容 -->
     <el-drawer v-model="viewer.visible" :title="viewer.name" size="70%">
-      <el-alert v-if="viewer.truncated" type="info" :closable="false" class="mb12">
-        文件较大，仅显示末尾部分内容。
-      </el-alert>
+      <el-alert v-if="viewer.truncated" type="info" :closable="false" class="mb12"> 文件较大，仅显示末尾部分内容。 </el-alert>
       <el-alert v-if="viewer.gbkLines" type="info" :closable="false" class="mb12">
         该文件里有 {{ viewer.gbkLines }} 行是 GBK 编码（其余是 UTF-8），已自动转码后显示。
         后台服务在同一个文件里混用了两种编码，旧页面对这部分内容一直是乱码。
@@ -293,11 +285,7 @@ const openClear = async () => {
 const confirmClear = async () => {
   if (clr.mode === "beforeDate" && !clr.beforeDate) return ElMessage.warning("请选择截止日期");
   const label =
-    clr.mode === "all"
-      ? "全部清空"
-      : clr.mode === "keepDays"
-        ? `只保留最近 ${clr.keepDays} 天`
-        : `删除 ${clr.beforeDate} 之前`;
+    clr.mode === "all" ? "全部清空" : clr.mode === "keepDays" ? `只保留最近 ${clr.keepDays} 天` : `删除 ${clr.beforeDate} 之前`;
   await ElMessageBox.confirm(`确定按「${label}」清理操作日志？`, "二次确认", { type: "warning" });
 
   clr.busy = true;

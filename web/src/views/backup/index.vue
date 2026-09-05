@@ -31,13 +31,7 @@
         ⚠ :auto-upload="false" + 自己发请求 —— el-upload 自带的上传走不了项目的
           axios 拦截器，拿不到 x-access-token，也套不上统一的错误提示。
       -->
-      <el-upload
-        :show-file-list="false"
-        :auto-upload="false"
-        accept=".zip"
-        :on-change="onPick"
-        class="up"
-      >
+      <el-upload :show-file-list="false" :auto-upload="false" accept=".zip" :on-change="onPick" class="up">
         <el-button :icon="Upload" :loading="uploading">上传备份包</el-button>
       </el-upload>
 
@@ -87,10 +81,7 @@
     <el-dialog v-model="rst.visible" title="恢复备份" width="720px" top="5vh">
       <el-alert type="error" :closable="false" class="mb12">
         <template #title>恢复会清空数据库现有全部数据并写入备份内容</template>
-        <div class="alert-body">
-          这是不可撤销的操作。恢复期间后台广播服务读到的数据会发生突变，
-          请避开上下课等打铃时段执行。
-        </div>
+        <div class="alert-body">这是不可撤销的操作。恢复期间后台广播服务读到的数据会发生突变， 请避开上下课等打铃时段执行。</div>
       </el-alert>
 
       <el-descriptions v-if="rst.pre" :column="2" border size="small" class="mb12">
@@ -133,12 +124,7 @@
 
       <template #footer>
         <el-button @click="rst.visible = false">取消</el-button>
-        <el-button
-          type="danger"
-          :loading="rst.busy"
-          :disabled="rst.confirmText !== rst.pre?.name"
-          @click="doRestore"
-        >
+        <el-button type="danger" :loading="rst.busy" :disabled="rst.confirmText !== rst.pre?.name" @click="doRestore">
           确认恢复
         </el-button>
       </template>
@@ -201,11 +187,7 @@ const onPick = async (uf: any) => {
   upPercent.value = 0;
   try {
     const { data } = await uploadBackupApi(file, p => (upPercent.value = p));
-    ElMessage.success(
-      data.renamed
-        ? `已上传，目录里已有同名包，落地为「${data.name}」`
-        : `已上传「${data.name}」`
-    );
+    ElMessage.success(data.renamed ? `已上传，目录里已有同名包，落地为「${data.name}」` : `已上传「${data.name}」`);
     if (data.item && !data.item.compatible) {
       ElMessage.warning("这个包与当前数据库结构不一致，列表里会标成「不可恢复」");
     }
@@ -282,11 +264,10 @@ const openRestore = async (row: BackupItem) => {
 
 const doRestore = async () => {
   if (!rst.pre) return;
-  await ElMessageBox.confirm(
-    "最后确认：这会清空数据库现有全部数据并写入备份内容，不可撤销。",
-    "危险操作",
-    { type: "error", confirmButtonText: "我确认恢复" }
-  );
+  await ElMessageBox.confirm("最后确认：这会清空数据库现有全部数据并写入备份内容，不可撤销。", "危险操作", {
+    type: "error",
+    confirmButtonText: "我确认恢复"
+  });
   rst.busy = true;
   try {
     const { data } = await restoreBackupApi({

@@ -1067,8 +1067,12 @@ const onSortChange = ({ prop, order }: { prop: string; order: string | null }) =
 // id | 终端名称 | 终端类型 | 任务状态 | 网络状态 | 设备状态 | IP地址 | 音量 |
 // 对讲 | 急救 | 录音 | 发言 | 左声道开路 | 右声道开路 | 温度(℃) | 湿度(RH) | 操作
 //
-// 「分区」列被拿掉了 —— :80 没有这一列，分区靠左边那棵树看。
-// 搜索也收敛成一个「设备名称查找」，与 :80 一致（IP 搜索随之取消）。
+// 搜索收敛成一个「设备名称查找」，与 :80 一致（IP 搜索随之取消）。
+//
+// 「所属分区」列补回来了：旧版 TerminalManager/terminalmanager_form.html 的表头
+// 第 3 列就是它（终端名称 → 所属分区 → 终端类型）。早先按 :80 的参考图拿掉过，
+// 理由是左边那棵分区树已经能看出归属 —— 但选「全部终端」时树上看不出每一行属于谁，
+// 这一列就是唯一的出处。列设置里可以关掉，关掉之后也会被记住（utils/tablePrefs.ts）。
 const columns = reactive<ColumnProps<TerminalRow>[]>([
   { type: "selection", fixed: "left", width: 50 },
   { prop: "id", label: "编号", width: 70, sortable: "custom" },
@@ -1079,6 +1083,7 @@ const columns = reactive<ColumnProps<TerminalRow>[]>([
     sortable: "custom",
     search: { el: "input", props: { placeholder: "设备名称查找" } }
   },
+  { prop: "groupName", label: "所属分区", width: 120, showOverflowTooltip: true },
   { prop: "typeName", label: "终端类型", width: 130 },
   { prop: "taskstate", label: "任务状态", width: 100, sortable: "custom" },
   { prop: "netstate", label: "网络状态", width: 100, sortable: "custom" },

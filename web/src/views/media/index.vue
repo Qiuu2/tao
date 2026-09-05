@@ -407,7 +407,14 @@ const columns = reactive<ColumnProps<MediaItem>[]>([
   // ID 列 :80 没有，这里也去掉 —— 需要 id 的地方（试听/下载/删除）都走行对象，不靠肉眼抄。
   { prop: "name", label: "媒体名称", search: { el: "input", key: "keyword", props: { placeholder: "请输入媒体名称" } } },
   { prop: "sizeText", label: "媒体大小", width: 110 },
-  { prop: "typeid", label: "媒体类型", width: 100 },
+  // 旧版的搜索是一个「选择类型…」下拉 +一个关键字框，可选「媒体名称 / 媒体类型」。
+  // 这里做成两个并列的搜索框，两路条件可以同时生效，比旧版那个二选一好用。
+  {
+    prop: "typeid",
+    label: "媒体类型",
+    width: 100,
+    search: { el: "input", key: "typeid", props: { placeholder: "如 mp3 / wav" } }
+  },
   { prop: "bitrateText", label: "媒体比特率", width: 120 },
   { prop: "timelengthText", label: "播放时长", width: 120 },
   { prop: "operation", label: "操作", width: 170, fixed: "right" }

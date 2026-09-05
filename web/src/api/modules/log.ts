@@ -47,6 +47,11 @@ export interface TaskLogList {
   totalSize: number;
   today: string;
   dirWritable: boolean;
+  /**
+   * 一个文件都没有时的原因说明。
+   * 目前只有一种：目录还不存在 —— 后台服务写第一条任务日志时才建它。
+   */
+  note?: string;
 }
 
 export interface TaskLogContent {

@@ -133,12 +133,8 @@ export const deleteBackupApi = (name: string) =>
 export const precheckBackupApi = (name: string) =>
   http.get<BackupPrecheck>(PORT1 + `/api/backups/${encodeURIComponent(name)}/restore-precheck`);
 
-export const restoreBackupApi = (data: {
-  name: string;
-  confirmText: string;
-  safetyBackup: boolean;
-  restoreMedia: boolean;
-}) => http.post<BackupRestoreResult>(PORT1 + `/api/backups/restore`, data);
+export const restoreBackupApi = (data: { name: string; confirmText: string; safetyBackup: boolean; restoreMedia: boolean }) =>
+  http.post<BackupRestoreResult>(PORT1 + `/api/backups/restore`, data);
 
 /** 下载走浏览器直连，带上 token 查询串 */
 export const backupDownloadUrl = (name: string) => `${PORT1}/api/backups/${encodeURIComponent(name)}/download`;

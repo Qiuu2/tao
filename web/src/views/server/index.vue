@@ -65,8 +65,8 @@
               但主备模式的开关就在这一页上 —— 跟着一起锁死就再也切不回主服务器了。
             -->
             <el-alert v-if="readonlyMode" type="warning" :closable="false" class="mb12 two-col">
-              当前是<b>备份服务器模式</b>（<code>model = 2</code>）：其余模块只读，
-              <b>本页照常可改</b> —— 要切回主服务器请到「主备服务器配置」页。
+              当前是<b>备份服务器模式</b>（<code>model = 2</code>）：其余模块只读， <b>本页照常可改</b> ——
+              要切回主服务器请到「主备服务器配置」页。
             </el-alert>
 
             <!-- 服务器配置：两列。左右交替沿用参考图的字段顺序（地址一列、端口一列） -->
@@ -135,13 +135,10 @@
               </el-row>
 
               <el-form-item class="form-actions">
-                <el-button type="primary" :loading="saving" @click="save">
-                  确 定
-                </el-button>
+                <el-button type="primary" :loading="saving" @click="save"> 确 定 </el-button>
                 <el-button @click="load">取 消</el-button>
               </el-form-item>
             </el-form>
-
           </template>
         </el-tab-pane>
 
@@ -199,7 +196,6 @@
                       v-model="p.ha.backup"
                       :active-value="1"
                       :inactive-value="0"
-                     
                       inactive-text="关闭"
                       active-text="开启"
                     />
@@ -208,13 +204,10 @@
               </el-row>
 
               <el-form-item class="form-actions">
-                <el-button type="primary" :loading="saving" @click="save">
-                  确 定
-                </el-button>
+                <el-button type="primary" :loading="saving" @click="save"> 确 定 </el-button>
                 <el-button @click="load">取 消</el-button>
               </el-form-item>
             </el-form>
-
           </template>
         </el-tab-pane>
 
@@ -289,7 +282,6 @@
                 <el-button @click="load">重 置</el-button>
               </el-form-item>
             </el-form>
-
           </template>
         </el-tab-pane>
 
@@ -314,27 +306,15 @@
             <el-form label-width="110px" class="sp-form srv-form srv-form--ver">
               <el-form-item label="版本" required>
                 <el-select v-model="ver.pick" placeholder="请选择版本" class="fill" clearable>
-                  <el-option
-                    v-for="o in ver.options"
-                    :key="o.id"
-                    :label="o.name"
-                    :value="o.id"
-                    :disabled="!o.available"
-                  />
+                  <el-option v-for="o in ver.options" :key="o.id" :label="o.name" :value="o.id" :disabled="!o.available" />
                 </el-select>
               </el-form-item>
               <el-form-item class="form-actions">
-                <el-button
-                  type="primary"
-                  :loading="ver.busy"
-                  :disabled="!ver.pick || !ver.canSwitch"
-                  @click="openSwitchVersion"
-                >
+                <el-button type="primary" :loading="ver.busy" :disabled="!ver.pick || !ver.canSwitch" @click="openSwitchVersion">
                   提 交
                 </el-button>
               </el-form-item>
             </el-form>
-
           </template>
         </el-tab-pane>
       </el-tabs>
@@ -352,12 +332,7 @@
       <el-input v-model="rb.confirmText" placeholder="逐字输入：重启服务器" />
       <template #footer>
         <el-button @click="rb.visible = false">取消</el-button>
-        <el-button
-          type="danger"
-          :loading="rb.busy"
-          :disabled="rb.confirmText !== '重启服务器'"
-          @click="doReboot"
-        >
+        <el-button type="danger" :loading="rb.busy" :disabled="rb.confirmText !== '重启服务器'" @click="doReboot">
           确认重启
         </el-button>
       </template>

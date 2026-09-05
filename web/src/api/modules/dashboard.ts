@@ -85,11 +85,9 @@ export const getDashPerfApi = () => http.get<Perf>(PORT1 + `/api/dashboard/perf`
 export const getDashConfigApi = () => http.get<DashConfig>(PORT1 + `/api/dashboard/config`, {}, { loading: false });
 
 export const getDashTasksApi = (params: any) =>
-  http.get<{ list: BrowseItem[]; total: number; pageNum: number; pageSize: number }>(
-    PORT1 + `/api/dashboard/tasks`,
-    params,
-    { loading: false }
-  );
+  http.get<{ list: BrowseItem[]; total: number; pageNum: number; pageSize: number }>(PORT1 + `/api/dashboard/tasks`, params, {
+    loading: false
+  });
 
 export const saveShortcutsApi = (shortcuts: Shortcut[]) =>
   http.put<{ count: number }>(PORT1 + `/api/dashboard/shortcuts`, { shortcuts });
