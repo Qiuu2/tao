@@ -354,7 +354,12 @@
             </el-col>
             <el-col :span="12">
               <el-form-item label="终端通道">
-                <el-select v-model="form.channel" class="fill">
+                <!-- 选项条数 = 所选采播终端型号的 switchcount，没选采播终端时是空的（同旧版） -->
+                <el-select
+                  v-model="form.channel"
+                  class="fill"
+                  :placeholder="form.sourceTerminalId ? '请选择终端通道' : '请先选择采播终端'"
+                >
                   <el-option v-for="c in channelOptions" :key="c.value" :label="c.label" :value="c.value" />
                 </el-select>
               </el-form-item>
@@ -845,16 +850,42 @@ const hasCycleTimes = computed(() => props.kind === "tts");
 // 提示音只在 tts终端 选到服务器本机（typeid = 0）时出现
 const sourceIsServer = computed(() => sourceTerminals.value.find(t => t.id === form.sourceTerminalId)?.typeid === 0);
 
-// 终端通道：旧版按所选采播终端的通道数动态拉，第 0 项叫 mp3。
-// 库里没有可靠的「通道数」列，这里给固定 0~8 的一档，第 1 项照旧版叫 mp3。
-const channelOptions = computed(() => {
-  const out = [{ label: "mp3", value: 1 }];
-  for (let i = 2; i <= 9; i++) out.push({ label: String(i - 1), value: i });
-  return out;
-});
+/*
+  终端通道。照旧版 AddAdmManger.html / AdmModify.html 的 changeselect1()：
+
+      var url = "get_changeselect1.php?id=" + 采播终端id;   // 返回 terminaltype.switchcount
+      for (i = 0; i < ret; i++) {
+        oOption.innerHTML = (i == 0) ? "mp3" : i;
+        oOption.value = i + 1;
+      }
+
+  也就是说选项条数 = **所选采播终端**那台设备型号的 switchcount，
+  第 0 项叫「mp3」值为 1，其余项显示 i、值为 i+1。
+  没选采播终端时这个下拉是空的（旧版也是空的）。
+
+  switchcount 已经随 /api/typed-tasks/{kind}/sources 一起下发，
+  不用再为它单开一个接口。
+
+  ⚠ 旧版 AdmModify.html 里有处自相矛盾：页面初次渲染那段把第 0 项写成「mp3」，
+    而换采播终端时走的 changeselect1() 却把它写成「1」。添加页两处都是「mp3」，
+    这里统一用「mp3」。
+*/
+const sourceSwitchCount = computed(() => sourceTerminals.value.find(t => t.id === form.sourceTerminalId)?.switchCount ?? 0);
+
+const channelOptions = computed(() =>
+  Array.from({ length: sourceSwitchCount.value }, (_, i) => ({
+    label: i === 0 ? "mp3" : String(i),
+    value: i + 1
+  }))
+);
 
 const onSourceChange = () => {
   if (!sourceIsServer.value) form.promptId = 0;
+  // 换了采播终端就重建通道列表：旧版是先清空再按新的 switchcount 重建，
+  // 原来选中的值不会保留。这里同理 —— 落在新范围外就回到第一项。
+  if (!channelOptions.value.some(c => c.value === form.channel)) {
+    form.channel = channelOptions.value[0]?.value ?? 0;
+  }
 };
 const onRunModeChange = (v: number) => {
   if (v === 1) form.weekdays = [0, 1, 2, 3, 4, 5, 6];
