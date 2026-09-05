@@ -341,7 +341,7 @@ func (a *app) failRemote(w http.ResponseWriter, action string, err error) {
 func (a *app) handleRemoteList(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query()
 	pager := store.NewPager(atoiDefault(q.Get("pageNum"), 1), atoiDefault(q.Get("pageSize"), 18))
-	res, err := a.remotes.List(r.Context(), remote.Query{
+	res, err := a.remotes.List(r.Context(), auth.From(r.Context()), remote.Query{
 		Keyword: strings.TrimSpace(q.Get("keyword")),
 		Pager:   pager,
 	})
@@ -349,7 +349,13 @@ func (a *app) handleRemoteList(w http.ResponseWriter, r *http.Request) {
 		a.failRemote(w, "查询遥控任务", err)
 		return
 	}
-	httpx.OKPage(w, res.Items, pager.PageNum, pager.PageSize, res.Total)
+	httpx.OK(w, map[string]interface{}{
+		"list":      res.Items,
+		"pageNum":   pager.PageNum,
+		"pageSize":  pager.PageSize,
+		"total":     res.Total,
+		"scopeNote": res.ScopeNote,
+	})
 }
 
 // handleRemoteGet 的路径参数是**遥控键号**，不是自增 id。
@@ -359,7 +365,7 @@ func (a *app) handleRemoteGet(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	it, err := a.remotes.Get(r.Context(), id)
+	it, err := a.remotes.Get(r.Context(), auth.From(r.Context()), id)
 	if err != nil {
 		a.failRemote(w, "查询遥控任务", err)
 		return
@@ -409,7 +415,7 @@ func (a *app) handleRemoteUpdate(w http.ResponseWriter, r *http.Request) {
 	if !httpx.DecodeJSON(w, r, &in) {
 		return
 	}
-	if err := a.remotes.Update(r.Context(), id, in.toInput()); err != nil {
+	if err := a.remotes.Update(r.Context(), auth.From(r.Context()), id, in.toInput()); err != nil {
 		a.failRemote(w, "修改遥控任务", err)
 		return
 	}
@@ -421,7 +427,7 @@ func (a *app) handleRemoteDelete(w http.ResponseWriter, r *http.Request) {
 	if !httpx.DecodeJSON(w, r, &in) {
 		return
 	}
-	n, err := a.remotes.Delete(r.Context(), in.IDs)
+	n, err := a.remotes.Delete(r.Context(), auth.From(r.Context()), in.IDs)
 	if err != nil {
 		a.failRemote(w, "删除遥控任务", err)
 		return

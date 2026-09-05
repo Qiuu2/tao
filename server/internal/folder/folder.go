@@ -122,17 +122,27 @@ func (s *Service) Tree(ctx context.Context, u *auth.User, scene Scene, withCount
 
 // VisibleCond 返回「哪些文件夹对该用户可见」的 SQL 条件与绑定参数。
 //
-// 可见范围规则（BR-05 / BR-85，对应旧缺陷 D-19 / D-20 的修复）：
-//   - 管理员：全部
-//   - 普通用户：共享的（priority=1）或自己创建的（userid=本人）
+// # 可见范围：文件管理是全站唯一「大家都看得见」的模块
 //
-// 旧代码这里有两个错误：
+// 全站的口径是「管理员看全部，其他人只看自己建的」（任务、任务分组、
+// 报警分区、终端分区、声场分区、用户信息都是这一条），**文件管理是例外**：
+// 媒体库是共用的素材库，谁上传的文件别人都要能拿来做任务，
+// 挡住只会逼着每个人把同一首铃声再传一遍。
+//
+// 所以这里对任何登录用户都恒真。收敛留在写操作那一侧：
+// 删媒体、改名 / 删文件夹仍然只有创建者本人或管理员能做
+// （见 media/write.go 的 Delete 与 folder/write.go 的 Rename / Delete）。
+//
+// ⚠ 这一条改过一次：早先是「管理员全部，普通用户只看 priority=1 的共享目录
+// 或自己建的」（旧 BR-05 / BR-85），媒体行还额外按 media.userid 再收一次。
+// 现按「文件管理除外」的定稿放开到全部可见。
+//
+// 旧版这里另有两个错误，与可见范围无关但一并记在这儿：
 //  1. filefoldermanager.php 拿 usergroupid 去比 filefolder.userid（字段语义完全不同）
 //  2. 写了 `filefolder.id = '0'` 这个恒不成立的死条件（id 是自增主键，不可能为 0）
 //
-// 这里是该规则的唯一权威定义。目录树、媒体列表、上传、清空目录都必须引用它：
-// 早期只有目录树按此裁剪，媒体侧几条路径各自漏掉了这道闸门，
-// 于是「树里看不见」和「按 id 直接访问不到」这两件事对不上。
+// 这里是该规则的唯一权威定义。目录树、媒体列表、上传、清空目录、
+// 任务的媒体选择器都必须引用它。
 func VisibleCond(u *auth.User) (string, []interface{}) {
 	return VisibleCondAlias(u, "")
 }
@@ -149,14 +159,11 @@ func VisibleCond(u *auth.User) (string, []interface{}) {
 //
 // alias 传空串时退化为裸列名，供单表查询使用。
 func VisibleCondAlias(u *auth.User, alias string) (string, []interface{}) {
-	if u.IsAdmin {
-		return "1=1", nil
-	}
-	p := ""
-	if alias != "" {
-		p = alias + "."
-	}
-	return "(" + p + "priority = 1 OR " + p + "userid = ?)", []interface{}{u.ID}
+	// 恒真：文件管理对所有登录用户开放，见 VisibleCond 的说明。
+	// 保留 u 与 alias 两个参数是为了调用点不用改 —— 这条规则将来若要再收紧，
+	// 只改这一处就够了，别在调用点各写各的。
+	_, _ = u, alias
+	return "1=1", nil
 }
 
 // loadVisible 取出当前用户可见的全部文件夹。

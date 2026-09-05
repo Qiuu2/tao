@@ -13,6 +13,11 @@ export interface Rights {
   alarmgrouppriv: number;
   bellpriv: number;
   admpriv: number;
+  /**
+   * ⚠ 电话广播这一页新版没有，所以「功能权限」里也没有对应的勾选项。
+   * 列还在（表结构不动），但不由界面驱动：新建时恒写 0，修改时后端根本不写这一列，
+   * 旧库里已有的取值保持原样。这里留着字段只是为了列表回显时字段对得上。
+   */
   telephonepriv: number;
   powerplay: number;
   ttspriv: number;
@@ -29,6 +34,9 @@ export interface Rights {
   改字面意思等于把现网所有用户组的权限悄悄挪了位。
 
   group 用来在界面上按新 web 的菜单分组排列。
+
+  ⚠ 这里只有 12 项，usergroup 表里是 13 列 —— 少的那个是 telephonepriv（电话管理）：
+  新版没有电话广播这一页，勾了也不控制任何东西，所以不给勾选项。
 */
 export const RIGHT_ITEMS: { key: keyof Rights; group: string; label: string; tip: string }[] = [
   // —— 资源管理 ——
@@ -72,13 +80,7 @@ export const RIGHT_ITEMS: { key: keyof Rights; group: string; label: string; tip
     label: "遥控管理",
     tip: "遥控任务；云广播管理 → 任务传送；基础配置 → 服务器信息、时间设置里的 NTP / GPS；用户管理 → 注册服务"
   },
-  { key: "userpriv", group: "系统", label: "用户管理", tip: "用户与用户组的查看与维护" },
-  {
-    key: "telephonepriv",
-    group: "系统",
-    label: "电话管理",
-    tip: "⚠ 新版还没有电话广播这一页。这一项目前不控制任何功能，只把旧库里的取值原样存回去，别当它生效"
-  }
+  { key: "userpriv", group: "系统", label: "用户管理", tip: "用户与用户组的查看与维护" }
 ];
 
 /** 界面上按这个顺序分组排列，与新 web 的菜单同序 */

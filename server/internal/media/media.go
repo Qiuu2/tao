@@ -146,12 +146,9 @@ func (s *Service) List(ctx context.Context, u *auth.User, q ListQuery) (*ListRes
 	cond.Add("media.folderid = ?", q.FolderID)
 	cond.Add(ttsFilter)
 
-	// 可见范围（BR-30，已定稿）：
-	// 普通用户只看自己上传的媒体，即使媒体位于共享目录内。
-	// 共享目录只决定「目录本身可见」，不决定「目录内容可见」。
-	if !u.IsAdmin {
-		cond.Add("media.userid = ?", u.ID)
-	}
+	// ⚠ 这里**不按上传者收敛**。全站口径是「管理员看全部，其他人只看自己建的」，
+	// 文件管理是唯一的例外：媒体库是共用素材库，谁传的文件别人都要能拿来做任务。
+	// 能不能删仍然只看归属（见 write.go 的 Delete）。规则的权威定义在 folder.VisibleCond。
 
 	if col, ok := searchWhitelist[q.SearchKey]; ok && q.Keyword != "" {
 		cond.Add(col+" LIKE ? ESCAPE '\\\\'", store.EscapeLike(q.Keyword))
@@ -215,11 +212,7 @@ func (s *Service) List(ctx context.Context, u *auth.User, q ListQuery) (*ListRes
 		return nil, err
 	}
 
-	res := &ListResult{Items: items, Total: total, Folder: info}
-	if !u.IsAdmin {
-		res.ScopeNote = "仅显示我上传的媒体"
-	}
-	return res, nil
+	return &ListResult{Items: items, Total: total, Folder: info}, nil
 }
 
 // folderInfo 汇总当前文件夹的展示信息。

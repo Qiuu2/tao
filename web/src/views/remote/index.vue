@@ -15,7 +15,7 @@
 -->
 <template>
   <div class="table-box">
-    <ProTable ref="proTableRef" :columns="columns" :request-api="getRemoteListApi" row-key="keyId">
+    <ProTable ref="proTableRef" :columns="columns" :request-api="getRemoteListApi" :data-callback="dataCallback" row-key="keyId">
       <template #tableHeader="scope">
         <div class="header-bar">
           <!-- 按钮对齐 :80（页面规格.txt「遥控任务」）：添加映射 / 删除映射 -->
@@ -26,6 +26,8 @@
             </el-button>
           </div>
           <div class="header-right">
+            <!-- 普通用户只看得到绑在自己任务上的键，说一句免得以为丢了数据 -->
+            <el-tag v-if="scopeNote" type="info" size="small" effect="plain">{{ scopeNote }}</el-tag>
             <el-tag type="info" size="small" effect="plain">一个键号只能配一次</el-tag>
           </div>
         </div>
@@ -139,6 +141,12 @@ import type { ColumnProps, ProTableInstance } from "@/components/ProTable/interf
 
 const authStore = useAuthStore();
 const canEdit = computed(() => !!(authStore.authButtonListGet as any)?.remote?.edit);
+
+const scopeNote = ref("");
+const dataCallback = (data: any) => {
+  scopeNote.value = data.scopeNote ?? "";
+  return { list: data.list, total: data.total, pageNum: data.pageNum, pageSize: data.pageSize };
+};
 
 const toIds = (raw: (string | number)[]) => (raw ?? []).map(Number).filter(n => Number.isFinite(n) && n > 0);
 

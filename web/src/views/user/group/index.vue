@@ -73,8 +73,8 @@
         </el-form-item>
 
         <el-form-item label="组级别">
-          <el-select v-model="dlg.form.groupLevel" :disabled="dlg.system" style="width: 140px">
-            <el-option v-for="n in 9" :key="n" :label="`级别 ${n}`" :value="n" />
+          <el-select v-model="dlg.form.groupLevel" :disabled="dlg.system" style="width: 200px">
+            <el-option v-for="n in groupLevelOptions" :key="n" :label="levelLabel(n)" :value="n" />
           </el-select>
         </el-form-item>
 
@@ -231,6 +231,23 @@ const dlg = reactive({
 
 // 级别有变动时提示会重算任务优先级
 const levelChanged = computed(() => dlg.form.groupLevel * 10 + dlg.form.priorityBase !== dlg.originLevel);
+
+/*
+  组级别的可选值。level 的取值区间照旧版那个下拉：10~109
+  （userGroupAdd_form.html 里 `for(levels=10; levels<=109; levels++)`），
+  拆成十位（组级别 1~10）与个位（优先级基数 0~9）。
+
+  ⚠ 旧库里有 level 为 1 / 3 / 5 的用户组，十位是 0，落在 1~10 之外。
+  把这个旧值也放进选项里，否则下拉显示空白、这些用户组连描述都改不了。
+  后端同样只在级别真被改动时才校验区间。
+*/
+const groupLevelOptions = computed(() => {
+  const list = Array.from({ length: 10 }, (_, i) => i + 1);
+  const cur = dlg.form.groupLevel;
+  if (!list.includes(cur)) list.unshift(cur);
+  return list;
+});
+const levelLabel = (n: number) => (n >= 1 && n <= 10 ? `级别 ${n}` : `级别 ${n}（旧值，改动后须落在 1~10）`);
 
 const openCreate = () => {
   Object.assign(dlg, {

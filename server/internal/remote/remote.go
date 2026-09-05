@@ -157,6 +157,25 @@ type Task struct {
 type ListResult struct {
 	Items []Item
 	Total int64
+	// ScopeNote 让普通用户明白「为什么只看到这几条」。
+	ScopeNote string
+}
+
+// visibleCond 是遥控任务可见范围的唯一权威定义。
+//
+// 遥控键本身（shortcutkeytask）没有归属列，归属看它绑的那条任务：
+// 管理员看全部，普通用户只看绑在自己任务上的键。
+// 旧版 task_mapping.php 就是这么写的
+// （非 admin 分支带 `AND task.task_user_id='$userid'`，admin 分支不带）。
+//
+// ⚠ 副作用：绑定指向的任务被删掉后留下的悬空行（Missing）对普通用户不可见 ——
+// 它已经不属于任何人了。管理员那边照样看得到，正好由他来清理。
+func visibleCond(u *auth.User, alias string) (string, []interface{}) {
+	if u.IsAdmin {
+		return "", nil
+	}
+	return alias + `.mediaid IN (SELECT taskid FROM task WHERE task_user_id = ?)`,
+		[]interface{}{u.ID}
 }
 
 type Query struct {
@@ -164,8 +183,11 @@ type Query struct {
 	Pager   store.Pager
 }
 
-func (s *Service) List(ctx context.Context, q Query) (*ListResult, error) {
+func (s *Service) List(ctx context.Context, u *auth.User, q Query) (*ListResult, error) {
 	cond := &store.Cond{}
+	if c, a := visibleCond(u, "k"); c != "" {
+		cond.Add(c, a...)
+	}
 	if q.Keyword != "" {
 		cond.Add(`k.keyname LIKE ? ESCAPE '\\'`, store.EscapeLike(q.Keyword))
 	}
@@ -207,7 +229,7 @@ func (s *Service) List(ctx context.Context, q Query) (*ListResult, error) {
 	}
 
 	if len(keys) > 0 {
-		byKey, err := s.tasksByKey(ctx, keys)
+		byKey, err := s.tasksByKey(ctx, u, keys)
 		if err != nil {
 			return nil, err
 		}
@@ -217,22 +239,31 @@ func (s *Service) List(ctx context.Context, q Query) (*ListResult, error) {
 			}
 		}
 	}
-	return &ListResult{Items: items, Total: total}, nil
+	res := &ListResult{Items: items, Total: total}
+	if !u.IsAdmin {
+		res.ScopeNote = "仅显示绑定我的任务的遥控键"
+	}
+	return res, nil
 }
 
 // tasksByKey 一次查出这批按键绑的全部任务，不做 N+1。
 //
 // LEFT JOIN task：绑定指向的任务可能已经被删了，
 // 内连接会让这些悬空行静默消失 —— 那正是旧版看不见问题的原因。
-func (s *Service) tasksByKey(ctx context.Context, keys []int64) (map[int64][]Task, error) {
+func (s *Service) tasksByKey(ctx context.Context, u *auth.User, keys []int64) (map[int64][]Task, error) {
 	ph, args := placeholders(keys)
+	extra := ""
+	if c, a := visibleCond(u, "k"); c != "" {
+		extra = " AND " + c
+		args = append(args, a...)
+	}
 	rs, err := s.db.QueryContext(ctx, `
 		SELECT k.keyid, k.mediaid, t.taskid IS NOT NULL,
 		       COALESCE(t.taskname,''), COALESCE(t.tasktype,0),
 		       COALESCE(t.info,''), COALESCE(t.sec_task_id,0), COALESCE(t.prepower,0)
 		FROM shortcutkeytask k
 		LEFT JOIN task t ON t.taskid = k.mediaid
-		WHERE k.keyid IN (`+ph+`)
+		WHERE k.keyid IN (`+ph+`)`+extra+`
 		ORDER BY k.keyid, k.id`, args...)
 	if err != nil {
 		return nil, fmt.Errorf("查询遥控任务明细: %w", err)
@@ -276,10 +307,16 @@ func placeholders(ids []int64) (string, []interface{}) {
 
 // ---------- 详情 ----------
 
-func (s *Service) Get(ctx context.Context, keyID int64) (*Item, error) {
+func (s *Service) Get(ctx context.Context, u *auth.User, keyID int64) (*Item, error) {
 	var it Item
-	err := s.db.QueryRowContext(ctx,
-		`SELECT keyid, MIN(keyname) FROM shortcutkeytask WHERE keyid = ? GROUP BY keyid`, keyID).
+	q := `SELECT keyid, MIN(keyname) FROM shortcutkeytask k WHERE keyid = ?`
+	args := []interface{}{keyID}
+	if c, a := visibleCond(u, "k"); c != "" {
+		q += " AND " + c
+		args = append(args, a...)
+	}
+	// 不区分「键不存在」与「键上没有我的任务」，避免把接口变成存在性探针
+	err := s.db.QueryRowContext(ctx, q+" GROUP BY keyid", args...).
 		Scan(&it.KeyID, &it.KeyName)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, ErrNotFound
@@ -287,7 +324,7 @@ func (s *Service) Get(ctx context.Context, keyID int64) (*Item, error) {
 	if err != nil {
 		return nil, fmt.Errorf("查询遥控任务: %w", err)
 	}
-	byKey, err := s.tasksByKey(ctx, []int64{keyID})
+	byKey, err := s.tasksByKey(ctx, u, []int64{keyID})
 	if err != nil {
 		return nil, err
 	}
@@ -388,8 +425,9 @@ func (s *Service) Create(ctx context.Context, in Input) error {
 	return s.writeRows(ctx, in)
 }
 
-func (s *Service) Update(ctx context.Context, keyID int64, in Input) error {
-	if _, err := s.Get(ctx, keyID); err != nil {
+func (s *Service) Update(ctx context.Context, u *auth.User, keyID int64, in Input) error {
+	// Get 带可见范围：普通用户改不到绑在别人任务上的键（与列表同一条规则）
+	if _, err := s.Get(ctx, u, keyID); err != nil {
 		return err
 	}
 	if err := s.validate(ctx, &in); err != nil {
@@ -454,13 +492,21 @@ func insertRows(ctx context.Context, tx *sql.Tx, in Input) error {
 
 // ---------- 删除 ----------
 
-func (s *Service) Delete(ctx context.Context, keyIDs []int64) (int, error) {
+func (s *Service) Delete(ctx context.Context, u *auth.User, keyIDs []int64) (int, error) {
 	if len(keyIDs) == 0 {
 		return 0, fmt.Errorf("请先选择要删除的遥控任务")
 	}
 	ph, args := placeholders(keyIDs)
-	res, err := s.db.ExecContext(ctx,
-		`DELETE FROM shortcutkeytask WHERE keyid IN (`+ph+`)`, args...)
+	// 与列表同一条可见范围：普通用户删不掉绑在别人任务上的键。
+	// 写在 DELETE 的 WHERE 里而不是先查后删 —— 中间不留时间窗。
+	// `DELETE k FROM ... k` 而不是 `DELETE FROM ... k`：
+	// MySQL / MariaDB 的单表删除写成后者会语法错误，别名必须先在 DELETE 后点名。
+	q := `DELETE k FROM shortcutkeytask k WHERE k.keyid IN (` + ph + `)`
+	if c, a := visibleCond(u, "k"); c != "" {
+		q += " AND " + c
+		args = append(args, a...)
+	}
+	res, err := s.db.ExecContext(ctx, q, args...)
 	if err != nil {
 		return 0, fmt.Errorf("删除遥控任务: %w", err)
 	}

@@ -176,7 +176,8 @@ type GroupInput struct {
 	Rights       auth.Rights
 }
 
-func (in GroupInput) validate() error {
+// validateBase 校验与级别无关的部分。
+func (in GroupInput) validateBase() error {
 	name := strings.TrimSpace(in.Name)
 	if name == "" {
 		return fmt.Errorf("用户组名称不能为空")
@@ -187,17 +188,38 @@ func (in GroupInput) validate() error {
 	if len(in.Info) > 128 {
 		return fmt.Errorf("描述过长")
 	}
-	if in.GroupLevel < 1 || in.GroupLevel > 9 {
-		return fmt.Errorf("组级别必须在 1~9 之间")
+	return nil
+}
+
+// validateLevel 校验级别。
+//
+// 取值区间就是旧版那个下拉的区间：`for(levels=10; levels<=109; levels++)`
+// （userGroupAdd_form.html）。界面上拆成组级别（十位，1~10）与
+// 优先级基数（个位，0~9），合起来正好覆盖 10~109。
+//
+// ⚠ 只在级别**真的被改动**时才调用。旧库里存在 level 为 1 / 3 / 5 的用户组
+// （旧文档写「用户组级别，最大 5」，与那个 10~109 的下拉自相矛盾），
+// 它们落在区间外。改描述、改权限时不该被级别挡住 —— 那会让这些用户组
+// 一个字段都改不了；真去动级别时，才必须落进 10~109。
+func (in GroupInput) validateLevel() error {
+	if in.GroupLevel < 1 || in.GroupLevel > 10 {
+		return fmt.Errorf("组级别必须在 1~10 之间")
 	}
 	if in.PriorityBase < 0 || in.PriorityBase > 9 {
 		return fmt.Errorf("优先级基数必须在 0~9 之间")
+	}
+	if lv := JoinLevel(in.GroupLevel, in.PriorityBase); lv < 10 || lv > 109 {
+		return fmt.Errorf("用户组级别必须在 10~109 之间，当前是 %d", lv)
 	}
 	return nil
 }
 
 func (s *Service) CreateGroup(ctx context.Context, in GroupInput) (int64, error) {
-	if err := in.validate(); err != nil {
+	if err := in.validateBase(); err != nil {
+		return 0, err
+	}
+	// 新建没有「原值」可言，级别一律照区间校验
+	if err := in.validateLevel(); err != nil {
 		return 0, err
 	}
 	name := strings.TrimSpace(in.Name)
@@ -221,14 +243,17 @@ func (s *Service) CreateGroup(ctx context.Context, in GroupInput) (int64, error)
 	}
 
 	r := in.Rights
+	// ⚠ telephonepriv 恒写 0。新版没有电话广播这一页，界面上也不再有这个勾选项 ——
+	// 表结构不能动（R1 红线），所以列还留着，只是不再由界面驱动。
+	// 修改用户组时这一列干脆不写（见 UpdateGroup），免得把旧库里已有的取值抹掉。
 	res, err := s.db.ExecContext(ctx, `
 		INSERT INTO usergroup (name, info, taskpriv, terminalpriv, mediapriv, userpriv,
 		                       serverpriv, folderpriv, terminalgrouppriv, alarmgrouppriv,
 		                       bellpriv, admpriv, telephonepriv, powerplay, level, ttspriv)
-		VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+		VALUES (?,?,?,?,?,?,?,?,?,?,?,?,0,?,?,?)`,
 		name, in.Info, r.TaskPriv, r.TerminalPriv, r.MediaPriv, r.UserPriv,
 		r.ServerPriv, r.FolderPriv, r.TerminalGroupPriv, r.AlarmGroupPriv,
-		r.BellPriv, r.AdmPriv, r.TelephonePriv, r.PowerPlay,
+		r.BellPriv, r.AdmPriv, r.PowerPlay,
 		JoinLevel(in.GroupLevel, in.PriorityBase), r.TtsPriv)
 	if err != nil {
 		return 0, fmt.Errorf("新建用户组: %w", err)
@@ -258,7 +283,7 @@ type PriorityRecalc struct {
 //	D-43 取组内用户用的是 if 而非 while，**只有第一个用户的任务优先级被重算**
 //	D-44 循环内 $get_level 被后续行覆盖，多用户时判断基准漂移
 func (s *Service) UpdateGroup(ctx context.Context, id int64, in GroupInput) (*PriorityRecalc, error) {
-	if err := in.validate(); err != nil {
+	if err := in.validateBase(); err != nil {
 		return nil, err
 	}
 	name := strings.TrimSpace(in.Name)
@@ -275,6 +300,13 @@ func (s *Service) UpdateGroup(ctx context.Context, id int64, in GroupInput) (*Pr
 	}
 
 	newLevel := JoinLevel(in.GroupLevel, in.PriorityBase)
+	// 级别没动就不校验区间 —— 旧库里那些 level 为 1/3/5 的用户组
+	// 否则连描述都改不了。详见 validateLevel 的注释。
+	if newLevel != oldLevel {
+		if err := in.validateLevel(); err != nil {
+			return nil, err
+		}
+	}
 
 	// 系统组保护：名称、级别、13 项权限全部只读，仅描述可改（BR-96）
 	if id == SystemGroupID {
@@ -316,14 +348,17 @@ func (s *Service) UpdateGroup(ctx context.Context, id int64, in GroupInput) (*Pr
 	}
 
 	r := in.Rights
+	// ⚠ SET 里**没有** telephonepriv：新版没有电话广播这一页，界面上也没有这个勾选项，
+	// 界面传上来的永远是 0。列在 SET 里就等于每改一次用户组都把旧库里的取值抹成 0。
+	// 不写它，这一列保持原值。
 	if _, err := tx.ExecContext(ctx, `
 		UPDATE usergroup SET name=?, info=?, taskpriv=?, terminalpriv=?, mediapriv=?,
 		       userpriv=?, serverpriv=?, folderpriv=?, terminalgrouppriv=?, alarmgrouppriv=?,
-		       bellpriv=?, admpriv=?, telephonepriv=?, powerplay=?, level=?, ttspriv=?
+		       bellpriv=?, admpriv=?, powerplay=?, level=?, ttspriv=?
 		WHERE id = ?`,
 		name, in.Info, r.TaskPriv, r.TerminalPriv, r.MediaPriv, r.UserPriv,
 		r.ServerPriv, r.FolderPriv, r.TerminalGroupPriv, r.AlarmGroupPriv,
-		r.BellPriv, r.AdmPriv, r.TelephonePriv, r.PowerPlay, newLevel, r.TtsPriv, id); err != nil {
+		r.BellPriv, r.AdmPriv, r.PowerPlay, newLevel, r.TtsPriv, id); err != nil {
 		return nil, fmt.Errorf("更新用户组: %w", err)
 	}
 
