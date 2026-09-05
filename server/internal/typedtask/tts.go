@@ -72,10 +72,10 @@ func sentenceTypeText(v int) string {
 const (
 	// ttssentence.content 是 varchar(1400)
 	contentLimit = 1400
-	// 整个 textarea 的上限。旧版没有校验，但一条任务切出来的段数不能没有边界，
-	// 按 maxSentences 段 × 每段上限折算。
-	textLimit    = 8000
-	maxSentences = 20
+	// 整个 textarea 的上限：**800 个字**（按字符数算，不是字节）。
+	// 旧版没有校验，这里按界面上的 maxlength 定一个明确的边界，两边一致。
+	textRuneLimit = 800
+	maxSentences  = 20
 	// speed / volume 的列注释写的是 -50~100 / -100~100，
 	// 旧版表单是 0~100 的滑块（默认 50），现网数据是 5、50（speed）与 80（volume）。
 	// 这里按列注释的**并集**放宽，不比旧版更严 —— 旧版一个字都不校验。
@@ -147,8 +147,8 @@ func validateTTS(in *Input) error {
 	if strings.TrimSpace(in.Text) == "" {
 		return fmt.Errorf("请输入文字语音内容")
 	}
-	if len(in.Text) > textLimit {
-		return fmt.Errorf("文字语音内容过长：按 UTF-8 计 %d 字节，上限 %d 字节", len(in.Text), textLimit)
+	if n := len([]rune(in.Text)); n > textRuneLimit {
+		return fmt.Errorf("文字语音内容过长：%d 个字，上限 %d 个字", n, textRuneLimit)
 	}
 	segs := splitTTSText(in.Text)
 	if len(segs) == 0 {

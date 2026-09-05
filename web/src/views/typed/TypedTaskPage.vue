@@ -197,6 +197,22 @@
             </el-form-item>
           </el-col>
 
+          <!-- 采播专属：采播终端在「音频设置」里，这里只有播放时长 -->
+
+          <!--
+            播放模式：文字语音与 led播放 有「普通模式 / 间隔时间」。
+            文字语音这一栏排成左右两列：**左边播放模式、播放速率，右边声音模式、tts终端**
+            （提示音跟在 tts终端 下面，同在右列）。
+          -->
+          <el-col v-if="hasIntervalMode" :span="12">
+            <el-form-item label="播放模式">
+              <el-select v-model="form.intervalMode" class="fill" @change="onIntervalModeChange">
+                <el-option label="普通模式" :value="0" />
+                <el-option label="间隔时间" :value="1" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+
           <!-- 文字语音专属：声音模式 / 播放速率 / tts终端 / 提示音 -->
           <template v-if="kind === 'tts'">
             <el-col :span="12">
@@ -222,8 +238,9 @@
                 </el-select>
               </el-form-item>
             </el-col>
-            <!-- 旧版只有在 tts终端 选到服务器本机（typeid = 0）时才出现提示音 -->
-            <el-col v-if="sourceIsServer" :span="12">
+            <!-- 旧版只有在 tts终端 选到服务器本机（typeid = 0）时才出现提示音。
+                 offset 让它落在右列，跟在 tts终端 下面 -->
+            <el-col v-if="sourceIsServer" :span="12" :offset="12">
               <el-form-item label="提示音">
                 <el-select v-model="form.promptId" class="fill" placeholder="请选择提示音">
                   <el-option label="请选择提示音" :value="0" />
@@ -232,18 +249,6 @@
               </el-form-item>
             </el-col>
           </template>
-
-          <!-- 采播专属：采播终端在「音频设置」里，这里只有播放时长 -->
-
-          <!-- 播放模式：文字语音与 led播放 有「普通模式 / 间隔时间」 -->
-          <el-col v-if="hasIntervalMode" :span="12">
-            <el-form-item label="播放模式">
-              <el-select v-model="form.intervalMode" class="fill" @change="onIntervalModeChange">
-                <el-option label="普通模式" :value="0" />
-                <el-option label="间隔时间" :value="1" />
-              </el-select>
-            </el-form-item>
-          </el-col>
         </el-row>
 
         <!-- 普通模式：循环次数 + 播放时长；间隔模式：间隔时长 + 间隔时长/每次循环次数 -->
@@ -378,11 +383,12 @@
         <template v-if="kind === 'tts'">
           <el-divider content-position="left">文字语音内容</el-divider>
           <el-form-item label-width="0" required>
+            <!-- 上限 800 个字（按字符数算，不是字节） -->
             <el-input
               v-model="form.text"
               type="textarea"
               :rows="8"
-              maxlength="2000"
+              :maxlength="TTS_TEXT_LIMIT"
               show-word-limit
               placeholder="请输入播放文字"
             />
@@ -632,6 +638,9 @@ const toIds = (raw: (string | number)[]) => (raw ?? []).map(Number).filter(n => 
 
 // exemodel 是周日打头的 7 位掩码，标签顺序要跟位次一致
 const WEEK = ["周日", "周一", "周二", "周三", "周四", "周五", "周六"];
+
+/** 文字语音内容的上限：800 个字（按字符数算，与服务端一致） */
+const TTS_TEXT_LIMIT = 800;
 
 // 采样率 / 比特率的取值照 ok112 的 AddAdmManger.html 那两个下拉
 const SAMPLE_RATES = [8000, 11025, 16000, 44100, 48000, 64000, 88200, 96000, 128000, 256000, 320000];

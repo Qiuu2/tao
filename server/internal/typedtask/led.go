@@ -72,12 +72,14 @@ type LEDInput struct {
 }
 
 const (
-	// ledsentence.text 是 varchar(1024)
+	// ledsentence.text 是 varchar(1024)，这是**切分后每一段**的上限
 	ledTextLimit = 1024
-	ledSpeedMin  = 0
-	ledSpeedMax  = 10
-	ledModeMax   = 10
-	maxLEDBinds  = 500
+	// ledTotalLimit 是整段 led字幕 的上限（切分前，按字节）
+	ledTotalLimit = 8000
+	ledSpeedMin   = 0
+	ledSpeedMax   = 10
+	ledModeMax    = 10
+	maxLEDBinds   = 500
 	// ledsentence.type：跟 ttssentence 一样的三态，现网四条全是 1。
 	// 1 = 约定文字/文本上屏，这里固定写 1，与现网数据一致。
 	ledSentenceType = 1
@@ -103,8 +105,8 @@ func validateLED(in *LEDInput) error {
 		return fmt.Errorf("LED 显示文字不能为空")
 	}
 	// 整段的上限按切分后的段数算：每段 ≤ ledsentence.text 的 1024 字节。
-	if len(in.Text) > textLimit {
-		return fmt.Errorf("LED 显示文字过长：按 UTF-8 计 %d 字节，上限 %d 字节", len(in.Text), textLimit)
+	if len(in.Text) > ledTotalLimit {
+		return fmt.Errorf("LED 显示文字过长：按 UTF-8 计 %d 字节，上限 %d 字节", len(in.Text), ledTotalLimit)
 	}
 	for i, c := range splitTTSText(normalizeTTSText(in.Text)) {
 		if len(c) > ledTextLimit {
