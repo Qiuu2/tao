@@ -58,6 +58,21 @@ backup:
   # 媒体物理目录；留空则取 media.root + /backup/mediadata
   media_dir: "/opt/apps/a9000/backup/mediadata"
 
+register:
+  # 注册服务（「基础配置 → 注册服务」页）。旧版把这三样写死在 do.php 里。
+  #
+  # 注册命令：旧版 `registerserver <注册码>`，取标准输出第一行判定
+  # success / failed / expired。留空则用 registerserver（走 PATH）。
+  command: "registerserver"
+  # 试用起算日文件。⚠ 试用剩余天数是从这个文件算的，不是从库里的 trystartdate ——
+  # 旧版页面里读 trystartdate 的那段被整段注释掉了。文件形如：
+  #     [system]
+  #     startdate=2016-08-31
+  # 留空则页面算不出剩余天数（会如实说明，而不是猜一个日期）。
+  serial_file: "/opt/apps/a9000/html/ok112/serial"
+  # 领过试用后留下的标记文件；存在即不允许再领。留空则禁用「试用」按钮。
+  trial_file: "/opt/apps/a9000/html/ok112/serialtwo"
+
 # legacy 一节可以整段省掉 —— 不写就用下面这两个默认值，现网正是如此。
 # 只在旧系统装在别的路径时才需要显式写出来。
 #

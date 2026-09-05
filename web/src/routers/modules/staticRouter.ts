@@ -19,6 +19,24 @@ export const staticRouter: RouteRecordRaw[] = [
     }
   },
   {
+    /*
+      注册服务的**登录前**入口。
+
+      auth.Login 里有一条硬规矩：registerflag 不是 1（已注册）或 2（试用中）
+      就禁止登录（BR-71）。所以没注册的服务器根本进不了后台，
+      注册页必须能在登录前打开 —— 旧版 login.php 也正是在这种状态下
+      直接跳到 regist_server.php。
+
+      登录之后还有一份带侧边栏的同页面，路径是 /server/register（菜单里那一项）。
+    */
+    path: "/register",
+    name: "registerServerStandalone",
+    component: () => import("@/views/register/index.vue"),
+    meta: {
+      title: "注册服务"
+    }
+  },
+  {
     path: "/layout",
     name: "layout",
     component: () => import("@/layouts/index.vue"),

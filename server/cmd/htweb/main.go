@@ -40,6 +40,7 @@ import (
 	"htweb/internal/media"
 	"htweb/internal/notify"
 	"htweb/internal/offline"
+	"htweb/internal/register"
 	"htweb/internal/remote"
 	"htweb/internal/serverparam"
 	"htweb/internal/sound"
@@ -80,6 +81,7 @@ type app struct {
 	typed     *typedtask.Service
 	enables   *enable.Service
 	sounds    *sound.Service
+	registers *register.Service
 }
 
 func main() {
@@ -130,7 +132,12 @@ func main() {
 		times:    timeset.New(st.DB()),
 		typed:    typedtask.New(st.DB()),
 		enables:  enable.New(st.DB()),
-		sounds:   sound.New(st.DB()),
+		registers: register.New(st.DB(), register.Options{
+			Command:    cfg.Register.Command,
+			SerialFile: cfg.Register.SerialFile,
+			TrialFile:  cfg.Register.TrialFile,
+		}),
+		sounds: sound.New(st.DB()),
 	}
 	a.logs = logs.New(st.DB(), a.auditor)
 	// 删除用户会连带删掉他名下的媒体，物理文件清理与 C 服务通知复用媒体域的实现
@@ -176,6 +183,10 @@ func (a *app) routes() http.Handler {
 	// —— 认证 ——
 	mux.HandleFunc("POST /api/login", a.handleLogin)
 	mux.HandleFunc("GET /api/captcha", a.handleCaptcha)
+	// 注册状态是公开的：登录页要靠它判断服务器有没有注册（旧版 login.php
+	// 就是在渲染登录页之前查 registerflag，为 0 时跳到 regist_server.php）。
+	// 只回状态与剩余天数，机器码要登录后才给。
+	mux.HandleFunc("GET /api/register/status", a.handleRegisterStatus)
 	mux.HandleFunc("POST /api/logout", req(a.handleLogout))
 	mux.HandleFunc("GET /api/auth/me", req(a.handleMe))
 
@@ -467,6 +478,31 @@ func (a *app) routes() http.Handler {
 	mux.HandleFunc("GET /api/server/version", srv(a.handleServerVersionGet))
 	mux.HandleFunc("POST /api/server/version", sup(a.handleServerVersionSwitch))
 	mux.HandleFunc("POST /api/server/reboot", sup(a.handleServerReboot))
+
+	// —— 注册服务（旧版 regist_server.php）——
+	//
+	// ⚠ 这三个接口的鉴权是**按注册状态开合**的，理由是：
+	//   auth.Login 里有一条硬规矩「registerflag 不是 1 或 2 就禁止登录」（BR-71）。
+	//   所以服务器没注册时**根本登不进来** —— 把注册动作锁在登录之后，
+	//   等于让一台没注册的服务器永远注册不了。
+	//
+	//   regGate 的做法：只在「登不进来的那几种状态」（flag 不是 1/2）放行未登录请求，
+	//   一旦注册成功或进入试用期，这三个接口立刻回到 serverpriv 之后。
+	//   旧版是**任何状态下都不校验**（regist_server.php 里的 session 判断被整段注释掉了），
+	//   新版把敞开的窗口收窄到「非如此不可」的那一段。
+	regGate := func(h http.HandlerFunc) http.HandlerFunc {
+		guarded := srv(h)
+		return func(w http.ResponseWriter, r *http.Request) {
+			if st, err := a.registers.Status(r.Context(), false); err == nil && st.LoginBlocked {
+				h(w, r)
+				return
+			}
+			guarded(w, r)
+		}
+	}
+	mux.HandleFunc("GET /api/register", regGate(a.handleRegisterGet))
+	mux.HandleFunc("POST /api/register", regGate(a.handleRegisterSubmit))
+	mux.HandleFunc("POST /api/register/trial", regGate(a.handleRegisterTrial))
 	mux.HandleFunc("GET /api/server/factory-reset/preview", sup(a.handleFactoryPreview))
 	mux.HandleFunc("POST /api/server/factory-reset", sup(a.handleFactoryReset))
 
@@ -760,6 +796,13 @@ func (a *app) handleMenu(w http.ResponseWriter, r *http.Request) {
 	base := []map[string]interface{}{}
 	if u.IsAdmin || u.Rights.ServerPriv == 1 {
 		base = append(base, menu("/server", "server", "/server/index", "Setting", "服务器信息"))
+		// 注册服务：旧版没有菜单入口，只能从登录页进去（login.php 在 registerflag=0
+		// 时跳过去，登录页上还有一个「注册」按钮）。新版两条路都留着 ——
+		// 菜单里给一项，登录页在未注册时也照旧给入口。
+		// ⚠ 路径用 /server/register 而不是 /register：/register 已经被静态路由占了
+		//   （那是登录前的独立页面，见 web/src/routers/modules/staticRouter.ts），
+		//   两边同路径会在前端撞车。同一个组件，两个入口。
+		base = append(base, menu("/server/register", "registerServer", "/register/index", "Ticket", "注册服务"))
 	}
 	// 时间设置对任何登录用户可见：这一页大半是只读的（服务器时间、时区、运行时长），
 	// 改 NTP / 校时终端的接口自己按 serverpriv 拦，下发校时按 terminalpriv 拦。

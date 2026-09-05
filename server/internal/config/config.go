@@ -24,6 +24,7 @@ type Config struct {
 	Logs      Logs      `yaml:"logs"`
 	Backup    Backup    `yaml:"backup"`
 	Dashboard Dashboard `yaml:"dashboard"`
+	Register  Register  `yaml:"register"`
 	Legacy    Legacy    `yaml:"legacy"`
 }
 
@@ -38,6 +39,22 @@ type Legacy struct {
 	ApacheConf string `yaml:"apache_conf"`
 	// SwaggerFile 旧版对外 API 的 swagger 文档，其 host 字段带着 sdk 端口。
 	SwaggerFile string `yaml:"swagger_file"`
+}
+
+// Register 是注册服务（旧版 regist_server.php）的配置。
+//
+// 旧版把这三样写死在代码里：命令 `registerserver`、
+// 文件 /var/www/html/ok112/serial 与 .../serialtwo。
+// 新版做成配置项，部署到别的路径不用改代码。
+type Register struct {
+	// Command 注册用的外部命令，默认 registerserver。
+	// 取标准输出第一行判定 success / failed / expired。
+	Command string `yaml:"command"`
+	// SerialFile 记录试用起算日的文件。留空则「注册服务」页算不出剩余天数，
+	// 页面会如实说明，而不是猜一个日期。
+	SerialFile string `yaml:"serial_file"`
+	// TrialFile 领过试用后留下的标记文件。留空则不允许领取试用。
+	TrialFile string `yaml:"trial_file"`
 }
 
 // Dashboard 是看板首页的配置。

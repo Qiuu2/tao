@@ -159,6 +159,9 @@ var auditLabels = map[string]string{
 	// 事后再记等于记进一个马上要被覆盖的表，由 handler 在恢复**之前**自己记一行。
 	// DELETE /api/logs 不在这里：清空操作日志由 logs.Clear 在同一个事务里
 	// 自己写审计记录（必须与删除同进同出），中间件再记一条就重复了。
+	// POST /api/register 与 POST /api/register/trial 不在这里：成功后紧接着发重启包，
+	// 而且服务器没注册时这两个接口免登录、上下文里没有用户，
+	// 由 register_handlers.go 的 auditRegister 在发包之前自己记一行。
 }
 
 // sniffWriter 只看响应体开头几十个字节，判断业务码是不是 200。
