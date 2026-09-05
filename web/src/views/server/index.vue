@@ -35,7 +35,17 @@
             <div class="two-col">
               <el-row :gutter="24">
                 <el-col :span="12">
-                  <div class="kv"><span class="kv-l">服务器状态：</span>{{ p.readonly.workstate }}</div>
+                  <!--
+                    旧版这里是一张图：workstate=0 显示 stop.gif（服务器终止），
+                    =1 显示 start.gif（服务器运行）。直接把 0/1 摆出来没人看得懂，
+                    这里换成同样含义的文字标签，措辞用旧版 language 里的原文。
+                  -->
+                  <div class="kv">
+                    <span class="kv-l">服务器状态：</span>
+                    <el-tag :type="p.readonly.workstate === 1 ? 'success' : 'info'" size="small" effect="plain">
+                      {{ workstateText(p.readonly.workstate) }}
+                    </el-tag>
+                  </div>
                 </el-col>
                 <el-col :span="12">
                   <div class="kv kv-act">
@@ -354,6 +364,14 @@ import {
   type ServerParams,
   type VersionOption
 } from "@/api/modules/serverparam";
+
+/**
+ * 服务器状态。旧版 servermanager_form.html 用两张图表示：
+ *   workstate = 0 → stop.gif，alt「服务器终止」
+ *   workstate = 1 → start.gif，alt「服务器运行」
+ * 其余取值旧版不画图（页面上那一格是空的），这里如实标出来。
+ */
+const workstateText = (v: number) => (v === 1 ? "服务器运行" : v === 0 ? "服务器终止" : `未知状态 ${v}`);
 
 const tab = ref("basic");
 const loading = ref(false);
