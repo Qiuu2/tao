@@ -12,6 +12,10 @@
       旧版只弹一句「确定删除吗?」，而实际后果是整组用户连同他们的
       文件夹、媒体、任务、分区全部消失。
     · 系统用户组（id=1）的名称、级别、权限全部只读，仅描述可改。
+    · 「功能权限」按新 web 的菜单分组排列，每一项下面注明它管住哪几页。
+      ⚠ 列名与含义的对应关系照旧版原样保留（serverpriv=遥控管理、admpriv=采播管理、
+      powerplay=终端功放、ttspriv=文字语音），别按列名字面重新解释 ——
+      库里已有的用户组就是按这套配的。
 -->
 <template>
   <div class="table-box">
@@ -81,21 +85,34 @@
         </el-form-item>
 
         <el-alert v-if="dlg.isEdit && levelChanged" type="warning" :closable="false" show-icon class="mb12">
-          组级别或优先级基数已改动。保存后会<b>重算该组内所有用户的任务优先级</b>：
-          新优先级 = {{ dlg.form.groupLevel * 10 + dlg.form.priorityBase }} + 原优先级个位。
+          组级别或优先级基数已改动。保存后会<b>重算该组内所有用户的任务优先级</b>： 新优先级 =
+          {{ dlg.form.groupLevel * 10 + dlg.form.priorityBase }} + 原优先级个位。
         </el-alert>
 
         <el-form-item label="功能权限">
-          <div class="rights-grid">
-            <div v-for="item in RIGHT_ITEMS" :key="item.key" class="right-item">
-              <el-checkbox
-                :model-value="dlg.form.rights[item.key] === 1"
-                :disabled="dlg.system"
-                @update:model-value="v => (dlg.form.rights[item.key] = v ? 1 : 0)"
-              >
-                {{ item.label }}
-              </el-checkbox>
-              <div class="right-tip">{{ item.tip }}</div>
+          <!--
+            按新 web 的菜单分组排列，每一项下面写清它到底管住哪几页 ——
+            勾了就能进、不勾就进不去，菜单与按钮都跟着它走。
+          -->
+          <div class="rights-wrap">
+            <div v-for="g in RIGHT_GROUPS" :key="g" class="right-group">
+              <div class="right-group-head">
+                <span class="right-group-title">{{ g }}</span>
+                <el-button v-if="!dlg.system" link type="primary" size="small" @click="setGroupRights(g, 1)"> 全选 </el-button>
+                <el-button v-if="!dlg.system" link size="small" @click="setGroupRights(g, 0)">全不选</el-button>
+              </div>
+              <div class="rights-grid">
+                <div v-for="item in itemsOf(g)" :key="item.key" class="right-item">
+                  <el-checkbox
+                    :model-value="dlg.form.rights[item.key] === 1"
+                    :disabled="dlg.system"
+                    @update:model-value="v => (dlg.form.rights[item.key] = v ? 1 : 0)"
+                  >
+                    {{ item.label }}
+                  </el-checkbox>
+                  <div class="right-tip">{{ item.tip }}</div>
+                </div>
+              </div>
             </div>
           </div>
           <div v-if="!dlg.system" class="rights-ops">
@@ -161,6 +178,7 @@ import {
   emptyRights,
   getGroupListApi,
   previewDeleteGroupApi,
+  RIGHT_GROUPS,
   RIGHT_ITEMS,
   Rights,
   updateGroupApi,
@@ -247,7 +265,10 @@ const openEdit = (row: UserGroup) => {
   });
 };
 
+const itemsOf = (group: string) => RIGHT_ITEMS.filter(i => i.group === group);
+
 const setAllRights = (v: number) => (dlg.form.rights = emptyRights(v));
+const setGroupRights = (group: string, v: number) => itemsOf(group).forEach(i => (dlg.form.rights[i.key] = v));
 
 const submit = async () => {
   if (!dlg.form.name.trim()) return ElMessage.warning("请输入用户组名称");
@@ -312,6 +333,26 @@ const confirmDelete = async () => {
 </script>
 
 <style scoped lang="scss">
+.rights-wrap {
+  width: 100%;
+}
+.right-group + .right-group {
+  padding-top: 10px;
+  margin-top: 10px;
+  border-top: 1px dashed var(--el-border-color-lighter);
+}
+.right-group-head {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 2px;
+}
+.right-group-title {
+  margin-right: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--el-text-color-secondary);
+}
 .rights-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);

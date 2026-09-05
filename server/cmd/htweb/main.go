@@ -443,17 +443,28 @@ func (a *app) routes() http.Handler {
 	mux.HandleFunc("PUT /api/dashboard/quick-tasks", sup(a.handleDashQuickTasks))
 	mux.HandleFunc("PUT /api/dashboard/emergency", sup(a.handleDashEmergency))
 
+	// rmt 是「遥控管理」那一档：serverpriv，但**受备机只读限制**。
+	//
+	// serverpriv 在旧版 usergroup 里的原义就是「遥控管理」
+	// （ok112 language/chinese.php 的 $user_group_add['Server_Management']='遥控管理'，
+	//  offline_task.php / task_mapping.php / shurt_keymapping.php 都用它把门）。
+	// 下面的 srv 是同一个权限位的另一档，专给服务器参数页用 —— 那一档要绕开备机只读，
+	// 这一档不能绕：遥控任务、任务传送都是往外发指令，备机上必须照样锁住。
+	rmt := func(h http.HandlerFunc) http.HandlerFunc {
+		return a.authMgr.RequireRight(auth.PrivServer, h)
+	}
+
 	// —— 离线管理（业务域九，F-43 ~ F-47）——
 	//
 	// 读只要登录（可见范围按 userterminal 收敛）；
-	// 媒体下发要 terminalpriv，任务下发要 taskpriv；
+	// 媒体下发（音乐传输）要 terminalpriv，任务下发（任务传送）要 serverpriv；
 	// 清空全部离线数据是 4 条无 WHERE 的 DELETE，收紧到超级管理员。
 	mux.HandleFunc("GET /api/offline/states", req(a.handleOfflineStates))
 	mux.HandleFunc("GET /api/offline/summary", req(a.handleOfflineSummary))
 	mux.HandleFunc("GET /api/offline/media", req(a.handleOfflineMediaStatus))
 	mux.HandleFunc("GET /api/offline/tasks", req(a.handleOfflineTaskStatus))
 	mux.HandleFunc("POST /api/offline/media", trm(a.handleOfflineMediaDispatch))
-	mux.HandleFunc("POST /api/offline/tasks", tsk(a.handleOfflineTaskDispatch))
+	mux.HandleFunc("POST /api/offline/tasks", rmt(a.handleOfflineTaskDispatch))
 	mux.HandleFunc("PUT /api/offline/stop", trm(a.handleOfflineStop))
 	mux.HandleFunc("POST /api/offline/purge-all", sup(a.handleOfflinePurge))
 
@@ -542,9 +553,9 @@ func (a *app) routes() http.Handler {
 	mux.HandleFunc("GET /api/remote-keys", req(a.handleRemoteList))
 	mux.HandleFunc("GET /api/remote-keys/tasks", req(a.handleRemoteTasks))
 	mux.HandleFunc("GET /api/remote-keys/{id}", req(a.handleRemoteGet))
-	mux.HandleFunc("POST /api/remote-keys", tsk(a.handleRemoteCreate))
-	mux.HandleFunc("PUT /api/remote-keys/{id}", tsk(a.handleRemoteUpdate))
-	mux.HandleFunc("DELETE /api/remote-keys", tsk(a.handleRemoteDelete))
+	mux.HandleFunc("POST /api/remote-keys", rmt(a.handleRemoteCreate))
+	mux.HandleFunc("PUT /api/remote-keys/{id}", rmt(a.handleRemoteUpdate))
+	mux.HandleFunc("DELETE /api/remote-keys", rmt(a.handleRemoteDelete))
 
 	// —— 时间设置（旧版 set_server_time）——
 	//
@@ -563,16 +574,44 @@ func (a *app) routes() http.Handler {
 	//
 	// 四个页面共用一套路由，类别放在路径的 {kind} 上
 	// （amplifier / collect / tts / led）。它们都是 task 表的视图，按 taskpriv。
+	// ⚠ 四种 typed 任务的权限位**各不相同** —— 这是旧版 usergroup 那几列的原义：
+	//   终端功放 → powerplay   采播管理 → admpriv
+	//   文字语音 → ttspriv     led播放 → taskpriv
+	// （见 ok112 language/chinese.php 的 $user_group_add：
+	//   Power_Management=终端功放、Collection_Management=采播管理、tts_Management=文字语音）
+	// 读一律只要登录，可见范围由 task_user_id 收敛；写按上表分。
+	typedPriv := map[string]string{
+		"amplifier": auth.PrivPowerPlay,
+		"collect":   auth.PrivAdm,
+		"tts":       auth.PrivTts,
+		"led":       auth.PrivTask,
+	}
+	typ := func(h http.HandlerFunc) http.HandlerFunc {
+		guards := make(map[string]http.HandlerFunc, len(typedPriv))
+		for kind, priv := range typedPriv {
+			guards[kind] = a.authMgr.RequireRight(priv, h)
+		}
+		// 不认识的 kind 交给 taskpriv 那道门：handler 自己还会再拒一次非法 kind，
+		// 但权限校验不能等到那一步之后
+		fallback := a.authMgr.RequireRight(auth.PrivTask, h)
+		return func(w http.ResponseWriter, r *http.Request) {
+			if g, ok := guards[r.PathValue("kind")]; ok {
+				g(w, r)
+				return
+			}
+			fallback(w, r)
+		}
+	}
 	mux.HandleFunc("GET /api/typed-tasks/terminals", req(a.handleTypedTerminals))
 	mux.HandleFunc("GET /api/typed-tasks/prompts", req(a.handleTypedPrompts))
 	mux.HandleFunc("GET /api/typed-tasks/{kind}/sources", req(a.handleTypedSources))
 	mux.HandleFunc("GET /api/typed-tasks/{kind}", req(a.handleTypedList))
 	mux.HandleFunc("GET /api/typed-tasks/{kind}/{id}", req(a.handleTypedGet))
-	mux.HandleFunc("POST /api/typed-tasks/{kind}", tsk(a.handleTypedCreate))
-	mux.HandleFunc("PUT /api/typed-tasks/{kind}/{id}", tsk(a.handleTypedUpdate))
-	mux.HandleFunc("PUT /api/typed-tasks/{kind}/control/{action}", tsk(a.handleTypedControl))
-	mux.HandleFunc("PUT /api/typed-tasks/{kind}/project-state", tsk(a.handleTypedProjectState))
-	mux.HandleFunc("DELETE /api/typed-tasks/{kind}", tsk(a.handleTypedDelete))
+	mux.HandleFunc("POST /api/typed-tasks/{kind}", typ(a.handleTypedCreate))
+	mux.HandleFunc("PUT /api/typed-tasks/{kind}/{id}", typ(a.handleTypedUpdate))
+	mux.HandleFunc("PUT /api/typed-tasks/{kind}/control/{action}", typ(a.handleTypedControl))
+	mux.HandleFunc("PUT /api/typed-tasks/{kind}/project-state", typ(a.handleTypedProjectState))
+	mux.HandleFunc("DELETE /api/typed-tasks/{kind}", typ(a.handleTypedDelete))
 
 	// LED 专属：任务分组与 LED 屏设备
 	mux.HandleFunc("GET /api/led/folders", req(a.handleLEDFolders))
@@ -585,15 +624,21 @@ func (a *app) routes() http.Handler {
 	mux.HandleFunc("PUT /api/led/devices/{id}", tsk(a.handleLEDDeviceUpdate))
 	mux.HandleFunc("DELETE /api/led/devices", tsk(a.handleLEDDeviceDelete))
 
+	ttsp := func(h http.HandlerFunc) http.HandlerFunc {
+		return a.authMgr.RequireRight(auth.PrivTts, h)
+	}
+
 	// —— 启用管理 ——
 	//
-	// 定时批量启停任务，本质是任务操作，按 taskpriv。
+	// 读只要登录，写按 ttspriv。旧版 displayenablemanager.php 用的就是
+	// have_rights("ttspriv") —— 那一列在旧版 usergroup 表单里叫「文字语音」，
+	// 同时管着文字语音与启用管理两页。
 	mux.HandleFunc("GET /api/enable-plans", req(a.handleEnableList))
 	mux.HandleFunc("GET /api/enable-plans/tasks", req(a.handleEnableTasks))
 	mux.HandleFunc("GET /api/enable-plans/{id}", req(a.handleEnableGet))
-	mux.HandleFunc("POST /api/enable-plans", tsk(a.handleEnableCreate))
-	mux.HandleFunc("PUT /api/enable-plans/{id}", tsk(a.handleEnableUpdate))
-	mux.HandleFunc("DELETE /api/enable-plans", tsk(a.handleEnableDelete))
+	mux.HandleFunc("POST /api/enable-plans", ttsp(a.handleEnableCreate))
+	mux.HandleFunc("PUT /api/enable-plans/{id}", ttsp(a.handleEnableUpdate))
+	mux.HandleFunc("DELETE /api/enable-plans", ttsp(a.handleEnableDelete))
 
 	// —— 噪声设备 / 声场分区 ——
 	//
@@ -796,13 +841,6 @@ func (a *app) handleMenu(w http.ResponseWriter, r *http.Request) {
 	base := []map[string]interface{}{}
 	if u.IsAdmin || u.Rights.ServerPriv == 1 {
 		base = append(base, menu("/server", "server", "/server/index", "Setting", "服务器信息"))
-		// 注册服务：旧版没有菜单入口，只能从登录页进去（login.php 在 registerflag=0
-		// 时跳过去，登录页上还有一个「注册」按钮）。新版两条路都留着 ——
-		// 菜单里给一项，登录页在未注册时也照旧给入口。
-		// ⚠ 路径用 /server/register 而不是 /register：/register 已经被静态路由占了
-		//   （那是登录前的独立页面，见 web/src/routers/modules/staticRouter.ts），
-		//   两边同路径会在前端撞车。同一个组件，两个入口。
-		base = append(base, menu("/server/register", "registerServer", "/register/index", "Ticket", "注册服务"))
 	}
 	// 时间设置对任何登录用户可见：这一页大半是只读的（服务器时间、时区、运行时长），
 	// 改 NTP / 校时终端的接口自己按 serverpriv 拦，下发校时按 terminalpriv 拦。
@@ -839,8 +877,10 @@ func (a *app) handleMenu(w http.ResponseWriter, r *http.Request) {
 		menu("/alarm/area", "alarmArea", "/alarm/area/index", "Grid", "报警分区"),
 		menu("/alarm/mapping", "alarmMapping", "/alarm/mapping/index", "Connection", "报警映射"),
 	)
-	// 遥控任务：参考图 1.png 把它放在资源管理这一组的末尾
-	if u.IsAdmin || u.Rights.TaskPriv == 1 {
+	// 遥控任务：参考图 1.png 把它放在资源管理这一组的末尾。
+	// 权限位是 serverpriv —— 旧版那一列叫「遥控管理」，
+	// shurt_keymapping.php / task_mapping.php 用的就是它。
+	if u.IsAdmin || u.Rights.ServerPriv == 1 {
 		res = append(res, menu("/remote", "remote", "/remote/index", "Pointer", "遥控任务"))
 	}
 	menus = append(menus, group("/resource", "resource", "Coin", "资源管理", res...))
@@ -854,14 +894,23 @@ func (a *app) handleMenu(w http.ResponseWriter, r *http.Request) {
 		menu("/bell", "bell", "/bell/index", "Clock", "作息方案"),
 		menu("/task", "task", "/task/index", "AlarmClock", "文件广播"),
 	}
+	// 这五页的权限位各不相同，是旧版 usergroup 那几列的原义（见路由处 typedPriv 的注释）：
+	//   终端功放 → powerplay   采播管理 → admpriv
+	//   文字语音 / 启用管理 → ttspriv   led播放 → taskpriv
+	if u.IsAdmin || u.Rights.PowerPlay == 1 {
+		taskMenus = append(taskMenus, menu("/amplifier", "amplifier", "/typed/amplifier/index", "Headset", "终端功放"))
+	}
+	if u.IsAdmin || u.Rights.AdmPriv == 1 {
+		taskMenus = append(taskMenus, menu("/collect", "collect", "/typed/collect/index", "Microphone", "采播管理"))
+	}
+	if u.IsAdmin || u.Rights.TtsPriv == 1 {
+		taskMenus = append(taskMenus, menu("/tts", "tts", "/typed/tts/index", "ChatDotSquare", "文字语音"))
+	}
 	if u.IsAdmin || u.Rights.TaskPriv == 1 {
-		taskMenus = append(taskMenus,
-			menu("/amplifier", "amplifier", "/typed/amplifier/index", "Headset", "终端功放"),
-			menu("/collect", "collect", "/typed/collect/index", "Microphone", "采播管理"),
-			menu("/tts", "tts", "/typed/tts/index", "ChatDotSquare", "文字语音"),
-			menu("/led", "led", "/typed/led/index", "Monitor", "led播放"),
-			menu("/enable", "enable", "/enable/index", "Switch", "启用管理"),
-		)
+		taskMenus = append(taskMenus, menu("/led", "led", "/typed/led/index", "Monitor", "led播放"))
+	}
+	if u.IsAdmin || u.Rights.TtsPriv == 1 {
+		taskMenus = append(taskMenus, menu("/enable", "enable", "/enable/index", "Switch", "启用管理"))
 	}
 	menus = append(menus, group("/taskmgr", "taskmgr", "Menu", "任务管理", taskMenus...))
 
@@ -882,11 +931,25 @@ func (a *app) handleMenu(w http.ResponseWriter, r *http.Request) {
 	))
 
 	// —— 用户管理 ——
-	if u.HasRight(auth.PrivUser) {
-		menus = append(menus, group("/user", "user", "User", "用户管理",
+	// 用户 / 用户组按 userpriv；注册服务按 serverpriv，两者不一定同时具备，
+	// 所以这一组的子项跟「基础配置」一样是拼出来的，可能只剩其中一半。
+	userMenus := []map[string]interface{}{}
+	if u.IsAdmin || u.Rights.UserPriv == 1 {
+		userMenus = append(userMenus,
 			menu("/user/list", "userList", "/user/list/index", "UserFilled", "用户"),
 			menu("/user/group", "userGroup", "/user/group/index", "Grid", "用户组"),
-		))
+		)
+	}
+	if u.IsAdmin || u.Rights.ServerPriv == 1 {
+		// 注册服务：旧版没有菜单入口，只能从登录页进去（login.php 在 registerflag=0
+		// 时跳过去）。新版两条路都留着 —— 菜单里给一项，登录页在未注册时也照旧给入口。
+		// ⚠ 路径不能用 /register：那个已经被静态路由占了（登录前的独立页面，
+		//   见 web/src/routers/modules/staticRouter.ts），两边同路径会在前端撞车。
+		//   同一个组件，两个入口。
+		userMenus = append(userMenus, menu("/user/register", "registerServer", "/register/index", "Ticket", "注册服务"))
+	}
+	if len(userMenus) > 0 {
+		menus = append(menus, group("/user", "user", "User", "用户管理", userMenus...))
 	}
 
 	httpx.OK(w, menus)
@@ -899,6 +962,13 @@ func (a *app) handleButtons(w http.ResponseWriter, r *http.Request) {
 	canTask := u.HasRight(auth.PrivTask)
 	canAlarm := u.HasRight(auth.PrivAlarmGroup)
 	canBell := u.HasRight(auth.PrivBell)
+	// 四个 typed 页与启用管理各有各的权限位，不跟着 taskpriv 走 ——
+	// 这是旧版 usergroup 那几列的原义，详见路由处 typedPriv 的注释。
+	canAmplifier := u.HasRight(auth.PrivPowerPlay)
+	canCollect := u.HasRight(auth.PrivAdm)
+	canTts := u.HasRight(auth.PrivTts)
+	// 遥控任务与任务传送在旧版归「遥控管理」，也就是 serverpriv
+	canRemote := u.HasRight(auth.PrivServer)
 	// 只有 admin 本人能管理别人的账号（BR-107），其他人即使有 userpriv 也只能改自己
 	isSuper := u.ID == 1
 
@@ -954,8 +1024,16 @@ func (a *app) handleButtons(w http.ResponseWriter, r *http.Request) {
 			"edit": canBell,
 		},
 		"remote": {
-			"edit": canTask,
+			"edit": canRemote,
 		},
+		// 终端功放 / 采播管理 / 文字语音 / led播放 各自一把钥匙；
+		// 前端 TypedTaskPage 按 kind 取对应的那一把。
+		"amplifier": {"edit": canAmplifier},
+		"collect":   {"edit": canCollect},
+		"tts":       {"edit": canTts},
+		"led":       {"edit": canTask},
+		// 启用管理与文字语音同一个权限位（旧版 displayenablemanager.php 用的是 ttspriv）
+		"enable": {"edit": canTts},
 		"time": {
 			// 改 NTP / 校时终端是服务器级配置；下发校时是终端操作。
 			// 两者权限不同，界面上要分别置灰，所以给两个键。

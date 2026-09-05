@@ -27,7 +27,7 @@ export const staticRouter: RouteRecordRaw[] = [
       注册页必须能在登录前打开 —— 旧版 login.php 也正是在这种状态下
       直接跳到 regist_server.php。
 
-      登录之后还有一份带侧边栏的同页面，路径是 /server/register（菜单里那一项）。
+      登录之后还有一份带侧边栏的同页面，路径是 /user/register（菜单里那一项）。
     */
     path: "/register",
     name: "registerServerStandalone",

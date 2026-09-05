@@ -158,7 +158,8 @@ import { useAuthStore } from "@/stores/modules/auth";
 import type { ColumnProps, ProTableInstance } from "@/components/ProTable/interface";
 
 const authStore = useAuthStore();
-const canEdit = computed(() => !!(authStore.authButtonListGet as any)?.task?.edit);
+// 启用管理与文字语音同一个权限位（ttspriv），后端把它单独给成 enable.edit
+const canEdit = computed(() => !!(authStore.authButtonListGet as any)?.enable?.edit);
 const toIds = (raw: (string | number)[]) => (raw ?? []).map(Number).filter(n => Number.isFinite(n) && n > 0);
 
 const proTableRef = ref<ProTableInstance>();

@@ -632,7 +632,12 @@ const props = defineProps<{ kind: TypedKind }>();
 
 const title = computed(() => KIND_TITLE[props.kind]);
 const authStore = useAuthStore();
-const canEdit = computed(() => !!(authStore.authButtonListGet as any)?.task?.edit);
+/*
+  这四页的权限位各不相同（终端功放=powerplay、采播管理=admpriv、
+  文字语音=ttspriv、led播放=taskpriv），是旧版 usergroup 那几列的原义。
+  后端 /api/auth/buttons 按 kind 各给一把钥匙，这里按 kind 取对应的那一把。
+*/
+const canEdit = computed(() => !!(authStore.authButtonListGet as any)?.[props.kind]?.edit);
 
 const toIds = (raw: (string | number)[]) => (raw ?? []).map(Number).filter(n => Number.isFinite(n) && n > 0);
 

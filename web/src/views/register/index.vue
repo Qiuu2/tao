@@ -127,7 +127,7 @@ const blank = (): RegisterStatus => ({
 
 const route = useRoute();
 const router = useRouter();
-/** 登录前那一版走静态路由 /register；登录后走菜单里的 /server/register */
+/** 登录前那一版走静态路由 /register；登录后走菜单里的 /user/register */
 const standalone = computed(() => route.path === "/register");
 
 const st = reactive<RegisterStatus>(blank());

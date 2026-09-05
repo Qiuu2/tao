@@ -18,25 +18,73 @@ export interface Rights {
   ttspriv: number;
 }
 
-/** 权限项的中文名与说明，供权限勾选面板使用 */
-export const RIGHT_ITEMS: { key: keyof Rights; label: string; tip: string }[] = [
-  { key: "taskpriv", label: "任务管理", tip: "新建 / 修改 / 删除广播任务" },
-  { key: "terminalpriv", label: "终端管理", tip: "终端参数、音量、重启等" },
-  { key: "mediapriv", label: "媒体管理", tip: "上传 / 删除媒体文件" },
-  { key: "folderpriv", label: "文件夹管理", tip: "新建 / 重命名 / 删除媒体目录" },
-  { key: "terminalgrouppriv", label: "终端分区", tip: "维护终端分区及其成员" },
-  { key: "alarmgrouppriv", label: "报警分区", tip: "维护报警分区与联动映射" },
-  { key: "bellpriv", label: "作息方案", tip: "打铃方案的编排与启停" },
-  { key: "userpriv", label: "用户管理", tip: "管理用户与用户组" },
-  { key: "serverpriv", label: "服务器参数", tip: "修改服务器运行参数" },
-  { key: "admpriv", label: "系统维护", tip: "日志、备份恢复等" },
-  { key: "telephonepriv", label: "电话广播", tip: "电话接入与寻呼" },
-  { key: "powerplay", label: "强插播放", tip: "抢占正在播出的低优先级任务" },
-  { key: "ttspriv", label: "语音合成", tip: "TTS 文本转语音" }
+/*
+  权限项。**每一项都对应新 web 里一块具体功能**，勾上就能用、不勾就进不去 ——
+  菜单按它显示，接口按它放行（后端 main.go 的 routes / handleMenu / handleButtons）。
+
+  ⚠ 列名与含义的对应关系照旧版 usergroup 表单原样搬过来，别按字面猜：
+  旧版 language/chinese.php 的 $user_group_add 里，
+  serverpriv 叫「遥控管理」、admpriv 叫「采播管理」、powerplay 叫「终端功放」、
+  ttspriv 叫「文字语音」—— 跟列名字面意思都对不上，但库里已有的用户组就是按这个配的，
+  改字面意思等于把现网所有用户组的权限悄悄挪了位。
+
+  group 用来在界面上按新 web 的菜单分组排列。
+*/
+export const RIGHT_ITEMS: { key: keyof Rights; group: string; label: string; tip: string }[] = [
+  // —— 资源管理 ——
+  {
+    key: "terminalpriv",
+    group: "资源管理",
+    label: "终端管理",
+    tip: "终端管理页的全部写操作：参数、音量、启停、密码、开关、快捷键、寻呼组、快捷任务、终端替换、删除；云广播管理 → 音乐传输；时间设置 → 下发校时"
+  },
+  {
+    key: "terminalgrouppriv",
+    group: "资源管理",
+    label: "分区管理",
+    tip: "终端分区的增删改；噪声检测 → 噪声设备、声场分区"
+  },
+  {
+    key: "alarmgrouppriv",
+    group: "资源管理",
+    label: "报警管理",
+    tip: "报警分区、报警映射的增删改"
+  },
+  { key: "mediapriv", group: "资源管理", label: "文件管理", tip: "文件管理页：上传媒体、删除媒体、清空文件夹内媒体" },
+  { key: "folderpriv", group: "资源管理", label: "文件夹管理", tip: "文件管理页：新建 / 改名 / 删除媒体文件夹" },
+
+  // —— 任务管理 ——
+  {
+    key: "taskpriv",
+    group: "任务管理",
+    label: "文件广播",
+    tip: "文件广播的增删改与启停、任务分组；led播放（含 LED 分组与 LED 屏设备）"
+  },
+  { key: "bellpriv", group: "任务管理", label: "作息方案", tip: "作息方案与打铃条目的增删改、启停、复制；节假日管理" },
+  { key: "powerplay", group: "任务管理", label: "终端功放", tip: "终端功放任务的新建 / 修改 / 删除 / 启停" },
+  { key: "admpriv", group: "任务管理", label: "采播管理", tip: "采播任务的新建 / 修改 / 删除 / 启停" },
+  { key: "ttspriv", group: "任务管理", label: "文字语音", tip: "文字语音任务的新建 / 修改 / 删除 / 启停；启用管理" },
+
+  // —— 系统 ——
+  {
+    key: "serverpriv",
+    group: "系统",
+    label: "遥控管理",
+    tip: "遥控任务；云广播管理 → 任务传送；基础配置 → 服务器信息、时间设置里的 NTP / GPS；用户管理 → 注册服务"
+  },
+  { key: "userpriv", group: "系统", label: "用户管理", tip: "用户与用户组的查看与维护" },
+  {
+    key: "telephonepriv",
+    group: "系统",
+    label: "电话管理",
+    tip: "⚠ 新版还没有电话广播这一页。这一项目前不控制任何功能，只把旧库里的取值原样存回去，别当它生效"
+  }
 ];
 
-export const emptyRights = (v = 0): Rights =>
-  RIGHT_ITEMS.reduce((acc, i) => ({ ...acc, [i.key]: v }), {} as Rights);
+/** 界面上按这个顺序分组排列，与新 web 的菜单同序 */
+export const RIGHT_GROUPS = ["资源管理", "任务管理", "系统"] as const;
+
+export const emptyRights = (v = 0): Rights => RIGHT_ITEMS.reduce((acc, i) => ({ ...acc, [i.key]: v }), {} as Rights);
 
 /* ---------------- 用户组 ---------------- */
 
@@ -86,11 +134,9 @@ export interface PriorityRecalc {
 }
 
 export const getGroupListApi = (params: any) => {
-  return http.get<{ list: UserGroup[]; total: number; pageNum: number; pageSize: number }>(
-    PORT1 + `/api/usergroups`,
-    params,
-    { loading: false }
-  );
+  return http.get<{ list: UserGroup[]; total: number; pageNum: number; pageSize: number }>(PORT1 + `/api/usergroups`, params, {
+    loading: false
+  });
 };
 
 /** 下拉用的精简用户组，只含选择所需字段 */
