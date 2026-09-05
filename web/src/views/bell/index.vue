@@ -574,6 +574,7 @@
         <el-form-item label-width="0" prop="terminals">
           <TerminalTree
             v-model="selectedTerminalIds"
+            v-model:areas="terminalAreas"
             :terminals="terminals"
             :loading="terminalLoading"
             height="260px"
@@ -724,6 +725,8 @@ const terminals = ref<TaskTerminalOption[]>([]);
 const terminalLoading = ref(false);
 const selectedTerminalIds = ref<number[]>([]);
 const terminalGroupOf = reactive<Record<number, number>>({});
+/** 每台终端的分区/通道掩码（terminaloftask.area），键是终端 id */
+const terminalAreas = ref<Record<number, string>>({});
 const searchTerminals = async (kw: string) => {
   terminalLoading.value = true;
   try {
@@ -1243,6 +1246,7 @@ const openCreate = async () => {
   weekdays.value = [0, 1, 2, 3, 4, 5, 6];
   runMode.value = 1; // 默认「每天」，与旧版下拉的第一项一致
   selectedTerminalIds.value = [];
+  terminalAreas.value = {};
   markHeaderClean();
   await resetPlanErrors();
   await Promise.all([searchTerminals(""), searchMedia("")]);
@@ -1293,6 +1297,8 @@ const openEdit = async (row: BellPlan, mode: "edit" | "batch" = "edit") => {
   dateRange.value = [data.schedule.startdate, data.schedule.enddate];
   applyMask(data.schedule.exemodel);
   data.terminals.forEach(t => (terminalGroupOf[t.terminalId] = t.groupId));
+  // 把库里已有的分区掩码回填给树，改的时候才看得出原来选了哪几个分区
+  terminalAreas.value = Object.fromEntries(data.terminals.filter(t => !t.deleted && t.area).map(t => [t.terminalId, t.area]));
   // 已删除的终端不回填，否则保存时会被存在性校验挡下
   selectedTerminalIds.value = data.terminals.filter(t => !t.deleted).map(t => t.terminalId);
   markHeaderClean();
@@ -1328,7 +1334,8 @@ const terminalsForm = () =>
   selectedTerminalIds.value.map(id => ({
     terminalId: id,
     groupId: terminalGroupOf[id] ?? 0,
-    area: "11111111"
+    // 分区/通道掩码：树上逐台勾的结果，没勾过的照后端默认（全通道）
+    area: terminalAreas.value[id] ?? "11111111"
   }));
 
 /* ----- 方案头的「脏」判断 -----

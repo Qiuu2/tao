@@ -438,6 +438,7 @@
         <el-form-item label-width="0">
           <TerminalTree
             v-model="selectedTerminals"
+            v-model:areas="terminalAreas"
             :terminals="terminals"
             :loading="terminalLoading"
             height="280px"
@@ -747,6 +748,8 @@ watch(
 const terminals = ref<TypedTerminalOption[]>([]);
 const terminalLoading = ref(false);
 const selectedTerminals = ref<number[]>([]);
+/** 每台终端的分区/通道掩码（terminaloftask.area），键是终端 id */
+const terminalAreas = ref<Record<number, string>>({});
 const sourceTerminals = ref<TypedTerminalOption[]>([]);
 const promptList = ref<PromptMedia[]>([]);
 const ledFolders = ref<LedFolder[]>([]);
@@ -886,6 +889,7 @@ const openCreate = async () => {
   }
   if (props.kind !== "amplifier") form.prepower = 120;
   selectedTerminals.value = [];
+  terminalAreas.value = {};
   selectedLedDevices.value = [];
   Object.assign(dlg, { visible: true, saving: false, isEdit: false, title: `添加${title.value}`, id: 0 });
   await searchTerminals("");
@@ -935,6 +939,8 @@ const openEdit = async (row: TypedTask) => {
     form.led = { text: data.led?.text ?? "", speed: data.led?.speed ?? 0, ledmode: data.led?.ledmode ?? 0 };
     selectedLedDevices.value = (data.led?.devices ?? []).filter(d => !d.deleted).map(d => d.deviceId);
   }
+  // 把库里已有的分区掩码回填给树，改的时候才看得出原来选了哪几个分区
+  terminalAreas.value = Object.fromEntries(data.terminals.filter(t => !t.deleted && t.area).map(t => [t.terminalId, t.area]));
   // 已删除的终端不回填，否则保存时会被服务端的存在性校验挡下来
   selectedTerminals.value = data.terminals.filter(t => !t.deleted).map(t => t.terminalId);
   const dropped = data.terminals.filter(t => t.deleted).length;
@@ -1000,7 +1006,8 @@ const buildBody = () => {
     promptId: sourceIsServer.value ? form.promptId : 0,
     terminals: selectedTerminals.value.map(id => ({
       terminalId: id,
-      area: "11111111",
+      // 分区/通道掩码：树上逐台勾的结果，没勾过的照后端默认（全通道）
+      area: terminalAreas.value[id] ?? "11111111",
       groupId: terminals.value.find(t => t.id === id)?.groupId ?? 0
     })),
     led: props.kind === "led" ? { ...form.led, devices: ledDevs } : null

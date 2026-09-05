@@ -228,6 +228,8 @@ export interface TaskTerminalOption {
   groupId: number;
   groupName: string;
   netstate: number;
+  /** 分区/通道数（terminaltype.switchcount）。≥ 2 时这台终端可以逐分区勾选 */
+  switchCount: number;
 }
 
 export type TaskAction = "start" | "stop" | "pause" | "resume";
@@ -301,10 +303,10 @@ export const copyTaskApi = (id: number, targetFolderId: number, newName: string)
 };
 
 export const syncTaskTerminalsApi = (taskIds: number[], terminalIds: number[]) => {
-  return http.post<{ added: number; tasks: number[]; blocked: TaskBlocked[] }>(
-    PORT1 + `/api/tasks/sync-terminals`,
-    { taskIds, terminalIds }
-  );
+  return http.post<{ added: number; tasks: number[]; blocked: TaskBlocked[] }>(PORT1 + `/api/tasks/sync-terminals`, {
+    taskIds,
+    terminalIds
+  });
 };
 
 /** 按需搜索的媒体下拉。旧版是把整张 media 表读进内存渲染下拉框 */

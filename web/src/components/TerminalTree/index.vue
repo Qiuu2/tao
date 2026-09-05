@@ -67,6 +67,22 @@
         <span class="tt-node">
           <span class="tt-label">{{ data.label }}</span>
           <span v-if="data.terminalId" class="tt-meta">
+            <!--
+              分区/通道勾选。照 ok112：终端型号的 switchcount ≥ 2 时才有这一项
+              （get_terminaltype.php 查的就是 terminaltype.switchcount，
+              addterminalfunctionplay.html 里的判据是 channelnum%2==0 && channelnum!=0，
+              现网所有型号的 switchcount 不是 0/1 就是 4/8/10/16，两者等价）。
+            -->
+            <el-button
+              v-if="zonePickable && data.switchCount >= 2"
+              link
+              type="primary"
+              size="small"
+              class="tt-zone"
+              @click.stop="openZone(data)"
+            >
+              {{ zoneSummary(data) }}
+            </el-button>
             <el-tag v-if="data.netstate === 1" type="success" size="small" effect="plain">在线</el-tag>
             <el-tag v-else type="info" size="small" effect="plain">离线</el-tag>
             <span v-if="data.sub" class="tt-sub">{{ data.sub }}</span>
@@ -77,12 +93,32 @@
     </el-tree>
 
     <div v-if="multiple" class="tt-foot">已选 {{ (modelValue as number[])?.length || 0 }} 台</div>
+
+    <!--
+      分区勾选弹窗。旧版是点终端时在树旁边浮出来的一小块（div#lead），
+      里面按 switchcount 排出「分区一…分区十六」的复选框，底下「确定 / 取消」。
+      这里做成对话框：16 个复选框浮层里放不下，也挡不住树。
+    -->
+    <el-dialog v-model="zone.visible" :title="zone.title" width="420px" append-to-body>
+      <div class="tt-zone-bar">
+        <el-button size="small" link type="primary" @click="zoneAll(true)">全选</el-button>
+        <el-button size="small" link @click="zoneAll(false)">清空</el-button>
+      </div>
+      <el-checkbox-group v-model="zone.checked" class="tt-zone-group">
+        <el-checkbox v-for="(label, i) in zone.labels" :key="i" :value="i">{{ label }}</el-checkbox>
+      </el-checkbox-group>
+      <div class="tt-zone-note">不勾任何一项等于这台终端不参与播放，保存前请至少留一个分区。</div>
+      <template #footer>
+        <el-button @click="zone.visible = false">取消</el-button>
+        <el-button type="primary" @click="submitZone">确定</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts" name="TerminalTree">
 import { Search } from "@element-plus/icons-vue";
-import { computed, nextTick, onMounted, ref, watch } from "vue";
+import { computed, nextTick, onMounted, reactive, ref, watch } from "vue";
 
 import { loadZones, type ZoneNode } from "./zones";
 
@@ -96,8 +132,37 @@ interface TermNode {
   /** 型号 / IP 之类的次要信息，显示在名字右边 */
   sub?: string;
   disabled?: boolean;
+  /** 分区/通道数（terminaltype.switchcount）。≥ 2 时这台终端可以逐分区勾选 */
+  switchCount?: number;
   children?: TermNode[];
 }
+
+/**
+ * 分区/通道的名字，逐个照 ok112 的 language/chinese.php：
+ * zone_1..zone_6 是分区一~六，zone_7/zone_8 是**电源一 / 电源二**，
+ * zone_9..zone_16 又回到分区九~十六。第 7、8 位不是分区，别顺手改成「分区七/八」。
+ */
+const ZONE_LABELS = [
+  "分区一",
+  "分区二",
+  "分区三",
+  "分区四",
+  "分区五",
+  "分区六",
+  "电源一",
+  "电源二",
+  "分区九",
+  "分区十",
+  "分区十一",
+  "分区十二",
+  "分区十三",
+  "分区十四",
+  "分区十五",
+  "分区十六"
+];
+
+/** terminaloftask.area 是 varchar(16)，旧版勾选后补 0 补满 16 位 */
+const AREA_LEN = 16;
 
 const props = withDefaults(
   defineProps<{
@@ -126,6 +191,12 @@ const props = withDefaults(
      *   摆一个搜出来没反应的框比没有框更糟，那种地方传 false。
      */
     searchable?: boolean;
+    /**
+     * 每台终端的分区/通道掩码（terminaloftask.area），形如 "1011000000000000"。
+     * 传了这个属性就会在节点上显示「分区」入口，配合 update:areas 使用。
+     * 没传的终端按后端默认（全通道）处理。
+     */
+    areas?: Record<number, string>;
   }>(),
   {
     multiple: true,
@@ -141,6 +212,7 @@ const props = withDefaults(
 
 const emit = defineEmits<{
   (e: "update:modelValue", v: any): void;
+  (e: "update:areas", v: Record<number, string>): void;
   /** 关键字变化。父组件通常拿它去服务端重新查（各接口都支持 keyword） */
   (e: "search", kw: string): void;
 }>();
@@ -177,6 +249,7 @@ const normalize = (t: any) => ({
   groupId: Number(t[props.groupIdField] ?? 0),
   netstate: Number(t.netstate ?? 0),
   typeName: String(t.typeName ?? "").trim(),
+  switchCount: Number(t.switchCount ?? 0),
   disabled: !!t.disabled
 });
 
@@ -253,6 +326,7 @@ const nodes = computed<TermNode[]>(() => {
       terminalId: t.id,
       netstate: t.netstate,
       sub,
+      switchCount: t.switchCount,
       disabled: t.disabled
     });
   }
@@ -315,6 +389,70 @@ const checkAll = (on: boolean) => {
   const all = nodes.value.flatMap(g => g.children ?? []).filter(n => !n.disabled);
   treeRef.value.setCheckedKeys(on ? all.map(n => n.key) : [], false);
   emitChecked();
+};
+
+/* ---------------- 分区 / 通道勾选 ---------------- */
+
+/*
+  对应 ok112 挑终端时浮出来的那张勾选表（addterminalfunctionplay.html 里的 div#lead）：
+  勾完点「确定」，结果拼成一串 0/1 写进 terminaloftask.area。
+
+  ⚠ 旧版这条链路有个明显的对不上：前端 set_task_volume_prepose() 拼的是
+    **逗号分隔**的 "1,0,1,0,…"，而 do.php 取的是 `substr($get_terminal,$j+1,16)`
+    —— 16 个字符里有一半是逗号，落库就成了 "1,0,1,0,1,0,1,0"。
+    库里现存的 area 全是纯 0/1 串（'11111111' 62 行、'1111111111111111' 8 行），
+    也就是后台服务认的是纯掩码。所以这里按**每位一个字符**写，
+    不复刻那个逗号 bug —— 复刻它等于写进去的值后台读不懂。
+*/
+
+/** 只有调用方传了 areas 才显示分区入口 —— 其它地方（用户绑终端等）用不上 */
+const zonePickable = computed(() => props.multiple && props.areas !== undefined);
+
+const zone = reactive({
+  visible: false,
+  title: "",
+  terminalId: 0,
+  labels: [] as string[],
+  checked: [] as number[]
+});
+
+/** 没设过的终端按「全通道」显示：与后端默认一致 */
+const maskOf = (data: TermNode) => {
+  const raw = props.areas?.[data.terminalId as number];
+  const n = data.switchCount ?? 0;
+  if (!raw) return "1".repeat(Math.min(n, AREA_LEN)).padEnd(AREA_LEN, "0");
+  return raw.padEnd(AREA_LEN, "0").slice(0, AREA_LEN);
+};
+
+const zoneSummary = (data: TermNode) => {
+  const n = Math.min(data.switchCount ?? 0, AREA_LEN);
+  const mask = maskOf(data);
+  const on: string[] = [];
+  for (let i = 0; i < n; i++) if (mask[i] === "1") on.push(ZONE_LABELS[i]);
+  if (on.length === 0) return "分区：未选";
+  if (on.length === n) return "分区：全部";
+  return `分区：${on.join("、")}`;
+};
+
+const openZone = (data: TermNode) => {
+  const n = Math.min(data.switchCount ?? 0, AREA_LEN);
+  const mask = maskOf(data);
+  zone.terminalId = data.terminalId as number;
+  zone.title = `${data.label} · 分区选择`;
+  zone.labels = ZONE_LABELS.slice(0, n);
+  zone.checked = [];
+  for (let i = 0; i < n; i++) if (mask[i] === "1") zone.checked.push(i);
+  zone.visible = true;
+};
+
+const zoneAll = (on: boolean) => {
+  zone.checked = on ? zone.labels.map((_, i) => i) : [];
+};
+
+const submitZone = () => {
+  const mask = Array.from({ length: AREA_LEN }, (_, i) => (zone.checked.includes(i) ? "1" : "0")).join("");
+  emit("update:areas", { ...(props.areas ?? {}), [zone.terminalId]: mask });
+  zone.visible = false;
 };
 
 /*
@@ -382,6 +520,28 @@ const onSearch = () => {
 .tt-foot {
   margin-top: 6px;
   font-size: 12px;
+  color: var(--el-text-color-secondary);
+}
+.tt-zone {
+  font-size: 12px;
+}
+.tt-zone-bar {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.tt-zone-group {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 2px 12px;
+  :deep(.el-checkbox) {
+    margin-right: 0;
+  }
+}
+.tt-zone-note {
+  margin-top: 8px;
+  font-size: 12px;
+  line-height: 1.7;
   color: var(--el-text-color-secondary);
 }
 </style>

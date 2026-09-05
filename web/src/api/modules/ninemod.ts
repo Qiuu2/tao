@@ -132,6 +132,8 @@ export interface TypedTerminalOption {
   ip: string;
   netstate: number;
   groupId: number;
+  /** 分区/通道数（terminaltype.switchcount）。≥ 2 时这台终端可以逐分区勾选 */
+  switchCount: number;
 }
 
 export interface TypedControlResult {

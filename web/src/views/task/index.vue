@@ -506,6 +506,7 @@
             <el-form-item label-width="0">
               <TerminalTree
                 v-model="selectedTerminalIds"
+                v-model:areas="terminalAreas"
                 :terminals="terminalOptions"
                 :loading="terminalLoading"
                 height="300px"
@@ -876,6 +877,8 @@ const terminalOptions = ref<TaskTerminalOption[]>([]);
 const terminalLoading = ref(false);
 const selectedTerminalIds = ref<number[]>([]);
 const terminalGroupOf = reactive<Record<number, number>>({});
+/** 每台终端的分区/通道掩码（terminaloftask.area），键是终端 id */
+const terminalAreas = ref<Record<number, string>>({});
 
 const searchTerminals = async (kw: string) => {
   terminalLoading.value = true;
@@ -1040,6 +1043,7 @@ const openCreate = async () => {
   selectedLedDeviceIds.value = [];
   selectedMediaIds.value = [];
   selectedTerminalIds.value = [];
+  terminalAreas.value = {};
   priorityRange.min = 0;
   priorityRange.max = 99;
   await Promise.all([searchMedia(""), searchTerminals(""), loadLedDevices()]);
@@ -1104,6 +1108,8 @@ const openEdit = async (row: TaskRow) => {
   // 先把已有清单的名字灌进缓存，再拉一次候选，避免已选项显示成裸 id
   data.media.forEach(m => (mediaNames[m.mediaId] = m.name));
   data.terminals.forEach(t => (terminalGroupOf[t.terminalId] = t.groupId));
+  // 把库里已有的分区掩码回填给树，改的时候才看得出原来选了哪几个分区
+  terminalAreas.value = Object.fromEntries(data.terminals.filter(t => t.area).map(t => [t.terminalId, t.area]));
   selectedMediaIds.value = data.media.map(m => m.mediaId);
   selectedTerminalIds.value = data.terminals.map(t => t.terminalId);
   await Promise.all([searchMedia(""), searchTerminals(""), loadLedDevices()]);
@@ -1146,7 +1152,8 @@ const submit = async () => {
     terminals: selectedTerminalIds.value.map(id => ({
       terminalId: id,
       groupId: terminalGroupOf[id] ?? 0,
-      area: "11111111"
+      // 分区/通道掩码：树上逐台勾的结果，没勾过的照后端默认（全通道）
+      area: terminalAreas.value[id] ?? "11111111"
     }))
   };
 

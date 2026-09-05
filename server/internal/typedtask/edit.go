@@ -816,6 +816,9 @@ type TerminalOption struct {
 	// GroupName 是终端分区名，供界面把终端选择器排成树。
 	// ⚠ 早前只有 groupId 没有名字，界面就只能列成一个扁平下拉。
 	GroupName string `json:"groupName"`
+	// SwitchCount 是这台终端的分区/通道数（terminaltype.switchcount）。
+	// 旧版据它决定要不要弹分区勾选表，见 get_terminaltype.php。
+	SwitchCount int `json:"switchCount"`
 }
 
 // TerminalOptions 列出可加入任务的终端。
@@ -838,7 +841,8 @@ func (s *Service) TerminalOptions(ctx context.Context, u *auth.User, keyword str
 		       COALESCE(t.ip,''), COALESCE(t.netstate,0), COALESCE(t.groupid,0),
 		       COALESCE((SELECT sps.name FROM terminalofgroup tog
 		                 JOIN serverplaystream sps ON sps.streamid = tog.groupid
-		                 WHERE tog.terminalid = t.id ORDER BY tog.id LIMIT 1), '')
+		                 WHERE tog.terminalid = t.id ORDER BY tog.id LIMIT 1), ''),
+		       COALESCE(tt.switchcount,0)
 		FROM terminal t
 		LEFT JOIN terminaltype tt ON tt.id = t.typeid`+cond.Where()+`
 		ORDER BY t.netstate DESC, t.id LIMIT 500`, cond.Args()...)
@@ -850,7 +854,7 @@ func (s *Service) TerminalOptions(ctx context.Context, u *auth.User, keyword str
 	for rs.Next() {
 		var o TerminalOption
 		if err := rs.Scan(&o.ID, &o.Name, &o.TypeID, &o.TypeName,
-			&o.IP, &o.NetState, &o.GroupID, &o.GroupName); err != nil {
+			&o.IP, &o.NetState, &o.GroupID, &o.GroupName, &o.SwitchCount); err != nil {
 			return nil, err
 		}
 		out = append(out, o)
@@ -902,7 +906,8 @@ func (s *Service) SourceTerminals(ctx context.Context, k Kind) ([]TerminalOption
 	}
 	rs, err := s.db.QueryContext(ctx, `
 		SELECT t.id, COALESCE(t.terminalname,''), COALESCE(t.typeid,0), COALESCE(tt.name,''),
-		       COALESCE(t.ip,''), COALESCE(t.netstate,0), COALESCE(t.groupid,0), ''
+		       COALESCE(t.ip,''), COALESCE(t.netstate,0), COALESCE(t.groupid,0), '',
+		       COALESCE(tt.switchcount,0)
 		FROM terminal t
 		LEFT JOIN terminaltype tt ON tt.id = t.typeid
 		WHERE t.typeid IN (`+ph+`)
@@ -915,7 +920,7 @@ func (s *Service) SourceTerminals(ctx context.Context, k Kind) ([]TerminalOption
 	for rs.Next() {
 		var o TerminalOption
 		if err := rs.Scan(&o.ID, &o.Name, &o.TypeID, &o.TypeName,
-			&o.IP, &o.NetState, &o.GroupID, &o.GroupName); err != nil {
+			&o.IP, &o.NetState, &o.GroupID, &o.GroupName, &o.SwitchCount); err != nil {
 			return nil, err
 		}
 		out = append(out, o)

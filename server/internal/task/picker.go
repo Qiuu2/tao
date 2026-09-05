@@ -77,6 +77,10 @@ type TerminalOption struct {
 	GroupID   int64  `json:"groupId"`
 	GroupName string `json:"groupName"`
 	NetState  int    `json:"netstate"`
+	// SwitchCount 是这台终端的分区/通道数（terminaltype.switchcount）。
+	// 旧版挑终端时按它决定要不要弹「分区一…分区十六」那张勾选表
+	// （get_terminaltype.php 就是查这一列），并把结果写进 terminaloftask.area。
+	SwitchCount int `json:"switchCount"`
 }
 
 // TerminalOptions 按关键字搜索可选终端。
@@ -102,7 +106,7 @@ func (s *Service) TerminalOptions(ctx context.Context, u *auth.User, keyword str
 		SELECT t.id, COALESCE(t.terminalname,''), COALESCE(tt.name,''),
 		       COALESCE((SELECT tog.groupid FROM terminalofgroup tog
 		                  WHERE tog.terminalid = t.id ORDER BY tog.id LIMIT 1), 0),
-		       COALESCE(t.netstate,0)
+		       COALESCE(t.netstate,0), COALESCE(tt.switchcount,0)
 		FROM terminal t
 		LEFT JOIN terminaltype tt ON tt.id = t.typeid`+cond.Where()+`
 		ORDER BY t.netstate DESC, t.id ASC LIMIT ?`,
@@ -116,7 +120,7 @@ func (s *Service) TerminalOptions(ctx context.Context, u *auth.User, keyword str
 	groupIDs := map[int64]bool{}
 	for rs.Next() {
 		var o TerminalOption
-		if err := rs.Scan(&o.ID, &o.Name, &o.TypeName, &o.GroupID, &o.NetState); err != nil {
+		if err := rs.Scan(&o.ID, &o.Name, &o.TypeName, &o.GroupID, &o.NetState, &o.SwitchCount); err != nil {
 			return nil, err
 		}
 		if o.GroupID > 0 {
