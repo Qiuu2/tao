@@ -111,16 +111,6 @@ func (a *app) handleTypedPrompts(w http.ResponseWriter, r *http.Request) {
 	httpx.OK(w, list)
 }
 
-// handleTypedPriorityRange 是「任务级别」下拉的可选区间（由用户组级别决定）。
-func (a *app) handleTypedPriorityRange(w http.ResponseWriter, r *http.Request) {
-	lo, hi, err := a.typed.PriorityRange(r.Context(), auth.From(r.Context()))
-	if err != nil {
-		a.failTyped(w, "查询任务等级区间", err)
-		return
-	}
-	httpx.OK(w, map[string]interface{}{"priorityMin": lo, "priorityMax": hi})
-}
-
 // typedReq 是四种类别共用的请求体。用不到的字段留空即可。
 type typedReq struct {
 	TaskName       string `json:"taskName"`

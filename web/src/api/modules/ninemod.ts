@@ -195,9 +195,6 @@ export interface PromptMedia {
 /** 「采播终端 / tts终端」下拉的候选：旧版按 terminal.typeid 筛出来的那一批 */
 export const getTypedSourcesApi = (kind: TypedKind) =>
   http.get<TypedTerminalOption[]>(PORT1 + `/api/typed-tasks/${kind}/sources`, {}, { loading: false });
-/** 「任务级别」下拉的可选区间（由用户组级别决定） */
-export const getTypedPriorityRangeApi = () =>
-  http.get<{ priorityMin: number; priorityMax: number }>(PORT1 + `/api/typed-tasks/priority-range`, {}, { loading: false });
 /** 文字语音的「提示音」候选（旧版写死的 9 号媒体目录） */
 export const getPromptMediaApi = () => http.get<PromptMedia[]>(PORT1 + `/api/typed-tasks/prompts`, {}, { loading: false });
 

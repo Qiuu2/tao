@@ -591,7 +591,6 @@ import {
   getPromptMediaApi,
   getTypedApi,
   getTypedListApi,
-  getTypedPriorityRangeApi,
   getTypedSourcesApi,
   getTypedTerminalsApi,
   KIND_TITLE,
@@ -610,7 +609,7 @@ import type {
   TypedTerminal,
   TypedTerminalOption
 } from "@/api/modules/ninemod";
-import { setTaskVolumeApi } from "@/api/modules/task";
+import { getTaskPriorityRangeApi, setTaskVolumeApi } from "@/api/modules/task";
 import HmsInput from "@/components/HmsInput/index.vue";
 import ProTable from "@/components/ProTable/index.vue";
 import TerminalTree from "@/components/TerminalTree/index.vue";
@@ -794,7 +793,7 @@ const blankForm = () => ({
   // 两个独立的日期选择器共用这个数组：[0] 开始日期、[1] 结束日期
   range: ["", ""] as string[],
   prepower: 0,
-  priority: 3,
+  priority: 10,
   datasendmodel: 0,
   playtime: "08:00:00",
   // 执行模式：1 每天、2 每星期、3 手动（照旧版 exemodel 下拉）
@@ -831,7 +830,8 @@ const clearErr = () => Object.keys(err).forEach(k => ((err as any)[k] = ""));
 const dlg = reactive({ visible: false, saving: false, isEdit: false, title: "", id: 0 });
 
 // 任务级别的可选区间由用户组级别决定（与文件广播同一套口径）
-const priorityRange = reactive({ min: 0, max: 99 });
+// 兜底值照旧版下拉的口径：下限 10、上限 109（服务端会给准确区间）
+const priorityRange = reactive({ min: 10, max: 109 });
 const priorityOptions = computed(() => {
   const lo = priorityRange.min ?? 0;
   const hi = priorityRange.max ?? 99;
@@ -878,7 +878,7 @@ const openCreate = async () => {
   form.range = [today, today];
   // 任务级别的可选区间由用户组级别决定，新建时先问一次服务端，
   // 免得默认值落在区间外、点提交才被拒。
-  const { data: pr } = await getTypedPriorityRangeApi();
+  const { data: pr } = await getTaskPriorityRangeApi();
   priorityRange.min = pr.priorityMin ?? 0;
   priorityRange.max = pr.priorityMax ?? 99;
   form.priority = priorityRange.min;
@@ -915,8 +915,8 @@ const openEdit = async (row: TypedTask) => {
   form.channel = Number(data.cmdargs) || 0;
   form.samplerate = data.samplerate || 8000;
   form.bandrate = data.bandrate || 8;
-  priorityRange.min = data.priorityMin ?? 0;
-  priorityRange.max = data.priorityMax ?? 99;
+  priorityRange.min = data.priorityMin ?? 10;
+  priorityRange.max = data.priorityMax ?? 109;
   // 播放时长在库里是 timelength（timelengthtype=1）；功放没有这一列，靠 endtime - playtime 反算
   form.durationSec = props.kind === "amplifier" ? diffSec(data.playtime, data.endtime) : data.timelength;
   if (props.kind === "tts") form.durationSec = data.timelengthtype === 1 ? data.timelength : 0;

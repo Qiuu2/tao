@@ -188,15 +188,26 @@ func (s *Service) Get(ctx context.Context, u *auth.User, id int64) (*Detail, err
 	return d, nil
 }
 
-// priorityRange 计算某个用户被允许的任务优先级区间（BR-169 / 契约 C-28）。
+// 任务级别的取值范围。旧版表单的下拉是 `for(level=$getlevel; level<=109; level++)`，
+// 上限 109 是写死的；下限来自 usergroup.level，新版统一不低于 10（见 priorityRange）。
+const (
+	PriorityFloor = 10
+	PriorityCeil  = 109
+)
+
+// priorityRange 计算某个用户能选的任务级别区间。
 //
-// usergroup.level 是复合编码：十位 = 组级别，个位 = 组内优先级基数。
-// 任务优先级沿用同一套「十位 = 组级别」的约定，所以允许区间就是
-// [组级别*10, 组级别*10+9]。
+// 依据是旧版那几张表单里的下拉：
 //
-// 注意：修改用户组级别时的重算公式是 新优先级 = 新 level + 旧优先级%10
-// （见 user.recalcPriorities，原样保留的旧语义），它算出的值**可能落在区间之外**。
-// 因此校验只作用于本次提交的新值；存量任务的优先级不动，也不做数据订正。
+//	for(level=$getlevel; level<=109; level++) document.write("<option>"+level)
+//
+// 其中 $getlevel 直接取 `usergroup.level`（不是十位数，是整数本身），
+// 上限恒为 **109**。现网三个用户组的 level 是 10 / 5 / 1，
+// 也就是说这个下拉在旧版里是 10~109 / 5~109 / 1~109。
+//
+// ⚠ 新版把下限统一抬到 10：数字越小级别越高（界面上写着「10 为最高级别」），
+// 让权限更低的组反而能选到比管理员更高的级别没有道理。
+// 现网三个组按这条规则都是 10~109，与「所有任务的任务级别是 10~109」一致。
 func (s *Service) priorityRange(ctx context.Context, userID int64) (int, int, error) {
 	var level int
 	err := s.db.QueryRowContext(ctx, `
@@ -204,13 +215,18 @@ func (s *Service) priorityRange(ctx context.Context, userID int64) (int, int, er
 		LEFT JOIN usergroup g ON g.id = b.usergroupid
 		WHERE b.id = ? LIMIT 1`, userID).Scan(&level)
 	if errors.Is(err, sql.ErrNoRows) {
-		return 0, 99, nil
+		return PriorityFloor, PriorityCeil, nil
 	}
 	if err != nil {
 		return 0, 0, fmt.Errorf("查询用户组级别: %w", err)
 	}
-	tens := level / 10
-	return tens * 10, tens*10 + 9, nil
+	if level < PriorityFloor {
+		level = PriorityFloor
+	}
+	if level > PriorityCeil {
+		level = PriorityCeil
+	}
+	return level, PriorityCeil, nil
 }
 
 // validate 校验入参。旧版对这些字段一个都不校验，全是 $_POST 裸拼进 SQL（D-83 同构）。
@@ -736,3 +752,8 @@ func mustTypeInPlain() string {
 }
 
 func typeArgsPlain() []interface{} { return typeArgs() }
+
+// PriorityRange 是当前用户能选的任务级别区间，供各任务表单的下拉直接用。
+func (s *Service) PriorityRange(ctx context.Context, u *auth.User) (int, int, error) {
+	return s.priorityRange(ctx, u.ID)
+}

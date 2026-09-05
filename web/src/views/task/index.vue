@@ -627,6 +627,7 @@ import {
   getTaskApi,
   getTaskFolderTreeApi,
   getTaskListApi,
+  getTaskPriorityRangeApi,
   previewDeleteTasksApi,
   renameTaskFolderApi,
   searchTaskMediaApi,
@@ -938,7 +939,8 @@ const dlg = reactive({
   form: emptyForm()
 });
 
-const priorityRange = reactive({ min: 0, max: 99 });
+// 兜底值照旧版下拉的口径：下限 10、上限 109（服务端会给准确区间）
+const priorityRange = reactive({ min: 10, max: 109 });
 
 /* 旧版是一页到底的表单，没有分步；这里几个 ref 是把界面上的开关映射到库里的列。 */
 
@@ -983,8 +985,8 @@ const splitLengths = (pb: { timelengthtype: number; timelength: number; intplayl
 
 /** 任务级别下拉的取值范围由后端按用户组给 */
 const priorityOptions = computed(() => {
-  const lo = priorityRange.min ?? 0;
-  const hi = priorityRange.max ?? 99;
+  const lo = priorityRange.min ?? 10;
+  const hi = priorityRange.max ?? 109;
   return Array.from({ length: Math.max(0, hi - lo + 1) }, (_, i) => lo + i);
 });
 
@@ -1044,8 +1046,12 @@ const openCreate = async () => {
   selectedMediaIds.value = [];
   selectedTerminalIds.value = [];
   terminalAreas.value = {};
-  priorityRange.min = 0;
-  priorityRange.max = 99;
+  // 任务级别的可选区间由用户组级别决定，新建时先问一次服务端，
+  // 免得默认值落在区间外、点提交才被拒
+  const { data: pr } = await getTaskPriorityRangeApi();
+  priorityRange.min = pr.priorityMin ?? 10;
+  priorityRange.max = pr.priorityMax ?? 109;
+  dlg.form.playback.priority = priorityRange.min;
   await Promise.all([searchMedia(""), searchTerminals(""), loadLedDevices()]);
 };
 
@@ -1102,8 +1108,8 @@ const openEdit = async (row: TaskRow) => {
   // 有 LED 子任务就把开关打开
   ledOn.value = !!data.led;
   selectedLedDeviceIds.value = (data.led?.devices ?? []).map(d => d.deviceId);
-  priorityRange.min = data.priorityMin;
-  priorityRange.max = data.priorityMax;
+  priorityRange.min = data.priorityMin ?? 10;
+  priorityRange.max = data.priorityMax ?? 109;
 
   // 先把已有清单的名字灌进缓存，再拉一次候选，避免已选项显示成裸 id
   data.media.forEach(m => (mediaNames[m.mediaId] = m.name));

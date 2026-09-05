@@ -503,6 +503,20 @@ func (a *app) handleTaskMediaOptions(w http.ResponseWriter, r *http.Request) {
 	httpx.OK(w, opts)
 }
 
+// handleTaskPriorityRange 是「任务级别」下拉的可选区间。
+//
+// 旧版每张表单自己拼 `for(level=$getlevel; level<=109; level++)`；
+// 这里做成一个接口，作息方案 / 文件广播 / 终端功放等页共用 ——
+// 区间只跟当前用户的用户组级别有关，与是哪种任务无关。
+func (a *app) handleTaskPriorityRange(w http.ResponseWriter, r *http.Request) {
+	lo, hi, err := a.tasks.PriorityRange(r.Context(), auth.From(r.Context()))
+	if err != nil {
+		failTask(w, "查询任务级别区间", err)
+		return
+	}
+	httpx.OK(w, map[string]interface{}{"priorityMin": lo, "priorityMax": hi})
+}
+
 func (a *app) handleTaskTerminalOptions(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query()
 	groupID, _ := strconv.ParseInt(q.Get("groupId"), 10, 64)

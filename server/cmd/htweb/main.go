@@ -321,6 +321,9 @@ func (a *app) routes() http.Handler {
 	// 选择器只要登录：它们自身已按 folder / userterminal 收敛可见范围
 	mux.HandleFunc("GET /api/task-options/media", req(a.handleTaskMediaOptions))
 	mux.HandleFunc("GET /api/task-options/terminals", req(a.handleTaskTerminalOptions))
+	// 任务级别的可选区间。作息方案 / 文件广播 / 四个 typed 页共用一份 ——
+	// 区间只跟当前用户的用户组级别有关，与是哪种任务无关。
+	mux.HandleFunc("GET /api/task-options/priority-range", req(a.handleTaskPriorityRange))
 
 	// 固定路径必须先于 /api/tasks/{id} 注册的问题在 net/http 的新 mux 里不存在
 	// （它按模式具体程度择优，不是先到先得），但仍按语义分组排列便于阅读。
@@ -526,7 +529,6 @@ func (a *app) routes() http.Handler {
 	// （amplifier / collect / tts / led）。它们都是 task 表的视图，按 taskpriv。
 	mux.HandleFunc("GET /api/typed-tasks/terminals", req(a.handleTypedTerminals))
 	mux.HandleFunc("GET /api/typed-tasks/prompts", req(a.handleTypedPrompts))
-	mux.HandleFunc("GET /api/typed-tasks/priority-range", req(a.handleTypedPriorityRange))
 	mux.HandleFunc("GET /api/typed-tasks/{kind}/sources", req(a.handleTypedSources))
 	mux.HandleFunc("GET /api/typed-tasks/{kind}", req(a.handleTypedList))
 	mux.HandleFunc("GET /api/typed-tasks/{kind}/{id}", req(a.handleTypedGet))

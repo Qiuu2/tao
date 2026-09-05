@@ -299,8 +299,8 @@ func normPerKind(k Kind, in *Input) {
 	}
 	// priority 的允许区间由用户组级别决定（与 task 包同一套口径），
 	// 在 validate() 里按 priorityRange() 校验，这里只兜住明显越界的值。
-	if in.Priority < 0 || in.Priority > 109 {
-		in.Priority = 3
+	if in.Priority < PriorityFloor || in.Priority > PriorityCeil {
+		in.Priority = PriorityFloor
 	}
 	// datasendmodel 只有 0（单播）/ 1（组播）两个取值
 	if in.DataSendModel != 1 {
@@ -959,11 +959,27 @@ func (s *Service) PromptMedia(ctx context.Context) ([]PromptMedia, error) {
 	return out, rs.Err()
 }
 
-// priorityRange 计算某个用户被允许的任务等级区间。
+// 任务级别的取值范围，与 task 包同一套（见 task.PriorityFloor / PriorityCeil）。
+// 这里另抄一份常量而不是 import task —— typedtask 不依赖 task 包，
+// 为两个整数引一条包依赖不划算。
+const (
+	PriorityFloor = 10
+	PriorityCeil  = 109
+)
+
+// priorityRange 计算某个用户能选的任务级别区间。
 //
-// 与 task 包同一套口径：usergroup.level 是复合编码，十位 = 组级别，
-// 允许区间就是 [组级别*10, 组级别*10+9]。旧版这几个表单的下拉写的是
-// `for(level=$getlevel; level<=109; level++)`，下限同样来自组级别。
+// 依据是旧版那几张表单里的下拉：
+//
+//	for(level=$getlevel; level<=109; level++) document.write("<option>"+level)
+//
+// 其中 $getlevel 直接取 `usergroup.level`（不是十位数，是整数本身），
+// 上限恒为 **109**。现网三个用户组的 level 是 10 / 5 / 1，
+// 也就是说这个下拉在旧版里是 10~109 / 5~109 / 1~109。
+//
+// ⚠ 新版把下限统一抬到 10：数字越小级别越高（界面上写着「10 为最高级别」），
+// 让权限更低的组反而能选到比管理员更高的级别没有道理。
+// 现网三个组按这条规则都是 10~109，与「所有任务的任务级别是 10~109」一致。
 func (s *Service) priorityRange(ctx context.Context, userID int64) (int, int, error) {
 	var level int
 	err := s.db.QueryRowContext(ctx, `
@@ -971,13 +987,18 @@ func (s *Service) priorityRange(ctx context.Context, userID int64) (int, int, er
 		LEFT JOIN usergroup g ON g.id = b.usergroupid
 		WHERE b.id = ? LIMIT 1`, userID).Scan(&level)
 	if errors.Is(err, sql.ErrNoRows) {
-		return 0, 99, nil
+		return PriorityFloor, PriorityCeil, nil
 	}
 	if err != nil {
 		return 0, 0, fmt.Errorf("查询用户组级别: %w", err)
 	}
-	tens := level / 10
-	return tens * 10, tens*10 + 9, nil
+	if level < PriorityFloor {
+		level = PriorityFloor
+	}
+	if level > PriorityCeil {
+		level = PriorityCeil
+	}
+	return level, PriorityCeil, nil
 }
 
 // PriorityRange 是当前用户能选的任务等级区间，供「添加」弹窗直接约束下拉。

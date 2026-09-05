@@ -644,7 +644,13 @@ import {
   type BellItem,
   type BellPlan
 } from "@/api/modules/bell";
-import { searchTaskMediaApi, searchTaskTerminalsApi, type MediaOption, type TaskTerminalOption } from "@/api/modules/task";
+import {
+  getTaskPriorityRangeApi,
+  searchTaskMediaApi,
+  searchTaskTerminalsApi,
+  type MediaOption,
+  type TaskTerminalOption
+} from "@/api/modules/task";
 
 const authStore = useAuthStore();
 const btn = computed(() => (authStore.authButtonListGet as any)?.bell ?? {});
@@ -754,8 +760,8 @@ const runMode = ref(1);
  * 语义一致，只是范围以服务端为准。
  */
 const priorityOptions = computed(() => {
-  const lo = dlg.priorityMin ?? 0;
-  const hi = dlg.priorityMax ?? 99;
+  const lo = dlg.priorityMin ?? 10;
+  const hi = dlg.priorityMax ?? 109;
   const list = Array.from({ length: Math.max(0, hi - lo + 1) }, (_, i) => ({ value: lo + i, label: String(lo + i) }));
   // 别人建的方案可能带着一个当前用户选不到的级别，列出来标明白，
   // 否则下拉框只显示一个数字，看不出它已经超出范围（后端也会拦下）
@@ -819,8 +825,8 @@ const dlg = reactive({
   originalName: "",
   applyTerminals: false,
   mixedAttrs: [] as string[],
-  priorityMin: 0,
-  priorityMax: 99,
+  priorityMin: 10,
+  priorityMax: 109,
   /** 新建时：第一条课时入库后，方案就已经存在了，记住它的名字 */
   savedPlanName: "",
   form: {
@@ -1221,6 +1227,9 @@ const submitSchedule = async () => {
 };
 
 const openCreate = async () => {
+  // 任务级别的可选区间由用户组级别决定，新建时先问一次服务端，
+  // 免得默认值落在区间外、点提交才被拒
+  const { data: pr } = await getTaskPriorityRangeApi();
   Object.assign(dlg, {
     visible: true,
     saving: false,
@@ -1230,12 +1239,18 @@ const openCreate = async () => {
     originalName: "",
     applyTerminals: true,
     mixedAttrs: [],
-    priorityMin: 0,
-    priorityMax: 99,
+    priorityMin: pr.priorityMin ?? 10,
+    priorityMax: pr.priorityMax ?? 109,
     savedPlanName: "",
     form: {
       planName: "",
-      playback: { defaultvolume: 80, priority: 10, prepower: 15, datasendmodel: 0, israndomplay: 0 },
+      playback: {
+        defaultvolume: 80,
+        priority: pr.priorityMin ?? 10,
+        prepower: 15,
+        datasendmodel: 0,
+        israndomplay: 0
+      },
       ledOn: false,
       ledText: "",
       ledSpeed: 0
@@ -1264,8 +1279,8 @@ const openEdit = async (row: BellPlan, mode: "edit" | "batch" = "edit") => {
     // 旧版 modifybell.html 的「确定」是连终端一起写回去的
     applyTerminals: true,
     mixedAttrs: data.mixedAttrs ?? [],
-    priorityMin: data.priorityMin,
-    priorityMax: data.priorityMax,
+    priorityMin: data.priorityMin ?? 10,
+    priorityMax: data.priorityMax ?? 109,
     savedPlanName: "",
     form: {
       planName: data.planName,

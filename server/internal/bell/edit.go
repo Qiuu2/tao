@@ -463,8 +463,19 @@ func (s *Service) fillPlanTerminals(ctx context.Context, d *Detail, sampleTaskID
 	return rows.Err()
 }
 
-// priorityRange 与 task 模块同一套规则（BR-169 / 契约 C-28）：
-// usergroup.level 的十位是组级别，允许区间是 [十位*10, 十位*10+9]。
+// priorityRange 计算某个用户能选的任务级别区间。
+//
+// 依据是旧版那几张表单里的下拉：
+//
+//	for(level=$getlevel; level<=109; level++) document.write("<option>"+level)
+//
+// 其中 $getlevel 直接取 `usergroup.level`（不是十位数，是整数本身），
+// 上限恒为 **109**。现网三个用户组的 level 是 10 / 5 / 1，
+// 也就是说这个下拉在旧版里是 10~109 / 5~109 / 1~109。
+//
+// ⚠ 新版把下限统一抬到 10：数字越小级别越高（界面上写着「10 为最高级别」），
+// 让权限更低的组反而能选到比管理员更高的级别没有道理。
+// 现网三个组按这条规则都是 10~109，与「所有任务的任务级别是 10~109」一致。
 func (s *Service) priorityRange(ctx context.Context, userID int64) (int, int, error) {
 	var level int
 	err := s.db.QueryRowContext(ctx, `
@@ -472,18 +483,23 @@ func (s *Service) priorityRange(ctx context.Context, userID int64) (int, int, er
 		LEFT JOIN usergroup g ON g.id = b.usergroupid
 		WHERE b.id = ? LIMIT 1`, userID).Scan(&level)
 	if errors.Is(err, sql.ErrNoRows) {
-		return 0, 99, nil
+		return task.PriorityFloor, task.PriorityCeil, nil
 	}
 	if err != nil {
 		return 0, 0, fmt.Errorf("查询用户组级别: %w", err)
 	}
-	tens := level / 10
-	return tens * 10, tens*10 + 9, nil
+	if level < task.PriorityFloor {
+		level = task.PriorityFloor
+	}
+	if level > task.PriorityCeil {
+		level = task.PriorityCeil
+	}
+	return level, task.PriorityCeil, nil
 }
 
 // ---------- 校验 ----------
 
-func (s *Service) validate(ctx context.Context, u *auth.User, in *PlanInput, ownerID int64) error {
+func (s *Service) validate(ctx context.Context, u *auth.User, in *PlanInput, ownerID int64, oldPriority *int) error {
 	if !reDate.MatchString(in.Schedule.StartDate) || !reDate.MatchString(in.Schedule.EndDate) {
 		return fmt.Errorf("起止日期格式不正确，应为 YYYY-MM-DD")
 	}
@@ -503,12 +519,8 @@ func (s *Service) validate(ctx context.Context, u *auth.User, in *PlanInput, own
 	if in.Playback.DataSendMode != 0 && in.Playback.DataSendMode != 1 {
 		return fmt.Errorf("发送模式只能是 0（单播）或 1（组播）")
 	}
-	lo, hi, err := s.priorityRange(ctx, ownerID)
-	if err != nil {
+	if err := s.checkPriority(ctx, ownerID, in.Playback.Priority, oldPriority); err != nil {
 		return err
-	}
-	if in.Playback.Priority < lo || in.Playback.Priority > hi {
-		return fmt.Errorf("优先级必须在 %d ~ %d 之间（由所属用户组级别决定）", lo, hi)
 	}
 	if err := checkLED(in.LED); err != nil {
 		return err
@@ -673,7 +685,7 @@ func (s *Service) Create(ctx context.Context, u *auth.User, in PlanInput) (*Save
 		return nil, err
 	}
 	in.PlanName = name
-	if err := s.validate(ctx, u, &in, u.ID); err != nil {
+	if err := s.validate(ctx, u, &in, u.ID, nil); err != nil {
 		return nil, err
 	}
 
@@ -962,9 +974,16 @@ func (s *Service) Update(ctx context.Context, u *auth.User, in UpdateInput) (*Up
 		}
 	}
 
+	// 方案现有的任务级别：没改动这一列时不去校验区间，
+	// 免得历史数据里 priority < 10 的方案连改名都被挡下。
+	oldPri, err := s.planPriority(ctx, in.PlanName)
+	if err != nil {
+		return nil, err
+	}
+
 	// 复用 Create 的校验：条目部分单独校验，这里只校验方案级 + 终端
 	probe := PlanInput{Schedule: in.Schedule, Playback: in.Playback, Terminals: in.Terminals, LED: in.LED}
-	if err := s.validatePlanLevel(ctx, &probe, owner); err != nil {
+	if err := s.validatePlanLevel(ctx, &probe, owner, oldPri); err != nil {
 		return nil, err
 	}
 	if in.ApplyTerminals {
@@ -1042,7 +1061,7 @@ func (s *Service) Update(ctx context.Context, u *auth.User, in UpdateInput) (*Up
 }
 
 // validatePlanLevel 只校验方案级字段与终端格式，不碰条目。
-func (s *Service) validatePlanLevel(ctx context.Context, in *PlanInput, ownerID int64) error {
+func (s *Service) validatePlanLevel(ctx context.Context, in *PlanInput, ownerID int64, oldPriority *int) error {
 	if !reDate.MatchString(in.Schedule.StartDate) || !reDate.MatchString(in.Schedule.EndDate) {
 		return fmt.Errorf("起止日期格式不正确，应为 YYYY-MM-DD")
 	}
@@ -1061,12 +1080,8 @@ func (s *Service) validatePlanLevel(ctx context.Context, in *PlanInput, ownerID 
 	if in.Playback.DataSendMode != 0 && in.Playback.DataSendMode != 1 {
 		return fmt.Errorf("发送模式只能是 0（单播）或 1（组播）")
 	}
-	lo, hi, err := s.priorityRange(ctx, ownerID)
-	if err != nil {
+	if err := s.checkPriority(ctx, ownerID, in.Playback.Priority, oldPriority); err != nil {
 		return err
-	}
-	if in.Playback.Priority < lo || in.Playback.Priority > hi {
-		return fmt.Errorf("优先级必须在 %d ~ %d 之间（由所属用户组级别决定）", lo, hi)
 	}
 	return checkLED(in.LED)
 }
@@ -1219,7 +1234,10 @@ func (s *Service) AddItem(ctx context.Context, u *auth.User, planName string,
 		in.Terminals = append(in.Terminals, task.TerminalRef{
 			TerminalID: t.TerminalID, GroupID: t.GroupID, Area: t.Area})
 	}
-	if err := s.validate(ctx, u, &in, owner); err != nil {
+	// 这条路径是「往已有方案里加条目」，方案级参数是从库里读出来照抄的，
+	// 把原值一并传进去，免得历史数据里 priority < 10 的方案连加条目都被挡下。
+	oldPri := in.Playback.Priority
+	if err := s.validate(ctx, u, &in, owner, &oldPri); err != nil {
 		return nil, err
 	}
 	// 条目名在方案内唯一：旧版按 (info, taskname) 定位条目，重名会互相覆盖
@@ -1465,4 +1483,39 @@ func (s *Service) DeleteItems(ctx context.Context, u *auth.User, planName string
 		return nil, false, fmt.Errorf("提交事务: %w", err)
 	}
 	return all, left == 0, nil
+}
+
+// checkPriority 校验任务级别。
+//
+// ⚠ 只在**本次提交改动了这一列**时才校验：现网旧数据的 priority 是 3~9，
+// 落在允许区间（10~109）之外，一律校验会让这些方案连改都改不了。
+// 与 task / typedtask 两个包的做法一致。
+func (s *Service) checkPriority(ctx context.Context, ownerID int64, val int, old *int) error {
+	if old != nil && *old == val {
+		return nil
+	}
+	lo, hi, err := s.priorityRange(ctx, ownerID)
+	if err != nil {
+		return err
+	}
+	if val < lo || val > hi {
+		return fmt.Errorf("任务级别必须在 %d ~ %d 之间", lo, hi)
+	}
+	return nil
+}
+
+// planPriority 读一个方案当前的任务级别。方案里各条目共用同一套方案级参数，
+// 取第一条即可；方案不存在或读不到时返回 nil，表示「没有旧值」，按新值严格校验。
+func (s *Service) planPriority(ctx context.Context, planName string) (*int, error) {
+	var v int
+	err := s.db.QueryRowContext(ctx,
+		`SELECT COALESCE(priority,0) FROM task WHERE info = ? AND `+planScope("")+` ORDER BY taskid LIMIT 1`,
+		planName).Scan(&v)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, fmt.Errorf("查询方案任务级别: %w", err)
+	}
+	return &v, nil
 }

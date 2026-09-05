@@ -234,6 +234,17 @@ export interface TaskTerminalOption {
 
 export type TaskAction = "start" | "stop" | "pause" | "resume";
 
+/**
+ * 「任务级别」下拉的可选区间。
+ *
+ * 旧版每张表单自己拼 `for(level=$getlevel; level<=109; level++)`：
+ * 下限取当前用户所在用户组的 level，上限写死 109。
+ * 作息方案 / 文件广播 / 终端功放等页共用这一个接口 ——
+ * 区间只跟用户有关，与是哪种任务无关。
+ */
+export const getTaskPriorityRangeApi = () =>
+  http.get<{ priorityMin: number; priorityMax: number }>(PORT1 + `/api/task-options/priority-range`, {}, { loading: false });
+
 export const getTaskListApi = (params: any) => {
   return http.get<{ list: TaskRow[]; total: number; pageNum: number; pageSize: number; scopeNote: string }>(
     PORT1 + `/api/tasks`,
