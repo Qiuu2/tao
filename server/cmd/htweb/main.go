@@ -69,6 +69,7 @@ type app struct {
 	bells     *bell.Service
 	logs      *logs.Service
 	taskLogs  *logs.TaskLogService
+	logKeep   *logs.RetentionService
 	auditor   *audit.Recorder
 	backups   *backup.Service
 	params    *serverparam.Service
@@ -140,6 +141,8 @@ func main() {
 		sounds: sound.New(st.DB()),
 	}
 	a.logs = logs.New(st.DB(), a.auditor)
+	// 日志保留期 + 每天一次的滚动清理。设置存文件（零 DDL 红线），见 logs/retention.go
+	a.logKeep = logs.NewRetention(a.logs, a.taskLogs, cfg.LogSettingsFile())
 	// 删除用户会连带删掉他名下的媒体，物理文件清理与 C 服务通知复用媒体域的实现
 	a.users.SetSideEffects(a.medias, a.notifier)
 
@@ -150,6 +153,11 @@ func main() {
 		WriteTimeout:      0, // 媒体流式下载可能较久，不设写超时
 		IdleTimeout:       60 * time.Second,
 	}
+
+	// 滚动清理跟着进程活，进程退出就停
+	purgeCtx, stopPurge := context.WithCancel(context.Background())
+	defer stopPurge()
+	a.logKeep.StartDaily(purgeCtx)
 
 	go func() {
 		log.Printf("htweb 启动，监听 %s", cfg.Server.Listen)
@@ -412,6 +420,10 @@ func (a *app) routes() http.Handler {
 	mux.HandleFunc("GET /api/logs/stats", sup(a.handleLogStats))
 	mux.HandleFunc("DELETE /api/logs", sup(a.handleLogClear))
 
+	// 日志保留期：读对超管开放（这一页本来就只有超管进得来），改也一样。
+	mux.HandleFunc("GET /api/logs/retention", sup(a.handleLogRetentionGet))
+	mux.HandleFunc("PUT /api/logs/retention", sup(a.handleLogRetentionSet))
+	mux.HandleFunc("POST /api/logs/retention/purge", sup(a.handleLogRetentionPurge))
 	mux.HandleFunc("GET /api/task-logs/files", sup(a.handleTaskLogFiles))
 	mux.HandleFunc("GET /api/task-logs/files/{name}", sup(a.handleTaskLogRead))
 	mux.HandleFunc("GET /api/task-logs/delete-preview", sup(a.handleTaskLogDeletePreview))

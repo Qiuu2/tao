@@ -106,3 +106,44 @@ export const previewDeleteTaskLogsApi = (params: { mode: LogClearMode; beforeDat
 
 export const deleteTaskLogsApi = (data: { mode: LogClearMode; beforeDate?: string; keepDays?: number }) =>
   http.delete<TaskLogDeleteResult>(PORT1 + `/api/task-logs`, {}, { data: { ...data, confirmed: true } });
+
+/* ---------------- 日志保留期 ---------------- */
+
+/**
+ * 保留期的四档。存到后端的就是这几个字符串，不是天数 ——
+ * 「1 个月」按自然月算，2 月和 8 月不一样长。
+ */
+export type RetentionOption = "1m" | "3m" | "6m" | "1y";
+
+export interface RetentionChoice {
+  value: RetentionOption;
+  label: string;
+}
+
+export interface RetentionSettings {
+  option: RetentionOption;
+  label: string;
+  /** 当前设置下的保留边界（YYYY-MM-DD），这一天**之前**的会被滚掉 */
+  cutoffDate: string;
+  choices: RetentionChoice[];
+  /** 上一次滚动清理的时间，空串表示这个进程起来之后还没跑过 */
+  lastRunAt: string;
+  lastResult: string;
+  /** 为 false 表示没配任务日志目录，那部分不参与滚动 */
+  taskLogEnabled: boolean;
+}
+
+export interface RetentionPurgeResult {
+  cutoff: string;
+  operationRows: number;
+  taskLogFiles: string[];
+  taskLogFailed: string[];
+}
+
+export const getRetentionApi = () => http.get<RetentionSettings>(PORT1 + `/api/logs/retention`, {}, { loading: false });
+
+export const setRetentionApi = (option: RetentionOption) =>
+  http.put<RetentionSettings>(PORT1 + `/api/logs/retention`, { option });
+
+/** 手动跑一次滚动清理，边界与每天那次完全一致 */
+export const purgeRetentionApi = () => http.post<RetentionPurgeResult>(PORT1 + `/api/logs/retention/purge`, {});

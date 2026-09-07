@@ -59,6 +59,26 @@ var auditLabels = map[string]string{
 	"PUT /api/terminals/sync-time":       "终端同步时间",
 	"PUT /api/terminals/toggle/{toggle}": "终端开关设置",
 	"DELETE /api/terminals":              "删除终端",
+	"PUT /api/terminals/replace":         "终端替换",
+
+	// 终端下面那几组子资源（快捷键 / 寻呼分组 / 授权终端目录 / 快捷任务）。
+	// 它们都是终端页那排「批量操作」里点出来的对话框，改的是现网真会用到的配置，
+	// 一样要留痕。
+	"POST /api/terminals/{id}/shortcut-keys": "设置终端快捷键",
+	"PUT /api/shortcut-keys/{keyId}":         "修改终端快捷键",
+	"DELETE /api/shortcut-keys":              "删除终端快捷键",
+
+	"POST /api/terminals/{id}/call-groups":   "设置寻呼分组",
+	"DELETE /api/terminals/{id}/call-groups": "删除寻呼分组",
+
+	"POST /api/terminals/{id}/folders":             "新建/修改授权终端目录",
+	"DELETE /api/terminals/{id}/folders":           "删除授权终端目录",
+	"POST /api/terminals/{id}/folders/terminals":   "添加终端到授权目录",
+	"DELETE /api/terminals/{id}/folders/terminals": "从授权目录移出终端",
+
+	"POST /api/terminals/{id}/quick-tasks":        "添加快捷任务",
+	"POST /api/terminals/{id}/quick-tasks/update": "修改快捷任务",
+	"DELETE /api/terminals/{id}/quick-tasks":      "删除快捷任务",
 
 	"POST /api/tasks":                 "新建任务",
 	"PUT /api/tasks/{id}":             "修改任务",
@@ -140,6 +160,21 @@ var auditLabels = map[string]string{
 	"PUT /api/bell-plans/items/schedule": "修改打铃条目排期",
 
 	"DELETE /api/task-logs": "清理任务日志",
+	// 保留期是「日志少了一截」的直接原因，改了必须留痕。
+	// 手动触发的滚动清理不在这里：logs.RetentionService.Purge 会在删之前
+	// 自己写一行（带上清掉多少条），中间件再记一条就重复了。
+	"PUT /api/logs/retention": "修改日志保留期",
+
+	// 看板首页那三块可配置区域是全局共享的界面设置，改了所有人都受影响
+	"PUT /api/dashboard/shortcuts":   "修改看板快捷入口",
+	"PUT /api/dashboard/quick-tasks": "修改看板快捷任务",
+	"PUT /api/dashboard/emergency":   "修改看板紧急广播",
+
+	"PUT /api/time/clock": "设置服务器时钟",
+
+	// 云广播那两个批量动作会往终端上发传输 / 清除指令，属于「改」
+	"POST /api/cloud/bulk":    "云广播终端批量操作",
+	"POST /api/transfer/bulk": "任务传送批量操作",
 
 	"POST /api/backups":   "创建备份",
 	"DELETE /api/backups": "删除备份包",

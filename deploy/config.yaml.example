@@ -52,6 +52,15 @@ logs:
   # 任务日志目录：后台 C 服务每天写一个 logYYYY-MM-DD.html（不在数据库里，BR-251）
   # 留空则禁用任务日志功能
   task_dir: "/opt/apps/a9000/html/ok112/datelog"
+  # 日志保留期这类界面上能改的设置存这个 JSON 文件里。
+  # 留空则取 <备份目录的上级>/logsettings.json。
+  #
+  # 为什么不进数据库：零 DDL 是与旧库共存的前提（R1 红线），不能给 log 表加列、
+  # 也不能建新表；现有的空表又都可能被后台 C 服务扫描，塞进去有触发误广播的风险。
+  #
+  # 保留期默认 1 个月，可选 3 个月 / 半年 / 1 年，超期的每天滚一次
+  # （操作日志按 time 删、任务日志按文件名里的日期删）。详见 logs/retention.go。
+  # settings_file: "/opt/apps/a9000/htweb/logsettings.json"
 
 backup:
   dir: "/opt/apps/a9000/htweb/backups"

@@ -94,6 +94,18 @@ func (c *Config) DashboardFile() string {
 	return filepath.Join(filepath.Dir(c.BackupDir()), "dashboard.json")
 }
 
+// LogSettingsFile 返回日志设置文件路径（目前只有「保留期」一项）。
+//
+// 与 DashboardFile 同一个理由：这是新增的界面设置，旧库里没有对应的表，
+// 而红线禁止建表；现有的空表又都可能被后台 C 服务扫描，塞进去有触发误广播的风险。
+// 详见 logs/retention.go 的说明。
+func (c *Config) LogSettingsFile() string {
+	if f := c.Logs.SettingsFile; f != "" {
+		return f
+	}
+	return filepath.Join(filepath.Dir(c.BackupDir()), "logsettings.json")
+}
+
 // Backup 是备份恢复模块的配置。
 type Backup struct {
 	// Dir 备份包存放目录。
@@ -109,6 +121,9 @@ type Logs struct {
 	// /opt/apps/a9000/html/ok112/datelog。
 	// 留空表示禁用任务日志功能（接口直接回「未配置」而不是去猜路径）。
 	TaskDir string `yaml:"task_dir"`
+	// SettingsFile 存日志保留期这类界面可改的设置。
+	// 留空则取 <备份目录的上级>/logsettings.json，与看板状态文件同一个目录。
+	SettingsFile string `yaml:"settings_file"`
 }
 
 type Server struct {

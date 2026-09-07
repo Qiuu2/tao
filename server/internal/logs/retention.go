@@ -1,0 +1,411 @@
+package logs
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"log"
+	"os"
+	"path/filepath"
+	"sort"
+	"strings"
+	"sync"
+	"time"
+)
+
+// 日志保留期。
+//
+// # 做什么
+//
+// 操作日志（log 表）和任务日志（datelog 下每天一个 logYYYY-MM-DD.html）
+// 都只保留最近一段时间，超期的按天滚掉。
+//
+//	1个月（默认） / 3个月 / 半年 / 1年
+//
+// 「按天滚动」的意思是：清理任务每天跑一次，每次把**落在保留窗口之外的那一整天**
+// 清掉。所以稳态下每天掉一天，日志量维持在一个固定的天数上，不会无限涨，
+// 也不会某一天突然删掉一大批。
+//
+// # 为什么设置存文件不存库
+//
+// 零 DDL 是这套系统与旧库共存的前提（R1 红线），不能给 log 表加列、也不能建新表；
+// 现有的空表又都可能被后台 C 服务扫描，塞进去有触发误广播的风险。
+// 所以跟看板状态一样落成一个 JSON 文件（见 config.LogSettingsFile）。
+//
+// # 清理的边界
+//
+//   - 操作日志按 `time` 列删。删之前**先写一行审计**说明这次滚掉了多少条 ——
+//     否则「日志少了一截」这件事本身没有痕迹。
+//   - 任务日志按文件名里的日期删，只认 logYYYY-MM-DD.html 这个形态
+//     （与 reTaskLog 同一个正则），目录里别的东西一律不碰。
+//   - **今天的任务日志文件永远不删**：后台 C 服务的文件句柄还开着，
+//     unlink 之后它会继续往一个已经没有目录项的 inode 里写，日志静默丢失（BR-252）。
+//     保留期最短是 1 个月，正常不会碰到今天，这里只是把这条兜底写死。
+
+// RetentionOption 是保留期的取值。存文件里的就是这几个字符串，
+// 不存天数 —— 将来要调整某一档对应多少天，改代码即可，老配置不用迁移。
+type RetentionOption string
+
+const (
+	Retain1Month  RetentionOption = "1m"
+	Retain3Months RetentionOption = "3m"
+	Retain6Months RetentionOption = "6m"
+	Retain1Year   RetentionOption = "1y"
+)
+
+// DefaultRetention 是没配过时的默认值：保留 1 个月。
+const DefaultRetention = Retain1Month
+
+// retentionSpec 是一档保留期的说明。
+type retentionSpec struct {
+	Option RetentionOption
+	Label  string
+	// Months 用来做日期减法。用「减 N 个月」而不是「减 N×30 天」——
+	// 界面上写的是「1个月」，用户预期的就是自然月，2 月和 8 月不该一样长。
+	Months int
+}
+
+// retentionSpecs 是全部可选项，顺序即界面上的顺序。
+var retentionSpecs = []retentionSpec{
+	{Retain1Month, "1 个月", 1},
+	{Retain3Months, "3 个月", 3},
+	{Retain6Months, "半年", 6},
+	{Retain1Year, "1 年", 12},
+}
+
+func specOf(opt RetentionOption) retentionSpec {
+	for _, s := range retentionSpecs {
+		if s.Option == opt {
+			return s
+		}
+	}
+	return retentionSpecs[0]
+}
+
+// RetentionChoice 是给界面用的一个选项。
+type RetentionChoice struct {
+	Value RetentionOption `json:"value"`
+	Label string          `json:"label"`
+}
+
+// RetentionSettings 是这一页读到的完整状态。
+type RetentionSettings struct {
+	Option RetentionOption `json:"option"`
+	Label  string          `json:"label"`
+	// CutoffDate 是当前设置下的保留边界（YYYY-MM-DD），这一天**之前**的会被滚掉。
+	CutoffDate string            `json:"cutoffDate"`
+	Choices    []RetentionChoice `json:"choices"`
+	// LastRunAt 上一次滚动清理的时间，空串表示这个进程起来之后还没跑过。
+	LastRunAt string `json:"lastRunAt"`
+	// LastResult 上一次的结果描述，界面上直接显示。
+	LastResult string `json:"lastResult"`
+	// TaskLogEnabled 为 false 表示没配任务日志目录，那部分不参与滚动。
+	TaskLogEnabled bool `json:"taskLogEnabled"`
+}
+
+// PurgeResult 是一次滚动清理的结果。
+type PurgeResult struct {
+	// Cutoff 这一天之前（不含这一天）的都被清掉了。
+	Cutoff string `json:"cutoff"`
+	// OperationRows 删掉的操作日志条数。
+	OperationRows int64 `json:"operationRows"`
+	// TaskLogFiles 删掉的任务日志文件名。
+	TaskLogFiles []string `json:"taskLogFiles"`
+	// TaskLogFailed 删不掉的文件（权限不足等），如实回报而不是假装成功。
+	TaskLogFailed []string `json:"taskLogFailed"`
+}
+
+// 存文件里的形状。单独一个结构而不是直接存 RetentionSettings，
+// 是因为后者带着一堆算出来的字段，不该落盘。
+type retentionFile struct {
+	Retention RetentionOption `json:"retention"`
+}
+
+// RetentionService 管保留期设置与滚动清理。
+type RetentionService struct {
+	logs *Service
+	task *TaskLogService
+	file string
+
+	mu      sync.RWMutex
+	opt     RetentionOption
+	lastAt  time.Time
+	lastMsg string
+}
+
+func NewRetention(logs *Service, task *TaskLogService, file string) *RetentionService {
+	r := &RetentionService{logs: logs, task: task, file: file, opt: DefaultRetention}
+	r.load()
+	return r
+}
+
+// load 读设置文件。读不到、内容坏了、取值不认识，一律退回默认的 1 个月 ——
+// 这一项决定「删多少」，任何拿不准的情况都该往「留得更多」的方向退。
+func (r *RetentionService) load() {
+	if strings.TrimSpace(r.file) == "" {
+		return
+	}
+	raw, err := os.ReadFile(r.file)
+	if err != nil {
+		return
+	}
+	var f retentionFile
+	if err := json.Unmarshal(raw, &f); err != nil {
+		log.Printf("日志保留期设置文件解析失败，按默认（%s）处理: %v", DefaultRetention, err)
+		return
+	}
+	for _, s := range retentionSpecs {
+		if s.Option == f.Retention {
+			r.opt = f.Retention
+			return
+		}
+	}
+	if f.Retention != "" {
+		log.Printf("日志保留期设置里有不认识的取值 %q，按默认（%s）处理", f.Retention, DefaultRetention)
+	}
+}
+
+// save 原子写：先写 .part 再 rename，避免断电留下半个文件。
+func (r *RetentionService) save() error {
+	if strings.TrimSpace(r.file) == "" {
+		return fmt.Errorf("未配置日志设置文件路径（logs.settings_file）")
+	}
+	if err := os.MkdirAll(filepath.Dir(r.file), 0o755); err != nil {
+		return fmt.Errorf("创建设置目录: %w", err)
+	}
+	raw, err := json.MarshalIndent(retentionFile{Retention: r.opt}, "", "  ")
+	if err != nil {
+		return err
+	}
+	tmp := r.file + ".part"
+	if err := os.WriteFile(tmp, raw, 0o644); err != nil {
+		return fmt.Errorf("写入日志设置: %w", err)
+	}
+	if err := os.Rename(tmp, r.file); err != nil {
+		_ = os.Remove(tmp)
+		return fmt.Errorf("提交日志设置: %w", err)
+	}
+	return nil
+}
+
+// Get 返回当前设置与可选项。
+func (r *RetentionService) Get() RetentionSettings {
+	r.mu.RLock()
+	opt, at, msg := r.opt, r.lastAt, r.lastMsg
+	r.mu.RUnlock()
+
+	sp := specOf(opt)
+	out := RetentionSettings{
+		Option:         sp.Option,
+		Label:          sp.Label,
+		CutoffDate:     cutoffOf(sp, time.Now()).Format("2006-01-02"),
+		LastResult:     msg,
+		TaskLogEnabled: r.task != nil && strings.TrimSpace(r.task.dir) != "",
+	}
+	for _, s := range retentionSpecs {
+		out.Choices = append(out.Choices, RetentionChoice{Value: s.Option, Label: s.Label})
+	}
+	if !at.IsZero() {
+		out.LastRunAt = at.Format("2006-01-02 15:04:05")
+	}
+	return out
+}
+
+// Set 改保留期并落盘。返回改完之后的状态。
+//
+// ⚠ 不在这里顺手跑一次清理。改小保留期是个会删数据的动作，
+// 让它在「保存」这一下同步删掉一大批，出错时也来不及反悔；
+// 交给每天那一次滚动去做，界面上把新的保留边界显示出来即可。
+func (r *RetentionService) Set(opt RetentionOption) (RetentionSettings, error) {
+	valid := false
+	for _, s := range retentionSpecs {
+		if s.Option == opt {
+			valid = true
+			break
+		}
+	}
+	if !valid {
+		return RetentionSettings{}, fmt.Errorf("保留期只能是 1m / 3m / 6m / 1y 之一")
+	}
+	r.mu.Lock()
+	old := r.opt
+	r.opt = opt
+	err := r.save()
+	if err != nil {
+		r.opt = old // 落盘失败就别在内存里留一个和文件不一致的值
+	}
+	r.mu.Unlock()
+	if err != nil {
+		return RetentionSettings{}, err
+	}
+	return r.Get(), nil
+}
+
+// cutoffOf 算保留边界：今天往前推 N 个自然月，取那一天的零点。
+// 早于这一天的（不含这一天）会被滚掉。
+func cutoffOf(sp retentionSpec, now time.Time) time.Time {
+	d := now.AddDate(0, -sp.Months, 0)
+	return time.Date(d.Year(), d.Month(), d.Day(), 0, 0, 0, 0, now.Location())
+}
+
+// Purge 跑一次滚动清理。
+//
+// user / ip 只用于操作日志那一行审计。定时任务调用时传 "系统" 和空 IP。
+func (r *RetentionService) Purge(ctx context.Context, user, ip string) (*PurgeResult, error) {
+	r.mu.RLock()
+	sp := specOf(r.opt)
+	r.mu.RUnlock()
+
+	now := time.Now()
+	cutoff := cutoffOf(sp, now)
+	res := &PurgeResult{
+		Cutoff:        cutoff.Format("2006-01-02"),
+		TaskLogFiles:  []string{},
+		TaskLogFailed: []string{},
+	}
+
+	n, err := r.purgeOperationLogs(ctx, cutoff, sp, user, ip)
+	if err != nil {
+		return nil, err
+	}
+	res.OperationRows = n
+
+	if r.task != nil {
+		files, failed, err := r.purgeTaskLogs(cutoff, now)
+		if err != nil {
+			// 任务日志清不掉不该让操作日志那部分也算失败，如实记下来继续
+			log.Printf("滚动清理任务日志: %v", err)
+		}
+		res.TaskLogFiles = files
+		res.TaskLogFailed = failed
+	}
+
+	r.mu.Lock()
+	r.lastAt = now
+	r.lastMsg = fmt.Sprintf("保留 %s（%s 之前的已清理）：操作日志 %d 条、任务日志 %d 个文件",
+		sp.Label, res.Cutoff, res.OperationRows, len(res.TaskLogFiles))
+	if len(res.TaskLogFailed) > 0 {
+		r.lastMsg += fmt.Sprintf("，另有 %d 个文件删不掉", len(res.TaskLogFailed))
+	}
+	r.mu.Unlock()
+	return res, nil
+}
+
+// purgeOperationLogs 删 log 表里早于 cutoff 的行。
+//
+// 顺序是「先写审计、再删」，且删的时候排除掉刚写的那一行：
+// 否则「这次滚掉了多少条」这件事本身也会被这次删除带走。
+// 与 Service.Clear 同一套做法。
+func (r *RetentionService) purgeOperationLogs(
+	ctx context.Context, cutoff time.Time, sp retentionSpec, user, ip string) (int64, error) {
+
+	day := cutoff.Format("2006-01-02")
+	var n int64
+	if err := r.logs.db.QueryRowContext(ctx,
+		"SELECT COUNT(*) FROM log WHERE time < ?", day).Scan(&n); err != nil {
+		return 0, fmt.Errorf("统计超期操作日志: %w", err)
+	}
+	if n == 0 {
+		return 0, nil
+	}
+
+	tx, err := r.logs.db.BeginTx(ctx, nil)
+	if err != nil {
+		return 0, fmt.Errorf("开启事务: %w", err)
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	operate := fmt.Sprintf("日志滚动清理（保留 %s，清掉 %s 之前的 %d 条）", sp.Label, day, n)
+	auditID, err := r.logs.rec.WriteTx(ctx, tx, user, operate, ip)
+	if err != nil {
+		return 0, fmt.Errorf("写滚动清理审计记录: %w", err)
+	}
+	if _, err := tx.ExecContext(ctx,
+		"DELETE FROM log WHERE time < ? AND id < ?", day, auditID); err != nil {
+		return 0, fmt.Errorf("删除超期操作日志: %w", err)
+	}
+	if err := tx.Commit(); err != nil {
+		return 0, fmt.Errorf("提交事务: %w", err)
+	}
+	return n, nil
+}
+
+// purgeTaskLogs 删 datelog 里早于 cutoff 的 logYYYY-MM-DD.html。
+//
+// 今天的文件永远跳过，理由见文件头的说明（BR-252）。
+func (r *RetentionService) purgeTaskLogs(cutoff, now time.Time) ([]string, []string, error) {
+	root, err := r.task.root()
+	if err != nil {
+		// 没配、或目录还不存在 —— 不是故障，没有东西要清
+		return []string{}, []string{}, nil
+	}
+	ents, err := os.ReadDir(root)
+	if err != nil {
+		return []string{}, []string{}, fmt.Errorf("读取任务日志目录: %w", err)
+	}
+	today := now.Format("2006-01-02")
+	limit := cutoff.Format("2006-01-02")
+
+	deleted := []string{}
+	failed := []string{}
+	for _, e := range ents {
+		if e.IsDir() {
+			continue
+		}
+		m := reTaskLog.FindStringSubmatch(e.Name())
+		if m == nil {
+			continue // 目录里别的东西一概不碰
+		}
+		date := m[1]
+		if date >= limit || date == today {
+			continue
+		}
+		if err := os.Remove(filepath.Join(root, e.Name())); err != nil {
+			failed = append(failed, e.Name())
+			continue
+		}
+		deleted = append(deleted, e.Name())
+	}
+	sort.Strings(deleted)
+	sort.Strings(failed)
+	return deleted, failed, nil
+}
+
+// StartDaily 起一个每天跑一次的滚动清理。
+//
+// 进程刚起来时先跑一次（机器关了几天再开机，落下的那几天要补上），
+// 之后每 24 小时一次。ctx 结束就退出。
+func (r *RetentionService) StartDaily(ctx context.Context) {
+	go func() {
+		run := func() {
+			res, err := r.Purge(ctx, "系统", "")
+			if err != nil {
+				log.Printf("日志滚动清理失败: %v", err)
+				return
+			}
+			if res.OperationRows > 0 || len(res.TaskLogFiles) > 0 {
+				log.Printf("日志滚动清理：%s 之前的操作日志 %d 条、任务日志 %d 个文件已清理",
+					res.Cutoff, res.OperationRows, len(res.TaskLogFiles))
+			}
+		}
+		// 起来先等一会儿再跑：让服务先把端口和数据库连接稳住，
+		// 清理这种事不急在启动的头一分钟。
+		select {
+		case <-ctx.Done():
+			return
+		case <-time.After(time.Minute):
+		}
+		run()
+
+		t := time.NewTicker(24 * time.Hour)
+		defer t.Stop()
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-t.C:
+				run()
+			}
+		}
+	}()
+}

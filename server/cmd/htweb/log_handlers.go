@@ -205,3 +205,39 @@ func (a *app) handleTaskLogDelete(w http.ResponseWriter, r *http.Request) {
 	}
 	httpx.OK(w, res)
 }
+
+// ---------- 日志保留期 ----------
+//
+// 保留期设置存在磁盘上的 JSON 文件里（零 DDL 红线，见 logs/retention.go）。
+// 三个接口都收紧到超级管理员 —— 日志这一页本来就只有超管进得来。
+
+func (a *app) handleLogRetentionGet(w http.ResponseWriter, r *http.Request) {
+	httpx.OK(w, a.logKeep.Get())
+}
+
+func (a *app) handleLogRetentionSet(w http.ResponseWriter, r *http.Request) {
+	var in struct {
+		Option string `json:"option"`
+	}
+	if !httpx.DecodeJSON(w, r, &in) {
+		return
+	}
+	res, err := a.logKeep.Set(logs.RetentionOption(strings.TrimSpace(in.Option)))
+	if err != nil {
+		failLog(w, "保存日志保留期", err)
+		return
+	}
+	httpx.OK(w, res)
+}
+
+// handleLogRetentionPurge 让人手动跑一次滚动清理，不用等到明天。
+// 清的边界与定时任务完全一致，只是触发者不同 —— 审计里记的是操作人而不是「系统」。
+func (a *app) handleLogRetentionPurge(w http.ResponseWriter, r *http.Request) {
+	u := auth.From(r.Context())
+	res, err := a.logKeep.Purge(r.Context(), u.Username, audit.ClientIP(r))
+	if err != nil {
+		failLog(w, "滚动清理日志", err)
+		return
+	}
+	httpx.OK(w, res)
+}
