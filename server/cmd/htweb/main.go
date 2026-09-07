@@ -852,9 +852,6 @@ func (a *app) handleMenu(w http.ResponseWriter, r *http.Request) {
 	if u.IsAdmin || u.Rights.BellPriv == 1 {
 		base = append(base, menu("/holiday", "holiday", "/holiday/index", "Calendar", "节假日管理"))
 	}
-	if u.ID == 1 {
-		base = append(base, menu("/log", "log", "/log/index", "Document", "日志"))
-	}
 	if len(base) > 0 {
 		menus = append(menus, group("/config", "config", "Tools", "基础配置", base...))
 	}
@@ -947,6 +944,12 @@ func (a *app) handleMenu(w http.ResponseWriter, r *http.Request) {
 		//   见 web/src/routers/modules/staticRouter.ts），两边同路径会在前端撞车。
 		//   同一个组件，两个入口。
 		userMenus = append(userMenus, menu("/user/register", "registerServer", "/register/index", "Ticket", "注册服务"))
+	}
+	// 日志（操作日志 + 任务日志）只对超级管理员开放（BR-246）。
+	// 放在「用户管理」这一组：这一页记的是**谁**在什么时候做了什么，
+	// 跟用户是一件事的两面，比挂在「基础配置」下面顺手。
+	if u.ID == 1 {
+		userMenus = append(userMenus, menu("/log", "log", "/log/index", "Document", "日志"))
 	}
 	if len(userMenus) > 0 {
 		menus = append(menus, group("/user", "user", "User", "用户管理", userMenus...))
