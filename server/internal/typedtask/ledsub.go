@@ -79,6 +79,11 @@ func (s *Service) syncLEDSub(ctx context.Context, tx *sql.Tx, k Kind,
 		return 0, err
 	}
 	if existing > 0 {
+		// 子任务是整条拆掉重建的，重建前先把已有的 LED 屏绑定捞回来
+		// （文字语音表单上没有「led设备列表」，见 keepLEDBinds 的说明）
+		if err := keepLEDBinds(ctx, tx, existing, in.LED); err != nil {
+			return 0, err
+		}
 		if err := dropLEDSub(ctx, tx, existing); err != nil {
 			return 0, err
 		}

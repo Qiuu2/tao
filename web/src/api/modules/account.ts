@@ -14,9 +14,10 @@ export interface Rights {
   bellpriv: number;
   admpriv: number;
   /**
-   * ⚠ 电话广播这一页新版没有，所以「功能权限」里也没有对应的勾选项。
-   * 列还在（表结构不动），但不由界面驱动：新建时恒写 0，修改时后端根本不写这一列，
-   * 旧库里已有的取值保持原样。这里留着字段只是为了列表回显时字段对得上。
+   * ⚠ 列名叫 telephonepriv，装的是 **led播放** 的权限位。
+   * 旧版这一列管「电话广播」，新版没有这一页；列不能删（表结构不动），
+   * 正好拿来放 LED 那一项 —— led播放 原先跟文件广播共用 taskpriv，
+   * 现在单独一把钥匙。与 serverpriv 装「遥控管理」是同一类历史包袱。
    */
   telephonepriv: number;
   powerplay: number;
@@ -35,8 +36,8 @@ export interface Rights {
 
   group 用来在界面上按新 web 的菜单分组排列。
 
-  ⚠ 这里只有 12 项，usergroup 表里是 13 列 —— 少的那个是 telephonepriv（电话管理）：
-  新版没有电话广播这一页，勾了也不控制任何东西，所以不给勾选项。
+  13 项对满 usergroup 的 13 列。最后补上的是 led播放：它借用旧版空出来的
+  telephonepriv 那一列（新版没有电话广播这一页），列不动、语义换。
 */
 export const RIGHT_ITEMS: { key: keyof Rights; group: string; label: string; tip: string }[] = [
   // —— 资源管理 ——
@@ -62,16 +63,17 @@ export const RIGHT_ITEMS: { key: keyof Rights; group: string; label: string; tip
   { key: "folderpriv", group: "资源管理", label: "文件夹管理", tip: "文件管理页：新建 / 改名 / 删除媒体文件夹" },
 
   // —— 任务管理 ——
-  {
-    key: "taskpriv",
-    group: "任务管理",
-    label: "文件广播",
-    tip: "文件广播的增删改与启停、任务分组；led播放（含 LED 分组与 LED 屏设备）"
-  },
+  { key: "taskpriv", group: "任务管理", label: "文件广播", tip: "文件广播的增删改与启停、任务分组" },
   { key: "bellpriv", group: "任务管理", label: "作息方案", tip: "作息方案与打铃条目的增删改、启停、复制；节假日管理" },
   { key: "powerplay", group: "任务管理", label: "终端功放", tip: "终端功放任务的新建 / 修改 / 删除 / 启停" },
   { key: "admpriv", group: "任务管理", label: "采播管理", tip: "采播任务的新建 / 修改 / 删除 / 启停" },
   { key: "ttspriv", group: "任务管理", label: "文字语音", tip: "文字语音任务的新建 / 修改 / 删除 / 启停；启用管理" },
+  {
+    key: "telephonepriv",
+    group: "任务管理",
+    label: "led播放",
+    tip: "led播放 任务的新建 / 修改 / 删除 / 启停；LED 任务目录与 LED 屏设备"
+  },
 
   // —— 系统 ——
   {

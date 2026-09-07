@@ -41,9 +41,14 @@ type Rights struct {
 	AlarmGroupPriv    int `json:"alarmgrouppriv"`
 	BellPriv          int `json:"bellpriv"`
 	AdmPriv           int `json:"admpriv"`
-	TelephonePriv     int `json:"telephonepriv"`
-	PowerPlay         int `json:"powerplay"`
-	TtsPriv           int `json:"ttspriv"`
+	// ⚠ 列名叫 telephonepriv，装的是**led播放**的权限位。
+	// 旧版这一列管「电话广播」，新 web 没有这一页，列却不能删（表结构不动，R1 红线）。
+	// led播放 原本挤在 taskpriv 里，和文件广播共用一把钥匙；用户要求 LED 单独一项权限，
+	// 就把这根空着的柱子改挂 LED —— 与 serverpriv 装「遥控管理」是同一类历史包袱。
+	// 字段名跟列名走（读写 SQL 时一眼能对上），语义看 PrivLed 这个常量。
+	TelephonePriv int `json:"telephonepriv"`
+	PowerPlay     int `json:"powerplay"`
+	TtsPriv       int `json:"ttspriv"`
 }
 
 // 权限项名称常量，避免各处硬编码字符串。
@@ -58,9 +63,10 @@ const (
 	PrivAlarmGroup    = "alarmgrouppriv"
 	PrivBell          = "bellpriv"
 	PrivAdm           = "admpriv"
-	PrivTelephone     = "telephonepriv"
-	PrivPowerPlay     = "powerplay"
-	PrivTts           = "ttspriv"
+	// PrivLed 是 led播放 的权限位。列名是旧版留下的 telephonepriv，见 Rights 上的说明。
+	PrivLed       = "telephonepriv"
+	PrivPowerPlay = "powerplay"
+	PrivTts       = "ttspriv"
 )
 
 func (r Rights) by(name string) int {
@@ -85,7 +91,7 @@ func (r Rights) by(name string) int {
 		return r.BellPriv
 	case PrivAdm:
 		return r.AdmPriv
-	case PrivTelephone:
+	case PrivLed:
 		return r.TelephonePriv
 	case PrivPowerPlay:
 		return r.PowerPlay

@@ -269,7 +269,11 @@
       新建 / 修改任务（对照 ok112 的 AddFileTask_form.html / ModifyFileTask_form.html）。
 
       旧版是一页到底的表单，分五段：
-        任务属性 → 执行时间 → led字幕 + led设备列表 → 媒体文件列表 → 终端列表
+        任务属性 → 执行时间 → led字幕 → 媒体文件列表 → 终端列表
+
+      「led设备列表」那一段按用户要求撤掉了：字幕跟着任务的终端走，
+      不再在表单上逐块屏勾选。库里已有的 ledoftask 绑定不动 ——
+      提交里不带 devices，服务端就照原样留着（见 task/ledsub.go 的 keepLEDBinds）。
       这里照它排。原先那个「基本信息 / 媒体与终端 / 时间与播放」三步向导取消了 ——
       旧版没有分步，来回翻页反而看不到全貌。
 
@@ -466,19 +470,6 @@
               placeholder="请输入 led 字幕内容"
             />
           </el-form-item>
-          <el-form-item label="led设备列表">
-            <div class="led-dev">
-              <div v-if="!ledDevices.length" class="dlg-note">
-                还没有登记 LED 设备 —— 先到「云广播管理 → led播放 → LED 设备」登记，这里才能勾选要上屏的设备。
-              </div>
-              <el-checkbox-group v-else v-model="selectedLedDeviceIds">
-                <el-checkbox v-for="d in ledDevices" :key="d.id" :value="d.id">
-                  {{ d.name }}
-                  <span class="opt-sub">{{ d.terminalname || `终端 ${d.terminalId}` }} · {{ d.ip }}</span>
-                </el-checkbox>
-              </el-checkbox-group>
-            </div>
-          </el-form-item>
         </template>
 
         <!-- 媒体与终端两棵树并排，与旧版表单左右两栏的排法一致 -->
@@ -646,7 +637,6 @@ import type {
   TaskRow,
   TaskTerminalOption
 } from "@/api/modules/task";
-import { getLedDevicesApi, type LedDevice } from "@/api/modules/ninemod";
 import ProTable from "@/components/ProTable/index.vue";
 import MediaTree from "@/components/MediaTree/index.vue";
 import HmsInput from "@/components/HmsInput/index.vue";
@@ -1022,14 +1012,6 @@ watch(weekdaySel, v => {
 /** led播放 开关。关掉时提交 led: null，后端会把已有的 LED 子任务删掉 */
 const ledOn = ref(false);
 
-/* led设备列表（旧版表单里的 ledlists）：勾中的屏写进 ledoftask */
-const ledDevices = ref<LedDevice[]>([]);
-const selectedLedDeviceIds = ref<number[]>([]);
-const loadLedDevices = async () => {
-  const { data } = await getLedDevicesApi("");
-  ledDevices.value = data ?? [];
-};
-
 /** MediaTree 是懒加载的，回填时要把已选媒体的名字一并给它，否则只显示 id */
 const selectedMediaNames = computed(() => selectedMediaIds.value.map(id => ({ mediaId: id, name: mediaLabel(id) })));
 
@@ -1046,7 +1028,6 @@ const openCreate = async () => {
   playMode.value = 0;
   splitLengths(dlg.form.playback);
   ledOn.value = false;
-  selectedLedDeviceIds.value = [];
   selectedMediaIds.value = [];
   selectedTerminalIds.value = [];
   terminalAreas.value = {};
@@ -1056,7 +1037,7 @@ const openCreate = async () => {
   priorityRange.min = pr.priorityMin ?? 10;
   priorityRange.max = pr.priorityMax ?? 109;
   dlg.form.playback.priority = priorityRange.min;
-  await Promise.all([searchMedia(""), searchTerminals(""), loadLedDevices()]);
+  await Promise.all([searchMedia(""), searchTerminals("")]);
 };
 
 const openEdit = async (row: TaskRow) => {
@@ -1111,7 +1092,6 @@ const openEdit = async (row: TaskRow) => {
   splitLengths(data);
   // 有 LED 子任务就把开关打开
   ledOn.value = !!data.led;
-  selectedLedDeviceIds.value = (data.led?.devices ?? []).map(d => d.deviceId);
   priorityRange.min = data.priorityMin ?? 10;
   priorityRange.max = data.priorityMax ?? 109;
 
@@ -1122,7 +1102,7 @@ const openEdit = async (row: TaskRow) => {
   terminalAreas.value = Object.fromEntries(data.terminals.filter(t => t.area).map(t => [t.terminalId, t.area]));
   selectedMediaIds.value = data.media.map(m => m.mediaId);
   selectedTerminalIds.value = data.terminals.map(t => t.terminalId);
-  await Promise.all([searchMedia(""), searchTerminals(""), loadLedDevices()]);
+  await Promise.all([searchMedia(""), searchTerminals("")]);
 };
 
 const submit = async () => {
@@ -1145,18 +1125,8 @@ const submit = async () => {
       intplaylength: playMode.value === 1 ? (pb.intplaylengthtype === 1 ? intDurationSec.value : intCycleTimes.value) : 0
     },
     // 关掉 led播放 就传 null —— 服务端据此删掉已有的 LED 子任务
-    led: ledOn.value
-      ? {
-          ...f.led,
-          name: f.led.name.trim(),
-          text: f.led.text.trim(),
-          // 勾中的 LED 屏连同它挂着的终端一起提交，服务端写进 ledoftask
-          devices: selectedLedDeviceIds.value.map(id => ({
-            deviceId: id,
-            terminalId: ledDevices.value.find(d => d.id === id)?.terminalId ?? 0
-          }))
-        }
-      : null,
+    // 不带 devices：LED 屏清单已经不在表单上了，服务端见 devices 缺省就保留原有绑定
+    led: ledOn.value ? { ...f.led, name: f.led.name.trim(), text: f.led.text.trim() } : null,
     // sort 按数组下标给，服务端还会再规整一次
     media: selectedMediaIds.value.map((id, i) => ({ mediaId: id, sort: i })),
     terminals: selectedTerminalIds.value.map(id => ({
@@ -1332,12 +1302,6 @@ onMounted(async () => {
     margin-right: 0;
   }
 }
-.led-dev {
-  width: 100%;
-  padding: 6px 10px;
-  background: var(--el-fill-color-lighter);
-  border-radius: 4px;
-}
 .vol-slider {
   width: 420px;
 }
@@ -1449,11 +1413,6 @@ onMounted(async () => {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-.opt-sub {
-  margin-left: 10px;
-  font-size: 12px;
-  color: var(--el-text-color-secondary);
 }
 .form-tip {
   margin-left: 10px;

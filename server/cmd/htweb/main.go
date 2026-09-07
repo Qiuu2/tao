@@ -586,17 +586,19 @@ func (a *app) routes() http.Handler {
 	//
 	// 四个页面共用一套路由，类别放在路径的 {kind} 上
 	// （amplifier / collect / tts / led）。它们都是 task 表的视图，按 taskpriv。
-	// ⚠ 四种 typed 任务的权限位**各不相同** —— 这是旧版 usergroup 那几列的原义：
+	// ⚠ 四种 typed 任务的权限位**各不相同** —— 前三个是旧版 usergroup 那几列的原义：
 	//   终端功放 → powerplay   采播管理 → admpriv
-	//   文字语音 → ttspriv     led播放 → taskpriv
+	//   文字语音 → ttspriv     led播放 → telephonepriv（= auth.PrivLed）
 	// （见 ok112 language/chinese.php 的 $user_group_add：
 	//   Power_Management=终端功放、Collection_Management=采播管理、tts_Management=文字语音）
+	// led播放 原先跟着文件广播共用 taskpriv，现在单独一把钥匙：
+	// 空着的 telephonepriv 改挂 LED，列不动、语义换（见 auth.Rights 上的说明）。
 	// 读一律只要登录，可见范围由 task_user_id 收敛；写按上表分。
 	typedPriv := map[string]string{
 		"amplifier": auth.PrivPowerPlay,
 		"collect":   auth.PrivAdm,
 		"tts":       auth.PrivTts,
-		"led":       auth.PrivTask,
+		"led":       auth.PrivLed,
 	}
 	typ := func(h http.HandlerFunc) http.HandlerFunc {
 		guards := make(map[string]http.HandlerFunc, len(typedPriv))
@@ -625,16 +627,20 @@ func (a *app) routes() http.Handler {
 	mux.HandleFunc("PUT /api/typed-tasks/{kind}/project-state", typ(a.handleTypedProjectState))
 	mux.HandleFunc("DELETE /api/typed-tasks/{kind}", typ(a.handleTypedDelete))
 
-	// LED 专属：任务分组与 LED 屏设备
+	// LED 专属：任务分组与 LED 屏设备。跟 led播放 同一把钥匙（PrivLed），
+	// 不再跟着 taskpriv —— 只给文件广播权限的人不该能改 LED 分组和 LED 屏。
+	ledg := func(h http.HandlerFunc) http.HandlerFunc {
+		return a.authMgr.RequireRight(auth.PrivLed, h)
+	}
 	mux.HandleFunc("GET /api/led/folders", req(a.handleLEDFolders))
-	mux.HandleFunc("POST /api/led/folders", tsk(a.handleLEDFolderCreate))
-	mux.HandleFunc("PUT /api/led/folders/{id}", tsk(a.handleLEDFolderRename))
-	mux.HandleFunc("DELETE /api/led/folders/{id}", tsk(a.handleLEDFolderDelete))
-	mux.HandleFunc("POST /api/led/folders:copy", tsk(a.handleLEDFolderCopy))
+	mux.HandleFunc("POST /api/led/folders", ledg(a.handleLEDFolderCreate))
+	mux.HandleFunc("PUT /api/led/folders/{id}", ledg(a.handleLEDFolderRename))
+	mux.HandleFunc("DELETE /api/led/folders/{id}", ledg(a.handleLEDFolderDelete))
+	mux.HandleFunc("POST /api/led/folders:copy", ledg(a.handleLEDFolderCopy))
 	mux.HandleFunc("GET /api/led/devices", req(a.handleLEDDeviceList))
-	mux.HandleFunc("POST /api/led/devices", tsk(a.handleLEDDeviceCreate))
-	mux.HandleFunc("PUT /api/led/devices/{id}", tsk(a.handleLEDDeviceUpdate))
-	mux.HandleFunc("DELETE /api/led/devices", tsk(a.handleLEDDeviceDelete))
+	mux.HandleFunc("POST /api/led/devices", ledg(a.handleLEDDeviceCreate))
+	mux.HandleFunc("PUT /api/led/devices/{id}", ledg(a.handleLEDDeviceUpdate))
+	mux.HandleFunc("DELETE /api/led/devices", ledg(a.handleLEDDeviceDelete))
 
 	ttsp := func(h http.HandlerFunc) http.HandlerFunc {
 		return a.authMgr.RequireRight(auth.PrivTts, h)
@@ -912,9 +918,9 @@ func (a *app) handleMenu(w http.ResponseWriter, r *http.Request) {
 		menu("/bell", "bell", "/bell/index", "Clock", "作息方案"),
 		menu("/task", "task", "/task/index", "AlarmClock", "文件广播"),
 	}
-	// 这五页的权限位各不相同，是旧版 usergroup 那几列的原义（见路由处 typedPriv 的注释）：
+	// 这五页的权限位各不相同（见路由处 typedPriv 的注释）：
 	//   终端功放 → powerplay   采播管理 → admpriv
-	//   文字语音 / 启用管理 → ttspriv   led播放 → taskpriv
+	//   文字语音 / 启用管理 → ttspriv   led播放 → telephonepriv（auth.PrivLed）
 	if u.IsAdmin || u.Rights.PowerPlay == 1 {
 		taskMenus = append(taskMenus, menu("/amplifier", "amplifier", "/typed/amplifier/index", "Headset", "终端功放"))
 	}
@@ -924,7 +930,7 @@ func (a *app) handleMenu(w http.ResponseWriter, r *http.Request) {
 	if u.IsAdmin || u.Rights.TtsPriv == 1 {
 		taskMenus = append(taskMenus, menu("/tts", "tts", "/typed/tts/index", "ChatDotSquare", "文字语音"))
 	}
-	if u.IsAdmin || u.Rights.TaskPriv == 1 {
+	if u.IsAdmin || u.Rights.TelephonePriv == 1 {
 		taskMenus = append(taskMenus, menu("/led", "led", "/typed/led/index", "Monitor", "led播放"))
 	}
 	if u.IsAdmin || u.Rights.TtsPriv == 1 {
@@ -991,6 +997,8 @@ func (a *app) handleButtons(w http.ResponseWriter, r *http.Request) {
 	canAmplifier := u.HasRight(auth.PrivPowerPlay)
 	canCollect := u.HasRight(auth.PrivAdm)
 	canTts := u.HasRight(auth.PrivTts)
+	// led播放 自己一把钥匙（列名 telephonepriv，见 auth.Rights 上的说明）
+	canLed := u.HasRight(auth.PrivLed)
 	// 遥控任务与任务传送在旧版归「遥控管理」，也就是 serverpriv
 	canRemote := u.HasRight(auth.PrivServer)
 	// 只有 admin 本人能管理别人的账号（BR-107），其他人即使有 userpriv 也只能改自己
@@ -1055,7 +1063,7 @@ func (a *app) handleButtons(w http.ResponseWriter, r *http.Request) {
 		"amplifier": {"edit": canAmplifier},
 		"collect":   {"edit": canCollect},
 		"tts":       {"edit": canTts},
-		"led":       {"edit": canTask},
+		"led":       {"edit": canLed},
 		// 启用管理与文字语音同一个权限位（旧版 displayenablemanager.php 用的是 ttspriv）
 		"enable": {"edit": canTts},
 		"time": {

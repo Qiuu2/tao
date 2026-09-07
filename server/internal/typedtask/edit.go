@@ -676,6 +676,14 @@ func (s *Service) Update(ctx context.Context, u *auth.User, nt *notify.Notifier,
 		return fmt.Errorf("修改任务: %w", err)
 	}
 
+	// 表单不带 devices 时，先把库里已有的 LED 屏绑定捞回来 ——
+	// clearExtras 会连 ledoftask 一起清掉（见 keepLEDBinds 的说明）
+	if k == KindLED {
+		if err := keepLEDBinds(ctx, tx, id, in.LED); err != nil {
+			return err
+		}
+	}
+
 	// 附加数据与终端清单一律「全清再写」，且必须在同一个事务里 ——
 	// 旧版没有事务，中途失败任务就变成一个没有终端的空壳。
 	if err := s.clearExtras(ctx, tx, k, id); err != nil {

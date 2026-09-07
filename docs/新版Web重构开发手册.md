@@ -1175,7 +1175,7 @@ FLUSH PRIVILEGES;
 | `alarmgrouppriv` | 报警权限 | 报警映射/分区 |
 | `bellpriv` | 方案权限 | 作息方案 |
 | `admpriv` | 采播权限 | 采播管理 |
-| `telephonepriv` | 电话采播权限 | 电话广播 |
+| `telephonepriv` | 电话采播权限（旧） | ⚠ 新 web 改挂 **led播放**（含 LED 任务目录与 LED 屏设备）：新版没有电话广播这一页，列又不能删，见《模块测试与 ok112 对照-验收记录》2.12 |
 | `powerplay` | 电源权限 | 电源控制 |
 | `ttspriv` | 文字语音权限 | TTS |
 

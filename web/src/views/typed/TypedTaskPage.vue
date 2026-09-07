@@ -11,7 +11,11 @@
   差异（列、工具栏、表单里那几段）全部由 kind 决定。
 
   表单的分栏与字段顺序**照 ok112 的那四张表单**：
-    任务属性  →  执行时间  →  [音频设置 / 文字语音内容 / led字幕+led设备列表]  →  终端列表
+    任务属性  →  执行时间  →  [音频设置 / 文字语音内容（可带 led字幕）/ led字幕]  →  终端列表
+
+  「led设备列表」按用户要求从表单上撤掉了：字幕跟着任务的终端走，不再逐块屏勾选。
+  库里已有的 ledoftask 绑定不动 —— 提交里不带 devices，服务端照原样留着
+  （见 typedtask/led.go 的 keepLEDBinds）。
   旧版是一页到底的表单加一个「提交」按钮，不是分步向导。
 
   ⚠ 三个和直觉相反的地方，改这个文件之前先看一眼：
@@ -394,9 +398,43 @@
             />
             <div v-if="err.text" class="err">{{ err.text }}</div>
           </el-form-item>
+
+          <!--
+            led播放：文字语音也能顺带上屏一条字幕，与文件广播那一项是同一件事 ——
+            另建一条 tasktype=30、sec_task_id 指回本任务的子任务（现网 70033/70035 就是这么长的）。
+            勾掉再保存，服务端会把已有的子任务删掉。
+            这里没有「led设备列表」：字幕跟着本任务的终端走。
+          -->
+          <el-divider content-position="left">led字幕</el-divider>
+          <el-row :gutter="16">
+            <el-col :span="12">
+              <el-form-item label="led播放">
+                <el-checkbox v-model="ledOn">上屏显示 led 字幕</el-checkbox>
+              </el-form-item>
+            </el-col>
+            <el-col v-if="ledOn" :span="12">
+              <el-form-item label="Led速度">
+                <el-select v-model="form.led.speed" style="width: 110px">
+                  <el-option v-for="n in [0, 1, 2, 3, 4, 5]" :key="n" :label="`${n} 级`" :value="n" />
+                </el-select>
+                <span class="tip">0 ~ 5 级</span>
+              </el-form-item>
+            </el-col>
+          </el-row>
+          <el-form-item v-if="ledOn" label-width="0" required>
+            <el-input
+              v-model="form.led.text"
+              type="textarea"
+              :rows="4"
+              maxlength="2000"
+              show-word-limit
+              placeholder="请输入Led字幕内容"
+            />
+            <div v-if="err.ledText" class="err">{{ err.ledText }}</div>
+          </el-form-item>
         </template>
 
-        <!-- ---------- led字幕 + led设备列表 ---------- -->
+        <!-- ---------- led字幕 ---------- -->
         <template v-if="kind === 'led'">
           <el-divider content-position="left">led字幕</el-divider>
           <el-row :gutter="16">
@@ -426,21 +464,6 @@
               placeholder="请输入Led字幕内容"
             />
             <div v-if="err.ledText" class="err">{{ err.ledText }}</div>
-          </el-form-item>
-
-          <el-divider content-position="left">led设备列表</el-divider>
-          <el-form-item label-width="0">
-            <div class="led-dev">
-              <div v-if="!ledDevices.length" class="dlg-note">
-                还没有登记 LED 设备 —— 先点上面的「LED 设备」登记，这里才能勾选要上屏的设备。
-              </div>
-              <el-checkbox-group v-else v-model="selectedLedDevices">
-                <el-checkbox v-for="d in ledDevices" :key="d.id" :value="d.id">
-                  {{ d.name }}
-                  <span class="opt-sub">{{ d.terminalname || `终端 ${d.terminalId}` }} · {{ d.ip }}</span>
-                </el-checkbox>
-              </el-checkbox-group>
-            </div>
           </el-form-item>
         </template>
 
@@ -772,7 +795,6 @@ const sourceTerminals = ref<TypedTerminalOption[]>([]);
 const promptList = ref<PromptMedia[]>([]);
 const ledFolders = ref<LedFolder[]>([]);
 const ledDevices = ref<LedDevice[]>([]);
-const selectedLedDevices = ref<number[]>([]);
 
 const searchTerminals = async (kw: string) => {
   terminalLoading.value = true;
@@ -914,7 +936,19 @@ const onIntervalModeChange = (v: number) => {
   }
 };
 
-const resetForm = () => Object.assign(form, blankForm());
+/**
+ * 文字语音的「led播放」开关。
+ *
+ * 只有 tts 用它：勾上就顺带建一条 LED 字幕子任务，勾掉再保存则删掉已有的那条
+ * （服务端按提交里 led 是不是 null 判断，见 typedtask/ledsub.go）。
+ * led播放 那一页本身就是 LED 任务，不需要这个开关。
+ */
+const ledOn = ref(false);
+
+const resetForm = () => {
+  Object.assign(form, blankForm());
+  ledOn.value = false;
+};
 
 const openCreate = async () => {
   resetForm();
@@ -935,7 +969,6 @@ const openCreate = async () => {
   if (props.kind !== "amplifier") form.prepower = 120;
   selectedTerminals.value = [];
   terminalAreas.value = {};
-  selectedLedDevices.value = [];
   Object.assign(dlg, { visible: true, saving: false, isEdit: false, title: `添加${title.value}`, id: 0 });
   await searchTerminals("");
 };
@@ -982,7 +1015,11 @@ const openEdit = async (row: TypedTask) => {
   if (props.kind === "led") {
     await loadLED();
     form.led = { text: data.led?.text ?? "", speed: data.led?.speed ?? 0, ledmode: data.led?.ledmode ?? 0 };
-    selectedLedDevices.value = (data.led?.devices ?? []).filter(d => !d.deleted).map(d => d.deviceId);
+  }
+  // 文字语音的 LED 字幕子任务：有就把开关打开并回填
+  if (props.kind === "tts") {
+    ledOn.value = !!data.led;
+    form.led = { text: data.led?.text ?? "", speed: data.led?.speed ?? 0, ledmode: data.led?.ledmode ?? 0 };
   }
   // 把库里已有的分区掩码回填给树，改的时候才看得出原来选了哪几个分区
   terminalAreas.value = Object.fromEntries(data.terminals.filter(t => !t.deleted && t.area).map(t => [t.terminalId, t.area]));
@@ -1012,10 +1049,6 @@ const diffSec = (from: string, to: string) => {
 
 const buildBody = () => {
   const mask = Array.from({ length: 7 }, (_, i) => (form.weekdays.includes(i) ? "1" : "0")).join("");
-  const ledDevs = selectedLedDevices.value.map(id => {
-    const d = ledDevices.value.find(x => x.id === id);
-    return { terminalId: d?.terminalId ?? 0, deviceId: id };
-  });
   const interval = form.intervalMode === 1;
   return {
     taskName: form.taskName.trim(),
@@ -1055,7 +1088,9 @@ const buildBody = () => {
       area: terminalAreas.value[id] ?? "11111111",
       groupId: terminals.value.find(t => t.id === id)?.groupId ?? 0
     })),
-    led: props.kind === "led" ? { ...form.led, devices: ledDevs } : null
+    // 不带 devices：LED 屏清单已不在表单上，服务端见 devices 缺省就保留原有绑定。
+    // 文字语音勾了「led播放」时同样带上这一段，服务端据此建/删字幕子任务。
+    led: props.kind === "led" || (props.kind === "tts" && ledOn.value) ? { ...form.led } : null
   };
 };
 
@@ -1082,7 +1117,7 @@ const submit = async () => {
     err.text = "请输入播放文字";
     bad = true;
   }
-  if (props.kind === "led" && !form.led.text.trim()) {
+  if ((props.kind === "led" || (props.kind === "tts" && ledOn.value)) && !form.led.text.trim()) {
     err.ledText = "请输入Led字幕内容";
     bad = true;
   }
@@ -1382,11 +1417,6 @@ onMounted(async () => {
   line-height: 1.5;
   color: var(--el-color-danger);
 }
-.opt-sub {
-  margin-left: 10px;
-  font-size: 12px;
-  color: var(--el-text-color-secondary);
-}
 .fill {
   width: 100%;
 }
@@ -1406,14 +1436,6 @@ onMounted(async () => {
   align-items: center;
   :deep(.el-radio) {
     width: 120px;
-    margin-right: 0;
-  }
-}
-.led-dev {
-  width: 100%;
-  :deep(.el-checkbox) {
-    display: flex;
-    width: 100%;
     margin-right: 0;
   }
 }

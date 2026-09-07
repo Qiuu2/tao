@@ -91,6 +91,39 @@ func wantLED(in Input) bool {
 	return in.LED != nil && strings.TrimSpace(in.LED.Text) != ""
 }
 
+// keepLEDBinds 把库里已有的 LED 屏绑定填回入参。
+//
+// 「led设备列表」已经从表单上撤掉了，提交里不再带 devices。
+// 这时**不能**把缺省当成「用户清空了」—— ledoftask 决定字幕上哪几块屏，
+// 抹掉等于让正在上屏的内容悄悄消失。
+//
+// 约定：devices 缺省（JSON 里没这个键 → nil）= 保持原样；
+// 显式传空数组 = 真的要清空。界面走前者，接口调用方仍可用后者。
+func keepLEDBinds(ctx context.Context, tx *sql.Tx, ledID int64, led *LEDSub) error {
+	if led == nil || led.Devices != nil || ledID <= 0 {
+		return nil
+	}
+	rows, err := tx.QueryContext(ctx,
+		`SELECT terminalid, deviceid FROM ledoftask WHERE taskid = ?`, ledID)
+	if err != nil {
+		return fmt.Errorf("查询 LED 设备清单: %w", err)
+	}
+	defer rows.Close()
+	out := []LEDDevRef{}
+	for rows.Next() {
+		var d LEDDevRef
+		if err := rows.Scan(&d.TerminalID, &d.DeviceID); err != nil {
+			return err
+		}
+		out = append(out, d)
+	}
+	if err := rows.Err(); err != nil {
+		return err
+	}
+	led.Devices = out
+	return nil
+}
+
 // findLEDSub 找主任务已有的 LED 子任务。0 表示没有。
 func findLEDSub(ctx context.Context, tx *sql.Tx, mainID int64) (int64, error) {
 	ph, targs := placeholders64(ledSubTypes)
@@ -178,6 +211,10 @@ func syncLEDTask(ctx context.Context, tx *sql.Tx, mainID int64, in Input, ownerI
 
 	// 已有就先整条拆掉再建，省得逐列比对；一条子任务的数据量很小，重建代价可以忽略。
 	if existing > 0 {
+		// 拆之前先把已有的 LED 屏绑定捞回来（见 keepLEDBinds 的说明）
+		if err := keepLEDBinds(ctx, tx, existing, in.LED); err != nil {
+			return 0, err
+		}
 		if err := dropLEDSub(ctx, tx, existing); err != nil {
 			return 0, err
 		}

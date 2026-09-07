@@ -129,6 +129,14 @@ func (s *Service) ListGroups(ctx context.Context, q GroupListQuery) ([]Group, in
 		}
 		g.GroupLevel, g.PriorityBase = SplitLevel(g.Level)
 		g.System = g.ID == SystemGroupID
+		if g.System {
+			// 系统组恒有全部权限（BR-90，UpdateGroup 里也是这么卡的），
+			// 列表按这个口径显示。库里那一行可能有某一位是 0 ——
+			// 比如 telephonepriv 这根新改挂 led播放 的柱子，旧库里就是 0 ——
+			// 但组里的人走的是 IsAdmin 直通，权限位对他们不起作用，
+			// 列表照库显示反而会让人以为系统组少了一项。
+			g.Rights = allRights()
+		}
 		g.CanModify = true // 系统组也可改描述，具体字段级保护在 UpdateGroup 内
 		g.CanDelete = !g.System
 		out = append(out, g)
@@ -243,17 +251,17 @@ func (s *Service) CreateGroup(ctx context.Context, in GroupInput) (int64, error)
 	}
 
 	r := in.Rights
-	// ⚠ telephonepriv 恒写 0。新版没有电话广播这一页，界面上也不再有这个勾选项 ——
-	// 表结构不能动（R1 红线），所以列还留着，只是不再由界面驱动。
-	// 修改用户组时这一列干脆不写（见 UpdateGroup），免得把旧库里已有的取值抹掉。
+	// ⚠ telephonepriv 这一列装的是 **led播放** 的权限位，不是电话广播 ——
+	// 新版没有电话广播这一页，列又不能删（表结构不动，R1 红线），
+	// 正好拿来放界面上新加的「led播放」勾选项。详见 auth.Rights 上的说明。
 	res, err := s.db.ExecContext(ctx, `
 		INSERT INTO usergroup (name, info, taskpriv, terminalpriv, mediapriv, userpriv,
 		                       serverpriv, folderpriv, terminalgrouppriv, alarmgrouppriv,
 		                       bellpriv, admpriv, telephonepriv, powerplay, level, ttspriv)
-		VALUES (?,?,?,?,?,?,?,?,?,?,?,?,0,?,?,?)`,
+		VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
 		name, in.Info, r.TaskPriv, r.TerminalPriv, r.MediaPriv, r.UserPriv,
 		r.ServerPriv, r.FolderPriv, r.TerminalGroupPriv, r.AlarmGroupPriv,
-		r.BellPriv, r.AdmPriv, r.PowerPlay,
+		r.BellPriv, r.AdmPriv, r.TelephonePriv, r.PowerPlay,
 		JoinLevel(in.GroupLevel, in.PriorityBase), r.TtsPriv)
 	if err != nil {
 		return 0, fmt.Errorf("新建用户组: %w", err)
@@ -348,17 +356,16 @@ func (s *Service) UpdateGroup(ctx context.Context, id int64, in GroupInput) (*Pr
 	}
 
 	r := in.Rights
-	// ⚠ SET 里**没有** telephonepriv：新版没有电话广播这一页，界面上也没有这个勾选项，
-	// 界面传上来的永远是 0。列在 SET 里就等于每改一次用户组都把旧库里的取值抹成 0。
-	// 不写它，这一列保持原值。
+	// telephonepriv = led播放 的权限位（见 CreateGroup 与 auth.Rights 上的说明）。
+	// 界面上有对应的勾选项，所以这一列跟其它 12 列一样跟着表单走。
 	if _, err := tx.ExecContext(ctx, `
 		UPDATE usergroup SET name=?, info=?, taskpriv=?, terminalpriv=?, mediapriv=?,
 		       userpriv=?, serverpriv=?, folderpriv=?, terminalgrouppriv=?, alarmgrouppriv=?,
-		       bellpriv=?, admpriv=?, powerplay=?, level=?, ttspriv=?
+		       bellpriv=?, admpriv=?, telephonepriv=?, powerplay=?, level=?, ttspriv=?
 		WHERE id = ?`,
 		name, in.Info, r.TaskPriv, r.TerminalPriv, r.MediaPriv, r.UserPriv,
 		r.ServerPriv, r.FolderPriv, r.TerminalGroupPriv, r.AlarmGroupPriv,
-		r.BellPriv, r.AdmPriv, r.PowerPlay, newLevel, r.TtsPriv, id); err != nil {
+		r.BellPriv, r.AdmPriv, r.TelephonePriv, r.PowerPlay, newLevel, r.TtsPriv, id); err != nil {
 		return nil, fmt.Errorf("更新用户组: %w", err)
 	}
 
@@ -431,6 +438,15 @@ func recalcPriorities(ctx context.Context, tx *sql.Tx, groupID int64, oldLevel, 
 		}
 	}
 	return out, nil
+}
+
+// allRights 是「全部勾上」的权限位，系统组按它显示。
+func allRights() auth.Rights {
+	return auth.Rights{
+		TaskPriv: 1, TerminalPriv: 1, MediaPriv: 1, UserPriv: 1, ServerPriv: 1,
+		FolderPriv: 1, TerminalGroupPriv: 1, AlarmGroupPriv: 1, BellPriv: 1,
+		AdmPriv: 1, TelephonePriv: 1, PowerPlay: 1, TtsPriv: 1,
+	}
 }
 
 func allRightsGranted(r auth.Rights) bool {

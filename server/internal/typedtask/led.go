@@ -137,6 +137,39 @@ func validateLED(in *LEDInput) error {
 	return nil
 }
 
+// keepLEDBinds 把库里已有的 LED 屏绑定填回入参。
+//
+// 「led设备列表」已经从三张表单上撤掉了，提交里不再带 devices。
+// 这时**不能**把缺省当成「用户清空了」—— ledoftask 决定字幕上哪几块屏，
+// 抹掉等于让正在上屏的内容悄悄消失。
+//
+// 约定：devices 缺省（JSON 里没这个键 → nil）= 保持原样；
+// 显式传空数组 = 真的要清空。界面走前者，接口调用方仍可用后者。
+func keepLEDBinds(ctx context.Context, tx *sql.Tx, taskID int64, led *LEDInput) error {
+	if led == nil || led.Devices != nil || taskID <= 0 {
+		return nil
+	}
+	rows, err := tx.QueryContext(ctx,
+		`SELECT terminalid, deviceid FROM ledoftask WHERE taskid = ?`, taskID)
+	if err != nil {
+		return fmt.Errorf("查询 LED 屏绑定: %w", err)
+	}
+	defer rows.Close()
+	out := []LEDBind{}
+	for rows.Next() {
+		var b LEDBind
+		if err := rows.Scan(&b.TerminalID, &b.DeviceID); err != nil {
+			return err
+		}
+		out = append(out, b)
+	}
+	if err := rows.Err(); err != nil {
+		return err
+	}
+	led.Devices = out
+	return nil
+}
+
 func (s *Service) taskLED(ctx context.Context, taskID int64) (*LEDDetail, error) {
 	d := &LEDDetail{Devices: []LEDBind{}}
 	// ⚠ 关联键是 ledsentence.mediaid = mediaoftask.mediaid（两边都是 media.id），
