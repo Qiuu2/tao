@@ -422,8 +422,8 @@ func (a *app) routes() http.Handler {
 
 	// 日志保留期：读对超管开放（这一页本来就只有超管进得来），改也一样。
 	mux.HandleFunc("GET /api/logs/retention", sup(a.handleLogRetentionGet))
+	// PUT 一次做两件事：存设置 + 立刻滚一次。界面上就是「选完点确定」那一下。
 	mux.HandleFunc("PUT /api/logs/retention", sup(a.handleLogRetentionSet))
-	mux.HandleFunc("POST /api/logs/retention/purge", sup(a.handleLogRetentionPurge))
 	mux.HandleFunc("GET /api/task-logs/files", sup(a.handleTaskLogFiles))
 	mux.HandleFunc("GET /api/task-logs/files/{name}", sup(a.handleTaskLogRead))
 	mux.HandleFunc("GET /api/task-logs/delete-preview", sup(a.handleTaskLogDeletePreview))
@@ -786,8 +786,17 @@ func (a *app) handleCaptcha(w http.ResponseWriter, r *http.Request) {
 	httpx.OK(w, map[string]any{"enabled": true, "captchaId": id, "image": uri})
 }
 
+// handleLogout 自己记审计，不走中间件。
+//
+// ⚠ 顺序是「先记、后作废」：中间件是在 handler 返回之后才拿 token 去会话表
+// 反查用户名的，而这时候会话已经被这个 handler 作废了 —— 反查不到人，
+// 落出来的是一行 user='-' 的记录，登出这件事本身丢了「是谁」。
 func (a *app) handleLogout(w http.ResponseWriter, r *http.Request) {
-	a.authMgr.Logout(r.Header.Get(auth.HeaderToken))
+	token := r.Header.Get(auth.HeaderToken)
+	if u, ok := a.authMgr.Resolve(token); ok && u.Username != "" {
+		a.auditor.Write(r.Context(), u.Username, "用户登出", audit.ClientIP(r))
+	}
+	a.authMgr.Logout(token)
 	httpx.OK(w, nil)
 }
 

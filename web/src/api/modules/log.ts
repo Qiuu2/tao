@@ -140,10 +140,20 @@ export interface RetentionPurgeResult {
   taskLogFailed: string[];
 }
 
+/** 保存保留期的返回：设置本身 + 这一下立刻滚掉了什么 */
+export interface RetentionSaveResult {
+  settings: RetentionSettings;
+  purge: RetentionPurgeResult | null;
+}
+
 export const getRetentionApi = () => http.get<RetentionSettings>(PORT1 + `/api/logs/retention`, {}, { loading: false });
 
+/**
+ * 保存保留期，并**立刻滚一次**。
+ *
+ * 界面上就是「选完点确定」那一下：存设置和清理是同一个动作，
+ * 分开做会出现「设置存下来了但清理没跑」的中间态，用户看不出来。
+ * 清理的边界与每天那次定时滚动完全一致。
+ */
 export const setRetentionApi = (option: RetentionOption) =>
-  http.put<RetentionSettings>(PORT1 + `/api/logs/retention`, { option });
-
-/** 手动跑一次滚动清理，边界与每天那次完全一致 */
-export const purgeRetentionApi = () => http.post<RetentionPurgeResult>(PORT1 + `/api/logs/retention/purge`, {});
+  http.put<RetentionSaveResult>(PORT1 + `/api/logs/retention`, { option });

@@ -40,18 +40,20 @@
 
                   <!--
                     保留期：默认 1 个月，可选 3 个月 / 半年 / 1 年。
-                    超期的日志每天滚一次（服务里跑，不靠这一页开着），
-                    这里的「立即滚动」只是让人不用等到明天。
+                    选完点「确定」：设置存下来，超期的当场滚掉，不用等到明天。
+                    服务里另有一个每天跑一次的定时滚动，不靠这一页开着。
                   -->
                   <el-divider direction="vertical" />
                   <span class="keep-label">日志保留</span>
-                  <el-select v-model="keepOption" :loading="keepSaving" style="width: 120px" @change="onKeepChange">
+                  <el-select v-model="keepOption" style="width: 120px">
                     <el-option v-for="c in keep?.choices ?? []" :key="c.value" :label="c.label" :value="c.value" />
                   </el-select>
-                  <el-button :loading="keepPurging" @click="doPurge">立即滚动</el-button>
+                  <el-button type="primary" :loading="keepSaving" :disabled="!keep" @click="onKeepConfirm">确定</el-button>
                 </div>
                 <div class="header-right">
-                  <el-tag v-if="keep" type="warning" size="small" effect="plain"> {{ keep.cutoffDate }} 之前的会被滚掉 </el-tag>
+                  <el-tag v-if="pendingCutoff" type="warning" size="small" effect="plain">
+                    点确定即清掉 {{ pendingCutoff }} 之前的
+                  </el-tag>
                   <el-tag v-if="stats" type="info" size="small" effect="plain">
                     共 {{ stats.total }} 条 · {{ stats.earliest }} ~ {{ stats.latest }}
                   </el-tag>
@@ -214,7 +216,7 @@
 </template>
 
 <script setup lang="ts" name="logPage">
-import { onMounted, reactive, ref } from "vue";
+import { computed, onMounted, reactive, ref } from "vue";
 import { ElMessage, ElMessageBox } from "element-plus";
 import { Delete, Refresh } from "@element-plus/icons-vue";
 import ProTable from "@/components/ProTable/index.vue";
@@ -227,7 +229,6 @@ import {
   getRetentionApi,
   getTaskLogFilesApi,
   previewDeleteTaskLogsApi,
-  purgeRetentionApi,
   readTaskLogApi,
   setRetentionApi,
   type LogClearMode,
@@ -409,16 +410,27 @@ const confirmTaskClear = async () => {
 
 /* ---------------- 日志保留期 ----------------
 
-  默认 1 个月，可选 3 个月 / 半年 / 1 年。超期的按天滚 —— 滚动是服务里
-  每天跑一次的定时任务，不依赖这一页开着；「立即滚动」只是让人不用等到明天。
+  默认 1 个月，可选 3 个月 / 半年 / 1 年。选完点「确定」：设置存下来，
+  超期的当场滚掉。服务里另有一个每天跑一次的定时滚动，不依赖这一页开着。
 
-  改保留期本身不删数据（后端的 Set 不顺手跑清理），所以这里改完只提示
-  新的保留边界；真正的删除交给那一次滚动。
+  「确定」这一下是会删数据的，所以点之前把边界日期摆在旁边
+  （pendingCutoff 跟着下拉走，不是跟着已保存的设置走）——
+  人在按下去之前就看得到自己要删掉哪一天之前的东西。
 */
 const keep = ref<RetentionSettings | null>(null);
 const keepOption = ref<RetentionOption>("1m");
 const keepSaving = ref(false);
-const keepPurging = ref(false);
+
+/** 下拉里当前选中那一档对应的保留边界。切换下拉就跟着变，让人先看到再点确定 */
+const pendingCutoff = computed(() => {
+  if (!keep.value) return "";
+  if (keepOption.value === keep.value.option) return keep.value.cutoffDate;
+  const months: Record<RetentionOption, number> = { "1m": 1, "3m": 3, "6m": 6, "1y": 12 };
+  const d = new Date();
+  d.setMonth(d.getMonth() - (months[keepOption.value] ?? 1));
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+});
 
 const loadKeep = async () => {
   try {
@@ -430,42 +442,27 @@ const loadKeep = async () => {
   }
 };
 
-const onKeepChange = async (v: RetentionOption) => {
+const onKeepConfirm = async () => {
+  if (!keep.value) return;
   keepSaving.value = true;
   try {
-    const { data } = await setRetentionApi(v);
-    keep.value = data;
-    keepOption.value = data.option;
-    ElMessage.success(`日志保留 ${data.label}，${data.cutoffDate} 之前的会在每天的滚动清理里删掉`);
+    const { data } = await setRetentionApi(keepOption.value);
+    keep.value = data.settings;
+    keepOption.value = data.settings.option;
+    const p = data.purge;
+    let msg = `日志保留 ${data.settings.label}`;
+    if (p) {
+      msg += `；${p.cutoff} 之前：操作日志 ${p.operationRows} 条、任务日志 ${p.taskLogFiles.length} 个文件已清理`;
+      if (p.taskLogFailed.length) msg += `，另有 ${p.taskLogFailed.length} 个文件删不掉（多半是目录没有写权限）`;
+    }
+    ElMessage.success(msg);
+    await Promise.all([loadStats(), loadFiles()]);
+    proTableRef.value?.getTableList();
   } catch {
     // 保存失败就把下拉退回原值，别让界面显示一个没生效的设置
     if (keep.value) keepOption.value = keep.value.option;
   } finally {
     keepSaving.value = false;
-  }
-};
-
-const doPurge = async () => {
-  if (!keep.value) return;
-  try {
-    await ElMessageBox.confirm(
-      `将删除 ${keep.value.cutoffDate} 之前的操作日志与任务日志（保留 ${keep.value.label}）。这与每天自动跑的那一次完全一样，只是不用等到明天。确定现在执行吗？`,
-      "立即滚动清理",
-      { type: "warning", confirmButtonText: "确定执行" }
-    );
-  } catch {
-    return; // 点了取消
-  }
-  keepPurging.value = true;
-  try {
-    const { data } = await purgeRetentionApi();
-    let msg = `${data.cutoff} 之前：操作日志 ${data.operationRows} 条、任务日志 ${data.taskLogFiles.length} 个文件已清理`;
-    if (data.taskLogFailed.length) msg += `；另有 ${data.taskLogFailed.length} 个文件删不掉（多半是目录没有写权限）`;
-    ElMessage.success(msg);
-    await Promise.all([loadKeep(), loadStats(), loadFiles()]);
-    proTableRef.value?.getTableList();
-  } finally {
-    keepPurging.value = false;
   }
 };
 

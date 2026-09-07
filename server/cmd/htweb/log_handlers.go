@@ -209,7 +209,10 @@ func (a *app) handleTaskLogDelete(w http.ResponseWriter, r *http.Request) {
 // ---------- 日志保留期 ----------
 //
 // 保留期设置存在磁盘上的 JSON 文件里（零 DDL 红线，见 logs/retention.go）。
-// 三个接口都收紧到超级管理员 —— 日志这一页本来就只有超管进得来。
+// 两个接口都收紧到超级管理员 —— 日志这一页本来就只有超管进得来。
+//
+// 界面上是一个下拉加一个「确定」：PUT 一次把设置存下来并立刻滚一次，
+// 不再单独给一个「立即滚动」按钮。
 
 func (a *app) handleLogRetentionGet(w http.ResponseWriter, r *http.Request) {
 	httpx.OK(w, a.logKeep.Get())
@@ -222,22 +225,17 @@ func (a *app) handleLogRetentionSet(w http.ResponseWriter, r *http.Request) {
 	if !httpx.DecodeJSON(w, r, &in) {
 		return
 	}
-	res, err := a.logKeep.Set(logs.RetentionOption(strings.TrimSpace(in.Option)))
+	u := auth.From(r.Context())
+	// 存设置 + 立刻滚一次是同一个动作。清理的边界与每天那次定时滚动完全一致，
+	// 只是触发者不同 —— 审计里记的是操作人而不是「系统」。
+	set, purge, err := a.logKeep.Set(r.Context(),
+		logs.RetentionOption(strings.TrimSpace(in.Option)), u.Username, audit.ClientIP(r))
 	if err != nil {
 		failLog(w, "保存日志保留期", err)
 		return
 	}
-	httpx.OK(w, res)
-}
-
-// handleLogRetentionPurge 让人手动跑一次滚动清理，不用等到明天。
-// 清的边界与定时任务完全一致，只是触发者不同 —— 审计里记的是操作人而不是「系统」。
-func (a *app) handleLogRetentionPurge(w http.ResponseWriter, r *http.Request) {
-	u := auth.From(r.Context())
-	res, err := a.logKeep.Purge(r.Context(), u.Username, audit.ClientIP(r))
-	if err != nil {
-		failLog(w, "滚动清理日志", err)
-		return
-	}
-	httpx.OK(w, res)
+	httpx.OK(w, map[string]interface{}{
+		"settings": set,
+		"purge":    purge,
+	})
 }

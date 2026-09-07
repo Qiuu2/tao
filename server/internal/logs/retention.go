@@ -211,12 +211,15 @@ func (r *RetentionService) Get() RetentionSettings {
 	return out
 }
 
-// Set 改保留期并落盘。返回改完之后的状态。
+// Set 改保留期并落盘，紧接着**立刻滚一次**。
 //
-// ⚠ 不在这里顺手跑一次清理。改小保留期是个会删数据的动作，
-// 让它在「保存」这一下同步删掉一大批，出错时也来不及反悔；
-// 交给每天那一次滚动去做，界面上把新的保留边界显示出来即可。
-func (r *RetentionService) Set(opt RetentionOption) (RetentionSettings, error) {
+// 界面上就是一个下拉加一个「确定」：选完点确定，新的保留期存下来，
+// 超期的当场清掉，不用等到明天那一次定时滚动。所以这两件事绑在一个动作里 ——
+// 分开做的话会出现「设置存下来了但清理没跑」的中间态，用户看不出来。
+//
+// 清理失败不回滚设置：设置已经落盘、每天的定时滚动会接着做这件事，
+// 把设置退回去反而更费解。失败原因原样带回去，界面上说清楚。
+func (r *RetentionService) Set(ctx context.Context, opt RetentionOption, user, ip string) (RetentionSettings, *PurgeResult, error) {
 	valid := false
 	for _, s := range retentionSpecs {
 		if s.Option == opt {
@@ -225,7 +228,7 @@ func (r *RetentionService) Set(opt RetentionOption) (RetentionSettings, error) {
 		}
 	}
 	if !valid {
-		return RetentionSettings{}, fmt.Errorf("保留期只能是 1m / 3m / 6m / 1y 之一")
+		return RetentionSettings{}, nil, fmt.Errorf("保留期只能是 1m / 3m / 6m / 1y 之一")
 	}
 	r.mu.Lock()
 	old := r.opt
@@ -236,9 +239,14 @@ func (r *RetentionService) Set(opt RetentionOption) (RetentionSettings, error) {
 	}
 	r.mu.Unlock()
 	if err != nil {
-		return RetentionSettings{}, err
+		return RetentionSettings{}, nil, err
 	}
-	return r.Get(), nil
+
+	res, perr := r.Purge(ctx, user, ip)
+	if perr != nil {
+		return r.Get(), nil, fmt.Errorf("保留期已保存，但立即清理失败（明天的定时滚动会重试）: %w", perr)
+	}
+	return r.Get(), res, nil
 }
 
 // cutoffOf 算保留边界：今天往前推 N 个自然月，取那一天的零点。

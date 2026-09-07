@@ -31,9 +31,11 @@ import (
 // 键用注册路由时的模式原文，不用实际 URL —— 实际 URL 里带 id，
 // 一个接口会散成无数种 operate 值，日志就没法按操作聚合了。
 var auditLabels = map[string]string{
-	// POST /api/login 不在这里：登录成功那一刻请求上下文里还没有会话，
-	// 中间件取不到用户名，由 handleLogin 自己记一行。
-	"POST /api/logout": "用户登出",
+	// POST /api/login 与 POST /api/logout 都不在这里，理由相反但都成立：
+	//   登录：成功那一刻请求上下文里还没有会话，中间件取不到用户名；
+	//   登出：handler 已经把会话作废了，中间件事后反查 token 也查不到人
+	//        （实测落出来是一行 user='-'）。
+	// 两个都由各自的 handler 在合适的时刻自己记一行。
 
 	"POST /api/folders":                  "新建媒体目录",
 	"PUT /api/folders/{id}":              "修改媒体目录",
@@ -161,8 +163,8 @@ var auditLabels = map[string]string{
 
 	"DELETE /api/task-logs": "清理任务日志",
 	// 保留期是「日志少了一截」的直接原因，改了必须留痕。
-	// 手动触发的滚动清理不在这里：logs.RetentionService.Purge 会在删之前
-	// 自己写一行（带上清掉多少条），中间件再记一条就重复了。
+	// 这一下同时会立刻滚一次，那部分由 logs.RetentionService.Purge 在删之前
+	// 自己写一行（带上清掉多少条），所以一次「确定」会留两行：先设置、后清理。
 	"PUT /api/logs/retention": "修改日志保留期",
 
 	// 看板首页那三块可配置区域是全局共享的界面设置，改了所有人都受影响
