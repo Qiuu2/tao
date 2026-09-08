@@ -56,9 +56,12 @@ func (s *Service) executors() map[Intent]executor {
 		IntentRemoveTerminalFromZone: s.execZoneMembership("remove_terminal_from_zone", false),
 
 		// 作息方案。见 exec_schedule.go。
-		IntentEnableSchedule:       s.execScheduleState("enable_schedule", true),
-		IntentDisableSchedule:      s.execScheduleState("disable_schedule", false),
-		IntentDeleteSchedule:       s.execDeleteSchedule,
+		IntentEnableSchedule:  s.execScheduleState("enable_schedule", true),
+		IntentDisableSchedule: s.execScheduleState("disable_schedule", false),
+		IntentDeleteSchedule:  s.execDeleteSchedule,
+		IntentCreateSchedule:  s.execCreateSchedule,
+		// create_scheme 是 create_schedule 的别名（原实现里两个名字都收）
+		IntentCreateScheme:         s.execCreateSchedule,
 		IntentCancelSchedule:       s.execCancelSchedule,
 		IntentMoveSchedule:         s.execMoveSchedule,
 		IntentSwapSchedule:         s.execSwapSchedule,
