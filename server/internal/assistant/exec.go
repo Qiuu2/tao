@@ -43,6 +43,16 @@ func (s *Service) executors() map[Intent]executor {
 		IntentTaskPause:    s.execTaskState("task_pause", task.ActionPause),
 		IntentTaskResume:   s.execTaskState("task_resume", task.ActionResume),
 		IntentAdjustVolume: s.execAdjustVolume,
+
+		// 终端与分区。同样交给页面用的 terminal.Service / zone.Service，
+		// 见 exec_zone.go。
+		IntentEnableTerminal:         s.execTerminalState("enable_terminal", true),
+		IntentDisableTerminal:        s.execTerminalState("disable_terminal", false),
+		IntentSyncTerminalTime:       s.execSyncTerminalTime,
+		IntentCreateZone:             s.execCreateZone,
+		IntentDeleteZone:             s.execDeleteZone,
+		IntentAddTerminalToZone:      s.execZoneMembership("add_terminal_to_zone", true),
+		IntentRemoveTerminalFromZone: s.execZoneMembership("remove_terminal_from_zone", false),
 	}
 }
 

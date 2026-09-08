@@ -1,0 +1,268 @@
+[
+ {
+  "name": "term_state/enable_terminal/A101教室音箱",
+  "want": "嗯嗯，已为您启用A101教室音箱~",
+  "kind": "term_state",
+  "intent": "enable_terminal",
+  "terminal_desc": "A101教室音箱",
+  "state_text": "启用"
+ },
+ {
+  "name": "term_state/enable_terminal/A101教室音箱、A102教室音箱",
+  "want": "已为您启用A101教室音箱、A102教室音箱，安排好啦~",
+  "kind": "term_state",
+  "intent": "enable_terminal",
+  "terminal_desc": "A101教室音箱、A102教室音箱",
+  "state_text": "启用"
+ },
+ {
+  "name": "term_state/enable_terminal/3个终端",
+  "want": "OK，已为您启用3个终端~",
+  "kind": "term_state",
+  "intent": "enable_terminal",
+  "terminal_desc": "3个终端",
+  "state_text": "启用"
+ },
+ {
+  "name": "term_state/disable_terminal/A101教室音箱",
+  "want": "已为您停用A101教室音箱，安排好啦~",
+  "kind": "term_state",
+  "intent": "disable_terminal",
+  "terminal_desc": "A101教室音箱",
+  "state_text": "停用"
+ },
+ {
+  "name": "term_state/disable_terminal/A101教室音箱、A102教室音箱",
+  "want": "OK，A101教室音箱、A102教室音箱 现在是停用状态~",
+  "kind": "term_state",
+  "intent": "disable_terminal",
+  "terminal_desc": "A101教室音箱、A102教室音箱",
+  "state_text": "停用"
+ },
+ {
+  "name": "term_state/disable_terminal/3个终端",
+  "want": "3个终端 已调整为停用状态，安排好啦~",
+  "kind": "term_state",
+  "intent": "disable_terminal",
+  "terminal_desc": "3个终端",
+  "state_text": "停用"
+ },
+ {
+  "name": "sync/A101教室音箱",
+  "want": "OK，A101教室音箱 的校时指令已经发出~",
+  "kind": "sync",
+  "intent": "sync_terminal_time",
+  "terminal_desc": "A101教室音箱"
+ },
+ {
+  "name": "sync/A101教室音箱、A102教室音箱",
+  "want": "搞定，已向 A101教室音箱、A102教室音箱 发出校时指令，稍后可以再确认结果~",
+  "kind": "sync",
+  "intent": "sync_terminal_time",
+  "terminal_desc": "A101教室音箱、A102教室音箱"
+ },
+ {
+  "name": "sync/5个终端",
+  "want": "嗯嗯，5个终端 的校时指令已经发出~",
+  "kind": "sync",
+  "intent": "sync_terminal_time",
+  "terminal_desc": "5个终端"
+ },
+ {
+  "name": "term_volume/终端“A101教室音箱”/70",
+  "want": "已把终端“A101教室音箱”的音量调整为 70，小电已经帮您安排好啦~",
+  "kind": "term_volume",
+  "intent": "adjust_volume_terminal",
+  "scope_desc": "终端“A101教室音箱”",
+  "volume": 70
+ },
+ {
+  "name": "term_volume/2个终端/40",
+  "want": "音量已调整：2个终端 现在是 40~ 搞定！",
+  "kind": "term_volume",
+  "intent": "adjust_volume_terminal",
+  "scope_desc": "2个终端",
+  "volume": 40
+ },
+ {
+  "name": "term_volume/终端“广播室主话筒”/0",
+  "want": "好嘞，终端“广播室主话筒”的音量已经设为 0 了~ 还有别的随时叫我哈~",
+  "kind": "term_volume",
+  "intent": "adjust_volume_terminal",
+  "scope_desc": "终端“广播室主话筒”",
+  "volume": 0
+ },
+ {
+  "name": "create_zone/一号分区",
+  "want": "已完成分区创建：一号分区。",
+  "kind": "create_zone",
+  "intent": "create_zone",
+  "zone_desc": "一号分区"
+ },
+ {
+  "name": "create_zone/教学楼分区",
+  "want": "分区已经建好：教学楼分区。",
+  "kind": "create_zone",
+  "intent": "create_zone",
+  "zone_desc": "教学楼分区"
+ },
+ {
+  "name": "create_zone/一号分区、二号分区",
+  "want": "已完成分区创建：一号分区、二号分区。",
+  "kind": "create_zone",
+  "intent": "create_zone",
+  "zone_desc": "一号分区、二号分区"
+ },
+ {
+  "name": "delete_zone/一号分区",
+  "want": "一号分区分区已经删除完成。",
+  "kind": "delete_zone",
+  "intent": "delete_zone",
+  "zone_desc": "一号分区"
+ },
+ {
+  "name": "delete_zone/教学楼分区",
+  "want": "教学楼分区分区已经删除完成。",
+  "kind": "delete_zone",
+  "intent": "delete_zone",
+  "zone_desc": "教学楼分区"
+ },
+ {
+  "name": "delete_zone/2个分区",
+  "want": "已删除分区：2个分区。",
+  "kind": "delete_zone",
+  "intent": "delete_zone",
+  "zone_desc": "2个分区"
+ },
+ {
+  "name": "zone_member/add_terminal_to_zone/一号分区/A101教室音箱",
+  "want": "已将A101教室音箱加入分区一号分区。",
+  "kind": "zone_member",
+  "intent": "add_terminal_to_zone",
+  "zone_desc": "一号分区",
+  "terminal_desc": "A101教室音箱",
+  "action_label": "加入"
+ },
+ {
+  "name": "zone_member/add_terminal_to_zone/教学楼分区/A101教室音箱、A102教室音箱",
+  "want": "A101教室音箱、A102教室音箱已经加入到分区教学楼分区。",
+  "kind": "zone_member",
+  "intent": "add_terminal_to_zone",
+  "zone_desc": "教学楼分区",
+  "terminal_desc": "A101教室音箱、A102教室音箱",
+  "action_label": "加入"
+ },
+ {
+  "name": "zone_member/add_terminal_to_zone/一号分区/3个终端",
+  "want": "3个终端已经加入到分区一号分区。",
+  "kind": "zone_member",
+  "intent": "add_terminal_to_zone",
+  "zone_desc": "一号分区",
+  "terminal_desc": "3个终端",
+  "action_label": "加入"
+ },
+ {
+  "name": "zone_member/remove_terminal_from_zone/一号分区/A101教室音箱",
+  "want": "已将A101教室音箱从分区一号分区移出。",
+  "kind": "zone_member",
+  "intent": "remove_terminal_from_zone",
+  "zone_desc": "一号分区",
+  "terminal_desc": "A101教室音箱",
+  "action_label": "移出"
+ },
+ {
+  "name": "zone_member/remove_terminal_from_zone/教学楼分区/A101教室音箱、A102教室音箱",
+  "want": "已将A101教室音箱、A102教室音箱从分区教学楼分区移出。",
+  "kind": "zone_member",
+  "intent": "remove_terminal_from_zone",
+  "zone_desc": "教学楼分区",
+  "terminal_desc": "A101教室音箱、A102教室音箱",
+  "action_label": "移出"
+ },
+ {
+  "name": "zone_member/remove_terminal_from_zone/一号分区/3个终端",
+  "want": "已将3个终端从分区一号分区移出。",
+  "kind": "zone_member",
+  "intent": "remove_terminal_from_zone",
+  "zone_desc": "一号分区",
+  "terminal_desc": "3个终端",
+  "action_label": "移出"
+ },
+ {
+  "name": "ask/create_zone",
+  "want": "还差分区名称哦，告诉我一下哈~\n举个例子：比如教学楼分区",
+  "kind": "ask",
+  "intent": "create_zone",
+  "need": "分区名称",
+  "example": "比如教学楼分区"
+ },
+ {
+  "name": "ask/delete_zone",
+  "want": "您把分区名称补齐我就接着做啦~\n举个例子：比如教学楼分区",
+  "kind": "ask",
+  "intent": "delete_zone",
+  "need": "分区名称",
+  "example": "比如教学楼分区"
+ },
+ {
+  "name": "ask/add_terminal_to_zone",
+  "want": "还差分区名称哦，告诉我一下哈~\n举个例子：比如教学楼分区",
+  "kind": "ask",
+  "intent": "add_terminal_to_zone",
+  "need": "分区名称",
+  "example": "比如教学楼分区"
+ },
+ {
+  "name": "ask/remove_terminal_from_zone",
+  "want": "您把分区名称补齐我就接着做啦~\n举个例子：比如教学楼分区",
+  "kind": "ask",
+  "intent": "remove_terminal_from_zone",
+  "need": "分区名称",
+  "example": "比如教学楼分区"
+ },
+ {
+  "name": "failure/no_zone_to_delete",
+  "want": "唉，可删除的分区没弄成，要不换种方式再来？\n确认一下分区名再说一次哈~",
+  "kind": "failure",
+  "intent": "no_zone_to_delete",
+  "topic": "可删除的分区",
+  "reason": "",
+  "suggestion": "确认一下分区名再说一次哈~"
+ },
+ {
+  "name": "failure/no_zone_to_operate",
+  "want": "可操作的分区这次没成功呢，再试一下哈~\n确认一下分区名再说一次哈~",
+  "kind": "failure",
+  "intent": "no_zone_to_operate",
+  "topic": "可操作的分区",
+  "reason": "",
+  "suggestion": "确认一下分区名再说一次哈~"
+ },
+ {
+  "name": "failure/enable_terminal",
+  "want": "启用终端这次出了点问题，终端不在线。\n稍后可以再试一次。",
+  "kind": "failure",
+  "intent": "enable_terminal",
+  "topic": "启用终端",
+  "reason": "终端不在线",
+  "suggestion": "稍后可以再试一次。"
+ },
+ {
+  "name": "failure/disable_terminal",
+  "want": "emm，停用终端没成，终端不在线哎。\n稍后可以再试一次。",
+  "kind": "failure",
+  "intent": "disable_terminal",
+  "topic": "停用终端",
+  "reason": "终端不在线",
+  "suggestion": "稍后可以再试一次。"
+ },
+ {
+  "name": "failure/sync_terminal_time",
+  "want": "终端校时没搞定呢，原因是终端不在线~\n稍后可以再试一次。",
+  "kind": "failure",
+  "intent": "sync_terminal_time",
+  "topic": "终端校时",
+  "reason": "终端不在线",
+  "suggestion": "稍后可以再试一次。"
+ }
+]

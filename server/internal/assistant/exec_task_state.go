@@ -179,10 +179,17 @@ func (s *Service) execAdjustVolume(ctx context.Context, u *auth.User, slots map[
 	taskName := slotText(slots, "task_name", "TASK", "CONTENT", "task")
 	taskIDText := slotText(slots, "task_id", "TASK_ID")
 	scheduleName := slotText(slots, "schedule_name", "schedule_id", "SCHEDULE", "SCHEDULE_ID")
+
+	// 没说任务、却说了终端或分区 → 调的是终端音量。
+	// 这两条在原实现里是 adjust_volume_terminal，措辞种子也用那个意图名。
+	if taskName == "" && !isNumericID(taskIDText) && mentionsTerminal(slots) {
+		return s.adjustTerminalVolume(ctx, u, slots, volume)
+	}
+
 	if taskName == "" && !isNumericID(taskIDText) {
 		return actionResult{
-			// 全局音量与终端音量还没接，说清楚要哪一个，不要含糊地"已调整"
-			Reply:        askRuntimeReply("adjust_volume", "要调整音量的任务名称", "比如说“把早读预备铃的音量调到 80”哈~"),
+			// 全局音量（serverbaseparam）还没接，说清楚要调哪个，不要含糊地"已调整"
+			Reply:        askRuntimeReply("adjust_volume", "要调整音量的任务或终端", "比如说“把早读预备铃的音量调到 80”哈~"),
 			MissingSlots: []string{"task_name"},
 		}
 	}
@@ -348,4 +355,73 @@ func parseVolume(s string) (int, bool) {
 		return 0, false
 	}
 	return n, true
+}
+
+// mentionsTerminal 判断这一句说的是不是终端/分区。
+func mentionsTerminal(slots map[string][]string) bool {
+	for _, k := range []string{"terminal_id", "terminal_name", "terminal", "zone_name", "ZONE"} {
+		for _, v := range slots[k] {
+			if strings.TrimSpace(v) != "" {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// adjustTerminalVolume 调终端音量。走 terminal.SetVolume ——
+// 它要求终端在线，并且校验 0~100（修的是旧版 D-97 的无校验）。
+func (s *Service) adjustTerminalVolume(ctx context.Context, u *auth.User,
+	slots map[string][]string, volume int) actionResult {
+
+	if s.terminals == nil || s.notifier == nil {
+		return actionResult{Err: fmt.Errorf("终端服务未接入")}
+	}
+	ids, desc, res := s.resolveTerminalTargets(ctx, u, slots)
+	if res != nil {
+		return *res
+	}
+	out, err := s.terminals.SetVolume(ctx, u, ids, volume)
+	if err != nil {
+		return actionResult{
+			Reply: failureRuntimeReply("adjust_volume_terminal",
+				desc+"的音量调整", nil, err.Error(), ""),
+		}
+	}
+	if len(out.Succeeded) == 0 {
+		reason := "没有可执行的终端"
+		if len(out.Skipped) > 0 {
+			reason = skippedReasonText(out.Skipped[0])
+		}
+		return actionResult{
+			Reply: failureRuntimeReply("adjust_volume_terminal",
+				desc+"的音量调整", nil, reason, "稍后可以再试一次。"),
+			ActionLog: []map[string]any{{
+				"intent": "adjust_volume_terminal", "mode": "runtime",
+				"details": map[string]any{"terminal_ids": ids, "volume": volume,
+					"count": 0, "skipped": skippedDetails(out.Skipped), "reason": reason},
+			}},
+		}
+	}
+	s.notifier.TerminalVolume(ctx, out.Succeeded, volume)
+
+	scopeDesc := desc
+	if len(out.Succeeded) == 1 {
+		scopeDesc = "终端“" + desc + "”"
+	}
+	reply := successRuntimeReply("adjust_volume_terminal", adjustVolumeVariants,
+		[]string{scopeDesc, seedNum(volume)},
+		map[string]string{"scope_desc": scopeDesc, "volume": itoa(volume)})
+	reply = appendReplyDetails(reply, skippedLine(out.Skipped))
+
+	return actionResult{
+		Reply: reply,
+		ActionLog: []map[string]any{{
+			"intent": "adjust_volume_terminal", "mode": "runtime",
+			"details": map[string]any{
+				"terminal_ids": out.Succeeded, "count": len(out.Succeeded),
+				"volume": volume, "skipped": skippedDetails(out.Skipped), "notified": true,
+			},
+		}},
+	}
 }

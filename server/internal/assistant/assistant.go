@@ -39,6 +39,8 @@ import (
 	"htweb/internal/config"
 	"htweb/internal/notify"
 	"htweb/internal/task"
+	"htweb/internal/terminal"
+	"htweb/internal/zone"
 )
 
 // Service 是助手的门面。
@@ -52,8 +54,10 @@ type Service struct {
 	// 写操作走 task.Service 才能继承它的守卫（归属、方案停用、空任务）
 	// 与通知协议；自己写 UPDATE 等于把这些悄悄丢掉 —— 用对话启动一条没有终端
 	// 的任务不会报错，只会让后台空转。为空表示还没接进来，执行器会如实说。
-	tasks    *task.Service
-	notifier *notify.Notifier
+	tasks     *task.Service
+	notifier  *notify.Notifier
+	terminals *terminal.Service
+	zones     *zone.Service
 
 	// matchOne 是名称解析的模糊那一层。默认就是旁挂服务的 /match，
 	// 单独拎成字段只为了测试时能塞一个固定打分的桩进来 ——
@@ -72,11 +76,14 @@ func New(db *sql.DB, cfg config.Assistant) *Service {
 	return s
 }
 
-// AttachTaskServices 把页面用的任务服务与通知器接进来。
+// AttachServices 把页面用的那几个 service 接进来。
 // 单独一个方法而不是塞进 New，是因为构造顺序上它们在助手之后才建好。
-func (s *Service) AttachTaskServices(t *task.Service, n *notify.Notifier) {
+func (s *Service) AttachServices(t *task.Service, n *notify.Notifier,
+	term *terminal.Service, z *zone.Service) {
 	s.tasks = t
 	s.notifier = n
+	s.terminals = term
+	s.zones = z
 }
 
 // Enabled 报告助手这个功能开没开。关掉时路由不注册、菜单不下发。
