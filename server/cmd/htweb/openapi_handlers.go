@@ -212,3 +212,41 @@ func pathRef(r *http.Request) openapi.Ref {
 }
 
 func refEmpty(ref openapi.Ref) bool { return ref.ID == 0 && ref.Name == "" }
+
+// ---------- 立即播放 / 停止 ----------
+
+func (a *app) handleOpenPlay(w http.ResponseWriter, r *http.Request) {
+	var in openapi.PlayInput
+	if !httpx.DecodeJSON(w, r, &in) {
+		return
+	}
+	h, err := a.openAPI.Play(r.Context(), auth.From(r.Context()), ctxKeyPrefix(r.Context()), in)
+	if err != nil {
+		a.failOpen(w, "立即播放", err)
+		return
+	}
+	httpx.OK(w, h)
+}
+
+func (a *app) handleOpenPlayStop(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.ParseInt(r.PathValue("playId"), 10, 64)
+	if err != nil || id <= 0 {
+		httpx.Fail(w, httpx.CodeBadRequest, "playId 不合法")
+		return
+	}
+	h, err := a.openAPI.StopPlay(r.Context(), auth.From(r.Context()), id)
+	if err != nil {
+		a.failOpen(w, "停止立即播放", err)
+		return
+	}
+	httpx.OK(w, h)
+}
+
+func (a *app) handleOpenPlayList(w http.ResponseWriter, r *http.Request) {
+	list, err := a.openAPI.ListPlays(r.Context(), auth.From(r.Context()))
+	if err != nil {
+		a.failOpen(w, "查询立即播放", err)
+		return
+	}
+	httpx.OK(w, list)
+}

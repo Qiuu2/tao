@@ -766,6 +766,12 @@ func (a *app) routes() http.Handler {
 	mux.HandleFunc("DELETE /openapi/v1/tasks/{ref}", openTask(a.handleOpenTaskDelete))
 	mux.HandleFunc("DELETE /openapi/v1/tasks", openTask(a.handleOpenTaskDelete))
 
+	// 立即播放：建一条临时任务并启动它，停止时连任务一起删掉。
+	// 登记在 api_play 表里（与助手的那张分开，「停」不该互相波及）。
+	mux.HandleFunc("POST /openapi/v1/play", openTask(a.handleOpenPlay))
+	mux.HandleFunc("GET /openapi/v1/play", openq(a.handleOpenPlayList))
+	mux.HandleFunc("POST /openapi/v1/play/{playId}/stop", openTask(a.handleOpenPlayStop))
+
 	// —— 健康检查（不需要登录，便于运维探活）——
 	mux.HandleFunc("GET /api/health", a.handleHealth)
 

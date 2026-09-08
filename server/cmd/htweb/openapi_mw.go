@@ -59,7 +59,12 @@ func (a *app) openKey(next http.HandlerFunc) http.HandlerFunc {
 		// 台账：这把密钥还有人在用吗、从哪调的。写入自带节流。
 		a.openAPI.TouchUsed(r.Context(), why, clientIP(r))
 
-		next(w, r.WithContext(auth.WithUser(r.Context(), u)))
+		// 前缀往下传：立即播放要把「是哪把密钥发起的」记进 api_play。
+		// 只记账号是不够的 —— 一个账号发三把密钥给三个系统，
+		// 出事时分不清是哪个系统让操场响的。
+		ctx := auth.WithUser(r.Context(), u)
+		ctx = context.WithValue(ctx, keyPrefixCtxKey{}, why)
+		next(w, r.WithContext(ctx))
 	}
 }
 
@@ -99,6 +104,19 @@ func clientIP(r *http.Request) string {
 		return ip
 	}
 	return r.RemoteAddr
+}
+
+// keyPrefixCtxKey 是密钥前缀在请求上下文里的键。
+//
+// 用私有的空结构体做键（而不是字符串），是 context 的标准做法：
+// 别的包不可能不小心用同名字符串覆盖掉它。
+type keyPrefixCtxKey struct{}
+
+// ctxKeyPrefix 取当前请求用的是哪把密钥（前缀）。不是密钥本身，
+// 前缀不是秘密 —— 它只用来在台账里标识来源。
+func ctxKeyPrefix(ctx context.Context) string {
+	v, _ := ctx.Value(keyPrefixCtxKey{}).(string)
+	return v
 }
 
 // ctxUser 是给需要在 handler 里拿身份的地方用的小助手。

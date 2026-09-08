@@ -1,4 +1,4 @@
--- 开发者接口的新增表（1 张）
+-- 开发者接口的新增表（2 张）
 --
 -- # 为什么要新建表
 --
@@ -70,3 +70,45 @@ CREATE TABLE IF NOT EXISTS `api_key` (
   KEY `idx_api_key_user` (`userid`),
   KEY `idx_api_key_enabled` (`enabled`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='开发者接口密钥（新版新增，旧系统没有）';
+
+
+-- ────────────────────────────────────────────────────────────
+-- 2. api_play —— 立即播放的临时任务登记
+--
+-- 「现在把国歌播到操场」会在 task 表建一条临时任务并启动它。问题是事后
+-- 要能找回来停掉、清掉 —— 而 task 表**不能加列**做标记（R1 红线），
+-- 所以另起一张登记表记「哪些 taskid 是开发者接口临时建的」。
+--
+-- # 为什么不复用 assistant_runtime_play
+--
+-- 那张表是 AI 助手的，前端「助手时间线」直接读它。把接口建的临时任务
+-- 混进去，用户会在助手的时间线里看到自己从没说过的播放记录，
+-- 而且「停止播放」会把第三方系统正在放的东西停掉。
+-- 两个来源、两份台账，各停各的。
+--
+-- # 没有登记会怎样
+--
+-- task 表里堆一串「立即播放_国歌_0908103012」这样的条目，几天后没人
+-- 知道它们是什么、能不能删。有了登记，孤儿任务能按 state + starttime 清掉。
+-- ────────────────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS `api_play` (
+  `id`           bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  -- 临时任务在 task 表里的 id。停止和清理都按它找。
+  `taskid`       int(11)       NOT NULL DEFAULT 0 COMMENT 'task.taskid',
+  -- 播的是什么、播到哪 —— 回执和列表接口直接用，不必再去连表查。
+  `medianame`    varchar(255)  NOT NULL DEFAULT '',
+  `media_ids`    varchar(1024) NOT NULL DEFAULT '' COMMENT '逗号分隔',
+  `terminal_ids` varchar(2048) NOT NULL DEFAULT '' COMMENT '逗号分隔',
+  -- playing / stopped。stopped 的行保留，是为了能回答
+  -- 「昨天下午三点是谁让操场响的」。
+  `state`        varchar(16)   NOT NULL DEFAULT 'playing',
+  -- 哪个账号、用哪把密钥发起的。追责时缺一不可 ——
+  -- 只记账号的话，一个账号发了三把密钥给三个系统就分不清是谁。
+  `userid`       int(10)       NOT NULL DEFAULT 0,
+  `keyprefix`    varchar(16)   NOT NULL DEFAULT '',
+  `starttime`    timestamp     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `endtime`      datetime               DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_api_play_state` (`state`, `starttime`),
+  KEY `idx_api_play_taskid` (`taskid`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='开发者接口立即播放的临时任务（新版新增，旧系统没有）';
