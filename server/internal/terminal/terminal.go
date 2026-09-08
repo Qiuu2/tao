@@ -299,33 +299,39 @@ func (s *Service) List(ctx context.Context, u *auth.User, q ListQuery) (*ListRes
 }
 
 // fillGroupNames 一次把用到的分区名查出来再回填，避免每行一次查询。
+// fillGroupNames 回填每台终端的分区名。
+//
+// ⚠ ids 为空时**不能提前返回**：那批终端全都没分区（groupid = 0），
+// 它们照样要标上「(未分区)」。早先这里写的是 `if len(ids)==0 { return nil }`，
+// 于是「这一页的终端恰好都没分区」时分区列整列空白 ——
+// 每页 18 条时几乎撞不上，翻到最后一页只剩一台未分区终端时就出现了，
+// 看起来像是数据丢了。跳过的应该只是那条查询，不是后面的标注。
 func (s *Service) fillGroupNames(ctx context.Context, items []Item, ids map[int64]bool) error {
-	if len(ids) == 0 {
-		return nil
-	}
-	list := make([]int64, 0, len(ids))
-	for id := range ids {
-		list = append(list, id)
-	}
-	ph, args := placeholders(list)
-	rs, err := s.db.QueryContext(ctx,
-		`SELECT streamid, COALESCE(name,'') FROM serverplaystream WHERE streamid IN (`+ph+`)`, args...)
-	if err != nil {
-		return fmt.Errorf("查询分区名: %w", err)
-	}
-	defer rs.Close()
+	names := make(map[int64]string, len(ids))
+	if len(ids) > 0 {
+		list := make([]int64, 0, len(ids))
+		for id := range ids {
+			list = append(list, id)
+		}
+		ph, args := placeholders(list)
+		rs, err := s.db.QueryContext(ctx,
+			`SELECT streamid, COALESCE(name,'') FROM serverplaystream WHERE streamid IN (`+ph+`)`, args...)
+		if err != nil {
+			return fmt.Errorf("查询分区名: %w", err)
+		}
+		defer rs.Close()
 
-	names := make(map[int64]string, len(list))
-	for rs.Next() {
-		var id int64
-		var name string
-		if err := rs.Scan(&id, &name); err != nil {
+		for rs.Next() {
+			var id int64
+			var name string
+			if err := rs.Scan(&id, &name); err != nil {
+				return err
+			}
+			names[id] = name
+		}
+		if err := rs.Err(); err != nil {
 			return err
 		}
-		names[id] = name
-	}
-	if err := rs.Err(); err != nil {
-		return err
 	}
 	for i := range items {
 		if items[i].GroupID == 0 {
