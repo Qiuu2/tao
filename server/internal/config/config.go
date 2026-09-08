@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"gopkg.in/yaml.v3"
@@ -25,6 +26,7 @@ type Config struct {
 	Backup    Backup    `yaml:"backup"`
 	Dashboard Dashboard `yaml:"dashboard"`
 	Register  Register  `yaml:"register"`
+	Assistant Assistant `yaml:"assistant"`
 	Legacy    Legacy    `yaml:"legacy"`
 }
 
@@ -215,6 +217,14 @@ func Default() *Config {
 		Media:  Media{Root: "/opt/apps/a9000", MaxUploadMB: 300, FFmpeg: "/opt/apps/a9000/bin/ffmpeg"},
 		Notify: Notify{Host: "127.0.0.1", Port: 0, Enabled: true},
 		Auth:   Auth{TTL: 8 * time.Hour, CaptchaEnabled: true},
+		Assistant: Assistant{
+			Enabled:      false,
+			NLUURL:       "http://127.0.0.1:5013",
+			NLUTimeout:   5 * time.Second,
+			SessionTTL:   30 * time.Minute,
+			UndoTTL:      10 * time.Minute,
+			HistoryLimit: 1000,
+		},
 		Legacy: Legacy{
 			ApacheConf:  "/opt/apps/a9000/home/apache/httpd.conf",
 			SwaggerFile: "/opt/apps/a9000/html/ok112/swagger-ui/dist/swagger1.json",
@@ -235,5 +245,58 @@ func (c *Config) validate() error {
 	if c.Auth.TTL <= 0 {
 		c.Auth.TTL = 8 * time.Hour
 	}
+	// 助手的几个时限给兜底值：配错成 0 会让超时立刻触发、会话永远算过期，
+	// 表现是「助手时好时坏」，很难查。
+	if c.Assistant.NLUTimeout <= 0 {
+		c.Assistant.NLUTimeout = 5 * time.Second
+	}
+	if c.Assistant.SessionTTL <= 0 {
+		c.Assistant.SessionTTL = 30 * time.Minute
+	}
+	if c.Assistant.UndoTTL <= 0 {
+		c.Assistant.UndoTTL = 10 * time.Minute
+	}
+	if c.Assistant.HistoryLimit <= 0 {
+		c.Assistant.HistoryLimit = 1000
+	}
+	if c.Assistant.Enabled && strings.TrimSpace(c.Assistant.NLUURL) == "" {
+		return fmt.Errorf("assistant.enabled 为 true 时 assistant.nlu_url 不能为空")
+	}
 	return nil
+}
+
+// Assistant 是 AI 助手（业务域十四）。
+//
+// # 为什么 NLU 要单开一个进程
+//
+// 意图识别与槽位抽取用的是一个训练好的中文模型（joint_rbt3，RBT3 三层
+// RoBERTa + 意图头 + 槽位 BIO 头），权重 147MB，推理要 PyTorch。
+// htweb 是纯 Go 单二进制（直接依赖只有 mysql 驱动和 yaml 两个，这是有意的），
+// 把 PyTorch 塞进来既不可能也不划算。
+//
+// 所以拆成两半，边界卡得很死：
+//
+//	Python 侧  只做推理：文本进 → {intent, confidence, slots} 出。
+//	           **不碰数据库、不做任何写操作、不知道广播系统的存在。**
+//	Go 侧      拿到意图槽位之后的一切：消歧、鉴权、执行、审计、回话。
+//
+// 这样模型效果与原系统一比一保住，而所有写操作都落在 Go + 数据库这一侧。
+// 与 htweb 同机部署，走 127.0.0.1，不出网。
+type Assistant struct {
+	// Enabled 关掉时整个助手不注册路由，前端也拿不到入口。
+	Enabled bool `yaml:"enabled"`
+	// NLUURL 是本机 NLU 服务的地址，形如 http://127.0.0.1:5013。
+	// 留空等于没有 NLU —— 助手会如实回报「识别服务不可用」，而不是假装听懂。
+	NLUURL string `yaml:"nlu_url"`
+	// NLUTimeout 单次推理超时。模型很小，正常在 100ms 内，
+	// 给到 5s 是为了容忍冷启动第一次加载权重。
+	NLUTimeout time.Duration `yaml:"nlu_timeout"`
+	// SessionTTL 会话上下文多久算过期。过期后指代消解（「刚才那个」）失效，
+	// 重新开始一轮对话。
+	SessionTTL time.Duration `yaml:"session_ttl"`
+	// UndoTTL 撤销凭据的有效期。过了就撤不回来了 ——
+	// 广播任务过一会儿可能已经播出去了，撤销的意义随时间迅速衰减。
+	UndoTTL time.Duration `yaml:"undo_ttl"`
+	// HistoryLimit 指令历史保留多少条（按用户计）。原实现是 1000。
+	HistoryLimit int `yaml:"history_limit"`
 }

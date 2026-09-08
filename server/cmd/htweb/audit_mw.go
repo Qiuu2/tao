@@ -167,6 +167,14 @@ var auditLabels = map[string]string{
 	// 自己写一行（带上清掉多少条），所以一次「确定」会留两行：先设置、后清理。
 	"PUT /api/logs/retention": "修改日志保留期",
 
+	// AI 助手。
+	// ⚠ POST /api/assistant/chat **不在这里** —— 一次对话可能什么都没改
+	//   （查询、没听懂、权限不足），统一记「与助手对话」既没信息量又淹没真正的写操作。
+	//   助手**执行**的每个动作由执行器自己记一行，动作名就是它实际干的事
+	//   （「取消作息任务」「调整音量」…），与页面上手工做同一件事的日志一致。
+	"DELETE /api/assistant/history": "清空助手指令历史",
+	"PUT /api/assistant/settings":   "修改助手设置",
+
 	// 看板首页那三块可配置区域是全局共享的界面设置，改了所有人都受影响
 	"PUT /api/dashboard/shortcuts":   "修改看板快捷入口",
 	"PUT /api/dashboard/quick-tasks": "修改看板快捷任务",

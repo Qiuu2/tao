@@ -25,6 +25,7 @@ import (
 	"time"
 
 	"htweb/internal/alarm"
+	"htweb/internal/assistant"
 	"htweb/internal/audit"
 	"htweb/internal/auth"
 	"htweb/internal/backup"
@@ -79,6 +80,7 @@ type app struct {
 	holidays  *holiday.Service
 	remotes   *remote.Service
 	times     *timeset.Service
+	assist    *assistant.Service
 	typed     *typedtask.Service
 	enables   *enable.Service
 	sounds    *sound.Service
@@ -119,6 +121,7 @@ func main() {
 		tasks:     task.New(st.DB()),
 		alarms:    alarm.New(st.DB()),
 		bells:     bell.New(st.DB()),
+		assist:    assistant.New(st.DB(), cfg.Assistant),
 		auditor:   audit.New(st.DB()),
 		taskLogs:  logs.NewTaskLog(st.DB(), cfg.Logs.TaskDir),
 		backups: backup.New(st.DB(), cfg.BackupDir(), cfg.BackupMediaDir(),
@@ -158,6 +161,11 @@ func main() {
 	purgeCtx, stopPurge := context.WithCancel(context.Background())
 	defer stopPurge()
 	a.logKeep.StartDaily(purgeCtx)
+	// 助手的日常清理：过期会话、过期撤销凭据。与上面共用同一个取消上下文，
+	// 进程退出时一起停。
+	if a.assist.Enabled() {
+		a.assist.StartHousekeeping(purgeCtx)
+	}
 
 	go func() {
 		log.Printf("htweb 启动，监听 %s", cfg.Server.Listen)
@@ -421,6 +429,23 @@ func (a *app) routes() http.Handler {
 	mux.HandleFunc("DELETE /api/logs", sup(a.handleLogClear))
 
 	// 日志保留期：读对超管开放（这一页本来就只有超管进得来），改也一样。
+	// —— AI 助手 ——
+	//
+	// 关掉（assistant.enabled=false）时整组路由不注册：接口直接 404，
+	// 前端拿不到入口，也就不会出现一个点了没反应的浮窗。
+	//
+	// ⚠ 路由这一层只要求登录。**具体意图的权限在 service 里按意图判**
+	//   （internal/assistant/intent.go）—— 说话本身不需要权限，
+	//   但「把作息方案停掉」需要 bellpriv，与页面上完全一致。
+	if a.assist.Enabled() {
+		mux.HandleFunc("GET /api/assistant/status", req(a.handleAssistantStatus))
+		mux.HandleFunc("POST /api/assistant/chat", req(a.handleAssistantChat))
+		mux.HandleFunc("GET /api/assistant/history", req(a.handleAssistantHistory))
+		mux.HandleFunc("DELETE /api/assistant/history", req(a.handleAssistantHistoryClear))
+		mux.HandleFunc("GET /api/assistant/settings", req(a.handleAssistantSettings))
+		mux.HandleFunc("PUT /api/assistant/settings", req(a.handleAssistantSettingsSave))
+	}
+
 	mux.HandleFunc("GET /api/logs/retention", sup(a.handleLogRetentionGet))
 	// PUT 一次做两件事：存设置 + 立刻滚一次。界面上就是「选完点确定」那一下。
 	mux.HandleFunc("PUT /api/logs/retention", sup(a.handleLogRetentionSet))

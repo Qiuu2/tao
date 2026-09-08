@@ -84,8 +84,9 @@ func (a *app) handleBackupCreate(w http.ResponseWriter, r *http.Request) {
 // 同一条恢复路径。详见 backup/upload.go。
 //
 // ⚠ 用 MultipartReader 流式读，**不用 ParseMultipartForm** ——
-//   后者会先把整个请求体读进内存/临时文件再交给你，一个 80MB 的包
-//   就是 80MB 的内存峰值。这里边读边往磁盘写，内存占用恒定。
+//
+//	后者会先把整个请求体读进内存/临时文件再交给你，一个 80MB 的包
+//	就是 80MB 的内存峰值。这里边读边往磁盘写，内存占用恒定。
 func (a *app) handleBackupUpload(w http.ResponseWriter, r *http.Request) {
 	mr, err := r.MultipartReader()
 	if err != nil {
