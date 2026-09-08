@@ -90,6 +90,28 @@ func (s *Service) execTaskState(intent string, action task.Action) executor {
 		scheduleName := slotText(slots, "schedule_name", "schedule_id", "SCHEDULE", "SCHEDULE_ID")
 
 		if taskName == "" && !isNumericID(taskIDText) {
+			// 没指名任务、又刚让我放过东西 → 说的多半是"把刚才那个停掉"。
+			// execPlayMedia 的回话里明写着"不想放了随时叫我停"，
+			// 这里不接住就是说话不算数。
+			if action == task.ActionStop {
+				if playTaskID, playName, ok := s.activeRuntimePlay(ctx, u); ok {
+					if err := s.stopRuntimePlay(ctx, u, playTaskID); err != nil {
+						return actionResult{Err: err}
+					}
+					return actionResult{
+						Reply: successRuntimeReply("stop_task", taskStateVariants,
+							[]string{playName},
+							map[string]string{"task_name": playName, "action_label": "停止"}),
+						ActionLog: []map[string]any{{
+							"intent": "stop_task", "mode": "runtime",
+							"details": map[string]any{
+								"runtime_scope": "temp_task",
+								"task_id":       itoa64(playTaskID), "count": 1,
+							},
+						}},
+					}
+				}
+			}
 			return actionResult{
 				Reply:        askRuntimeReply(intent, "要"+actionText+"的任务名称", "比如说出任务的名字哈~"),
 				MissingSlots: []string{"task_name"},

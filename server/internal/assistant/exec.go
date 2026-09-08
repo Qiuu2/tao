@@ -43,6 +43,7 @@ func (s *Service) executors() map[Intent]executor {
 		IntentTaskPause:    s.execTaskState("task_pause", task.ActionPause),
 		IntentTaskResume:   s.execTaskState("task_resume", task.ActionResume),
 		IntentAdjustVolume: s.execAdjustVolume,
+		IntentPlayMedia:    s.execPlayMedia,
 
 		// 终端与分区。同样交给页面用的 terminal.Service / zone.Service，
 		// 见 exec_zone.go。
