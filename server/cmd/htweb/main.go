@@ -772,6 +772,15 @@ func (a *app) routes() http.Handler {
 	mux.HandleFunc("GET /openapi/v1/play", openq(a.handleOpenPlayList))
 	mux.HandleFunc("POST /openapi/v1/play/{playId}/stop", openTask(a.handleOpenPlayStop))
 
+	// 作息方案。权限位是 bellpriv —— 与界面「作息方案」那一页一致，
+	// 只有文件广播权限的人不该能靠接口改上下课铃。
+	openBell := func(h http.HandlerFunc) http.HandlerFunc {
+		return a.openRight(auth.PrivBell, h)
+	}
+	mux.HandleFunc("POST /openapi/v1/schedules", openBell(a.handleOpenScheduleCreate))
+	mux.HandleFunc("PUT /openapi/v1/schedules/{name}/state", openBell(a.handleOpenScheduleState))
+	mux.HandleFunc("DELETE /openapi/v1/schedules/{name}", openBell(a.handleOpenScheduleDelete))
+
 	// —— 健康检查（不需要登录，便于运维探活）——
 	mux.HandleFunc("GET /api/health", a.handleHealth)
 

@@ -250,3 +250,43 @@ func (a *app) handleOpenPlayList(w http.ResponseWriter, r *http.Request) {
 	}
 	httpx.OK(w, list)
 }
+
+// ---------- 作息方案：新建 / 启停 / 删除 ----------
+
+func (a *app) handleOpenScheduleCreate(w http.ResponseWriter, r *http.Request) {
+	var in openapi.ScheduleInput
+	if !httpx.DecodeJSON(w, r, &in) {
+		return
+	}
+	res, err := a.openAPI.CreateSchedule(r.Context(), auth.From(r.Context()), in)
+	if err != nil {
+		a.failOpen(w, "新建作息方案", err)
+		return
+	}
+	httpx.OK(w, res)
+}
+
+func (a *app) handleOpenScheduleState(w http.ResponseWriter, r *http.Request) {
+	var in struct {
+		Enabled bool `json:"enabled"`
+	}
+	if !httpx.DecodeJSON(w, r, &in) {
+		return
+	}
+	res, err := a.openAPI.SetScheduleState(r.Context(), auth.From(r.Context()),
+		r.PathValue("name"), in.Enabled)
+	if err != nil {
+		a.failOpen(w, "启停作息方案", err)
+		return
+	}
+	httpx.OK(w, res)
+}
+
+func (a *app) handleOpenScheduleDelete(w http.ResponseWriter, r *http.Request) {
+	res, err := a.openAPI.DeleteSchedule(r.Context(), auth.From(r.Context()), r.PathValue("name"))
+	if err != nil {
+		a.failOpen(w, "删除作息方案", err)
+		return
+	}
+	httpx.OK(w, res)
+}
