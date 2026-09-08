@@ -130,7 +130,31 @@ func (s *Service) Chat(ctx context.Context, u *auth.User, in ChatRequest) (*Chat
 	out.Tokens = res.Tokens
 	out.Tags = res.Tags
 
-	// ── 3./4. 指代消解与锁定项（阶段 6 接入，先把会话读写打通）──
+	// ── 3. 指代消解 ──
+	//
+	// 「把刚才那个停掉」→ 从上一轮回填对象。只在这一轮自己没说对象时才回填。
+	if filled := applyCoreference(sess, text, res.Slots); len(filled) > 0 {
+		out.Slots = res.Slots
+		out.Diagnostics = append(out.Diagnostics, map[string]any{
+			"kind": "coreference", "filled": filled,
+		})
+	}
+
+	// ── 4. 缺槽位续问 ──
+	//
+	// 上一轮说"还差时间范围"，这一轮用户只说「明天」。没有这一步，
+	// 「明天」会被当成一句全新的话去理解 —— 助手刚问完就不认账了。
+	if containsAnyOf(text, askCancelTriggers) {
+		forgetAsk(sess)
+	} else if last, merged, ok := resumeAsk(sess, res.Intent, res.Slots); ok {
+		res.Intent = last
+		res.Slots = merged
+		out.Intent = string(last)
+		out.Slots = merged
+		out.Diagnostics = append(out.Diagnostics, map[string]any{
+			"kind": "resume_ask", "intent": string(last),
+		})
+	}
 
 	// ── 5. 认识这个意图吗 ──
 	if res.Intent == IntentNone || !Known(res.Intent) {
@@ -216,8 +240,14 @@ func (s *Service) Chat(ctx context.Context, u *auth.User, in ChatRequest) (*Chat
 		sess.Pending = nil
 	}
 	// 缺槽位时不算成功，让前端能区分"做完了"和"还差东西"
-	if len(out.MissingSlots) > 0 && out.DialogState == "" {
-		out.DialogState = "missing_slots"
+	if len(out.MissingSlots) > 0 {
+		if out.DialogState == "" {
+			out.DialogState = "missing_slots"
+		}
+		// 记下这一轮问的是什么，下一轮用户补上来时接着做
+		rememberAsk(sess, res.Intent, res.Slots)
+	} else {
+		forgetAsk(sess)
 	}
 
 	sess.LastIntent = res.Intent
