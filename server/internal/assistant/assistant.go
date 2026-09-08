@@ -36,6 +36,7 @@ import (
 	"database/sql"
 	"time"
 
+	"htweb/internal/bell"
 	"htweb/internal/config"
 	"htweb/internal/enable"
 	"htweb/internal/notify"
@@ -60,6 +61,7 @@ type Service struct {
 	terminals *terminal.Service
 	zones     *zone.Service
 	enables   *enable.Service
+	bells     *bell.Service
 
 	// matchOne 是名称解析的模糊那一层。默认就是旁挂服务的 /match，
 	// 单独拎成字段只为了测试时能塞一个固定打分的桩进来 ——
@@ -81,12 +83,13 @@ func New(db *sql.DB, cfg config.Assistant) *Service {
 // AttachServices 把页面用的那几个 service 接进来。
 // 单独一个方法而不是塞进 New，是因为构造顺序上它们在助手之后才建好。
 func (s *Service) AttachServices(t *task.Service, n *notify.Notifier,
-	term *terminal.Service, z *zone.Service, e *enable.Service) {
+	term *terminal.Service, z *zone.Service, e *enable.Service, b *bell.Service) {
 	s.tasks = t
 	s.notifier = n
 	s.terminals = term
 	s.zones = z
 	s.enables = e
+	s.bells = b
 }
 
 // Enabled 报告助手这个功能开没开。关掉时路由不注册、菜单不下发。

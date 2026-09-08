@@ -12,12 +12,15 @@ import (
 //
 // # 「作息方案」在这套库里对到什么
 //
-// 见 exec_task.go 文件头：库里没有作息方案这张表，任务按 filetaskfree
-// （任务分组）组织，一个有名字的组底下一批带时间的任务 —— 形状与原实现的
-// schedules 一样。所以：
+// 见 exec_task.go 文件头：方案是 task 里共享同一个 info 的一组行。
+// tao 的 bell 包已经把这套建模和它的全部动作做好了，本包直接用它：
 //
-//	启用/停用方案 = 把这一组里所有任务的 projectstate 一起改
-//	删除方案      = 删掉这个分组连同它下面的全部任务
+//	启用/停用方案 = bell.SetState  （连功放/LED 子任务一起改，还会发 project 报文）
+//	删除方案      = bell.Delete    （连带清 terminalkeymaptask / offlinetaskofterminal
+//	                                等旧版漏清的关联表，D-184）
+//
+// 自己写 UPDATE task SET projectstate ... WHERE info=? 看着一样，实际会漏掉
+// 子任务范围、漏掉通知报文、漏掉那些关联表 —— 这些正是旧版的缺陷清单。
 //
 // # 启用/停用还能只针对一条任务
 //
@@ -35,8 +38,8 @@ import (
 // execScheduleState 是 enable_schedule / disable_schedule 的共用实现。
 func (s *Service) execScheduleState(intent string, enable bool) executor {
 	return func(ctx context.Context, u *auth.User, slots map[string][]string) actionResult {
-		if s.tasks == nil {
-			return actionResult{Err: fmt.Errorf("任务服务未接入")}
+		if s.tasks == nil || s.bells == nil {
+			return actionResult{Err: fmt.Errorf("作息方案服务未接入")}
 		}
 		raw := rawTextOf(slots)
 		scheduleName := slotText(slots, "schedule_name", "schedule_id", "SCHEDULE", "SCHEDULE_ID")
@@ -61,16 +64,16 @@ func (s *Service) execScheduleState(intent string, enable bool) executor {
 			}
 		}
 
-		folders, err := s.taskFolderCandidates(ctx, u)
+		plans, err := s.scheduleCandidates(ctx, u)
 		if err != nil {
 			return actionResult{Err: err}
 		}
-		res := s.ResolveName(ctx, scheduleName, raw, folders)
+		res := s.ResolveName(ctx, scheduleName, raw, plans)
 		if res.Matched == "" {
 			return actionResult{Reply: fmt.Sprintf("没有找到作息方案“%s”。", scheduleName)}
 		}
 
-		rows, err := s.queryTaskRows(ctx, u, res.ID)
+		rows, err := s.queryTaskRows(ctx, u, res.Matched)
 		if err != nil {
 			return actionResult{Err: err}
 		}
@@ -105,50 +108,32 @@ func (s *Service) execScheduleState(intent string, enable bool) executor {
 			}
 		}
 
-		// 整个方案
+		// 整个方案 —— 交给 bell.SetState
 		if len(rows) == 0 {
 			return actionResult{
 				Reply: fmt.Sprintf("方案“%s”里没有任务，没有可%s的内容。", res.Matched, stateText),
 			}
 		}
-		ids := make([]int64, 0, len(rows))
-		for _, r := range rows {
-			ids = append(ids, r.ID)
-		}
-		out, err := s.tasks.SetProjectState(ctx, u, ids, enable)
+		out, err := s.bells.SetState(ctx, u, res.Matched, enable)
 		if err != nil {
-			return actionResult{Err: err}
-		}
-		if len(out.Succeeded) == 0 {
-			reason := "没有可执行的任务"
-			if len(out.Blocked) > 0 {
-				reason = blockedReasonText(out.Blocked[0])
-			}
 			return actionResult{
 				Reply: failureRuntimeReply(intent,
-					fmt.Sprintf("方案“%s”的%s", res.Matched, stateText), nil, reason, ""),
-				ActionLog: []map[string]any{{
-					"intent": intent, "mode": "runtime", "schedule_name": res.Matched,
-					"details": map[string]any{"enabled": enable, "scope": "schedule",
-						"count": 0, "blocked": blockedDetails(out.Blocked)},
-				}},
+					fmt.Sprintf("方案“%s”的%s", res.Matched, stateText), nil, err.Error(), ""),
 			}
 		}
 
 		// 措辞逐字取自原实现：'方案“{name}”已{state_text}。'
 		reply := fmt.Sprintf("方案“%s”已%s。", res.Matched, stateText)
-		if len(out.Blocked) > 0 {
-			reply = appendReplyDetails(reply,
-				fmt.Sprintf("另有 %d 条任务没能改：%s。",
-					len(out.Blocked), blockedReasonText(out.Blocked[0])))
+		if out.OfflineStateReset {
+			// 方案里有条目正在离线传输，改完状态就看不出来了 —— 说一声
+			reply = appendReplyDetails(reply, "方案里原本有条目在离线传输中，已一并清掉离线状态。")
 		}
 		return actionResult{
 			Reply: reply,
 			ActionLog: []map[string]any{{
 				"intent": intent, "mode": "runtime", "schedule_name": res.Matched,
 				"details": map[string]any{"enabled": enable, "scope": "schedule",
-					"count": len(out.Succeeded), "task_ids": out.Succeeded,
-					"blocked": blockedDetails(out.Blocked)},
+					"count": out.AffectedTasks, "task_ids": out.TaskIDs},
 			}},
 		}
 	}
@@ -201,8 +186,8 @@ func (s *Service) pickTaskIn(ctx context.Context, rows []TaskRow, raw, taskName,
 //
 // ⚠ 这是本包里唯一不可撤销的动作，所以要先问一句再动手。见文件头的说明。
 func (s *Service) execDeleteSchedule(ctx context.Context, u *auth.User, slots map[string][]string) actionResult {
-	if s.tasks == nil {
-		return actionResult{Err: fmt.Errorf("任务服务未接入")}
+	if s.bells == nil {
+		return actionResult{Err: fmt.Errorf("作息方案服务未接入")}
 	}
 	raw := rawTextOf(slots)
 	scheduleName := slotText(slots, "schedule_name", "schedule_id", "SCHEDULE", "SCHEDULE_ID")
@@ -213,15 +198,15 @@ func (s *Service) execDeleteSchedule(ctx context.Context, u *auth.User, slots ma
 		}
 	}
 
-	folders, err := s.taskFolderCandidates(ctx, u)
+	plans, err := s.scheduleCandidates(ctx, u)
 	if err != nil {
 		return actionResult{Err: err}
 	}
-	res := s.ResolveName(ctx, scheduleName, raw, folders)
+	res := s.ResolveName(ctx, scheduleName, raw, plans)
 	if res.Matched == "" {
 		return actionResult{Reply: replyScheduleNotFound(scheduleName)}
 	}
-	rows, err := s.queryTaskRows(ctx, u, res.ID)
+	rows, err := s.queryTaskRows(ctx, u, res.Matched)
 	if err != nil {
 		return actionResult{Err: err}
 	}
@@ -242,7 +227,7 @@ func (s *Service) execDeleteSchedule(ctx context.Context, u *auth.User, slots ma
 		return askYesNo(IntentDeleteSchedule, raw, keep, summary, "确定要删吗？")
 	}
 
-	out, err := s.tasks.DeleteFolder(ctx, u, res.ID)
+	out, err := s.bells.Delete(ctx, u, res.Matched)
 	if err != nil {
 		return actionResult{
 			Reply: "方案没有删除成功：" + err.Error(),
@@ -258,8 +243,8 @@ func (s *Service) execDeleteSchedule(ctx context.Context, u *auth.User, slots ma
 		ActionLog: []map[string]any{{
 			"intent": "delete_schedule", "mode": "runtime", "schedule_name": res.Matched,
 			"details": map[string]any{
-				"count": len(out.DeletedTasks), "task_ids": out.DeletedTasks,
-				"sub_task_ids": out.DeletedSubs, "folder_ids": out.DeletedFolders,
+				"count": out.Items, "task_ids": out.DeletedTasks,
+				"power_subs": out.PowerSubs, "led_subs": out.LEDSubs,
 			},
 		}},
 	}

@@ -320,12 +320,12 @@ func (s *Service) execMoveSchedule(ctx context.Context, u *auth.User, slots map[
 		return actionResult{Reply: "源时间和目标时间需要同一维度（都为星期，或都为日期）。"}
 	}
 
-	folderID, resolvedSchedule, res := s.resolveScheduleFolder(ctx, u, raw, scheduleName)
+	resolvedSchedule, res := s.resolveSchedulePlan(ctx, u, raw, scheduleName)
 	if res != nil {
 		return *res
 	}
 
-	rows, err := s.queryTaskRows(ctx, u, folderID)
+	rows, err := s.queryTaskRows(ctx, u, resolvedSchedule)
 	if err != nil {
 		return actionResult{Err: err}
 	}
@@ -369,27 +369,30 @@ func (s *Service) execMoveSchedule(ctx context.Context, u *auth.User, slots map[
 	}
 
 	if mode == modeOnce {
-		return s.moveOnce(ctx, u, resolvedSchedule, folderID, plans, names, src, dst)
+		return s.moveOnce(ctx, u, resolvedSchedule, plans, names, src, dst)
 	}
 	return s.movePermanent(ctx, u, resolvedSchedule, plans, names, sourceText, targetText)
 }
 
-// resolveScheduleFolder 把方案名对到分组 id。没说方案名时返回 0（全部）。
-func (s *Service) resolveScheduleFolder(ctx context.Context, u *auth.User,
-	raw, scheduleName string) (int64, string, *actionResult) {
+// resolveSchedulePlan 把用户说的方案名对到真实的作息方案名。
+// 没说方案名时返回空串，表示"不限方案"。
+//
+// ⚠ 返回的是**名字**不是 id：作息方案没有 id，名字（task.info）就是主键。
+func (s *Service) resolveSchedulePlan(ctx context.Context, u *auth.User,
+	raw, scheduleName string) (string, *actionResult) {
 
 	if scheduleName == "" {
-		return 0, "", nil
+		return "", nil
 	}
-	folders, err := s.taskFolderCandidates(ctx, u)
+	plans, err := s.scheduleCandidates(ctx, u)
 	if err != nil {
-		return 0, "", &actionResult{Err: err}
+		return "", &actionResult{Err: err}
 	}
-	res := s.ResolveName(ctx, scheduleName, raw, folders)
+	res := s.ResolveName(ctx, scheduleName, raw, plans)
 	if res.Matched == "" {
-		return 0, "", &actionResult{Reply: replyScheduleNotFound(scheduleName)}
+		return "", &actionResult{Reply: replyScheduleNotFound(scheduleName)}
 	}
-	return res.ID, res.Matched, nil
+	return res.Matched, nil
 }
 
 // movePermanent 直接改任务自己的时间与星期。
@@ -483,7 +486,7 @@ func (s *Service) rejectNotOwned(ctx context.Context, u *auth.User, ids []int64)
 
 // moveOnce 一次性挪动：复制影子任务钉到那天的新时刻，原任务当天停一次。
 func (s *Service) moveOnce(ctx context.Context, u *auth.User, scheduleName string,
-	folderID int64, plans []movePlan, names []string, src, dst TimeAnchor) actionResult {
+	plans []movePlan, names []string, src, dst TimeAnchor) actionResult {
 
 	if src.Kind != "date" || dst.Kind != "date" {
 		// 星期维度下"就这一次"没有确定的那一天可钉 —— 原实现同样要求具体日期
@@ -497,10 +500,8 @@ func (s *Service) moveOnce(ctx context.Context, u *auth.User, scheduleName strin
 	var winStart, winEnd time.Time
 
 	for _, p := range plans {
+		// 影子任务放回源任务所在的分组（filetaskfree 只是目录，与方案无关）
 		folder := p.Task.FolderID
-		if folder <= 0 {
-			folder = folderID
-		}
 		if folder <= 0 {
 			folder = 1 // filetaskfree 的默认组
 		}

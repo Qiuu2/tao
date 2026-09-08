@@ -23,8 +23,11 @@ import (
 // TaskRow 是参与匹配的一条任务。字段都是从 task 表读出来后归一过的，
 // 不直接搬数据库里的原始列 —— 比对逻辑不该关心 exemodel 是个什么串。
 type TaskRow struct {
-	ID         int64
-	Name       string
+	ID   int64
+	Name string
+	// FolderID / FolderName 是**任务分组**（filetaskfree）——
+	// 文件广播任务的目录树，与作息方案无关（BR-161）。
+	// 需要方案名时看 Info，不要看这两个。
 	FolderID   int64
 	FolderName string
 	// StartSeconds 是 playtime 换算成的当天秒数。
@@ -38,6 +41,10 @@ type TaskRow struct {
 	Weekdays []string
 	State    int
 	TaskType int
+	// Info 是这条任务所属的**作息方案名**。
+	// ⚠ 作息方案在这套库里不是一张表，而是 task 里共享同一个 info 的一组行
+	//   （见 bell 包的说明）。空串表示它不属于任何作息方案。
+	Info string
 	// StartText 是原始的 playtime 文本，回话里要按 HH:MM 展示。
 	StartText string
 }

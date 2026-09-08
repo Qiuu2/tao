@@ -149,7 +149,7 @@ func main() {
 	// 删除用户会连带删掉他名下的媒体，物理文件清理与 C 服务通知复用媒体域的实现
 	a.users.SetSideEffects(a.medias, a.notifier)
 	// 助手的写操作走页面用的这两个，不另起炉灶 —— 守卫与通知协议一并继承
-	a.assist.AttachServices(a.tasks, a.notifier, a.terminals, a.zones, a.enables)
+	a.assist.AttachServices(a.tasks, a.notifier, a.terminals, a.zones, a.enables, a.bells)
 
 	srv := &http.Server{
 		Addr:              cfg.Server.Listen,

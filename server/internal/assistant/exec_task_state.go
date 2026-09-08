@@ -118,7 +118,7 @@ func (s *Service) execTaskState(intent string, action task.Action) executor {
 					"intent": intent, "mode": "runtime",
 					"details": map[string]any{
 						"task_name": target.Name, "task_id": itoa64(target.ID),
-						"schedule_name": target.FolderName, "count": 1,
+						"schedule_name": target.Info, "count": 1,
 						"blocked": blockedDetails(out.Blocked), "reason": reason,
 					},
 				}},
@@ -127,10 +127,10 @@ func (s *Service) execTaskState(intent string, action task.Action) executor {
 
 		label := actionLabels[intent]
 		var reply string
-		if target.FolderName != "" && scheduleName != "" {
+		if target.Info != "" && scheduleName != "" {
 			reply = successRuntimeReply(intent, taskStateScopedVariants,
-				[]string{target.FolderName, target.Name},
-				map[string]string{"schedule_name": target.FolderName,
+				[]string{target.Info, target.Name},
+				map[string]string{"schedule_name": target.Info,
 					"task_name": target.Name, "action_label": label})
 		} else {
 			reply = successRuntimeReply(intent, taskStateVariants,
@@ -142,10 +142,10 @@ func (s *Service) execTaskState(intent string, action task.Action) executor {
 			Reply: reply,
 			ActionLog: []map[string]any{{
 				"intent": intent, "mode": "runtime",
-				"schedule_name": target.FolderName,
+				"schedule_name": target.Info,
 				"details": map[string]any{
 					"task_name": target.Name, "task_id": itoa64(target.ID),
-					"schedule_name": target.FolderName, "count": 1,
+					"schedule_name": target.Info, "count": 1,
 					"notified": out.Notified,
 				},
 			}},
@@ -232,10 +232,10 @@ func (s *Service) execAdjustVolume(ctx context.Context, u *auth.User, slots map[
 		Reply: reply,
 		ActionLog: []map[string]any{{
 			"intent": "adjust_volume", "mode": "runtime",
-			"schedule_name": target.FolderName,
+			"schedule_name": target.Info,
 			"details": map[string]any{
 				"task_name": target.Name, "task_id": itoa64(target.ID),
-				"schedule_name": target.FolderName, "volume": volume, "count": 1,
+				"schedule_name": target.Info, "volume": volume, "count": 1,
 			},
 		}},
 	}
@@ -249,7 +249,7 @@ func (s *Service) execAdjustVolume(ctx context.Context, u *auth.User, slots map[
 func (s *Service) resolveOneTask(ctx context.Context, u *auth.User, raw,
 	scheduleName, taskName, taskIDText string) (*TaskRow, *actionResult) {
 
-	rows, err := s.queryTaskRows(ctx, u, 0)
+	rows, err := s.queryTaskRows(ctx, u, "")
 	if err != nil {
 		return nil, &actionResult{Err: err}
 	}
@@ -264,19 +264,19 @@ func (s *Service) resolveOneTask(ctx context.Context, u *auth.User, raw,
 		return nil, &actionResult{Reply: fmt.Sprintf("未找到任务编号 %s 对应的任务。", taskIDText)}
 	}
 
-	// ② 限定了方案（任务分组）就先缩到那一组里
+	// ② 限定了作息方案就先缩到那个方案里
 	if scheduleName != "" {
-		folders, err := s.taskFolderCandidates(ctx, u)
+		plans, err := s.scheduleCandidates(ctx, u)
 		if err != nil {
 			return nil, &actionResult{Err: err}
 		}
-		res := s.ResolveName(ctx, scheduleName, raw, folders)
+		res := s.ResolveName(ctx, scheduleName, raw, plans)
 		if res.Matched == "" {
 			return nil, &actionResult{Reply: fmt.Sprintf("没有找到作息方案“%s”。", scheduleName)}
 		}
 		kept := rows[:0:0]
 		for _, r := range rows {
-			if r.FolderID == res.ID {
+			if r.Info == res.Matched {
 				kept = append(kept, r)
 			}
 		}

@@ -15,14 +15,15 @@ import (
 //
 // # 「作息方案」在这套库里是什么
 //
-// 原实现的数据来自 SDK，那边有一层「作息方案」，一个方案下挂一批任务。
-// tao 用的是现网这套库，库里**没有作息方案这张表** —— 任务是按
-// filetaskfree（任务分组）组织的，每条任务自带 playtime / exemodel /
-// startdate / enddate。形状是一样的：一个有名字的组，底下一批带时间的任务。
-// 所以这里把「作息方案」对到任务分组，回话里仍然说"方案"，因为用户是那么说的。
+// 是 task 表里**共享同一个 task.info 的一组行**，不是一张独立的表 ——
+// 方案名就是 info，每一行是一次打铃。范围四项缺一不可：
+// tasktype IN (1,15)、info <> ''、channel = 0、sec_task_id = 0。
+// 这套建模是 bell 包定下来的（契约 C-38），本包一律沿用，不另起一套。
 //
-// 这一条是**数据模型上的对应关系，不是逐字翻译**，单独写在这里，
-// 免得以后有人对着原实现找 schedules 表找不到。
+// ⚠ 别和**任务分组**（filetaskfree）搞混：那是文件广播任务的目录树，
+//   与作息方案毫无关系（BR-161）。现网数据里 1001~1007 七条 tasktype=1
+//   的任务 info 都是「春季作息」，那才是一个方案；它们的 parentid 都是 1
+//   （admin 组），而 admin 只是个目录名。
 //
 // # 时长为什么不照抄原实现的算法
 //
@@ -40,13 +41,13 @@ const taskSelectCols = `t.taskid, t.taskname, COALESCE(t.parentid,0),
 	       COALESCE(t.endtime,'00:00:00'), COALESCE(t.timelength,0),
 	       COALESCE(t.timelengthtype,1), t.startdate, t.enddate,
 	       COALESCE(t.exemodel,'0000000'), COALESCE(t.projectstate,0),
-	       COALESCE(t.tasktype,0)`
+	       COALESCE(t.tasktype,0), COALESCE(t.info,'')`
 
 // queryTaskRows 读出可参与匹配的任务。
 //
 // sec_task_id = 0 把功放/LED 子任务挡在外面 —— 子任务是主任务的附属，
 // 单独列出来用户会看到一堆重复的名字。
-func (s *Service) queryTaskRows(ctx context.Context, u *auth.User, folderID int64) ([]TaskRow, error) {
+func (s *Service) queryTaskRows(ctx context.Context, u *auth.User, scheduleName string) ([]TaskRow, error) {
 	q := `SELECT ` + taskSelectCols + `
 	        FROM task t
 	        LEFT JOIN filetaskfree f ON f.id = t.parentid
@@ -56,9 +57,9 @@ func (s *Service) queryTaskRows(ctx context.Context, u *auth.User, folderID int6
 		q += ` AND COALESCE(t.task_user_id,0) = ?`
 		args = append(args, u.ID)
 	}
-	if folderID > 0 {
-		q += ` AND t.parentid = ?`
-		args = append(args, folderID)
+	if scheduleName != "" {
+		q += ` AND t.info = ?`
+		args = append(args, scheduleName)
 	}
 	q += ` ORDER BY t.playtime, t.taskid`
 
@@ -79,7 +80,7 @@ func (s *Service) queryTaskRows(ctx context.Context, u *auth.User, folderID int6
 		)
 		if err := rows.Scan(&r.ID, &r.Name, &r.FolderID, &r.FolderName, &playtime,
 			&endtime, &timelength, &ltype, &startDate, &endDate, &exemodel,
-			&r.State, &r.TaskType); err != nil {
+			&r.State, &r.TaskType, &r.Info); err != nil {
 			return nil, fmt.Errorf("读取任务: %w", err)
 		}
 		r.StartText = playtime
@@ -196,29 +197,21 @@ func (s *Service) execQueryTask(ctx context.Context, u *auth.User, slots map[str
 		f.End = f.End.AddDate(0, 0, 1)
 	}
 
-	rows, err := s.queryTaskRows(ctx, u, 0)
-	if err != nil {
-		return actionResult{Err: err}
-	}
-
 	resolvedScheduleName := ""
 	if scheduleName != "" {
-		folders, err := s.taskFolderCandidates(ctx, u)
+		plans, err := s.scheduleCandidates(ctx, u)
 		if err != nil {
 			return actionResult{Err: err}
 		}
-		res := s.ResolveName(ctx, scheduleName, raw, folders)
+		res := s.ResolveName(ctx, scheduleName, raw, plans)
 		if res.Matched == "" {
 			return actionResult{Reply: fmt.Sprintf("没有找到作息方案“%s”。", scheduleName)}
 		}
 		resolvedScheduleName = res.Matched
-		kept := rows[:0:0]
-		for _, r := range rows {
-			if r.FolderID == res.ID {
-				kept = append(kept, r)
-			}
-		}
-		rows = kept
+	}
+	rows, err := s.queryTaskRows(ctx, u, resolvedScheduleName)
+	if err != nil {
+		return actionResult{Err: err}
 	}
 
 	if taskName != "" {
@@ -263,12 +256,14 @@ func (s *Service) execQueryTask(ctx context.Context, u *auth.User, slots map[str
 	taskItems := make([]map[string]any, 0, limit)
 	for _, r := range rows[:limit] {
 		taskItems = append(taskItems, map[string]any{
-			"task_id":       itoa64(r.ID),
-			"task_name":     r.Name,
-			"time":          formatHHMM(r.StartText),
-			"status":        taskStateText(r.State),
-			"state":         r.State,
-			"schedule_name": r.FolderName,
+			"task_id":   itoa64(r.ID),
+			"task_name": r.Name,
+			"time":      formatHHMM(r.StartText),
+			"status":    taskStateText(r.State),
+			"state":     r.State,
+			// ⚠ 这里是**作息方案名**（task.info），不是任务分组名。
+			// 不属于任何方案的任务（文件广播等）这一格是空的。
+			"schedule_name": r.Info,
 		})
 	}
 
@@ -348,26 +343,32 @@ func (s *Service) execQueryTask(ctx context.Context, u *auth.User, slots map[str
 	}
 }
 
-// taskFolderCandidates 给名称解析用的任务分组名单。
-func (s *Service) taskFolderCandidates(ctx context.Context, u *auth.User) ([]Candidate, error) {
-	q := `SELECT id, COALESCE(name,'') FROM filetaskfree`
+// scheduleCandidates 给名称解析用的**作息方案**名单。
+//
+// 方案没有 id，名字就是主键，所以 Candidate.ID 这里恒为 0 —— 调用方拿
+// Matched 那个名字去用，不要拿 ID。范围与 bell 包的 planScope 完全一致，
+// 少一项就会把普通任务或功放子任务混进来。
+func (s *Service) scheduleCandidates(ctx context.Context, u *auth.User) ([]Candidate, error) {
+	q := `SELECT DISTINCT COALESCE(info,'') FROM task
+	       WHERE tasktype IN (1,15) AND info <> '' AND channel = 0 AND sec_task_id = 0`
 	var args []any
 	if !u.IsAdmin {
-		q += ` WHERE COALESCE(userid,0) = ?`
+		q += ` AND COALESCE(task_user_id,0) = ?`
 		args = append(args, u.ID)
 	}
+	q += ` ORDER BY info`
 	rows, err := s.db.QueryContext(ctx, q, args...)
 	if err != nil {
-		return nil, fmt.Errorf("查询任务分组: %w", err)
+		return nil, fmt.Errorf("查询作息方案: %w", err)
 	}
 	defer rows.Close()
 	var out []Candidate
 	for rows.Next() {
-		var c Candidate
-		if err := rows.Scan(&c.ID, &c.Name); err != nil {
+		var name string
+		if err := rows.Scan(&name); err != nil {
 			return nil, err
 		}
-		out = append(out, c)
+		out = append(out, Candidate{Name: name})
 	}
 	return out, rows.Err()
 }

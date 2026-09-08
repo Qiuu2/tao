@@ -125,21 +125,12 @@ func (s *Service) execCancelSchedule(ctx context.Context, u *auth.User, slots ma
 	}
 
 	// 找出要取消哪些任务
-	folderID := int64(0)
-	resolvedSchedule := ""
-	if scheduleName != "" {
-		folders, err := s.taskFolderCandidates(ctx, u)
-		if err != nil {
-			return actionResult{Err: err}
-		}
-		res := s.ResolveName(ctx, scheduleName, raw, folders)
-		if res.Matched == "" {
-			return actionResult{Reply: replyScheduleNotFound(scheduleName)}
-		}
-		folderID, resolvedSchedule = res.ID, res.Matched
+	resolvedSchedule, res := s.resolveSchedulePlan(ctx, u, raw, scheduleName)
+	if res != nil {
+		return *res
 	}
 
-	rows, err := s.queryTaskRows(ctx, u, folderID)
+	rows, err := s.queryTaskRows(ctx, u, resolvedSchedule)
 	if err != nil {
 		return actionResult{Err: err}
 	}
