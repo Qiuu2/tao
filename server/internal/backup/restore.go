@@ -87,19 +87,51 @@ func (s *Service) Precheck(ctx context.Context, name string) (*Precheck, error) 
 		return out, nil
 	}
 	out.Diffs = diffSchema(m.Tables, cur)
-	out.Compatible = out.SchemaHashSame && len(out.Diffs) == 0
+	blocking := blockingDiffs(out.Diffs)
+	out.Compatible = len(blocking) == 0
 
-	if out.Compatible {
+	switch {
+	case !out.Compatible:
+		out.Recommendation = "该备份包的表结构与当前数据库不一致，恢复会导致数据错位。已阻止。"
+	default:
 		n, err := s.countAllRows(ctx, cur)
 		if err != nil {
 			return nil, err
 		}
 		out.WillDeleteRows = n
 		out.Recommendation = "结构一致，可以恢复。恢复会先清空全部表的现有数据再写入备份数据。"
-	} else {
-		out.Recommendation = "该备份包的表结构与当前数据库不一致，恢复会导致数据错位。已阻止。"
+		if extra := len(out.Diffs); extra > 0 {
+			out.Recommendation = fmt.Sprintf(
+				"可以恢复。当前数据库比这个备份包多 %d 张表，恢复不会动它们（明细见 schemaDiff）。"+
+					"恢复会先清空备份包里那些表的现有数据再写入。", extra)
+		}
 	}
 	return out, nil
+}
+
+// blockingDiffs 挑出**真正会导致数据错位**的差异。
+//
+// 为什么不是「有差异就拦」：TABLE_NOT_IN_BACKUP 表示当前库比备份包多出一张表，
+// 恢复时压根不会碰它 —— 拦住它没有任何安全收益，代价却是
+// 「加了一张新表之后，此前做的所有备份全部作废」。
+// AI 助手那 6 张新表（db/assistant_tables.sql）就是这个情况。
+//
+// 其余几种是会错位的，照旧拦：
+//
+//	TABLE_NOT_IN_DB      备份包里有、库里没有 → 数据无处可写
+//	COLUMN_NOT_IN_DB     同上，列级
+//	COLUMN_NOT_IN_BACKUP 库里这一列备份里没有 → 恢复后会变成默认值
+//	TYPE_CHANGED         类型变了 → 写进去会截断或报错
+//	CHARSET_CHANGED      字符集变了 → 中文会乱码
+func blockingDiffs(diffs []SchemaDiff) []SchemaDiff {
+	out := []SchemaDiff{}
+	for _, d := range diffs {
+		if d.Issue == "TABLE_NOT_IN_BACKUP" {
+			continue
+		}
+		out = append(out, d)
+	}
+	return out
 }
 
 // diffSchema 逐表逐列比对，给出人能看懂的差异清单。

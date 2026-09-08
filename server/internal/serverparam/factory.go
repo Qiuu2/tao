@@ -43,6 +43,17 @@ var clearTables = []string{
 	"terminalgroup", "terminalgrouplist", "terminalkey", "terminalkeymap",
 	"terminalkeymaptask", "terminalmaked", "terminalofalarmgroup", "terminalofararmgroup",
 	"terminalofcallgroup", "terminalofgroup", "terminaloftask", "ttssentence",
+
+	// ⚠ 以下 6 张是新版为 AI 助手新建的表（db/assistant_tables.sql），
+	// 旧 delsqldate() 里当然没有。它们装的是会话上下文、指令历史、任务覆盖、
+	// 临时播放登记、撤销凭据 —— 全是业务数据，恢复出厂时理应一并清掉；
+	// 助手设置清空后回落到代码里的默认值，与「回到出厂状态」一致。
+	//
+	// ⚠ assistant_task_override 和 assistant_runtime_play 里记着**影子任务**和
+	// **临时任务**的 taskid。恢复出厂会把 task 表按 keepTables 的条件清掉，
+	// 那些任务本来就没了，这两张登记表跟着清才不会留下一堆指向空气的记录。
+	"assistant_session", "assistant_message", "assistant_setting",
+	"assistant_task_override", "assistant_runtime_play", "assistant_undo",
 }
 
 // keepTables 是按条件保留的表：清掉不满足条件的行（BR-261）。
