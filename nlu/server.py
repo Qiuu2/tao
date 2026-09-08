@@ -40,6 +40,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
+import matcher  # noqa: E402
 from engine import Engine, EngineConfig  # noqa: E402
 
 LOG = logging.getLogger("nlu")
@@ -80,12 +81,19 @@ class Handler(BaseHTTPRequestHandler):
                 "intents": len(_ENGINE.id2intent),
                 "slotLabels": len(_ENGINE.slot_labels),
                 "threshold": _ENGINE.cfg.confidence_threshold,
+                # 模糊匹配是否可用。没装 rapidfuzz 时原实现的模糊层整层失效，
+                # Go 侧据此走同样的降级路径。
+                "fuzzy": matcher.available(),
             })
             return
         self._send(404, {"error": "not found"})
 
     def do_POST(self) -> None:  # noqa: N802
-        if self.path.rstrip("/") != "/infer":
+        path = self.path.rstrip("/")
+        if path == "/match":
+            self._handle_match()
+            return
+        if path != "/infer":
             self._send(404, {"error": "not found"})
             return
         if _ENGINE is None:
@@ -127,6 +135,54 @@ class Handler(BaseHTTPRequestHandler):
             "tokens": tokens,
             "tags": tags,
         })
+
+
+    def _handle_match(self) -> None:
+        """名称模糊匹配。候选名单由调用方（htweb）从数据库查好传进来。
+
+            POST /match  {"value":"A101教室","candidates":["A101教室音箱",...],"cutoff":60}
+            → {"matched":"A101教室音箱","score":0.86,"fuzzy":true}
+        """
+        payload = self._read_json()
+        if payload is None:
+            return
+        value = payload.get("value") or ""
+        candidates = payload.get("candidates") or []
+        if not isinstance(candidates, list):
+            self._send(400, {"error": "candidates 必须是数组"})
+            return
+        # 候选名单来自数据库，正常几十到几百条；上万条说明调用方没做筛选，
+        # 那种情况下模糊匹配本身也没意义（会匹配到八竿子打不着的东西）。
+        if len(candidates) > 5000:
+            self._send(400, {"error": "candidates 过多（上限 5000）"})
+            return
+        try:
+            cutoff = float(payload.get("cutoff") or 60.0)
+        except (TypeError, ValueError):
+            cutoff = 60.0
+        names = [str(c) for c in candidates if str(c or "").strip()]
+        matched, score = matcher.match_one(str(value), names, cutoff)
+        self._send(200, {
+            "matched": matched or "",
+            "score": round(score, 6),
+            "fuzzy": matcher.available(),
+        })
+
+    def _read_json(self) -> dict | None:
+        """读并解析请求体；出错时已经回过响应，返回 None。"""
+        try:
+            length = int(self.headers.get("Content-Length") or 0)
+        except ValueError:
+            self._send(400, {"error": "Content-Length 不合法"})
+            return None
+        if length <= 0 or length > MAX_BODY:
+            self._send(400, {"error": "请求体为空或过大"})
+            return None
+        try:
+            return json.loads(self.rfile.read(length).decode("utf-8")) or {}
+        except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+            self._send(400, {"error": f"请求体不是合法 JSON: {exc}"})
+            return None
 
 
 def main() -> int:

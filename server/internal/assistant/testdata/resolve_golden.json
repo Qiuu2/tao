@@ -1,0 +1,161 @@
+[
+ {
+  "name": "精确命中",
+  "extracted": "A101教室音箱",
+  "raw": "查一下A101教室音箱",
+  "candidates": [
+   "A101教室音箱",
+   "A102教室音箱",
+   "A103教室音箱",
+   "广播室主话筒"
+  ],
+  "fuzzy": null,
+  "want_matched": "A101教室音箱",
+  "want_score": 1.0
+ },
+ {
+  "name": "原话里只出现一个",
+  "extracted": "A101",
+  "raw": "查一下A101教室音箱的状态",
+  "candidates": [
+   "A101教室音箱",
+   "A102教室音箱",
+   "A103教室音箱",
+   "广播室主话筒"
+  ],
+  "fuzzy": null,
+  "want_matched": "A101教室音箱",
+  "want_score": 1.0
+ },
+ {
+  "name": "原话里出现多个取最长",
+  "extracted": "方案1",
+  "raw": "把方案1的任务挪一下",
+  "candidates": [
+   "春季作息方案",
+   "秋季作息方案",
+   "方案1",
+   "方案2"
+  ],
+  "fuzzy": null,
+  "want_matched": "方案1",
+  "want_score": 1.0
+ },
+ {
+  "name": "并列最长且抽取能定夺",
+  "extracted": "方案2",
+  "raw": "方案1和方案2对调",
+  "candidates": [
+   "春季作息方案",
+   "秋季作息方案",
+   "方案1",
+   "方案2"
+  ],
+  "fuzzy": null,
+  "want_matched": "方案2",
+  "want_score": 1.0
+ },
+ {
+  "name": "模糊命中且数字一致",
+  "extracted": "A101教室",
+  "raw": "查A101教室",
+  "candidates": [
+   "A101教室音箱",
+   "A102教室音箱",
+   "A103教室音箱",
+   "广播室主话筒"
+  ],
+  "fuzzy": [
+   "A101教室音箱",
+   0.86
+  ],
+  "want_matched": "A101教室音箱",
+  "want_score": 0.86
+ },
+ {
+  "name": "数字对不上→拒绝",
+  "extracted": "方案3",
+  "raw": "看看第三个",
+  "candidates": [
+   "春季作息方案",
+   "秋季作息方案",
+   "方案1",
+   "方案2"
+  ],
+  "fuzzy": [
+   "方案1",
+   0.9
+  ],
+  "want_matched": "",
+  "want_score": 0.0
+ },
+ {
+  "name": "数字对不上但只有一个候选保住数字→救回",
+  "extracted": "三号机",
+  "raw": "看看三号机",
+  "candidates": [
+   "3号功放",
+   "备用机"
+  ],
+  "fuzzy": [
+   "备用机",
+   0.7
+  ],
+  "want_matched": "3号功放",
+  "want_score": 0.9
+ },
+ {
+  "name": "模糊层不可用",
+  "extracted": "A101教室",
+  "raw": "随便说说",
+  "candidates": [
+   "A101教室音箱",
+   "A102教室音箱",
+   "A103教室音箱",
+   "广播室主话筒"
+  ],
+  "fuzzy": null,
+  "want_matched": "",
+  "want_score": 0.0
+ },
+ {
+  "name": "空候选",
+  "extracted": "A101",
+  "raw": "x",
+  "candidates": [],
+  "fuzzy": null,
+  "want_matched": "",
+  "want_score": 0.0
+ },
+ {
+  "name": "空抽取但原话里有",
+  "extracted": "",
+  "raw": "查一下广播室主话筒",
+  "candidates": [
+   "A101教室音箱",
+   "A102教室音箱",
+   "A103教室音箱",
+   "广播室主话筒"
+  ],
+  "fuzzy": null,
+  "want_matched": "广播室主话筒",
+  "want_score": 1.0
+ },
+ {
+  "name": "数字一致的模糊命中不受兜底影响",
+  "extracted": "方案1x",
+  "raw": "说方案1x",
+  "candidates": [
+   "春季作息方案",
+   "秋季作息方案",
+   "方案1",
+   "方案2"
+  ],
+  "fuzzy": [
+   "方案1",
+   0.8
+  ],
+  "want_matched": "方案1",
+  "want_score": 1.0
+ }
+]

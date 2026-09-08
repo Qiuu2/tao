@@ -44,14 +44,22 @@ type Service struct {
 	db  *sql.DB
 	nlu *NLU
 	cfg config.Assistant
+
+	// matchOne 是名称解析的模糊那一层。默认就是旁挂服务的 /match，
+	// 单独拎成字段只为了测试时能塞一个固定打分的桩进来 ——
+	// 名称解析的四层逻辑必须能脱离 rapidfuzz 单独验证，
+	// 否则跑一次测试要先装 2G 的模型依赖。
+	matchOne func(ctx context.Context, value string, candidates []string, cutoff float64) (string, float64, error)
 }
 
 func New(db *sql.DB, cfg config.Assistant) *Service {
-	return &Service{
+	s := &Service{
 		db:  db,
 		nlu: NewNLU(cfg.NLUURL, cfg.NLUTimeout),
 		cfg: cfg,
 	}
+	s.matchOne = s.nlu.MatchOne
+	return s
 }
 
 // Enabled 报告助手这个功能开没开。关掉时路由不注册、菜单不下发。

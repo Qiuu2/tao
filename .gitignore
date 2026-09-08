@@ -32,3 +32,4 @@ ib_logfile*
 Thumbs.db
 *.swp
 *.swn
+__pycache__/

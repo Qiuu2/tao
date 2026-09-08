@@ -163,7 +163,13 @@ func (s *Service) Chat(ctx context.Context, u *auth.User, in ChatRequest) (*Chat
 		return out, nil
 	}
 
-	ar := exec(ctx, u, res.Slots)
+	// 把原话一并传给执行器：名称解析的「原样出现在整句话里」那一层要用它。
+	// 用 __raw__ 这个内部键，模型不会产出同名槽位。
+	execSlots := map[string][]string{"__raw__": {text}}
+	for k, v := range res.Slots {
+		execSlots[k] = v
+	}
+	ar := exec(ctx, u, execSlots)
 	if ar.Err != nil {
 		// 执行出错：给用户一句能懂的话，真实原因进 diagnostics 给运维。
 		// 不把 SQL 错误直接甩到聊天框里。

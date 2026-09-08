@@ -140,6 +140,49 @@ func (s *Service) queryTerminals(ctx context.Context, ids []int64, names []strin
 	return out, rows.Err()
 }
 
+// terminalCandidates 取全部终端名字，给名称解析当候选。
+func (s *Service) terminalCandidates(ctx context.Context) ([]Candidate, error) {
+	rows, err := s.db.QueryContext(ctx,
+		`SELECT id, COALESCE(terminalname,'') FROM terminal WHERE COALESCE(terminalname,'') <> '' ORDER BY id`)
+	if err != nil {
+		return nil, fmt.Errorf("查询终端候选: %w", err)
+	}
+	defer rows.Close()
+	out := []Candidate{}
+	for rows.Next() {
+		var c Candidate
+		if err := rows.Scan(&c.ID, &c.Name); err != nil {
+			return nil, err
+		}
+		out = append(out, c)
+	}
+	return out, rows.Err()
+}
+
+// resolveTerminalNames 把模型抽出来的终端名对到库里真实的名字上。
+// 对不上的进 unresolved，由回话里的「以下对象没有匹配上」如实告诉用户。
+func (s *Service) resolveTerminalNames(ctx context.Context, raw string, names []string,
+	unresolved map[string][]string) ([]int64, error) {
+
+	if len(names) == 0 {
+		return nil, nil
+	}
+	cands, err := s.terminalCandidates(ctx)
+	if err != nil {
+		return nil, err
+	}
+	ids := []int64{}
+	for _, n := range names {
+		r := s.ResolveName(ctx, n, raw, cands)
+		if r.Matched == "" {
+			unresolved["terminal_name"] = append(unresolved["terminal_name"], n)
+			continue
+		}
+		ids = append(ids, r.ID)
+	}
+	return ids, nil
+}
+
 // execQueryTerminal 是 query_terminal 的执行器。
 func (s *Service) execQueryTerminal(ctx context.Context, _ *auth.User, slots map[string][]string) actionResult {
 	ids, names, unresolved := splitTerminalSlots(slots)
@@ -149,19 +192,25 @@ func (s *Service) execQueryTerminal(ctx context.Context, _ *auth.User, slots map
 			MissingSlots: []string{"terminal_id/terminal_name/zone_name"},
 		}
 	}
-	rows, err := s.queryTerminals(ctx, ids, names)
+	resolved, err := s.resolveTerminalNames(ctx, rawTextOf(slots), names, unresolved)
 	if err != nil {
 		return actionResult{Err: err}
 	}
-	// 名字报上来了但库里没有 → 记进"没匹配上"，与原实现一致
-	found := map[string]bool{}
-	for _, r := range rows {
-		found[r.TerminalName] = true
-	}
-	for _, n := range names {
-		if !found[n] {
-			unresolved["terminal_name"] = append(unresolved["terminal_name"], n)
+	ids = append(ids, resolved...)
+	if len(ids) == 0 {
+		// 名字一个都没对上：如实说，不要再去查一个空条件（那会把全表捞出来）
+		return actionResult{
+			Reply: finalizeKeyIntentReply("query_terminal",
+				"没有找到匹配的终端。", replyUnresolvedLine(unresolved)),
+			ActionLog: []map[string]any{{
+				"intent": "query_terminal", "mode": "query",
+				"details": map[string]any{"count": 0, "unresolved": unresolved},
+			}},
 		}
+	}
+	rows, err := s.queryTerminals(ctx, ids, nil)
+	if err != nil {
+		return actionResult{Err: err}
 	}
 
 	snap := buildTerminalSnapshot(rows)
@@ -209,7 +258,14 @@ func (s *Service) execCheckTerminal(ctx context.Context, _ *auth.User, slots map
 	var rows []TerminalRow
 	var err error
 	if hasExplicitTarget {
-		rows, err = s.queryTerminals(ctx, ids, names)
+		resolved, rerr := s.resolveTerminalNames(ctx, rawTextOf(slots), names, unresolved)
+		if rerr != nil {
+			return actionResult{Err: rerr}
+		}
+		ids = append(ids, resolved...)
+		if len(ids) > 0 {
+			rows, err = s.queryTerminals(ctx, ids, nil)
+		}
 	} else {
 		rows, err = s.queryTerminals(ctx, nil, nil) // 全部
 	}
@@ -222,16 +278,6 @@ func (s *Service) execCheckTerminal(ctx context.Context, _ *auth.User, slots map
 		}
 		return actionResult{Reply: "没有找到可自检的终端，再确认一下范围哈~"}
 	}
-	found := map[string]bool{}
-	for _, r := range rows {
-		found[r.TerminalName] = true
-	}
-	for _, n := range names {
-		if !found[n] {
-			unresolved["terminal_name"] = append(unresolved["terminal_name"], n)
-		}
-	}
-
 	snap := buildTerminalSnapshot(rows)
 	desc := previewNames(namesOf(snap.Rows), 3, "个终端")
 	if desc == "" {

@@ -69,3 +69,15 @@ func splitTerminalSlots(slots map[string][]string) (ids []int64, names []string,
 }
 
 func itoa(n int) string { return strconv.Itoa(n) }
+
+// rawTextOf 取用户这一整句原话。
+//
+// 名称解析的第 ② 层要在原话里找候选（「把A101教室音箱停了」里能原样找到
+// 库里的名字），所以执行器需要拿到它。chat 那边把原话塞进 slots 的
+// __raw__ 这个内部键里传下来 —— 模型不会产出这个名字的槽位，不会撞车。
+func rawTextOf(slots map[string][]string) string {
+	if v := slots["__raw__"]; len(v) > 0 {
+		return v[0]
+	}
+	return ""
+}
