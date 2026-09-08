@@ -38,12 +38,19 @@ func (s *Service) executors() map[Intent]executor {
 
 		// 单任务写操作。动作本身交给页面用的 task.Service，
 		// 这一层只负责"把话变成任务 id"，见 exec_task_state.go。
-		IntentPlayTask:     s.execTaskState("play_task", task.ActionStart),
-		IntentStopTask:     s.execTaskState("stop_task", task.ActionStop),
-		IntentTaskPause:    s.execTaskState("task_pause", task.ActionPause),
-		IntentTaskResume:   s.execTaskState("task_resume", task.ActionResume),
-		IntentAdjustVolume: s.execAdjustVolume,
-		IntentPlayMedia:    s.execPlayMedia,
+		IntentPlayTask:   s.execTaskState("play_task", task.ActionStart),
+		IntentStopTask:   s.execTaskState("stop_task", task.ActionStop),
+		IntentTaskPause:  s.execTaskState("task_pause", task.ActionPause),
+		IntentTaskResume: s.execTaskState("task_resume", task.ActionResume),
+		// pause_task / resume_task 是上面两个的别名（模型两种标签都可能给出）。
+		// ⚠ 措辞种子仍用 task_pause / task_resume —— 种子里带的是意图名，
+		//   用别名当种子会选出不同的模板，同一句话在两个标签下回话不一样。
+		IntentPauseTask:              s.execTaskState("task_pause", task.ActionPause),
+		IntentResumeTask:             s.execTaskState("task_resume", task.ActionResume),
+		IntentAdjustVolume:           s.execAdjustVolume,
+		IntentAddTerminalToTask:      s.execTaskTerminals("add_terminal_to_task", true),
+		IntentRemoveTerminalFromTask: s.execTaskTerminals("remove_terminal_from_task", false),
+		IntentPlayMedia:              s.execPlayMedia,
 
 		// 终端与分区。同样交给页面用的 terminal.Service / zone.Service，
 		// 见 exec_zone.go。
