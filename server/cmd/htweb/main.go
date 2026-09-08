@@ -1057,6 +1057,12 @@ func (a *app) handleMenu(w http.ResponseWriter, r *http.Request) {
 			menu("/user/group", "userGroup", "/user/group/index", "Grid", "用户组"),
 		)
 	}
+	if u.IsAdmin || u.Rights.UserPriv == 1 {
+		// 开发者接口：给第三方系统发密钥的地方。放在「用户管理」这一组，
+		// 因为它管的是「谁能以什么身份调这台机器」—— 和用户是一件事的两面。
+		userMenus = append(userMenus,
+			menu("/user/openapi-keys", "openapiKeys", "/openapi/keys/index", "Key", "开发者密钥"))
+	}
 	if u.IsAdmin || u.Rights.ServerPriv == 1 {
 		// 注册服务：旧版没有菜单入口，只能从登录页进去（login.php 在 registerflag=0
 		// 时跳过去）。新版两条路都留着 —— 菜单里给一项，登录页在未注册时也照旧给入口。
@@ -1108,6 +1114,14 @@ func (a *app) handleButtons(w http.ResponseWriter, r *http.Request) {
 			"edit":   canUser,
 			"delete": canUser && isSuper,
 			"enable": canUser && isSuper,
+		},
+		// 开发者密钥。跟着 userpriv：发一把密钥等于把某个账号的权限借出去，
+		// 这与「能改用户权限」是同一件事，挂在同一把钥匙上才不会出现
+		// 「改不了账号但能把账号借出去」的空子。
+		"openapikey": {
+			"add":     canUser,
+			"control": canUser, // 停用 / 启用
+			"delete":  canUser,
 		},
 		"usergroup": {
 			"add":    canUser && isSuper,
