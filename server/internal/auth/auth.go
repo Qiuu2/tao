@@ -249,6 +249,55 @@ func (m *Manager) Login(ctx context.Context, username, password string) (string,
 	return token, u, nil
 }
 
+// UserByID 按账号 id 装配一个完整的 User（含 13 个权限位）。
+//
+// # 给谁用
+//
+// 开发者接口（internal/openapi）：一把 api_key 挂在某个账号下，
+// 认证通过之后要把那个账号的**完整权限**装出来，才能套用同一套权限检查。
+//
+// # 为什么不在 openapi 里自己查一遍
+//
+// 权限位有 13 个，还有 IsAdmin / ReadOnly / 用户组被删时降级这些规矩。
+// 抄一份到别处，就有了两个真相 —— 而它们对不齐的那天，
+// 表现是「界面上没权限、接口却能干」。所以只此一处。
+//
+// ⚠ 与 Login 的区别只有一条：**不验密码、不签发会话**。
+// 停用的账号一样拒掉 —— 停用一个人之后，他名下的密钥就该跟着失效。
+func (m *Manager) UserByID(ctx context.Context, id int64) (*User, error) {
+	var model int
+	if err := m.db.QueryRowContext(ctx,
+		`SELECT model FROM serverbaseparam LIMIT 1`).Scan(&model); err != nil {
+		return nil, fmt.Errorf("读取服务器参数: %w", err)
+	}
+
+	u := &User{}
+	var enable int
+	var fullname, info sql.NullString
+	err := m.db.QueryRowContext(ctx, `
+		SELECT id, username, usergroupid, enable, fullname, info
+		FROM book_admin WHERE id = ? LIMIT 1`, id).
+		Scan(&u.ID, &u.Username, &u.UsergroupID, &enable, &fullname, &info)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, ErrBadCredential
+	}
+	if err != nil {
+		return nil, fmt.Errorf("查询用户: %w", err)
+	}
+	if enable != 1 {
+		return nil, ErrUserDisabled
+	}
+
+	u.Fullname = fullname.String
+	u.Info = info.String
+	u.IsAdmin = u.UsergroupID == 1
+	u.ReadOnly = model == 2
+	if err := m.loadRights(ctx, u); err != nil {
+		return nil, err
+	}
+	return u, nil
+}
+
 // loadRights 读取用户组的 13 个权限位与 level。
 func (m *Manager) loadRights(ctx context.Context, u *User) error {
 	var name sql.NullString
@@ -435,6 +484,20 @@ func (m *Manager) RequireRightAllowReadOnly(priv string, next http.HandlerFunc) 
 		}
 		next(w, r)
 	})
+}
+
+// WithUser 把身份放进请求上下文。
+//
+// # 给谁用
+//
+// 开发者接口（X-API-Key）自己做认证，做完之后要把装配好的 User 交给
+// 后面的 handler —— 而 handler 一律用 From(ctx) 取身份，不管前面是哪条认证路径。
+//
+// ⚠ 上下文键 userKey 是**包私有**的，这是有意的：只有 auth 能往里放身份，
+// 别处想伪造一个"已登录用户"塞进上下文就得先过这个函数。
+// 所以这个入口只开给同一进程里已经完成认证的调用方。
+func WithUser(ctx context.Context, u *User) context.Context {
+	return context.WithValue(ctx, userKey, u)
 }
 
 // From 从请求上下文取出当前用户。仅在 Require 之后调用。

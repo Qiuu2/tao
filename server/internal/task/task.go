@@ -184,6 +184,12 @@ type ListQuery struct {
 	Pager     store.Pager
 	// WithDetails 关掉可以省掉两条批量查询，供只要计数的场景用。
 	WithDetails bool
+	// Schedule 只列属于这个作息方案的任务（task.info）。空 = 不筛。
+	//
+	// ⚠ 必须在 SQL 里筛，不能查出来再在外面过滤 —— 那样 total 和分页
+	//   都是按未筛选算的，翻到第二页会莫名其妙地空掉。页面暂时没用到这个字段，
+	//   开发者接口的 ?schedule= 用它。
+	Schedule string
 }
 
 // visibleCond 是任务可见范围的唯一权威定义。
@@ -222,6 +228,9 @@ func (s *Service) List(ctx context.Context, u *auth.User, q ListQuery) (*ListRes
 	cond.Add(c, args...)
 	if q.FolderID > 0 {
 		cond.Add("t.parentid = ?", q.FolderID)
+	}
+	if q.Schedule != "" {
+		cond.Add("t.info = ?", q.Schedule)
 	}
 	if c, args := visibleCond(u); c != "" {
 		cond.Add(c, args...)

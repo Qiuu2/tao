@@ -41,6 +41,7 @@ import (
 	"htweb/internal/media"
 	"htweb/internal/notify"
 	"htweb/internal/offline"
+	"htweb/internal/openapi"
 	"htweb/internal/register"
 	"htweb/internal/remote"
 	"htweb/internal/serverparam"
@@ -85,6 +86,10 @@ type app struct {
 	enables   *enable.Service
 	sounds    *sound.Service
 	registers *register.Service
+
+	// openAPI 是开发者接口（/openapi/v1）。它不是第二套业务逻辑 ——
+	// 只多了一层密钥认证和名字寻址，动作仍交给上面那些 service。
+	openAPI *openapi.Service
 }
 
 func main() {
@@ -150,6 +155,9 @@ func main() {
 	a.users.SetSideEffects(a.medias, a.notifier)
 	// 助手的写操作走页面用的这两个，不另起炉灶 —— 守卫与通知协议一并继承
 	a.assist.AttachServices(a.tasks, a.notifier, a.terminals, a.zones, a.enables, a.bells)
+	// 开发者接口同理：认证换成密钥，动作还是这几个 service
+	a.openAPI = openapi.New(st.DB(), a.authMgr)
+	a.openAPI.Attach(a.tasks, a.bells, a.terminals, a.zones, a.medias, a.enables, a.notifier)
 
 	srv := &http.Server{
 		Addr:              cfg.Server.Listen,
@@ -714,6 +722,33 @@ func (a *app) routes() http.Handler {
 	mux.HandleFunc("GET /api/transfer/tasks/{id}", req(a.handleTransferDetail))
 	mux.HandleFunc("GET /api/transfer/tasks/{id}/media", req(a.handleTransferMedia))
 	mux.HandleFunc("POST /api/transfer/bulk", req(a.handleTransferBulk))
+
+	// —— 开发者密钥管理（界面上发/停/删）——
+	//
+	// ⚠ 这一组在 /api 上，**必须登录**才能动 —— 拿密钥去发密钥的话，
+	//   一次泄露就永远收不回来（吊销 A 的时候 A 发的 B 还活着）。
+	key := func(h http.HandlerFunc) http.HandlerFunc {
+		return a.authMgr.RequireRight(keyPriv, h)
+	}
+	mux.HandleFunc("GET /api/openapi-keys", key(a.handleAPIKeyList))
+	mux.HandleFunc("POST /api/openapi-keys", key(a.handleAPIKeyCreate))
+	mux.HandleFunc("PUT /api/openapi-keys/{id}/state", key(a.handleAPIKeyState))
+	mux.HandleFunc("DELETE /api/openapi-keys/{id}", key(a.handleAPIKeyDelete))
+
+	// —— 开发者接口 /openapi/v1（业务域十五）——
+	//
+	// 与 /api 的三点不同，见 internal/openapi 的包注释：
+	// 凭据是 X-API-Key（落库、可吊销）、寻址名字优先、路径带版本号。
+	// 相同的是权限：认证之后注入的是同一个 auth.User，
+	// 权限位、可见范围、备机只读全部照旧生效。
+	//
+	// 查询类只要一把有效密钥（可见范围已按归属账号收敛），写操作再要对应权限位。
+	openq := a.openKey
+	mux.HandleFunc("GET /openapi/v1/tasks", openq(a.handleOpenTaskList))
+	mux.HandleFunc("GET /openapi/v1/terminals", openq(a.handleOpenTerminalList))
+	mux.HandleFunc("GET /openapi/v1/media", openq(a.handleOpenMediaList))
+	mux.HandleFunc("GET /openapi/v1/schedules", openq(a.handleOpenScheduleList))
+	mux.HandleFunc("GET /openapi/v1/schedules/{name}", openq(a.handleOpenScheduleGet))
 
 	// —— 健康检查（不需要登录，便于运维探活）——
 	mux.HandleFunc("GET /api/health", a.handleHealth)

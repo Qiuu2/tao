@@ -54,6 +54,12 @@ var clearTables = []string{
 	// 那些任务本来就没了，这两张登记表跟着清才不会留下一堆指向空气的记录。
 	"assistant_session", "assistant_message", "assistant_setting",
 	"assistant_task_override", "assistant_runtime_play", "assistant_undo",
+
+	// ⚠ api_key 是发给第三方的**长期凭据**（db/openapi_tables.sql）。
+	// 恢复出厂 = 这台机器要重新交付给别人用，之前发出去的密钥必须全部作废 ——
+	// 留着等于把上一家的钥匙交给下一家。清掉之后第三方会立刻收到 401，
+	// 这正是我们要的：让人重新来申请，而不是悄悄继续能用。
+	"api_key",
 }
 
 // keepTables 是按条件保留的表：清掉不满足条件的行（BR-261）。

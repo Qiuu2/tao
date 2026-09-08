@@ -44,6 +44,12 @@ var auditLabels = map[string]string{
 	"DELETE /api/media":                  "删除媒体",
 	"POST /api/folders/{id}/media:clear": "清空媒体目录",
 
+	// 开发者密钥。发一把密钥等于把一个账号的权限借出去，
+	// 这三个动作必须留痕 —— 出事时要能回答「这把密钥是谁什么时候发的」。
+	"POST /api/openapi-keys":           "新建开发者密钥",
+	"PUT /api/openapi-keys/{id}/state": "启用/停用开发者密钥",
+	"DELETE /api/openapi-keys/{id}":    "删除开发者密钥",
+
 	"POST /api/usergroups":        "新建用户组",
 	"PUT /api/usergroups/{id}":    "修改用户组",
 	"DELETE /api/usergroups/{id}": "删除用户组",
