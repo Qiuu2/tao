@@ -33,9 +33,7 @@ func (s *Service) executors() map[Intent]executor {
 	return map[Intent]executor{
 		IntentQueryTerminal: s.execQueryTerminal,
 		IntentCheckTerminal: s.execCheckTerminal,
-		// query_task 还没接：它要先有一套中文时间范围解析（「今天」「明天8点到9点」），
-		// 那是独立的一块。半搬会让「今天有哪些任务」把"今天"这个条件丢掉 ——
-		// 给出一个看着像对、其实范围不对的答案，比明说没做更糟。
+		IntentQueryTask:     s.execQueryTask,
 	}
 }
 
