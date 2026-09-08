@@ -1,0 +1,85 @@
+[
+ {
+  "name": "once_cancel_done/d-0001",
+  "want": "好嘞，先帮您临时取消一次，过了这个时段会自动复原哈~",
+  "kind": "once_cancel_done",
+  "diagnostic_id": "d-0001"
+ },
+ {
+  "name": "once_cancel_done/d-0002",
+  "want": "搞定，这次取消已经设好啦，事后会自动恢复~",
+  "kind": "once_cancel_done",
+  "diagnostic_id": "d-0002"
+ },
+ {
+  "name": "once_cancel_done/d-0003",
+  "want": "好嘞，先帮您临时取消一次，过了这个时段会自动复原哈~",
+  "kind": "once_cancel_done",
+  "diagnostic_id": "d-0003"
+ },
+ {
+  "name": "once_cancel_done/d-0004",
+  "want": "好嘞，先帮您临时取消一次，过了这个时段会自动复原哈~",
+  "kind": "once_cancel_done",
+  "diagnostic_id": "d-0004"
+ },
+ {
+  "name": "once_cancel_done/(空)",
+  "want": "搞定，这次取消已经设好啦，事后会自动恢复~",
+  "kind": "once_cancel_done",
+  "diagnostic_id": ""
+ },
+ {
+  "name": "cancel_once_summary/1-3-0-0",
+  "want": "已对 1 个启用中的作息方案,共 3 条任务 执行一次性取消。",
+  "kind": "cancel_once_summary",
+  "schedule_group_count": 1,
+  "schedule_task_count": 3,
+  "broadcast_group_count": 0,
+  "broadcast_task_count": 0
+ },
+ {
+  "name": "cancel_once_summary/2-5-0-0",
+  "want": "已对 2 个启用中的作息方案,共 5 条任务 执行一次性取消。",
+  "kind": "cancel_once_summary",
+  "schedule_group_count": 2,
+  "schedule_task_count": 5,
+  "broadcast_group_count": 0,
+  "broadcast_task_count": 0
+ },
+ {
+  "name": "cancel_once_summary/0-0-1-0",
+  "want": "已对 1 条周期广播 执行一次性取消。",
+  "kind": "cancel_once_summary",
+  "schedule_group_count": 0,
+  "schedule_task_count": 0,
+  "broadcast_group_count": 1,
+  "broadcast_task_count": 0
+ },
+ {
+  "name": "cancel_once_summary/1-2-1-0",
+  "want": "已对 1 个启用中的作息方案,共 2 条任务、1 条周期广播 执行一次性取消。",
+  "kind": "cancel_once_summary",
+  "schedule_group_count": 1,
+  "schedule_task_count": 2,
+  "broadcast_group_count": 1,
+  "broadcast_task_count": 0
+ },
+ {
+  "name": "cancel_once_summary/0-0-0-0",
+  "want": "已执行一次性取消。",
+  "kind": "cancel_once_summary",
+  "schedule_group_count": 0,
+  "schedule_task_count": 0,
+  "broadcast_group_count": 0,
+  "broadcast_task_count": 0
+ },
+ {
+  "name": "ask/cancel_schedule",
+  "want": "还差要取消的时间范围哦，告诉我一下哈~\n举个例子：比如今天上午八点到九点，或者周三早读这类说法",
+  "kind": "ask",
+  "intent": "cancel_schedule",
+  "need": "要取消的时间范围",
+  "example": "比如今天上午八点到九点，或者周三早读这类说法"
+ }
+]
