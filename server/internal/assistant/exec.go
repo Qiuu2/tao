@@ -59,6 +59,7 @@ func (s *Service) executors() map[Intent]executor {
 		IntentDisableSchedule: s.execScheduleState("disable_schedule", false),
 		IntentDeleteSchedule:  s.execDeleteSchedule,
 		IntentCancelSchedule:  s.execCancelSchedule,
+		IntentMoveSchedule:    s.execMoveSchedule,
 	}
 }
 

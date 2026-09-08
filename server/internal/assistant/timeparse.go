@@ -605,3 +605,172 @@ func firstNonEmpty(values ...string) string {
 	}
 	return ""
 }
+
+// ---------- 完整的时间锚点（挪动 / 对调要用） ----------
+//
+// query_task 只需要知道一个时间词是不是"带日期的"，所以前面那个 timeAnchorKind
+// 只返回 kind。挪动要算「从周三挪到周五」「从 8 点挪到 9 点」，
+// 就得知道是哪个星期、哪一天、几点几分。这里把 _parse_phase1_time_anchor
+// 剩下的字段补齐。
+
+// TimeAnchor 对应 _parse_phase1_time_anchor 的返回。
+type TimeAnchor struct {
+	// Kind 是 "weekday" 或 "date"。空表示没解析出来。
+	Kind    string
+	Weekday string // 「周一」…「周日」
+	Date    time.Time
+	Raw     string
+	// StartMinutes / EndMinutes 是这个词里带的时间范围（分钟数）。
+	// HasRange 为 false 表示这个词里没有钟点。
+	StartMinutes int
+	EndMinutes   int
+	HasRange     bool
+}
+
+// cnDigitToArabic 取自 _cn_digit_to_arabic。
+// ⚠ 必须先换两字词（十一、十二、十），否则「十一」会被拆成「十1」。
+func cnDigitToArabic(text string) string {
+	for _, p := range [][2]string{{"十一", "11"}, {"十二", "12"}, {"十", "10"}} {
+		text = strings.ReplaceAll(text, p[0], p[1])
+	}
+	for _, p := range [][2]string{
+		{"零", "0"}, {"〇", "0"},
+		{"一", "1"}, {"二", "2"}, {"两", "2"}, {"三", "3"}, {"四", "4"},
+		{"五", "5"}, {"六", "6"}, {"七", "7"}, {"八", "8"}, {"九", "9"},
+	} {
+		text = strings.ReplaceAll(text, p[0], p[1])
+	}
+	return text
+}
+
+var (
+	reStripWeekday = regexp.MustCompile(`(?:这|本|下下|下个|下|上个|上)?(?:周|星期|礼拜)[一二三四五六日天1-7]`)
+	reRangeBoth    = regexp.MustCompile(
+		`(上午|下午|早上|晚上|凌晨|午后|傍晚|早晨)?\s*(\d{1,2})\s*[点时:：]\s*(\d{1,2})?\s*分?\s*(?:到|至|-|–|—)\s*` +
+			`(上午|下午|早上|晚上|凌晨|午后|傍晚|早晨)?\s*(\d{1,2})\s*[点时:：]?\s*(\d{1,2})?\s*分?`)
+	reRangeCompact = regexp.MustCompile(`(上午|下午|早上|晚上|凌晨)?\s*(\d{1,2})\s*[-–—]\s*(\d{1,2})\s*[点时]`)
+	reSinglePoint  = regexp.MustCompile(`(上午|下午|早上|晚上|凌晨|午后|傍晚|早晨)?\s*(\d{1,2})\s*(?:[:：点时])\s*(\d{1,2})?\s*分?`)
+	rePlainClock   = regexp.MustCompile(`([01]?\d|2[0-3])\s*(?:[:：点时])\s*([0-5]?\d)?`)
+)
+
+var pmMarkers = []string{"下午", "午后", "晚上", "傍晚"}
+
+// extractTimeRangeMinutes 取自 _extract_time_range_minutes。
+//
+// ⚠ 第一步要先把「周X」整段抠掉：不抠的话「周一8点30」在中文数字替换之后
+// 会变成「周18点30」，接着被当成 18 点 —— 挪动就挪到了晚上。
+func extractTimeRangeMinutes(text string) (int, int, bool) {
+	if text == "" {
+		return 0, 0, false
+	}
+	text = reStripWeekday.ReplaceAllString(text, " ")
+	text = cnDigitToArabic(text)
+
+	if m := reRangeBoth.FindStringSubmatch(text); m != nil {
+		p1, p2 := m[1], m[4]
+		if p2 == "" {
+			p2 = p1
+		}
+		h1, _ := strconv.Atoi(m[2])
+		min1, _ := strconv.Atoi(orZero(m[3]))
+		h2, _ := strconv.Atoi(m[5])
+		min2, _ := strconv.Atoi(orZero(m[6]))
+		if containsAny(p1, pmMarkers...) && h1 < 12 {
+			h1 += 12
+		}
+		if containsAny(p2, pmMarkers...) && h2 < 12 {
+			h2 += 12
+		}
+		return h1*60 + min1, h2*60 + min2, true
+	}
+	if m := reRangeCompact.FindStringSubmatch(text); m != nil {
+		p := m[1]
+		h1, _ := strconv.Atoi(m[2])
+		h2, _ := strconv.Atoi(m[3])
+		if containsAny(p, pmMarkers...) {
+			if h1 < 12 {
+				h1 += 12
+			}
+			if h2 < 12 {
+				h2 += 12
+			}
+		}
+		return h1 * 60, h2 * 60, true
+	}
+	if m := reSinglePoint.FindStringSubmatch(text); m != nil {
+		period := m[1]
+		h, _ := strconv.Atoi(m[2])
+		mi, _ := strconv.Atoi(orZero(m[3]))
+		if containsAny(period, pmMarkers...) && h < 12 {
+			h += 12
+		}
+		if strings.Contains(period, "凌晨") && h == 12 {
+			h = 0
+		}
+		v := h*60 + mi
+		return v, v, true
+	}
+	return 0, 0, false
+}
+
+func orZero(s string) string {
+	if s == "" {
+		return "0"
+	}
+	return s
+}
+
+// ParseTimeAnchor 取自 _parse_phase1_time_anchor。
+func ParseTimeAnchor(value string) (TimeAnchor, bool) {
+	text := strings.TrimSpace(value)
+	if text == "" {
+		return TimeAnchor{}, false
+	}
+	weekday := weekdayLabelFromText(text)
+	hasDateLiteral := reDateLiteral.MatchString(text) ||
+		containsAny(text, "今天", "明天", "后天", "大后天", "昨天", "前天")
+
+	start, end, hasRange := extractTimeRangeMinutes(text)
+	a := TimeAnchor{Raw: text, StartMinutes: start, EndMinutes: end, HasRange: hasRange}
+
+	if weekday != "" && !hasDateLiteral {
+		a.Kind, a.Weekday = "weekday", weekday
+		return a, true
+	}
+	if d, ok := parsePhase1Date(text); ok {
+		a.Kind, a.Date = "date", d
+		return a, true
+	}
+	if weekday != "" {
+		a.Kind, a.Weekday = "weekday", weekday
+		return a, true
+	}
+	return TimeAnchor{}, false
+}
+
+// anchorStartMinutes 取自 _anchor_start_minutes。
+func anchorStartMinutes(a TimeAnchor) (int, bool) {
+	if a.HasRange {
+		return a.StartMinutes, true
+	}
+	if a.Raw == "" {
+		return 0, false
+	}
+	if s, _, ok := extractTimeRangeMinutes(a.Raw); ok {
+		return s, true
+	}
+	// 兜底：直接找一个钟点
+	m := rePlainClock.FindStringSubmatch(a.Raw)
+	if m == nil {
+		return 0, false
+	}
+	h, _ := strconv.Atoi(m[1])
+	mi, _ := strconv.Atoi(orZero(m[2]))
+	if containsAny(a.Raw, "下午", "晚上", "傍晚", "晚间", "午后") && h < 12 {
+		h += 12
+	}
+	if strings.Contains(a.Raw, "凌晨") && h == 12 {
+		h = 0
+	}
+	return h*60 + mi, true
+}

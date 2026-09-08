@@ -1,0 +1,410 @@
+{
+ "now": "2026-09-08 10:30:00",
+ "anchors": [
+  {
+   "raw": "周三",
+   "kind": "weekday",
+   "weekday": "周三",
+   "date": "",
+   "has_range": false,
+   "start_minutes": 0,
+   "end_minutes": 0,
+   "anchor_start_minutes": -1
+  },
+  {
+   "raw": "周五",
+   "kind": "weekday",
+   "weekday": "周五",
+   "date": "",
+   "has_range": false,
+   "start_minutes": 0,
+   "end_minutes": 0,
+   "anchor_start_minutes": -1
+  },
+  {
+   "raw": "下周一",
+   "kind": "weekday",
+   "weekday": "周一",
+   "date": "",
+   "has_range": false,
+   "start_minutes": 0,
+   "end_minutes": 0,
+   "anchor_start_minutes": -1
+  },
+  {
+   "raw": "周日",
+   "kind": "weekday",
+   "weekday": "周日",
+   "date": "",
+   "has_range": false,
+   "start_minutes": 0,
+   "end_minutes": 0,
+   "anchor_start_minutes": -1
+  },
+  {
+   "raw": "星期六",
+   "kind": "weekday",
+   "weekday": "周六",
+   "date": "",
+   "has_range": false,
+   "start_minutes": 0,
+   "end_minutes": 0,
+   "anchor_start_minutes": -1
+  },
+  {
+   "raw": "礼拜天",
+   "kind": "weekday",
+   "weekday": "周日",
+   "date": "",
+   "has_range": false,
+   "start_minutes": 0,
+   "end_minutes": 0,
+   "anchor_start_minutes": -1
+  },
+  {
+   "raw": "今天",
+   "kind": "date",
+   "weekday": "",
+   "date": "2026-09-08",
+   "has_range": false,
+   "start_minutes": 0,
+   "end_minutes": 0,
+   "anchor_start_minutes": -1
+  },
+  {
+   "raw": "明天",
+   "kind": "date",
+   "weekday": "",
+   "date": "2026-09-09",
+   "has_range": false,
+   "start_minutes": 0,
+   "end_minutes": 0,
+   "anchor_start_minutes": -1
+  },
+  {
+   "raw": "9月10日",
+   "kind": "date",
+   "weekday": "",
+   "date": "2026-09-10",
+   "has_range": false,
+   "start_minutes": 0,
+   "end_minutes": 0,
+   "anchor_start_minutes": -1
+  },
+  {
+   "raw": "2026-10-01",
+   "kind": "date",
+   "weekday": "",
+   "date": "2026-10-01",
+   "has_range": false,
+   "start_minutes": 0,
+   "end_minutes": 0,
+   "anchor_start_minutes": -1
+  },
+  {
+   "raw": "周三8点",
+   "kind": "weekday",
+   "weekday": "周三",
+   "date": "",
+   "has_range": true,
+   "start_minutes": 480,
+   "end_minutes": 480,
+   "anchor_start_minutes": 480
+  },
+  {
+   "raw": "周五9点",
+   "kind": "weekday",
+   "weekday": "周五",
+   "date": "",
+   "has_range": true,
+   "start_minutes": 540,
+   "end_minutes": 540,
+   "anchor_start_minutes": 540
+  },
+  {
+   "raw": "8点",
+   "kind": "date",
+   "weekday": "",
+   "date": "2026-09-09",
+   "has_range": true,
+   "start_minutes": 480,
+   "end_minutes": 480,
+   "anchor_start_minutes": 480
+  },
+  {
+   "raw": "9点半",
+   "kind": "date",
+   "weekday": "",
+   "date": "2026-09-09",
+   "has_range": true,
+   "start_minutes": 540,
+   "end_minutes": 540,
+   "anchor_start_minutes": 540
+  },
+  {
+   "raw": "下午3点",
+   "kind": "date",
+   "weekday": "",
+   "date": "2026-09-08",
+   "has_range": true,
+   "start_minutes": 900,
+   "end_minutes": 900,
+   "anchor_start_minutes": 900
+  },
+  {
+   "raw": "周五3点到7点",
+   "kind": "weekday",
+   "weekday": "周五",
+   "date": "",
+   "has_range": true,
+   "start_minutes": 180,
+   "end_minutes": 420,
+   "anchor_start_minutes": 180
+  },
+  {
+   "raw": "周六4点到5点",
+   "kind": "weekday",
+   "weekday": "周六",
+   "date": "",
+   "has_range": true,
+   "start_minutes": 240,
+   "end_minutes": 300,
+   "anchor_start_minutes": 240
+  },
+  {
+   "raw": "早上八点",
+   "kind": "date",
+   "weekday": "",
+   "date": "2026-09-09",
+   "has_range": true,
+   "start_minutes": 480,
+   "end_minutes": 480,
+   "anchor_start_minutes": 480
+  },
+  {
+   "raw": "周一8点30",
+   "kind": "weekday",
+   "weekday": "周一",
+   "date": "",
+   "has_range": true,
+   "start_minutes": 510,
+   "end_minutes": 510,
+   "anchor_start_minutes": 510
+  },
+  {
+   "raw": "上午",
+   "kind": "",
+   "weekday": "",
+   "date": "",
+   "has_range": false,
+   "start_minutes": 0,
+   "end_minutes": 0,
+   "anchor_start_minutes": -1
+  },
+  {
+   "raw": "下午",
+   "kind": "",
+   "weekday": "",
+   "date": "",
+   "has_range": false,
+   "start_minutes": 0,
+   "end_minutes": 0,
+   "anchor_start_minutes": -1
+  },
+  {
+   "raw": "随便一句没有时间的话",
+   "kind": "",
+   "weekday": "",
+   "date": "",
+   "has_range": false,
+   "start_minutes": 0,
+   "end_minutes": 0,
+   "anchor_start_minutes": -1
+  }
+ ],
+ "ranges": [
+  {
+   "raw": "周五3点到7点",
+   "ok": true,
+   "start": 180,
+   "end": 420
+  },
+  {
+   "raw": "下午3点到5点",
+   "ok": true,
+   "start": 900,
+   "end": 1020
+  },
+  {
+   "raw": "3-7点",
+   "ok": true,
+   "start": 180,
+   "end": 420
+  },
+  {
+   "raw": "8点30",
+   "ok": true,
+   "start": 510,
+   "end": 510
+  },
+  {
+   "raw": "下午3点",
+   "ok": true,
+   "start": 900,
+   "end": 900
+  },
+  {
+   "raw": "周一8点30",
+   "ok": true,
+   "start": 510,
+   "end": 510
+  },
+  {
+   "raw": "早上八点",
+   "ok": true,
+   "start": 480,
+   "end": 480
+  },
+  {
+   "raw": "十点半",
+   "ok": true,
+   "start": 600,
+   "end": 600
+  },
+  {
+   "raw": "晚上7点到9点",
+   "ok": true,
+   "start": 1140,
+   "end": 1260
+  },
+  {
+   "raw": "没有时间",
+   "ok": false,
+   "start": 0,
+   "end": 0
+  }
+ ],
+ "replace_weekday": [
+  {
+   "weekdays": [
+    "周一",
+    "周三",
+    "周五"
+   ],
+   "source": "周一",
+   "target": "周六",
+   "want": [
+    "周三",
+    "周五",
+    "周六"
+   ]
+  },
+  {
+   "weekdays": [
+    "周一",
+    "周二"
+   ],
+   "source": "周三",
+   "target": "周日",
+   "want": [
+    "周一",
+    "周二"
+   ]
+  },
+  {
+   "weekdays": [
+    "周六",
+    "周日"
+   ],
+   "source": "周六",
+   "target": "周一",
+   "want": [
+    "周一",
+    "周日"
+   ]
+  }
+ ],
+ "shift_weekdays": [
+  {
+   "weekdays": [
+    "周一",
+    "周三"
+   ],
+   "delta": 1,
+   "want": [
+    "周二",
+    "周四"
+   ]
+  },
+  {
+   "weekdays": [
+    "周日"
+   ],
+   "delta": 1,
+   "want": [
+    "周一"
+   ]
+  },
+  {
+   "weekdays": [
+    "周一",
+    "周二"
+   ],
+   "delta": -1,
+   "want": [
+    "周一",
+    "周日"
+   ]
+  },
+  {
+   "weekdays": [
+    "周五"
+   ],
+   "delta": 3,
+   "want": [
+    "周一"
+   ]
+  },
+  {
+   "weekdays": [
+    "周一"
+   ],
+   "delta": 0,
+   "want": [
+    "周一"
+   ]
+  }
+ ],
+ "shift_time": [
+  {
+   "value": "07:20:00",
+   "delta_minutes": 40,
+   "want_time": "08:00:00",
+   "want_day_delta": 0
+  },
+  {
+   "value": "23:50:00",
+   "delta_minutes": 30,
+   "want_time": "00:20:00",
+   "want_day_delta": 1
+  },
+  {
+   "value": "00:10:00",
+   "delta_minutes": -30,
+   "want_time": "23:40:00",
+   "want_day_delta": -1
+  },
+  {
+   "value": "08:00:00",
+   "delta_minutes": 0,
+   "want_time": "08:00:00",
+   "want_day_delta": 0
+  },
+  {
+   "value": "12:00:00",
+   "delta_minutes": 1440,
+   "want_time": "12:00:00",
+   "want_day_delta": 1
+  }
+ ]
+}
