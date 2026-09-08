@@ -94,10 +94,25 @@
           <div v-if="err.name" class="err">{{ err.name }}</div>
         </el-form-item>
         <el-form-item label="归属账号" required>
+          <!-- 候选名单来自后端，与「谁能发给谁」的判断同一条规则 ——
+               能选的就一定能提交成功。停用的账号后端已经过滤掉了：
+               给它发的密钥永远调不通（认证时因账号停用回 401，
+               对外还是恒定那句「密钥无效」，对接方查不出原因）。 -->
           <el-select v-model="form.userId" filterable placeholder="请选择" class="fill">
-            <el-option v-for="u in users" :key="u.id" :label="u.username" :value="u.id" />
+            <el-option v-for="u in accounts" :key="u.id" :label="u.username" :value="u.id">
+              <span>{{ u.username }}</span>
+              <span class="opt-group">{{ u.groupName }}</span>
+            </el-option>
           </el-select>
           <div class="tip inline">这把密钥能做的事，与这个账号在界面上能做的事完全一致。</div>
+          <el-alert
+            v-if="pickedIsAdmin"
+            type="warning"
+            :closable="false"
+            class="mt6"
+            title="这是管理员账号，密钥将拥有全部权限"
+            description="给第三方对接时，建议单独建一个账号、只勾它真正需要的权限位，别把管理员借出去。"
+          />
           <div v-if="err.userId" class="err">{{ err.userId }}</div>
         </el-form-item>
         <el-form-item label="到期时间">
@@ -131,6 +146,7 @@
       </div>
       <div class="tip">用法：在请求头里带 <code class="mono">X-API-Key: {{ secretDlg.secret }}</code></div>
       <template #footer>
+        <el-button @click="goConsole">拿去试一试</el-button>
         <el-button type="primary" @click="secretDlg.visible = false">我已经保存好了</el-button>
       </template>
     </el-dialog>
@@ -141,12 +157,19 @@
 import { CopyDocument, Delete, Plus, Refresh } from "@element-plus/icons-vue";
 import { ElMessage, ElMessageBox } from "element-plus";
 import { computed, onMounted, reactive, ref } from "vue";
+import { useRouter } from "vue-router";
 
-import { createApiKeyApi, deleteApiKeyApi, getApiKeyListApi, setApiKeyStateApi } from "@/api/modules/openapikey";
-import type { ApiKeyItem } from "@/api/modules/openapikey";
-import { getUserListApi } from "@/api/modules/account";
+import {
+  createApiKeyApi,
+  deleteApiKeyApi,
+  getApiKeyAccountsApi,
+  getApiKeyListApi,
+  setApiKeyStateApi
+} from "@/api/modules/openapikey";
+import type { ApiKeyAccount, ApiKeyItem } from "@/api/modules/openapikey";
 import { useAuthStore } from "@/stores/modules/auth";
 
+const router = useRouter();
 const authStore = useAuthStore();
 const btn = computed(() => (authStore.authButtonListGet as any)?.openapikey ?? {});
 const canAdd = computed(() => !!btn.value.add);
@@ -155,7 +178,7 @@ const canDelete = computed(() => !!btn.value.delete);
 
 const rows = ref<ApiKeyItem[]>([]);
 const loading = ref(false);
-const users = ref<{ id: number; username: string }[]>([]);
+const accounts = ref<ApiKeyAccount[]>([]);
 
 /** 到期时间过了就当失效。后端认证时也会拒，这里只是让列表一眼看得出来。 */
 const expired = (row: ApiKeyItem) => !!row.expiretime && row.expiretime < new Date().toISOString().slice(0, 19).replace("T", " ");
@@ -170,10 +193,13 @@ const load = async () => {
   }
 };
 
-const loadUsers = async () => {
-  const { data } = await getUserListApi({ pageNum: 1, pageSize: 100 });
-  users.value = (data?.list ?? []).map((u: any) => ({ id: u.id, username: u.username }));
+const loadAccounts = async () => {
+  const { data } = await getApiKeyAccountsApi();
+  accounts.value = data ?? [];
 };
+
+/** 选中的是不是管理员账号 —— 是的话要警示一句。 */
+const pickedIsAdmin = computed(() => accounts.value.find(a => a.id === form.userId)?.isAdmin ?? false);
 
 const dlg = reactive({ visible: false, saving: false });
 const secretDlg = reactive({ visible: false, secret: "" });
@@ -187,7 +213,7 @@ const openCreate = () => {
   form.userId = 0;
   form.expiretime = "";
   dlg.visible = true;
-  if (!users.value.length) loadUsers();
+  if (!accounts.value.length) loadAccounts();
 };
 
 const submit = async () => {
@@ -207,10 +233,24 @@ const submit = async () => {
     // 明文只在这一次的响应里。立刻弹出来让人抄走。
     secretDlg.secret = data?.secret ?? "";
     secretDlg.visible = true;
+    // 顺手放进 sessionStorage，让「接口调用平台」那一页能自动带上，
+    // 省得刚发完密钥的人再翻一遍剪贴板。
+    // ⚠ 只在这个浏览器标签的生命周期内，关掉就没 —— 不落 localStorage：
+    //   密钥长期躺在硬盘上，比让人多粘一次糟得多。
+    try {
+      sessionStorage.setItem("openapi.lastSecret", secretDlg.secret);
+    } catch {
+      // 隐私模式下会抛。带不过去就让人手动粘，不是错误。
+    }
     load();
   } finally {
     dlg.saving = false;
   }
+};
+
+const goConsole = () => {
+  secretDlg.visible = false;
+  router.push("/dev/console");
 };
 
 const copySecret = async () => {
@@ -268,6 +308,14 @@ onMounted(load);
 }
 .muted {
   color: var(--el-text-color-secondary);
+}
+.opt-group {
+  margin-left: 12px;
+  font-size: 12px;
+  color: var(--el-text-color-secondary);
+}
+.mt6 {
+  margin-top: 6px;
 }
 .err {
   margin-top: 4px;

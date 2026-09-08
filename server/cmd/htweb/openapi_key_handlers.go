@@ -35,6 +35,19 @@ func (a *app) handleAPIKeyList(w http.ResponseWriter, r *http.Request) {
 	httpx.OK(w, list)
 }
 
+// handleAPIKeyAccounts 给新建表单的「归属账号」下拉用。
+//
+// ⚠ 不能用 /api/users —— 那个列表按 BR-106 恒不显示 admin，
+// 拿来当候选就永远没法给 admin 发密钥，而很多装机现场只有 admin 一个账号。
+func (a *app) handleAPIKeyAccounts(w http.ResponseWriter, r *http.Request) {
+	list, err := a.openAPI.Accounts(r.Context(), auth.From(r.Context()))
+	if err != nil {
+		a.failAPIKey(w, "查询可选账号", err)
+		return
+	}
+	httpx.OK(w, list)
+}
+
 func (a *app) handleAPIKeyCreate(w http.ResponseWriter, r *http.Request) {
 	var body struct {
 		Name       string `json:"name"`

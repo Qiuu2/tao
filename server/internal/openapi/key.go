@@ -178,19 +178,29 @@ func (s *Service) Create(ctx context.Context, u *auth.User, in CreateInput) (*Ke
 // 管理员可以给任何账号发；非管理员只能给**自己**发。
 // 这样不会出现"我权限小，但我给自己发一把 admin 的密钥"这条提权路径。
 func (s *Service) assertCanGrant(ctx context.Context, u *auth.User, target int64) error {
-	if u.IsAdmin {
-		var n int
-		if err := s.db.QueryRowContext(ctx,
-			`SELECT COUNT(*) FROM book_admin WHERE id = ?`, target).Scan(&n); err != nil {
-			return fmt.Errorf("校验归属账号: %w", err)
-		}
-		if n == 0 {
-			return badf("归属账号不存在")
-		}
-		return nil
-	}
-	if target != u.ID {
+	if !u.IsAdmin && target != u.ID {
 		return badf("只有管理员能把密钥发给别的账号")
+	}
+
+	// ⚠ 停用的账号也要在这儿挡掉。
+	//
+	// 不挡的话密钥能发出来、界面上一切正常，而它**永远调不通**：
+	// 认证时会因为归属账号被停用而回 401，对外还是那句恒定的「密钥无效」。
+	// 于是对接方拿着一把看起来没问题的钥匙，收到一句看不出原因的错误，
+	// 双方一起查半天 —— 而这件事在发放的那一刻就能说清楚。
+	var name string
+	var enable int
+	err := s.db.QueryRowContext(ctx,
+		`SELECT COALESCE(username,''), COALESCE(enable,0) FROM book_admin WHERE id = ? LIMIT 1`,
+		target).Scan(&name, &enable)
+	if errors.Is(err, sql.ErrNoRows) {
+		return badf("归属账号不存在")
+	}
+	if err != nil {
+		return fmt.Errorf("校验归属账号: %w", err)
+	}
+	if enable != 1 {
+		return badf("账号「%s」已被停用，给它发的密钥调不通。请先启用这个账号，或者换一个", name)
 	}
 	return nil
 }
@@ -291,6 +301,54 @@ func scanKey(sc scanner) (*Key, error) {
 	k.LastUsedTime = lastUsed.String
 	k.CreateTime = createAt.String
 	return &k, nil
+}
+
+// Account 是「这把密钥能挂到谁名下」的一个候选。
+type Account struct {
+	ID       int64  `json:"id"`
+	Username string `json:"username"`
+	// GroupName 让发放的人看清这个账号有多大权限 —— 光看用户名看不出来。
+	GroupName string `json:"groupName"`
+	// IsAdmin 为真表示这个账号**直通所有权限**。界面上会警示。
+	IsAdmin bool `json:"isAdmin"`
+}
+
+// Accounts 列出当前用户能把密钥发给哪些账号。
+//
+// ⚠ 这个名单必须与 assertCanGrant 的判断**完全一致** —— 界面上能选、
+// 提交时被拒，是最让人恼火的一类交互。所以两处用同一条规则：
+// 管理员能发给任何**启用中**的账号（含 admin 自己），其他人只能发给自己。
+//
+// ⚠ 不能复用 user.ListUsers：那个列表按 BR-106 恒不显示 admin（那是给
+// 「用户管理」页用的规则），拿来当这里的候选，结果就是**永远没法给
+// admin 发密钥** —— 而很多装机现场只有 admin 一个账号。
+func (s *Service) Accounts(ctx context.Context, u *auth.User) ([]Account, error) {
+	q := `SELECT b.id, COALESCE(b.username,''), COALESCE(g.name,''), COALESCE(b.usergroupid,0)
+	        FROM book_admin b
+	        LEFT JOIN usergroup g ON g.id = b.usergroupid
+	       WHERE COALESCE(b.enable,0) = 1`
+	var args []any
+	if !u.IsAdmin {
+		q += ` AND b.id = ?`
+		args = append(args, u.ID)
+	}
+	rows, err := s.db.QueryContext(ctx, q+` ORDER BY b.id`, args...)
+	if err != nil {
+		return nil, fmt.Errorf("查询可选账号: %w", err)
+	}
+	defer rows.Close()
+	out := []Account{}
+	for rows.Next() {
+		var a Account
+		var groupID int64
+		if err := rows.Scan(&a.ID, &a.Username, &a.GroupName, &groupID); err != nil {
+			return nil, err
+		}
+		// 与 auth 那边同一条判断：1 号用户组直通所有权限
+		a.IsAdmin = groupID == 1
+		out = append(out, a)
+	}
+	return out, rows.Err()
 }
 
 // SetEnabled 停用 / 启用一把密钥。

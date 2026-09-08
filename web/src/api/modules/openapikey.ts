@@ -30,6 +30,25 @@ export interface ApiKeyCreateReq {
   expiretime?: string;
 }
 
+/** 「这把密钥能挂到谁名下」的一个候选。 */
+export interface ApiKeyAccount {
+  id: number;
+  username: string;
+  groupName: string;
+  /** 直通所有权限的账号。界面上要警示 */
+  isAdmin: boolean;
+}
+
+/**
+ * 可选的归属账号。
+ *
+ * ⚠ 不用 /api/users —— 那个列表恒不显示 admin（BR-106，那是给用户管理页的规则），
+ * 拿来当候选就永远没法给 admin 发密钥，而很多装机现场只有 admin 一个账号。
+ * 这个接口返回的名单与后端 assertCanGrant 的判断完全一致：能选的就一定能提交成功。
+ */
+export const getApiKeyAccountsApi = () =>
+  http.get<ApiKeyAccount[]>(PORT1 + `/api/openapi-keys/accounts`, {}, { loading: false });
+
 export const getApiKeyListApi = () => http.get<ApiKeyItem[]>(PORT1 + `/api/openapi-keys`, {}, { loading: false });
 
 export const createApiKeyApi = (data: ApiKeyCreateReq) => http.post<ApiKeyItem>(PORT1 + `/api/openapi-keys`, data);

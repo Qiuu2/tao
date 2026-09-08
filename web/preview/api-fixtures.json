@@ -495,20 +495,6 @@
       "path": "/user/group"
      },
      {
-      "component": "/openapi/keys/index",
-      "meta": {
-       "icon": "Key",
-       "isAffix": false,
-       "isFull": false,
-       "isHide": false,
-       "isKeepAlive": true,
-       "isLink": "",
-       "title": "开发者密钥"
-      },
-      "name": "openapiKeys",
-      "path": "/user/openapi-keys"
-     },
-     {
       "component": "/register/index",
       "meta": {
        "icon": "Ticket",
@@ -549,6 +535,50 @@
     "name": "user",
     "path": "/user",
     "redirect": "/user/list"
+   },
+   {
+    "children": [
+     {
+      "component": "/openapi/console/index",
+      "meta": {
+       "icon": "Connection",
+       "isAffix": false,
+       "isFull": false,
+       "isHide": false,
+       "isKeepAlive": true,
+       "isLink": "",
+       "title": "接口调用平台"
+      },
+      "name": "openapiConsole",
+      "path": "/dev/console"
+     },
+     {
+      "component": "/openapi/keys/index",
+      "meta": {
+       "icon": "Key",
+       "isAffix": false,
+       "isFull": false,
+       "isHide": false,
+       "isKeepAlive": true,
+       "isLink": "",
+       "title": "开发者密钥"
+      },
+      "name": "openapiKeys",
+      "path": "/dev/keys"
+     }
+    ],
+    "meta": {
+     "icon": "Connection",
+     "isAffix": false,
+     "isFull": false,
+     "isHide": false,
+     "isKeepAlive": true,
+     "isLink": "",
+     "title": "开发者接口"
+    },
+    "name": "dev",
+    "path": "/dev",
+    "redirect": "/dev/console"
    }
   ]
  },
@@ -9185,28 +9215,682 @@
   "msg": "ok",
   "data": [
    {
-    "id": 5,
+    "id": 11,
     "name": "消防告警平台",
-    "prefix": "bwzYAaqk",
+    "prefix": "hxwUygnK",
     "userId": 1,
     "userName": "admin",
     "enabled": false,
     "expiretime": "2027-06-30 23:59:59",
     "lastusedtime": "",
     "lastusedip": "",
-    "createtime": "2026-09-08 08:20:42"
+    "createtime": "2026-09-08 08:51:49"
    },
    {
-    "id": 4,
+    "id": 10,
     "name": "教务系统",
-    "prefix": "PRTQCc38",
+    "prefix": "iYeZPjc3",
     "userId": 1,
     "userName": "admin",
     "enabled": true,
     "expiretime": "",
     "lastusedtime": "2026-09-08 07:41:12",
     "lastusedip": "192.168.2.240",
-    "createtime": "2026-09-08 08:20:42"
+    "createtime": "2026-09-08 08:51:49"
+   }
+  ]
+ },
+ "GET /api/openapi/spec": {
+  "code": 200,
+  "msg": "ok",
+  "data": {
+   "title": "IP数字网络广播系统 · 开发者接口",
+   "version": "v1",
+   "prefix": "/openapi/v1",
+   "groups": [
+    {
+     "name": "查询",
+     "desc": "只读。看得见什么由密钥归属账号的可见范围决定，和那个人登录界面看到的一模一样。",
+     "endpoints": [
+      {
+       "id": "terminals.list",
+       "method": "GET",
+       "path": "/terminals",
+       "summary": "终端状态",
+       "desc": "有哪些终端、在不在线、正在播什么、音量多少。集成方最常调的一个 —— 下发广播之前先看看设备在不在。",
+       "right": "有效密钥即可",
+       "params": [
+        {
+         "name": "zone",
+         "in": "query",
+         "type": "string",
+         "required": false,
+         "desc": "只看某个分区的。名字或编号都行",
+         "example": ""
+        },
+        {
+         "name": "keyword",
+         "in": "query",
+         "type": "string",
+         "required": false,
+         "desc": "按终端名搜",
+         "example": ""
+        },
+        {
+         "name": "pageNum",
+         "in": "query",
+         "type": "int",
+         "required": false,
+         "desc": "页码，从 1 开始",
+         "example": "1"
+        },
+        {
+         "name": "pageSize",
+         "in": "query",
+         "type": "int",
+         "required": false,
+         "desc": "每页几条，默认 20、最大 200",
+         "example": "20"
+        }
+       ],
+       "fields": null,
+       "body": "",
+       "sample": "{\n  \"list\": [{\n    \"id\": 2, \"name\": \"A102教室音箱\", \"type\": \"一体化音箱\", \"zone\": \"教学楼\",\n    \"ip\": \"192.168.2.12\",\n    \"online\": true, \"playing\": false, \"stateText\": \"在线空闲\",\n    \"volume\": 75, \"powerOn\": true, \"powerStateText\": \"已开机\"\n  }],\n  \"total\": 12, \"pageNum\": 1, \"pageSize\": 20\n}",
+       "notes": [
+        "online 是网络在线，playing 是正在播任务 —— 两件事。离线的终端 playing 恒为假。",
+        "没归到任何分区的终端，zone 是「(未分区)」。"
+       ],
+       "danger": false
+      },
+      {
+       "id": "media.list",
+       "method": "GET",
+       "path": "/media",
+       "summary": "媒体列表",
+       "desc": "媒体库里有哪些音频。想按名字播一首歌，先用它确认名字对不对。",
+       "right": "有效密钥即可",
+       "params": [
+        {
+         "name": "keyword",
+         "in": "query",
+         "type": "string",
+         "required": false,
+         "desc": "按媒体名搜",
+         "example": ""
+        },
+        {
+         "name": "folderId",
+         "in": "query",
+         "type": "int",
+         "required": false,
+         "desc": "只看某个目录的",
+         "example": ""
+        },
+        {
+         "name": "pageNum",
+         "in": "query",
+         "type": "int",
+         "required": false,
+         "desc": "页码",
+         "example": "1"
+        },
+        {
+         "name": "pageSize",
+         "in": "query",
+         "type": "int",
+         "required": false,
+         "desc": "每页几条",
+         "example": "20"
+        }
+       ],
+       "fields": null,
+       "body": "",
+       "sample": "{\n  \"list\": [{ \"id\": 125, \"name\": \"10.起床号.mp3\", \"seconds\": 89,\n             \"sizeKB\": 1406, \"folderId\": 2, \"type\": \"mp3\" }],\n  \"total\": 1, \"pageNum\": 1, \"pageSize\": 20\n}",
+       "notes": [
+        "seconds 为 0 表示库里没记时长，不是「零秒」。"
+       ],
+       "danger": false
+      },
+      {
+       "id": "tasks.list",
+       "method": "GET",
+       "path": "/tasks",
+       "summary": "任务列表",
+       "desc": "文件广播任务 —— 就是界面「任务管理」那一页列的东西。作息方案里的打铃不在这里，看下面那一组。",
+       "right": "有效密钥即可",
+       "params": [
+        {
+         "name": "keyword",
+         "in": "query",
+         "type": "string",
+         "required": false,
+         "desc": "按任务名搜",
+         "example": ""
+        },
+        {
+         "name": "folderId",
+         "in": "query",
+         "type": "int",
+         "required": false,
+         "desc": "只看某个任务分组的",
+         "example": ""
+        },
+        {
+         "name": "pageNum",
+         "in": "query",
+         "type": "int",
+         "required": false,
+         "desc": "页码",
+         "example": "1"
+        },
+        {
+         "name": "pageSize",
+         "in": "query",
+         "type": "int",
+         "required": false,
+         "desc": "每页几条",
+         "example": "20"
+        }
+       ],
+       "fields": null,
+       "body": "",
+       "sample": "{\n  \"list\": [{\n    \"id\": 1008, \"name\": \"升旗仪式-国歌\", \"note\": \"每周一\",\n    \"enabled\": true, \"running\": true, \"stateText\": \"执行中\",\n    \"startDate\": \"2026-01-01\", \"endDate\": \"2026-12-31\",\n    \"playTime\": \"07:50:00\", \"endTime\": \"07:53:00\",\n    \"weekdays\": [7], \"priority\": 8, \"volume\": 90,\n    \"media\": [{ \"id\": 138, \"name\": \"中华人民共和国国歌.mp3\" }],\n    \"terminals\": [{ \"id\": 8, \"name\": \"操场号角01\" }]\n  }],\n  \"total\": 6, \"pageNum\": 1, \"pageSize\": 20\n}",
+       "notes": [
+        "enabled = 这条任务启没启用（停用的永不触发）；running = 此刻正在播。两件事。",
+        "weekdays 是 1=周一 … 7=周日。空数组表示手动任务，后台永远不会自动触发它。",
+        "note 是只读的备注，改不了。"
+       ],
+       "danger": false
+      },
+      {
+       "id": "schedules.list",
+       "method": "GET",
+       "path": "/schedules",
+       "summary": "作息方案清单",
+       "desc": "有哪些作息方案，每个里面有几条铃、几条是启用的。",
+       "right": "有效密钥即可",
+       "params": null,
+       "fields": null,
+       "body": "",
+       "sample": "[{ \"name\": \"春季作息\", \"tasks\": 7, \"enabled\": 7 }]",
+       "notes": [
+        "方案没有编号，名字就是它的身份。"
+       ],
+       "danger": false
+      },
+      {
+       "id": "schedules.get",
+       "method": "GET",
+       "path": "/schedules/{name}",
+       "summary": "作息方案详情",
+       "desc": "一个方案里几点打什么铃、打到哪些终端。",
+       "right": "有效密钥即可",
+       "params": [
+        {
+         "name": "name",
+         "in": "path",
+         "type": "string",
+         "required": true,
+         "desc": "方案名。界面会自动做 URL 编码",
+         "example": "春季作息"
+        }
+       ],
+       "fields": null,
+       "body": "",
+       "sample": "{\n  \"name\": \"春季作息\", \"volume\": 66, \"priority\": 10,\n  \"terminals\": [{ \"id\": 1, \"name\": \"A101教室音箱\" }],\n  \"items\": [{\n    \"taskId\": 1001, \"name\": \"早读预备铃\", \"playTime\": \"07:20:00\", \"enabled\": true,\n    \"seconds\": 30, \"loopTimes\": 0, \"weekdays\": [1,2,3,4,5],\n    \"startDate\": \"2026-01-01\", \"endDate\": \"2026-12-31\",\n    \"media\": [{ \"id\": 125, \"name\": \"10.起床号.mp3\" }]\n  }]\n}",
+       "notes": [
+        "seconds 与 loopTimes 只有一个非零：按次数循环的条目没有确定的秒数，所以 seconds 给 0、次数放在 loopTimes 上。"
+       ],
+       "danger": false
+      },
+      {
+       "id": "play.list",
+       "method": "GET",
+       "path": "/play",
+       "summary": "还在播的立即播放",
+       "desc": "你们发起过、还没停掉的那些。建议定期调一下做清理 —— 比如自己的程序崩溃重启之后。",
+       "right": "有效密钥即可",
+       "params": null,
+       "fields": null,
+       "body": "",
+       "sample": "[{\n  \"playId\": 1, \"taskId\": 70231, \"media\": \"中华人民共和国国歌.mp3\",\n  \"terminals\": [{ \"id\": 8, \"name\": \"操场号角01\" }],\n  \"volume\": 90, \"seconds\": 46, \"state\": \"playing\",\n  \"startTime\": \"2026-09-08 08:00:52\", \"endTime\": \"\"\n}]",
+       "notes": null,
+       "danger": false
+      }
+     ]
+    },
+    {
+     "name": "任务",
+     "desc": "文件广播任务的增删改启停。新建是一次调用带齐媒体、终端、任务信息 —— 与界面「新建任务」那一屏对应。",
+     "endpoints": [
+      {
+       "id": "tasks.create",
+       "method": "POST",
+       "path": "/tasks",
+       "summary": "新建任务",
+       "desc": "一次调用把播放清单、终端/分区、时间与音量一起收下。不用先建任务再挂媒体再挂终端 —— 那样中间任何一步失败都会留下一条残缺的任务，它在界面上看着正常，到点却什么都不播。",
+       "right": "任务管理（taskpriv）",
+       "params": null,
+       "fields": [
+        {
+         "name": "name",
+         "type": "string",
+         "required": true,
+         "desc": "任务名，最多 45 字"
+        },
+        {
+         "name": "media",
+         "type": "数组",
+         "required": false,
+         "desc": "播放清单，按数组顺序播。写名字或编号都行"
+        },
+        {
+         "name": "terminals",
+         "type": "数组",
+         "required": false,
+         "desc": "播到哪些终端"
+        },
+        {
+         "name": "zones",
+         "type": "数组",
+         "required": false,
+         "desc": "播到哪些分区。与 terminals 取并集去重"
+        },
+        {
+         "name": "playTime",
+         "type": "string",
+         "required": true,
+         "desc": "每天几点播。09:50 或 09:50:00"
+        },
+        {
+         "name": "endTime",
+         "type": "string",
+         "required": false,
+         "desc": "不给就按 playTime + 时长自动算"
+        },
+        {
+         "name": "weekdays",
+         "type": "数组",
+         "required": false,
+         "desc": "1=周一 … 7=周日。留空 = 手动任务，不是「每天」"
+        },
+        {
+         "name": "startDate",
+         "type": "string",
+         "required": false,
+         "desc": "生效起始日。不给默认今天"
+        },
+        {
+         "name": "endDate",
+         "type": "string",
+         "required": false,
+         "desc": "生效结束日。不给默认一年后"
+        },
+        {
+         "name": "seconds",
+         "type": "int",
+         "required": false,
+         "desc": "播多久（秒）。与 loopTimes 二选一"
+        },
+        {
+         "name": "loopTimes",
+         "type": "int",
+         "required": false,
+         "desc": "把清单循环几遍。与 seconds 二选一"
+        },
+        {
+         "name": "volume",
+         "type": "int",
+         "required": false,
+         "desc": "0~100，默认 80"
+        },
+        {
+         "name": "priority",
+         "type": "int",
+         "required": false,
+         "desc": "10~109，数字小的优先级高。不给取你能用的最低一档"
+        },
+        {
+         "name": "prePower",
+         "type": "int",
+         "required": false,
+         "desc": "提前多少秒开功放电源"
+        },
+        {
+         "name": "enabled",
+         "type": "bool",
+         "required": false,
+         "desc": "建完是启用还是停用，默认启用"
+        },
+        {
+         "name": "sequential",
+         "type": "bool",
+         "required": false,
+         "desc": "true 顺序播（默认）、false 随机播"
+        },
+        {
+         "name": "folder",
+         "type": "string/int",
+         "required": false,
+         "desc": "任务分组。不给落到你看得见的第一个分组"
+        }
+       ],
+       "body": "{\n  \"name\": \"课间音乐\",\n  \"media\": [\"大课间.mp3\"],\n  \"zones\": [\"教学楼\"],\n  \"playTime\": \"09:50\",\n  \"weekdays\": [1, 2, 3, 4, 5],\n  \"seconds\": 600,\n  \"volume\": 70\n}",
+       "sample": "{ \"id\": 70230, \"mediaCount\": 1, \"terminalCount\": 4 }",
+       "notes": [
+        "⚠ weekdays 留空 = 手动任务，永远不会自动响。想每天响要写 [1,2,3,4,5,6,7]。默认成「每天」太危险 —— 少写一个字段就变成每天全校广播。",
+        "⚠ 分区是在写入那一刻展开成终端的。建完任务再往分区里加终端，这条任务不会自动带上它 —— 加了终端要重新调一次「修改任务」。",
+        "不给 priority 时取最低一档，会被别的广播压住。要它优先就自己填一个小数字。"
+       ],
+       "danger": true
+      },
+      {
+       "id": "tasks.update",
+       "method": "PUT",
+       "path": "/tasks/{ref}",
+       "summary": "修改任务",
+       "desc": "只写要改的字段，没给的保持原样。",
+       "right": "任务管理（taskpriv）",
+       "params": [
+        {
+         "name": "ref",
+         "in": "path",
+         "type": "string",
+         "required": true,
+         "desc": "任务名或编号",
+         "example": "课间音乐"
+        }
+       ],
+       "fields": null,
+       "body": "{ \"volume\": 55 }",
+       "sample": "{ \"id\": 70230, \"mediaCount\": 1, \"terminalCount\": 4 }",
+       "notes": [
+        "⚠ 清单类字段（media / terminals / zones）给了就是整体替换，不是追加。传 media: [\"A.mp3\"] 会把原来的清单换成只有 A.mp3。不传则保持原样。"
+       ],
+       "danger": true
+      },
+      {
+       "id": "tasks.action",
+       "method": "POST",
+       "path": "/tasks/actions/{action}",
+       "summary": "启停任务",
+       "desc": "四个动作分成两组，中文里都能叫「停」：start/stop 是「现在播 / 现在停」，任务本身没变；enable/disable 是「启用 / 停用」，改的是排期状态。想让今天的铃别响是 stop，想让这条任务以后都别响是 disable。",
+       "right": "任务管理（taskpriv）",
+       "params": [
+        {
+         "name": "action",
+         "in": "path",
+         "type": "枚举",
+         "required": true,
+         "desc": "start / stop / enable / disable",
+         "example": "stop"
+        }
+       ],
+       "fields": null,
+       "body": "{ \"tasks\": [\"课间音乐\"] }",
+       "sample": "{\n  \"succeeded\": [{ \"id\": 1008, \"name\": \"升旗仪式-国歌\" }],\n  \"blocked\":   [{ \"id\": 1010, \"name\": \"课间轻音乐\", \"reason\": \"只能操作自己创建的任务\" }]\n}",
+       "notes": [
+        "⚠ 回执是「部分成功」的语义：能做的做掉、做不了的逐条给原因。**要检查 blocked 是不是空的** —— 一次给二十条，因为其中一条不归你就把另外十九条也拒掉是不合理的。"
+       ],
+       "danger": true
+      },
+      {
+       "id": "tasks.delete",
+       "method": "DELETE",
+       "path": "/tasks/{ref}",
+       "summary": "删除任务",
+       "desc": "连带清掉这条任务的媒体清单与终端清单。也支持 DELETE /tasks 带 {\"tasks\":[...]} 批量删。",
+       "right": "任务管理（taskpriv）",
+       "params": [
+        {
+         "name": "ref",
+         "in": "path",
+         "type": "string",
+         "required": true,
+         "desc": "任务名或编号",
+         "example": ""
+        }
+       ],
+       "fields": null,
+       "body": "",
+       "sample": "{ \"succeeded\": [{ \"id\": 70230, \"name\": \"课间音乐\" }], \"blocked\": [] }",
+       "notes": null,
+       "danger": true
+      }
+     ]
+    },
+    {
+     "name": "立即播放",
+     "desc": "「现在就让操场出声」，不排期。会建一条临时任务并启动它，停止时连任务一起删掉。",
+     "endpoints": [
+      {
+       "id": "play.start",
+       "method": "POST",
+       "path": "/play",
+       "summary": "立即播放",
+       "desc": "告警联动最常用的一个：门禁/消防那边一触发，直接让指定区域出声。",
+       "right": "任务管理（taskpriv）",
+       "params": null,
+       "fields": [
+        {
+         "name": "media",
+         "type": "string/int",
+         "required": true,
+         "desc": "播什么。一个媒体"
+        },
+        {
+         "name": "terminals",
+         "type": "数组",
+         "required": false,
+         "desc": "播到哪些终端"
+        },
+        {
+         "name": "zones",
+         "type": "数组",
+         "required": false,
+         "desc": "播到哪些分区。与 terminals 至少给一个"
+        },
+        {
+         "name": "volume",
+         "type": "int",
+         "required": false,
+         "desc": "0~100，默认 80"
+        },
+        {
+         "name": "seconds",
+         "type": "int",
+         "required": false,
+         "desc": "最多播多久。不给按媒体自身时长，还不行兜底 300 秒"
+        }
+       ],
+       "body": "{\n  \"media\": \"中华人民共和国国歌.mp3\",\n  \"zones\": [\"室外操场\"],\n  \"volume\": 90\n}",
+       "sample": "{\n  \"playId\": 1, \"taskId\": 70231, \"media\": \"中华人民共和国国歌.mp3\",\n  \"terminals\": [{ \"id\": 8, \"name\": \"操场号角01\" }],\n  \"volume\": 90, \"seconds\": 46, \"state\": \"playing\",\n  \"startTime\": \"2026-09-08 08:00:52\", \"endTime\": \"\"\n}",
+       "notes": [
+        "把返回的 playId 记下来，停止时要用。",
+        "⚠ 以**最高优先级**下发，会压住正在播的排期任务。这是有意的 —— 它是你此刻主动要求的。上课时间请谨慎。",
+        "⚠ 这个真的会让喇叭响。"
+       ],
+       "danger": true
+      },
+      {
+       "id": "play.stop",
+       "method": "POST",
+       "path": "/play/{playId}/stop",
+       "summary": "停止立即播放",
+       "desc": "停掉并把那条临时任务删掉。幂等 —— 已经停了再调一次不会报错。",
+       "right": "任务管理（taskpriv）",
+       "params": [
+        {
+         "name": "playId",
+         "in": "path",
+         "type": "int",
+         "required": true,
+         "desc": "立即播放返回的 playId",
+         "example": ""
+        }
+       ],
+       "fields": null,
+       "body": "",
+       "sample": "{ \"playId\": 1, \"state\": \"stopped\", \"endTime\": \"2026-09-08 08:01:24\" }",
+       "notes": null,
+       "danger": true
+      }
+     ]
+    },
+    {
+     "name": "作息方案",
+     "desc": "上下课打铃。方案不是一条记录，而是一批打铃任务共用的一个名字 —— 所以它没有编号，寻址只能用名字。",
+     "endpoints": [
+      {
+       "id": "schedules.create",
+       "method": "POST",
+       "path": "/schedules",
+       "summary": "新建作息方案",
+       "desc": "一次调用建出整个方案：方案名、打到哪些终端、以及一行一行的「几点播什么播多久」。",
+       "right": "作息方案（bellpriv）",
+       "params": null,
+       "fields": [
+        {
+         "name": "name",
+         "type": "string",
+         "required": true,
+         "desc": "方案名"
+        },
+        {
+         "name": "terminals",
+         "type": "数组",
+         "required": false,
+         "desc": "打到哪些终端"
+        },
+        {
+         "name": "zones",
+         "type": "数组",
+         "required": false,
+         "desc": "打到哪些分区。与 terminals 至少给一个"
+        },
+        {
+         "name": "items",
+         "type": "数组",
+         "required": true,
+         "desc": "打铃条目，至少一条。每条：playTime 必填、media 必填、name/seconds/loopTimes 可选"
+        },
+        {
+         "name": "weekdays",
+         "type": "数组",
+         "required": false,
+         "desc": "留空 = 周一到周五（注意与新建任务不同）"
+        },
+        {
+         "name": "startDate",
+         "type": "string",
+         "required": false,
+         "desc": "生效起始日，默认今天"
+        },
+        {
+         "name": "endDate",
+         "type": "string",
+         "required": false,
+         "desc": "生效结束日，默认一年后"
+        },
+        {
+         "name": "volume",
+         "type": "int",
+         "required": false,
+         "desc": "方案级音量，全部条目共用"
+        },
+        {
+         "name": "priority",
+         "type": "int",
+         "required": false,
+         "desc": "方案级优先级"
+        },
+        {
+         "name": "prePower",
+         "type": "int",
+         "required": false,
+         "desc": "提前多少秒开功放电源"
+        }
+       ],
+       "body": "{\n  \"name\": \"夏季作息\",\n  \"zones\": [\"教学楼\"],\n  \"weekdays\": [1, 2, 3, 4, 5],\n  \"volume\": 75,\n  \"items\": [\n    { \"name\": \"早读预备\",   \"playTime\": \"07:20\", \"media\": [\"10.起床号.mp3\"], \"seconds\": 30 },\n    { \"name\": \"第一节下课\", \"playTime\": \"09:50\", \"media\": [\"04.爱的纪念（下课）.mp3\"] }\n  ]\n}",
+       "sample": "{ \"name\": \"夏季作息\", \"itemCount\": 2, \"taskIds\": [70232, 70233], \"warnings\": [] }",
+       "notes": [
+        "⚠ weekdays 留空时这里默认**周一到周五**，而新建任务那边默认「手动」。不是笔误：作息方案天然是上课日打铃，建一个永不触发的方案没有意义；而文件广播任务建来手动触发是常见用法。两边都别漏填。",
+        "warnings 是「建成了，但有件事你该知道」，比如同一时刻排了两条铃。不拦截，但要看。"
+       ],
+       "danger": true
+      },
+      {
+       "id": "schedules.state",
+       "method": "PUT",
+       "path": "/schedules/{name}/state",
+       "summary": "启用 / 停用方案",
+       "desc": "把方案下面所有打铃一起启停。放假停课时最常用的一个。",
+       "right": "作息方案（bellpriv）",
+       "params": [
+        {
+         "name": "name",
+         "in": "path",
+         "type": "string",
+         "required": true,
+         "desc": "方案名",
+         "example": ""
+        }
+       ],
+       "fields": null,
+       "body": "{ \"enabled\": false }",
+       "sample": "{ \"name\": \"夏季作息\", \"affectedTasks\": 2 }",
+       "notes": null,
+       "danger": true
+      },
+      {
+       "id": "schedules.delete",
+       "method": "DELETE",
+       "path": "/schedules/{name}",
+       "summary": "删除方案",
+       "desc": "连同它下面的**全部**打铃条目一起删掉。没有二次确认参数 —— 挡误删的是权限位和「名字必须精确对上」，不是多传一个 confirmed。",
+       "right": "作息方案（bellpriv）",
+       "params": [
+        {
+         "name": "name",
+         "in": "path",
+         "type": "string",
+         "required": true,
+         "desc": "方案名",
+         "example": ""
+        }
+       ],
+       "fields": null,
+       "body": "",
+       "sample": "{ \"name\": \"夏季作息\", \"affectedTasks\": 2 }",
+       "notes": null,
+       "danger": true
+      }
+     ]
+    }
+   ]
+  }
+ },
+ "GET /api/openapi-keys/accounts": {
+  "code": 200,
+  "msg": "ok",
+  "data": [
+   {
+    "id": 1,
+    "username": "admin",
+    "groupName": "system group",
+    "isAdmin": true
+   },
+   {
+    "id": 2,
+    "username": "operator",
+    "groupName": "操作员",
+    "isAdmin": false
+   },
+   {
+    "id": 3,
+    "username": "viewer",
+    "groupName": "只读查看",
+    "isAdmin": false
    }
   ]
  }

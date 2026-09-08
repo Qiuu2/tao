@@ -31,9 +31,9 @@ import (
 
 // apiKeyHeader 是开发者接口的凭据头。
 //
-// 不复用界面的 x-access-token：两种凭据的生命周期、吊销方式、
-// 泄露后的处置都不一样，混在一个头里，日志和排查时分不清是谁在调。
-const apiKeyHeader = "X-API-Key"
+// ⚠ 定义在 openapi 包里，因为接口规格（给集成方看的那份）也要用它 ——
+// 两处各写一份的话，规格里写错了头名，集成方会照着错的写。
+const apiKeyHeader = openapi.HeaderAPIKey
 
 // openKey 要求一把有效的开发者密钥。
 func (a *app) openKey(next http.HandlerFunc) http.HandlerFunc {

@@ -730,7 +730,14 @@ func (a *app) routes() http.Handler {
 	key := func(h http.HandlerFunc) http.HandlerFunc {
 		return a.authMgr.RequireRight(keyPriv, h)
 	}
+	// 接口目录与标准 OpenAPI 文档。**只要登录**，不要 userpriv ——
+	// 集成对接常常是开发同事在做，他未必有用户管理权限；
+	// 而这一页只是说明书，看它不能改任何东西。
+	mux.HandleFunc("GET /api/openapi/spec", req(a.handleOpenAPISpec))
+	mux.HandleFunc("GET /api/openapi/openapi.json", a.authMgr.RequireAllowQueryToken(a.handleOpenAPIJSON))
+
 	mux.HandleFunc("GET /api/openapi-keys", key(a.handleAPIKeyList))
+	mux.HandleFunc("GET /api/openapi-keys/accounts", key(a.handleAPIKeyAccounts))
 	mux.HandleFunc("POST /api/openapi-keys", key(a.handleAPIKeyCreate))
 	mux.HandleFunc("PUT /api/openapi-keys/{id}/state", key(a.handleAPIKeyState))
 	mux.HandleFunc("DELETE /api/openapi-keys/{id}", key(a.handleAPIKeyDelete))
@@ -1057,12 +1064,6 @@ func (a *app) handleMenu(w http.ResponseWriter, r *http.Request) {
 			menu("/user/group", "userGroup", "/user/group/index", "Grid", "用户组"),
 		)
 	}
-	if u.IsAdmin || u.Rights.UserPriv == 1 {
-		// 开发者接口：给第三方系统发密钥的地方。放在「用户管理」这一组，
-		// 因为它管的是「谁能以什么身份调这台机器」—— 和用户是一件事的两面。
-		userMenus = append(userMenus,
-			menu("/user/openapi-keys", "openapiKeys", "/openapi/keys/index", "Key", "开发者密钥"))
-	}
 	if u.IsAdmin || u.Rights.ServerPriv == 1 {
 		// 注册服务：旧版没有菜单入口，只能从登录页进去（login.php 在 registerflag=0
 		// 时跳过去）。新版两条路都留着 —— 菜单里给一项，登录页在未注册时也照旧给入口。
@@ -1080,6 +1081,26 @@ func (a *app) handleMenu(w http.ResponseWriter, r *http.Request) {
 	if len(userMenus) > 0 {
 		menus = append(menus, group("/user", "user", "User", "用户管理", userMenus...))
 	}
+
+	// —— 开发者接口 ——
+	//
+	// 单独一组，不塞进「用户管理」：塞进去的话，一个没有用户管理权限的
+	// 开发同事会看到一个叫「用户管理」的菜单里只有一页接口文档，
+	// 莫名其妙。这一组管的是「别的系统怎么调这台机器」，自成一件事。
+	//
+	// 两页的权限不一样，是有意的：
+	//   接口调用平台  只要登录 —— 它是说明书 + 试一试，本身改不了任何东西
+	//                （试一试用的是密钥，不是看这一页的人的登录身份）；
+	//                对接常常是开发同事在做，他未必有用户管理权限。
+	//   开发者密钥    要 userpriv —— 发一把密钥等于把某个账号的权限借出去。
+	devMenus := []map[string]interface{}{
+		menu("/dev/console", "openapiConsole", "/openapi/console/index", "Connection", "接口调用平台"),
+	}
+	if u.IsAdmin || u.Rights.UserPriv == 1 {
+		devMenus = append(devMenus,
+			menu("/dev/keys", "openapiKeys", "/openapi/keys/index", "Key", "开发者密钥"))
+	}
+	menus = append(menus, group("/dev", "dev", "Connection", "开发者接口", devMenus...))
 
 	httpx.OK(w, menus)
 }
