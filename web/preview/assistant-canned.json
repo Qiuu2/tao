@@ -1,0 +1,827 @@
+{
+ "今天有哪些任务": {
+  "code": 200,
+  "msg": "ok",
+  "data": {
+   "reply": "小电已经帮您查到 20 条任务，先给您看几条：晨间开功放(06:50)、春季作息/早读预备铃(07:20)、升旗现场采播(07:40)、春季作息/上午第一节上课(08:00)、欢迎标语(08:00)。 还有别的需要随时叫我哈~",
+   "intent": "query_task",
+   "confidence": 0.95,
+   "slots": {
+    "source_time": [
+     "今天"
+    ]
+   },
+   "missingSlots": [],
+   "tokens": [
+    "今",
+    "天",
+    "有",
+    "哪",
+    "些",
+    "任",
+    "务"
+   ],
+   "tags": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "actionLog": [
+    {
+     "details": {
+      "count": 20,
+      "schedule_name": "",
+      "task_name": "",
+      "tasks": [
+       {
+        "schedule_name": "",
+        "state": 0,
+        "status": "启用",
+        "task_id": "70014",
+        "task_name": "晨间开功放",
+        "time": "06:50"
+       },
+       {
+        "schedule_name": "春季作息",
+        "state": 0,
+        "status": "启用",
+        "task_id": "1001",
+        "task_name": "早读预备铃",
+        "time": "07:20"
+       },
+       {
+        "schedule_name": "",
+        "state": 0,
+        "status": "启用",
+        "task_id": "70011",
+        "task_name": "升旗现场采播",
+        "time": "07:40"
+       },
+       {
+        "schedule_name": "春季作息",
+        "state": 0,
+        "status": "启用",
+        "task_id": "1002",
+        "task_name": "上午第一节上课",
+        "time": "08:00"
+       },
+       {
+        "schedule_name": "",
+        "state": 0,
+        "status": "启用",
+        "task_id": "70016",
+        "task_name": "欢迎标语",
+        "time": "08:00"
+       },
+       {
+        "schedule_name": "操场·临时",
+        "state": 0,
+        "status": "启用",
+        "task_id": "1013",
+        "task_name": "运动会入场式",
+        "time": "08:30"
+       },
+       {
+        "schedule_name": "",
+        "state": 0,
+        "status": "启用",
+        "task_id": "70017",
+        "task_name": "考试须知",
+        "time": "08:30"
+       },
+       {
+        "schedule_name": "春季作息",
+        "state": 0,
+        "status": "启用",
+        "task_id": "1003",
+        "task_name": "第一节下课",
+        "time": "08:45"
+       },
+       {
+        "schedule_name": "春季作息",
+        "state": 0,
+        "status": "启用",
+        "task_id": "1004",
+        "task_name": "课间眼保健操",
+        "time": "09:40"
+       },
+       {
+        "schedule_name": "",
+        "state": 0,
+        "status": "启用",
+        "task_id": "70010",
+        "task_name": "课间采播",
+        "time": "09:40"
+       },
+       {
+        "schedule_name": "走廊与操场",
+        "state": 0,
+        "status": "启用",
+        "task_id": "1010",
+        "task_name": "课间轻音乐",
+        "time": "09:45"
+       },
+       {
+        "schedule_name": "春季作息",
+        "state": 0,
+        "status": "启用",
+        "task_id": "1005",
+        "task_name": "大课间活动",
+        "time": "10:00"
+       },
+       {
+        "schedule_name": "食堂",
+        "state": 0,
+        "status": "启用",
+        "task_id": "1011",
+        "task_name": "午间食堂背景music",
+        "time": "11:40"
+       },
+       {
+        "schedule_name": "",
+        "state": 0,
+        "status": "启用",
+        "task_id": "70013",
+        "task_name": "防欺凌广播",
+        "time": "12:10"
+       },
+       {
+        "schedule_name": "春季作息",
+        "state": 0,
+        "status": "启用",
+        "task_id": "1006",
+        "task_name": "午休提示",
+        "time": "12:30"
+       },
+       {
+        "schedule_name": "手动触发",
+        "state": 0,
+        "status": "启用",
+        "task_id": "1009",
+        "task_name": "消防疏散演练",
+        "time": "15:00"
+       },
+       {
+        "schedule_name": "",
+        "state": 0,
+        "status": "启用",
+        "task_id": "70012",
+        "task_name": "放学安全提示",
+        "time": "17:25"
+       },
+       {
+        "schedule_name": "春季作息",
+        "state": 0,
+        "status": "启用",
+        "task_id": "1007",
+        "task_name": "放学铃",
+        "time": "17:30"
+       },
+       {
+        "schedule_name": "教学楼",
+        "state": 0,
+        "status": "启用",
+        "task_id": "1012",
+        "task_name": "晚自习预备",
+        "time": "18:50"
+       },
+       {
+        "schedule_name": "",
+        "state": 0,
+        "status": "启用",
+        "task_id": "70015",
+        "task_name": "晚间关功放",
+        "time": "22:10"
+       }
+      ],
+      "time_range_end": "",
+      "time_range_start": "今天"
+     },
+     "intent": "query_task",
+     "mode": "query",
+     "schedule_name": ""
+    }
+   ],
+   "diagnostics": [],
+   "warnings": []
+  }
+ },
+ "查一下A101的状态": {
+  "code": 200,
+  "msg": "ok",
+  "data": {
+   "reply": "小电已经帮您查到 A101教室音箱 的状态：在线 1 个，离线 0 个，未知 0 个。 还有别的需要随时叫我哈~",
+   "intent": "query_terminal",
+   "confidence": 0.95,
+   "slots": {
+    "terminal_name": [
+     "A101教室"
+    ]
+   },
+   "missingSlots": [],
+   "tokens": [
+    "查",
+    "一",
+    "下",
+    "A",
+    "1",
+    "0",
+    "1",
+    "的",
+    "状",
+    "态"
+   ],
+   "tags": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "actionLog": [
+    {
+     "details": {
+      "count": 1,
+      "offline": 0,
+      "offline_names": [],
+      "online": 1,
+      "online_ids": [
+       "1"
+      ],
+      "terminals": [
+       {
+        "terminal_id": 1,
+        "terminal_name": "A101教室音箱",
+        "zone": "",
+        "netstate": "1",
+        "devicestate": 1,
+        "status": "播放中"
+       }
+      ],
+      "unknown": 0,
+      "unknown_names": [],
+      "unresolved": {}
+     },
+     "intent": "query_terminal",
+     "mode": "query"
+    }
+   ],
+   "diagnostics": [],
+   "warnings": []
+  }
+ },
+ "哪些终端在线": {
+  "code": 200,
+  "msg": "ok",
+  "data": {
+   "reply": "小电已经帮您查到 A101教室音箱、A102教室音箱、A103教室音箱 的状态：在线 2 个，离线 1 个，未知 0 个。 还有别的需要随时叫我哈~",
+   "intent": "query_terminal",
+   "confidence": 0.95,
+   "slots": {
+    "terminal_id": [
+     "1",
+     "2",
+     "3"
+    ]
+   },
+   "missingSlots": [],
+   "tokens": [
+    "哪",
+    "些",
+    "终",
+    "端",
+    "在",
+    "线"
+   ],
+   "tags": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "actionLog": [
+    {
+     "details": {
+      "count": 3,
+      "offline": 1,
+      "offline_names": [
+       "A103教室音箱"
+      ],
+      "online": 2,
+      "online_ids": [
+       "1",
+       "2"
+      ],
+      "terminals": [
+       {
+        "terminal_id": 1,
+        "terminal_name": "A101教室音箱",
+        "zone": "",
+        "netstate": "1",
+        "devicestate": 1,
+        "status": "播放中"
+       },
+       {
+        "terminal_id": 2,
+        "terminal_name": "A102教室音箱",
+        "zone": "教学楼",
+        "netstate": "1",
+        "devicestate": 1,
+        "status": "播放中"
+       },
+       {
+        "terminal_id": 3,
+        "terminal_name": "A103教室音箱",
+        "zone": "教学楼",
+        "netstate": "0",
+        "devicestate": 0,
+        "status": "离线"
+       }
+      ],
+      "unknown": 0,
+      "unknown_names": [],
+      "unresolved": {}
+     },
+     "intent": "query_terminal",
+     "mode": "query"
+    }
+   ],
+   "diagnostics": [],
+   "warnings": []
+  }
+ },
+ "取消明天早读预备铃": {
+  "code": 200,
+  "msg": "ok",
+  "data": {
+   "reply": "结果在这儿哈：当前启用中的作息方案里匹配到 1 条任务：早读预备铃(07:20)。您想这次只执行一次，还是永久这么改呢？告诉我一声哈~",
+   "intent": "cancel_schedule",
+   "confidence": 0.95,
+   "slots": {
+    "source_time": [
+     "明天"
+    ],
+    "task_name": [
+     "早读预备铃"
+    ]
+   },
+   "missingSlots": [],
+   "dialogStateDetail": "pending_action_followup",
+   "tokens": [
+    "取",
+    "消",
+    "明",
+    "天",
+    "早",
+    "读",
+    "预",
+    "备",
+    "铃"
+   ],
+   "tags": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "actionLog": [],
+   "diagnostics": [],
+   "warnings": [],
+   "pendingAction": {
+    "attempts": 0,
+    "confirm_prompt": "您想这次只执行一次，还是永久这么改呢？告诉我一声哈~",
+    "created_at": "2026-09-08 07:08:57",
+    "intent": "cancel_schedule",
+    "kind": "apply_mode",
+    "original_text": "取消明天早读预备铃",
+    "slots": {
+     "source_time": [
+      "明天"
+     ],
+     "task_name": [
+      "早读预备铃"
+     ]
+    },
+    "summary": "当前启用中的作息方案里匹配到 1 条任务：早读预备铃(07:20)"
+   },
+   "choices": [
+    {
+     "hint": "",
+     "label": "只这一次",
+     "value": "只这一次"
+    },
+    {
+     "hint": "",
+     "label": "以后都这样",
+     "value": "永久"
+    }
+   ],
+   "confirmKind": "apply_mode"
+  }
+ },
+ "只这一次": {
+  "code": 200,
+  "msg": "ok",
+  "data": {
+   "reply": "搞定，这次取消已经设好啦，事后会自动恢复~\n停用于 2026-09-09 07:19，恢复于 2026-09-09 07:20，涉及 早读预备铃(07:20)。",
+   "intent": "cancel_schedule",
+   "confidence": 0,
+   "slots": {},
+   "missingSlots": [],
+   "dialogStateDetail": "confirmed",
+   "actionLog": [
+    {
+     "details": {
+      "count": 1,
+      "disable_plan_id": 19,
+      "restore_plan_id": 20,
+      "task_ids": [
+       1001
+      ],
+      "time_end": "2026-09-09 07:20:30",
+      "time_start": "2026-09-09 07:19:30"
+     },
+     "intent": "cancel_schedule",
+     "mode": "once",
+     "schedule_name": ""
+    }
+   ],
+   "diagnostics": [],
+   "warnings": []
+  }
+ },
+ "停用方案春季作息": {
+  "code": 200,
+  "msg": "ok",
+  "data": {
+   "reply": "方案“春季作息”已停用。",
+   "intent": "disable_schedule",
+   "confidence": 0.95,
+   "slots": {
+    "schedule_name": [
+     "春季作息"
+    ]
+   },
+   "missingSlots": [],
+   "tokens": [
+    "停",
+    "用",
+    "方",
+    "案",
+    "春",
+    "季",
+    "作",
+    "息"
+   ],
+   "tags": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "actionLog": [
+    {
+     "details": {
+      "count": 7,
+      "enabled": false,
+      "scope": "schedule",
+      "task_ids": [
+       1001,
+       1002,
+       1003,
+       1004,
+       1005,
+       1006,
+       1007
+      ]
+     },
+     "intent": "disable_schedule",
+     "mode": "runtime",
+     "schedule_name": "春季作息"
+    }
+   ],
+   "diagnostics": [],
+   "warnings": []
+  }
+ },
+ "新建一个暑假作息": {
+  "code": 200,
+  "msg": "ok",
+  "data": {
+   "reply": "安排好啦，「暑假作息」已经建好了，24 条铃声都排上了~\n有效期 2026-09-08 至 2027-09-08，下发到 10 个终端。",
+   "intent": "create_schedule",
+   "confidence": 0.95,
+   "slots": {
+    "schedule_name": [
+     "暑假作息"
+    ]
+   },
+   "missingSlots": [],
+   "tokens": [
+    "新",
+    "建",
+    "一",
+    "个",
+    "暑",
+    "假",
+    "作",
+    "息"
+   ],
+   "tags": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "actionLog": [
+    {
+     "details": {
+      "count": 24,
+      "enddate": "2027-09-08",
+      "exemodel": "0111110",
+      "kind": "中学",
+      "missing_media": null,
+      "season": "夏季",
+      "startdate": "2026-09-08",
+      "template": "中学夏季作息方案",
+      "terminal_count": 10
+     },
+     "intent": "create_schedule",
+     "mode": "runtime",
+     "schedule_name": "暑假作息"
+    }
+   ],
+   "diagnostics": [],
+   "warnings": []
+  }
+ },
+ "把终端A101教室音箱的音量调到 60": {
+  "code": 200,
+  "msg": "ok",
+  "data": {
+   "reply": "OK啦，终端“A101教室音箱”的音量已经设为 60 了~",
+   "intent": "adjust_volume",
+   "confidence": 0.95,
+   "slots": {
+    "terminal_name": [
+     "A101教室音箱"
+    ],
+    "value": [
+     "60"
+    ]
+   },
+   "missingSlots": [],
+   "tokens": [
+    "把",
+    "终",
+    "端",
+    "A",
+    "1",
+    "0",
+    "1",
+    "教",
+    "室",
+    "音",
+    "箱",
+    "的",
+    "音",
+    "量",
+    "调",
+    "到",
+    " ",
+    "6",
+    "0"
+   ],
+   "tags": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "actionLog": [
+    {
+     "details": {
+      "count": 1,
+      "notified": true,
+      "skipped": [],
+      "terminal_ids": [
+       1
+      ],
+      "volume": 60
+     },
+     "intent": "adjust_volume_terminal",
+     "mode": "runtime"
+    }
+   ],
+   "diagnostics": [],
+   "warnings": []
+  }
+ },
+ "启用方案春季作息": {
+  "code": 200,
+  "msg": "ok",
+  "data": {
+   "reply": "方案“春季作息”已启用。",
+   "intent": "enable_schedule",
+   "confidence": 0.95,
+   "slots": {
+    "schedule_name": [
+     "春季作息"
+    ]
+   },
+   "missingSlots": [],
+   "tokens": [
+    "启",
+    "用",
+    "方",
+    "案",
+    "春",
+    "季",
+    "作",
+    "息"
+   ],
+   "tags": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "actionLog": [
+    {
+     "details": {
+      "count": 7,
+      "enabled": true,
+      "scope": "schedule",
+      "task_ids": [
+       1001,
+       1002,
+       1003,
+       1004,
+       1005,
+       1006,
+       1007
+      ]
+     },
+     "intent": "enable_schedule",
+     "mode": "runtime",
+     "schedule_name": "春季作息"
+    }
+   ],
+   "diagnostics": [],
+   "warnings": []
+  }
+ },
+ "把出旗曲放到教学楼分区": {
+  "code": 200,
+  "msg": "ok",
+  "data": {
+   "reply": "安排好啦，A102教室音箱、A103教室音箱、A201教室音箱等4个终端 已经开始播「出旗曲.mp3」~\n音量 80，时长约 168 秒。不想放了随时叫我停。",
+   "intent": "play_media",
+   "confidence": 0.95,
+   "slots": {
+    "media_name": [
+     "出旗曲"
+    ],
+    "zone_name": [
+     "教学楼"
+    ]
+   },
+   "missingSlots": [],
+   "tokens": [
+    "把",
+    "出",
+    "旗",
+    "曲",
+    "放",
+    "到",
+    "教",
+    "学",
+    "楼",
+    "分",
+    "区"
+   ],
+   "tags": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "actionLog": [
+    {
+     "details": {
+      "created_at": "2026-09-08 07:09:11",
+      "media_id": "127",
+      "media_name": "出旗曲.mp3",
+      "runtime_scope": "temp_task",
+      "task_id": "70229",
+      "terminal_count": 4,
+      "terminal_ids": [
+       2,
+       3,
+       4,
+       5
+      ],
+      "timelength": 168,
+      "timelengthtype": 1,
+      "undo_kind": "runtime_play_stop",
+      "undo_summary": "立即播放「出旗曲.mp3」",
+      "undo_task_ids": [
+       "70229"
+      ],
+      "volume": 80
+     },
+     "intent": "play_media",
+     "mode": "runtime"
+    }
+   ],
+   "diagnostics": [],
+   "warnings": []
+  }
+ },
+ "停止播放": {
+  "code": 200,
+  "msg": "ok",
+  "data": {
+   "reply": "已为您将任务“出旗曲.mp3”设为停止，安排好啦~",
+   "intent": "stop_task",
+   "confidence": 0.95,
+   "slots": {},
+   "missingSlots": [],
+   "tokens": [
+    "停",
+    "止",
+    "播",
+    "放"
+   ],
+   "tags": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "actionLog": [
+    {
+     "details": {
+      "count": 1,
+      "runtime_scope": "temp_task",
+      "task_id": "70229"
+     },
+     "intent": "stop_task",
+     "mode": "runtime"
+    }
+   ],
+   "diagnostics": [],
+   "warnings": []
+  }
+ }
+}

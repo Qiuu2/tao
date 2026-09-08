@@ -1,0 +1,9164 @@
+{
+ "GET /api/captcha": {
+  "code": 200,
+  "msg": "ok",
+  "data": {
+   "enabled": false
+  }
+ },
+ "POST /api/login": {
+  "code": 200,
+  "msg": "ok",
+  "data": {
+   "access_token": "iATCfCo2PyrJFQwFQZFT6Q.a7baa398172d81e379741facc21611699c9a21f998232cdcf3c1ac94ca8fb1a5",
+   "server": {
+    "readonly": false
+   },
+   "user": {
+    "id": 1,
+    "username": "admin",
+    "fullname": "administrator",
+    "info": "administrator",
+    "usergroupId": 1,
+    "usergroupName": "system group",
+    "level": 10,
+    "isAdmin": true,
+    "rights": {
+     "taskpriv": 1,
+     "terminalpriv": 1,
+     "mediapriv": 1,
+     "userpriv": 1,
+     "serverpriv": 1,
+     "folderpriv": 1,
+     "terminalgrouppriv": 1,
+     "alarmgrouppriv": 1,
+     "bellpriv": 1,
+     "admpriv": 1,
+     "telephonepriv": 1,
+     "powerplay": 1,
+     "ttspriv": 1
+    },
+    "readonly": false
+   }
+  }
+ },
+ "GET /api/menu/list": {
+  "code": 200,
+  "msg": "ok",
+  "data": [
+   {
+    "children": [
+     {
+      "component": "/home/index",
+      "meta": {
+       "icon": "HomeFilled",
+       "isAffix": true,
+       "isFull": false,
+       "isHide": false,
+       "isKeepAlive": true,
+       "isLink": "",
+       "title": "首页"
+      },
+      "name": "home",
+      "path": "/home"
+     }
+    ],
+    "meta": {
+     "icon": "Odometer",
+     "isAffix": false,
+     "isFull": false,
+     "isHide": false,
+     "isKeepAlive": true,
+     "isLink": "",
+     "title": "看板"
+    },
+    "name": "dashboard",
+    "path": "/dashboard",
+    "redirect": "/home"
+   },
+   {
+    "children": [
+     {
+      "component": "/server/index",
+      "meta": {
+       "icon": "Setting",
+       "isAffix": false,
+       "isFull": false,
+       "isHide": false,
+       "isKeepAlive": true,
+       "isLink": "",
+       "title": "服务器信息"
+      },
+      "name": "server",
+      "path": "/server"
+     },
+     {
+      "component": "/time/index",
+      "meta": {
+       "icon": "Clock",
+       "isAffix": false,
+       "isFull": false,
+       "isHide": false,
+       "isKeepAlive": true,
+       "isLink": "",
+       "title": "时间设置"
+      },
+      "name": "time",
+      "path": "/time"
+     },
+     {
+      "component": "/backup/index",
+      "meta": {
+       "icon": "FolderOpened",
+       "isAffix": false,
+       "isFull": false,
+       "isHide": false,
+       "isKeepAlive": true,
+       "isLink": "",
+       "title": "备份还原"
+      },
+      "name": "backup",
+      "path": "/backup"
+     },
+     {
+      "component": "/holiday/index",
+      "meta": {
+       "icon": "Calendar",
+       "isAffix": false,
+       "isFull": false,
+       "isHide": false,
+       "isKeepAlive": true,
+       "isLink": "",
+       "title": "节假日管理"
+      },
+      "name": "holiday",
+      "path": "/holiday"
+     }
+    ],
+    "meta": {
+     "icon": "Tools",
+     "isAffix": false,
+     "isFull": false,
+     "isHide": false,
+     "isKeepAlive": true,
+     "isLink": "",
+     "title": "基础配置"
+    },
+    "name": "config",
+    "path": "/config",
+    "redirect": "/server"
+   },
+   {
+    "children": [
+     {
+      "component": "/terminal/index",
+      "meta": {
+       "icon": "Monitor",
+       "isAffix": false,
+       "isFull": false,
+       "isHide": false,
+       "isKeepAlive": true,
+       "isLink": "",
+       "title": "终端管理"
+      },
+      "name": "terminal",
+      "path": "/terminal"
+     },
+     {
+      "component": "/zone/index",
+      "meta": {
+       "icon": "Guide",
+       "isAffix": false,
+       "isFull": false,
+       "isHide": false,
+       "isKeepAlive": true,
+       "isLink": "",
+       "title": "终端分区"
+      },
+      "name": "zone",
+      "path": "/zone"
+     },
+     {
+      "component": "/media/index",
+      "meta": {
+       "icon": "Files",
+       "isAffix": false,
+       "isFull": false,
+       "isHide": false,
+       "isKeepAlive": true,
+       "isLink": "",
+       "title": "文件管理"
+      },
+      "name": "media",
+      "path": "/media"
+     },
+     {
+      "component": "/alarm/area/index",
+      "meta": {
+       "icon": "Grid",
+       "isAffix": false,
+       "isFull": false,
+       "isHide": false,
+       "isKeepAlive": true,
+       "isLink": "",
+       "title": "报警分区"
+      },
+      "name": "alarmArea",
+      "path": "/alarm/area"
+     },
+     {
+      "component": "/alarm/mapping/index",
+      "meta": {
+       "icon": "Connection",
+       "isAffix": false,
+       "isFull": false,
+       "isHide": false,
+       "isKeepAlive": true,
+       "isLink": "",
+       "title": "报警映射"
+      },
+      "name": "alarmMapping",
+      "path": "/alarm/mapping"
+     },
+     {
+      "component": "/remote/index",
+      "meta": {
+       "icon": "Pointer",
+       "isAffix": false,
+       "isFull": false,
+       "isHide": false,
+       "isKeepAlive": true,
+       "isLink": "",
+       "title": "遥控任务"
+      },
+      "name": "remote",
+      "path": "/remote"
+     }
+    ],
+    "meta": {
+     "icon": "Coin",
+     "isAffix": false,
+     "isFull": false,
+     "isHide": false,
+     "isKeepAlive": true,
+     "isLink": "",
+     "title": "资源管理"
+    },
+    "name": "resource",
+    "path": "/resource",
+    "redirect": "/terminal"
+   },
+   {
+    "children": [
+     {
+      "component": "/bell/index",
+      "meta": {
+       "icon": "Clock",
+       "isAffix": false,
+       "isFull": false,
+       "isHide": false,
+       "isKeepAlive": true,
+       "isLink": "",
+       "title": "作息方案"
+      },
+      "name": "bell",
+      "path": "/bell"
+     },
+     {
+      "component": "/task/index",
+      "meta": {
+       "icon": "AlarmClock",
+       "isAffix": false,
+       "isFull": false,
+       "isHide": false,
+       "isKeepAlive": true,
+       "isLink": "",
+       "title": "文件广播"
+      },
+      "name": "task",
+      "path": "/task"
+     },
+     {
+      "component": "/typed/amplifier/index",
+      "meta": {
+       "icon": "Headset",
+       "isAffix": false,
+       "isFull": false,
+       "isHide": false,
+       "isKeepAlive": true,
+       "isLink": "",
+       "title": "终端功放"
+      },
+      "name": "amplifier",
+      "path": "/amplifier"
+     },
+     {
+      "component": "/typed/collect/index",
+      "meta": {
+       "icon": "Microphone",
+       "isAffix": false,
+       "isFull": false,
+       "isHide": false,
+       "isKeepAlive": true,
+       "isLink": "",
+       "title": "采播管理"
+      },
+      "name": "collect",
+      "path": "/collect"
+     },
+     {
+      "component": "/typed/tts/index",
+      "meta": {
+       "icon": "ChatDotSquare",
+       "isAffix": false,
+       "isFull": false,
+       "isHide": false,
+       "isKeepAlive": true,
+       "isLink": "",
+       "title": "文字语音"
+      },
+      "name": "tts",
+      "path": "/tts"
+     },
+     {
+      "component": "/typed/led/index",
+      "meta": {
+       "icon": "Monitor",
+       "isAffix": false,
+       "isFull": false,
+       "isHide": false,
+       "isKeepAlive": true,
+       "isLink": "",
+       "title": "led播放"
+      },
+      "name": "led",
+      "path": "/led"
+     },
+     {
+      "component": "/enable/index",
+      "meta": {
+       "icon": "Switch",
+       "isAffix": false,
+       "isFull": false,
+       "isHide": false,
+       "isKeepAlive": true,
+       "isLink": "",
+       "title": "启用管理"
+      },
+      "name": "enable",
+      "path": "/enable"
+     }
+    ],
+    "meta": {
+     "icon": "Menu",
+     "isAffix": false,
+     "isFull": false,
+     "isHide": false,
+     "isKeepAlive": true,
+     "isLink": "",
+     "title": "任务管理"
+    },
+    "name": "taskmgr",
+    "path": "/taskmgr",
+    "redirect": "/bell"
+   },
+   {
+    "children": [
+     {
+      "component": "/cloud/terminal/index",
+      "meta": {
+       "icon": "Monitor",
+       "isAffix": false,
+       "isFull": false,
+       "isHide": false,
+       "isKeepAlive": true,
+       "isLink": "",
+       "title": "云广播终端"
+      },
+      "name": "cloudTerminal",
+      "path": "/cloud/terminal"
+     },
+     {
+      "component": "/offline/index",
+      "meta": {
+       "icon": "Download",
+       "isAffix": false,
+       "isFull": false,
+       "isHide": false,
+       "isKeepAlive": true,
+       "isLink": "",
+       "title": "音乐传输"
+      },
+      "name": "offline",
+      "path": "/offline"
+     },
+     {
+      "component": "/cloud/transfer/index",
+      "meta": {
+       "icon": "Promotion",
+       "isAffix": false,
+       "isFull": false,
+       "isHide": false,
+       "isKeepAlive": true,
+       "isLink": "",
+       "title": "任务传送"
+      },
+      "name": "transfer",
+      "path": "/transfer"
+     }
+    ],
+    "meta": {
+     "icon": "Cloudy",
+     "isAffix": false,
+     "isFull": false,
+     "isHide": false,
+     "isKeepAlive": true,
+     "isLink": "",
+     "title": "云广播管理"
+    },
+    "name": "cloud",
+    "path": "/cloud",
+    "redirect": "/cloud/terminal"
+   },
+   {
+    "children": [
+     {
+      "component": "/noise/device/index",
+      "meta": {
+       "icon": "Cpu",
+       "isAffix": false,
+       "isFull": false,
+       "isHide": false,
+       "isKeepAlive": true,
+       "isLink": "",
+       "title": "噪声设备"
+      },
+      "name": "noiseDevice",
+      "path": "/noise/device"
+     },
+     {
+      "component": "/noise/zone/index",
+      "meta": {
+       "icon": "Grid",
+       "isAffix": false,
+       "isFull": false,
+       "isHide": false,
+       "isKeepAlive": true,
+       "isLink": "",
+       "title": "声场分区"
+      },
+      "name": "noiseZone",
+      "path": "/noise/zone"
+     }
+    ],
+    "meta": {
+     "icon": "Odometer",
+     "isAffix": false,
+     "isFull": false,
+     "isHide": false,
+     "isKeepAlive": true,
+     "isLink": "",
+     "title": "噪声检测"
+    },
+    "name": "noise",
+    "path": "/noise",
+    "redirect": "/noise/device"
+   },
+   {
+    "children": [
+     {
+      "component": "/user/list/index",
+      "meta": {
+       "icon": "UserFilled",
+       "isAffix": false,
+       "isFull": false,
+       "isHide": false,
+       "isKeepAlive": true,
+       "isLink": "",
+       "title": "用户"
+      },
+      "name": "userList",
+      "path": "/user/list"
+     },
+     {
+      "component": "/user/group/index",
+      "meta": {
+       "icon": "Grid",
+       "isAffix": false,
+       "isFull": false,
+       "isHide": false,
+       "isKeepAlive": true,
+       "isLink": "",
+       "title": "用户组"
+      },
+      "name": "userGroup",
+      "path": "/user/group"
+     },
+     {
+      "component": "/register/index",
+      "meta": {
+       "icon": "Ticket",
+       "isAffix": false,
+       "isFull": false,
+       "isHide": false,
+       "isKeepAlive": true,
+       "isLink": "",
+       "title": "注册服务"
+      },
+      "name": "registerServer",
+      "path": "/user/register"
+     },
+     {
+      "component": "/log/index",
+      "meta": {
+       "icon": "Document",
+       "isAffix": false,
+       "isFull": false,
+       "isHide": false,
+       "isKeepAlive": true,
+       "isLink": "",
+       "title": "日志"
+      },
+      "name": "log",
+      "path": "/log"
+     }
+    ],
+    "meta": {
+     "icon": "User",
+     "isAffix": false,
+     "isFull": false,
+     "isHide": false,
+     "isKeepAlive": true,
+     "isLink": "",
+     "title": "用户管理"
+    },
+    "name": "user",
+    "path": "/user",
+    "redirect": "/user/list"
+   }
+  ]
+ },
+ "GET /api/auth/buttons": {
+  "code": 200,
+  "msg": "ok",
+  "data": {
+   "alarm": {
+    "area": true,
+    "mapping": true
+   },
+   "amplifier": {
+    "edit": true
+   },
+   "bell": {
+    "add": true,
+    "control": true,
+    "copy": true,
+    "delete": true,
+    "edit": true,
+    "item": true
+   },
+   "collect": {
+    "edit": true
+   },
+   "enable": {
+    "edit": true
+   },
+   "holiday": {
+    "edit": true
+   },
+   "led": {
+    "edit": true
+   },
+   "media": {
+    "delete": true,
+    "folder": true,
+    "upload": true
+   },
+   "remote": {
+    "edit": true
+   },
+   "task": {
+    "add": true,
+    "control": true,
+    "copy": true,
+    "delete": true,
+    "edit": true,
+    "folder": true
+   },
+   "terminal": {
+    "control": true,
+    "delete": true,
+    "edit": true,
+    "password": true
+   },
+   "time": {
+    "config": true,
+    "sync": true
+   },
+   "tts": {
+    "edit": true
+   },
+   "user": {
+    "add": true,
+    "delete": true,
+    "edit": true,
+    "enable": true
+   },
+   "usergroup": {
+    "add": true,
+    "delete": true,
+    "edit": true
+   },
+   "zone": {
+    "edit": true
+   }
+  }
+ },
+ "GET /api/dashboard/overview": {
+  "code": 200,
+  "msg": "ok",
+  "data": {
+   "total": 13,
+   "online": 11,
+   "offline": 2,
+   "byType": [
+    {
+     "type": "一体化音箱",
+     "total": 7,
+     "online": 5,
+     "offline": 2
+    },
+    {
+     "type": "TTS主机",
+     "total": 1,
+     "online": 1,
+     "offline": 0
+    },
+    {
+     "type": "一键寻呼终端",
+     "total": 1,
+     "online": 1,
+     "offline": 0
+    },
+    {
+     "type": "报警主机",
+     "total": 1,
+     "online": 1,
+     "offline": 0
+    },
+    {
+     "type": "服务器",
+     "total": 1,
+     "online": 1,
+     "offline": 0
+    },
+    {
+     "type": "网络功放",
+     "total": 1,
+     "online": 1,
+     "offline": 0
+    },
+    {
+     "type": "网络话筒",
+     "total": 1,
+     "online": 1,
+     "offline": 0
+    }
+   ]
+  }
+ },
+ "GET /api/dashboard/config": {
+  "code": 200,
+  "msg": "ok",
+  "data": {
+   "shortcuts": [],
+   "quickTasks": [],
+   "emergency": [
+    {
+     "key": "quake",
+     "name": "地震",
+     "task": null
+    },
+    {
+     "key": "evacuate",
+     "name": "疏散",
+     "task": null
+    },
+    {
+     "key": "alert",
+     "name": "警戒",
+     "task": null
+    },
+    {
+     "key": "fire",
+     "name": "消防",
+     "task": null
+    }
+   ]
+  }
+ },
+ "GET /api/task-folders/tree": {
+  "code": 200,
+  "msg": "ok",
+  "data": [
+   {
+    "id": 1,
+    "name": "admin",
+    "parentId": 0,
+    "userId": 1,
+    "userName": "admin",
+    "taskCount": 6,
+    "canDelete": false,
+    "children": []
+   }
+  ]
+ },
+ "GET /api/dashboard/tasks?folderId=0&weekday=0&autoMode=0&scope=enabled&pageNum=1&pageSize=20": {
+  "code": 200,
+  "msg": "ok",
+  "data": {
+   "list": [
+    {
+     "index": 1,
+     "taskId": 1010,
+     "taskName": "课间轻音乐",
+     "folderName": "admin",
+     "weekdays": [
+      1,
+      2,
+      3,
+      4,
+      5
+     ],
+     "cycleText": "周日、一、二、三、四",
+     "playtime": "09:45:00",
+     "state": 1,
+     "stateText": "执行中",
+     "startdate": "2026-01-01",
+     "enddate": "2026-12-31",
+     "terminals": 2,
+     "enabledToday": true,
+     "projectstate": 0
+    },
+    {
+     "index": 2,
+     "taskId": 1011,
+     "taskName": "午间食堂背景music",
+     "folderName": "admin",
+     "weekdays": [
+      1,
+      2,
+      3,
+      4,
+      5
+     ],
+     "cycleText": "周日、一、二、三、四",
+     "playtime": "11:40:00",
+     "state": 1,
+     "stateText": "执行中",
+     "startdate": "2026-01-01",
+     "enddate": "2026-12-31",
+     "terminals": 1,
+     "enabledToday": true,
+     "projectstate": 0
+    },
+    {
+     "index": 3,
+     "taskId": 70013,
+     "taskName": "防欺凌广播",
+     "folderName": "(未分组)",
+     "weekdays": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+     ],
+     "cycleText": "每天",
+     "playtime": "12:10:00",
+     "state": 0,
+     "stateText": "准备",
+     "startdate": "2026-01-01",
+     "enddate": "2026-12-31",
+     "terminals": 1,
+     "enabledToday": true,
+     "projectstate": 0
+    },
+    {
+     "index": 4,
+     "taskId": 70012,
+     "taskName": "放学安全提示",
+     "folderName": "(未分组)",
+     "weekdays": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+     ],
+     "cycleText": "每天",
+     "playtime": "17:25:00",
+     "state": 0,
+     "stateText": "准备",
+     "startdate": "2026-01-01",
+     "enddate": "2026-12-31",
+     "terminals": 3,
+     "enabledToday": true,
+     "projectstate": 0
+    },
+    {
+     "index": 5,
+     "taskId": 1012,
+     "taskName": "晚自习预备",
+     "folderName": "admin",
+     "weekdays": [
+      1,
+      2,
+      3,
+      4,
+      5
+     ],
+     "cycleText": "周日、一、二、三、四",
+     "playtime": "18:50:00",
+     "state": 1,
+     "stateText": "执行中",
+     "startdate": "2026-01-01",
+     "enddate": "2026-12-31",
+     "terminals": 4,
+     "enabledToday": true,
+     "projectstate": 0
+    }
+   ],
+   "pageNum": 1,
+   "pageSize": 20,
+   "total": 5
+  }
+ },
+ "GET /api/dashboard/perf": {
+  "code": 200,
+  "msg": "ok",
+  "data": {
+   "os": "Ubuntu 24.04.4 LTS (Noble Numbat)",
+   "host": "vm",
+   "cpuPercent": 14.5,
+   "memPercent": 6.3,
+   "memTotal": 16856092672,
+   "memUsed": 1065504768,
+   "diskPercent": 27.4,
+   "diskTotal": 270553174016,
+   "diskUsed": 10880819200,
+   "iface": "eth0",
+   "rxRate": 1983.5,
+   "txRate": 57566.2,
+   "warmingUp": false
+  }
+ },
+ "GET /api/server/params": {
+  "code": 200,
+  "msg": "ok",
+  "data": {
+   "network": {
+    "ip": "192.168.2.159",
+    "gateway": "192.168.2.1",
+    "subnetmask": "255.0.0.0"
+   },
+   "ports": {
+    "webport": 8886,
+    "port": 8090,
+    "hbport": 8900,
+    "udpport": 8888,
+    "rtspport": 8091,
+    "dataport": 32773,
+    "offlineport": 8901
+   },
+   "apache": {
+    "webPort": 0,
+    "sdkPort": 0,
+    "listens": null,
+    "source": "httpd.conf / swagger1.json",
+    "err": "读 /opt/apps/a9000/home/apache/httpd.conf 失败：open /opt/apps/a9000/home/apache/httpd.conf: no such file or directory；读 /opt/apps/a9000/html/ok112/swagger-ui/dist/swagger1.json 失败：open /opt/apps/a9000/html/ok112/swagger-ui/dist/swagger1.json: no such file or directory"
+   },
+   "capacity": {
+    "maxhttpconnections": 3000,
+    "maxbandwidth": 10000000
+   },
+   "multicast": {
+    "ip": "230.1.1.1",
+    "port": 34835
+   },
+   "license": {
+    "netradiocount": 2,
+    "soundcardcount": 2,
+    "ctrlterminalcount": 4
+   },
+   "ha": {
+    "model": 1,
+    "modelText": "主服务器",
+    "name": "ha51",
+    "masterip": "12.12.2.51",
+    "slaveip": "12.12.2.52",
+    "slavename": "ha52",
+    "backup": 0
+   },
+   "misc": {
+    "ntpserver": "",
+    "projectname": "ht",
+    "factory": "",
+    "dealerinfo": "",
+    "version": "",
+    "backupmode": 0,
+    "ischeckmac": 0,
+    "adjusttime": 0,
+    "sounddetect": 0,
+    "fuzamima": 0
+   },
+   "readonly": {
+    "name": "ha51",
+    "workstate": 0,
+    "currectconnectcount": 0,
+    "currentbandwidth": 0,
+    "taskcount": 0,
+    "registerflag": 1,
+    "registerserial": "",
+    "trystartdate": "0000-00-00",
+    "tryenddate": "0000-00-00",
+    "netstate": 0,
+    "terminalchange": 0,
+    "taskchange": 0,
+    "serverchange": 0
+   }
+  }
+ },
+ "GET /api/server/auto-restart": {
+  "code": 200,
+  "msg": "ok",
+  "data": {
+   "exists": true,
+   "taskId": 70000,
+   "mode": "reboot",
+   "time": "04:00:00",
+   "exemodel": "0001000"
+  }
+ },
+ "GET /api/server/version": {
+  "code": 200,
+  "msg": "ok",
+  "data": {
+   "current": "",
+   "options": [
+    {
+     "id": 1,
+     "name": "audioserver-v1.6",
+     "available": false
+    },
+    {
+     "id": 2,
+     "name": "audioserver-v2.2",
+     "available": false
+    },
+    {
+     "id": 3,
+     "name": "audioserver-v2.3",
+     "available": false
+    },
+    {
+     "id": 4,
+     "name": "audioserver-v2.4",
+     "available": false
+    },
+    {
+     "id": 5,
+     "name": "audioserver-tw1.0",
+     "available": false
+    }
+   ],
+   "canSwitch": false,
+   "reason": "缺少 /opt/apps/a9000/script/cmd/update_audioserver.sh，无法重建 audioserver 容器"
+  }
+ },
+ "GET /api/zones/options": {
+  "code": 200,
+  "msg": "ok",
+  "data": [
+   {
+    "id": 2,
+    "name": "办公区"
+   },
+   {
+    "id": 3,
+    "name": "室外操场"
+   },
+   {
+    "id": 4,
+    "name": "宿舍楼"
+   },
+   {
+    "id": 1,
+    "name": "教学楼"
+   }
+  ]
+ },
+ "GET /api/time": {
+  "code": 200,
+  "msg": "ok",
+  "data": {
+   "serverTime": "2026-09-07 02:22:23",
+   "timezone": "UTC",
+   "timezoneOffset": 0,
+   "uptime": 1619,
+   "dbTime": "2026-09-07 02:22:23",
+   "dbTimeDiff": 1,
+   "ntpserver": "",
+   "gpsTerminalId": 0,
+   "gpsTerminalName": "",
+   "gpsTerminalMissing": false,
+   "readOnly": false,
+   "canSetClock": true,
+   "clockBlockReason": "",
+   "ntpActive": false,
+   "ntpSynced": false,
+   "ntpWarning": ""
+  }
+ },
+ "GET /api/time/terminals?keyword=": {
+  "code": 200,
+  "msg": "ok",
+  "data": [
+   {
+    "id": 1,
+    "terminalname": "A101教室音箱",
+    "ip": "192.168.2.11",
+    "typeName": "一体化音箱",
+    "netstate": 1,
+    "groupId": 1,
+    "groupName": "教学楼"
+   },
+   {
+    "id": 2,
+    "terminalname": "A102教室音箱",
+    "ip": "192.168.2.12",
+    "typeName": "一体化音箱",
+    "netstate": 1,
+    "groupId": 1,
+    "groupName": "教学楼"
+   },
+   {
+    "id": 4,
+    "terminalname": "A201教室音箱",
+    "ip": "192.168.2.21",
+    "typeName": "一体化音箱",
+    "netstate": 1,
+    "groupId": 1,
+    "groupName": "教学楼"
+   },
+   {
+    "id": 5,
+    "terminalname": "A202教室音箱",
+    "ip": "192.168.2.22",
+    "typeName": "一体化音箱",
+    "netstate": 1,
+    "groupId": 1,
+    "groupName": "教学楼"
+   },
+   {
+    "id": 6,
+    "terminalname": "广播室主话筒",
+    "ip": "192.168.2.31",
+    "typeName": "网络话筒",
+    "netstate": 1,
+    "groupId": 2,
+    "groupName": "办公区"
+   },
+   {
+    "id": 7,
+    "terminalname": "办公区功放",
+    "ip": "192.168.2.32",
+    "typeName": "网络功放",
+    "netstate": 1,
+    "groupId": 2,
+    "groupName": "办公区"
+   },
+   {
+    "id": 8,
+    "terminalname": "操场号角01",
+    "ip": "192.168.2.41",
+    "typeName": "一体化音箱",
+    "netstate": 1,
+    "groupId": 3,
+    "groupName": "室外操场"
+   },
+   {
+    "id": 10,
+    "terminalname": "宿舍楼一键寻呼",
+    "ip": "192.168.2.51",
+    "typeName": "一键寻呼终端",
+    "netstate": 1,
+    "groupId": 4,
+    "groupName": "宿舍楼"
+   },
+   {
+    "id": 11,
+    "terminalname": "TTS主机",
+    "ip": "192.168.2.60",
+    "typeName": "TTS主机",
+    "netstate": 1,
+    "groupId": 2,
+    "groupName": "办公区"
+   },
+   {
+    "id": 20,
+    "terminalname": "消防报警主机",
+    "ip": "192.168.2.90",
+    "typeName": "报警主机",
+    "netstate": 1,
+    "groupId": 2,
+    "groupName": "办公区"
+   },
+   {
+    "id": 902,
+    "terminalname": "服务器",
+    "ip": "192.168.2.159",
+    "typeName": "服务器",
+    "netstate": 1,
+    "groupId": 0,
+    "groupName": ""
+   },
+   {
+    "id": 3,
+    "terminalname": "A103教室音箱",
+    "ip": "192.168.2.13",
+    "typeName": "一体化音箱",
+    "netstate": 0,
+    "groupId": 1,
+    "groupName": "教学楼"
+   },
+   {
+    "id": 9,
+    "terminalname": "操场号角02",
+    "ip": "192.168.2.42",
+    "typeName": "一体化音箱",
+    "netstate": 0,
+    "groupId": 3,
+    "groupName": "室外操场"
+   }
+  ]
+ },
+ "GET /api/backups": {
+  "code": 200,
+  "msg": "ok",
+  "data": {
+   "list": []
+  }
+ },
+ "GET /api/holidays?orderBy=&order=&pageNum=1&pageSize=10": {
+  "code": 200,
+  "msg": "ok",
+  "data": {
+   "list": [],
+   "pageNum": 1,
+   "pageSize": 10,
+   "total": 0
+  }
+ },
+ "GET /api/task-logs/files?from=&to=": {
+  "code": 200,
+  "msg": "ok",
+  "data": {
+   "dir": "/tmp/claude-0/-home-user-tao/240c941b-1465-582f-b98e-030b4c18cb77/scratchpad/datelog",
+   "files": [],
+   "total": 0,
+   "totalSize": 0,
+   "today": "2026-09-07",
+   "dirWritable": true,
+   "note": ""
+  }
+ },
+ "GET /api/logs/stats": {
+  "code": 200,
+  "msg": "ok",
+  "data": {
+   "total": 588,
+   "earliest": "2026-09-02 17:21:04",
+   "latest": "2026-09-07 10:22:14",
+   "fromServer": 0
+  }
+ },
+ "GET /api/logs?orderBy=&order=&pageNum=1&pageSize=10": {
+  "code": 200,
+  "msg": "ok",
+  "data": {
+   "list": [
+    {
+     "id": 628,
+     "user": "admin",
+     "operate": "用户登录",
+     "ip": "127.0.0.1",
+     "time": "2026-09-07 10:22:14",
+     "info": "",
+     "source": "Web"
+    },
+    {
+     "id": 627,
+     "user": "admin",
+     "operate": "用户登录",
+     "ip": "127.0.0.1",
+     "time": "2026-09-07 10:15:57",
+     "info": "",
+     "source": "Web"
+    },
+    {
+     "id": 626,
+     "user": "admin",
+     "operate": "删除用户组",
+     "ip": "127.0.0.1",
+     "time": "2026-09-07 10:14:38",
+     "info": "",
+     "source": "Web"
+    },
+    {
+     "id": 625,
+     "user": "admin",
+     "operate": "删除用户",
+     "ip": "127.0.0.1",
+     "time": "2026-09-07 10:14:38",
+     "info": "",
+     "source": "Web"
+    },
+    {
+     "id": 624,
+     "user": "admin",
+     "operate": "删除任务",
+     "ip": "127.0.0.1",
+     "time": "2026-09-07 10:14:38",
+     "info": "",
+     "source": "Web"
+    },
+    {
+     "id": 623,
+     "user": "admin",
+     "operate": "删除任务",
+     "ip": "127.0.0.1",
+     "time": "2026-09-07 10:14:38",
+     "info": "",
+     "source": "Web"
+    },
+    {
+     "id": 622,
+     "user": "admin",
+     "operate": "删除任务",
+     "ip": "127.0.0.1",
+     "time": "2026-09-07 10:14:38",
+     "info": "",
+     "source": "Web"
+    },
+    {
+     "id": 621,
+     "user": "admin",
+     "operate": "修改任务",
+     "ip": "127.0.0.1",
+     "time": "2026-09-07 10:14:24",
+     "info": "",
+     "source": "Web"
+    },
+    {
+     "id": 620,
+     "user": "admin",
+     "operate": "用户登录",
+     "ip": "127.0.0.1",
+     "time": "2026-09-07 10:14:15",
+     "info": "",
+     "source": "Web"
+    },
+    {
+     "id": 619,
+     "user": "admin",
+     "operate": "新建任务",
+     "ip": "127.0.0.1",
+     "time": "2026-09-07 10:13:49",
+     "info": "",
+     "source": "Web"
+    }
+   ],
+   "pageNum": 1,
+   "pageSize": 10,
+   "total": 588
+  }
+ },
+ "GET /api/terminal-groups/tree": {
+  "code": 200,
+  "msg": "ok",
+  "data": [
+   {
+    "id": 0,
+    "name": "全部终端",
+    "info": "",
+    "count": 12,
+    "virtual": true
+   },
+   {
+    "id": -1,
+    "name": "未分区终端",
+    "info": "",
+    "count": 0,
+    "virtual": true
+   },
+   {
+    "id": 1,
+    "name": "教学楼",
+    "info": "A栋教室终端",
+    "count": 5,
+    "virtual": false
+   },
+   {
+    "id": 2,
+    "name": "办公区",
+    "info": "行政楼",
+    "count": 4,
+    "virtual": false
+   },
+   {
+    "id": 3,
+    "name": "室外操场",
+    "info": "看台号角",
+    "count": 2,
+    "virtual": false
+   },
+   {
+    "id": 4,
+    "name": "宿舍楼",
+    "info": "门厅寻呼",
+    "count": 1,
+    "virtual": false
+   }
+  ]
+ },
+ "GET /api/terminals?groupId=0&category=&orderBy=&order=&pageNum=1&pageSize=10": {
+  "code": 200,
+  "msg": "ok",
+  "data": {
+   "list": [
+    {
+     "id": 1,
+     "terminalname": "A101教室音箱",
+     "typeid": 11,
+     "typeName": "一体化音箱",
+     "groupId": 1,
+     "groupName": "教学楼",
+     "netstate": 1,
+     "devicestate": 1,
+     "taskstate": 1,
+     "ip": "192.168.2.11",
+     "volume": 80,
+     "isspeech": 0,
+     "instancy": 0,
+     "isrecord": 0,
+     "issponsor": 0,
+     "isselectcall": 1,
+     "lopencircuit": 1,
+     "ropencircuit": 1,
+     "temperature": 26.5,
+     "humidity": 48.20000076293945,
+     "postion": "教学楼A栋一层101室",
+     "hasShortcutKey": false,
+     "online": true,
+     "webUrl": "http://192.168.2.11",
+     "canDecode": true,
+     "canEncode": false,
+     "caps": {
+      "speech": false,
+      "sponsor": true,
+      "shortcut": true,
+      "quickTask": false,
+      "instancy": false,
+      "authPaging": false,
+      "autoCheck": true,
+      "circuit": true,
+      "password": false,
+      "switch": false,
+      "emergencyPlay": false,
+      "emergencyHost": false
+     }
+    },
+    {
+     "id": 2,
+     "terminalname": "A102教室音箱",
+     "typeid": 11,
+     "typeName": "一体化音箱",
+     "groupId": 1,
+     "groupName": "教学楼",
+     "netstate": 1,
+     "devicestate": 1,
+     "taskstate": 0,
+     "ip": "192.168.2.12",
+     "volume": 75,
+     "isspeech": 0,
+     "instancy": 0,
+     "isrecord": 0,
+     "issponsor": 0,
+     "isselectcall": 1,
+     "lopencircuit": 1,
+     "ropencircuit": 1,
+     "temperature": 27.100000381469727,
+     "humidity": 47,
+     "postion": "A栋102",
+     "hasShortcutKey": false,
+     "online": true,
+     "webUrl": "http://192.168.2.12",
+     "canDecode": true,
+     "canEncode": false,
+     "caps": {
+      "speech": false,
+      "sponsor": true,
+      "shortcut": true,
+      "quickTask": false,
+      "instancy": false,
+      "authPaging": false,
+      "autoCheck": true,
+      "circuit": true,
+      "password": false,
+      "switch": false,
+      "emergencyPlay": false,
+      "emergencyHost": false
+     }
+    },
+    {
+     "id": 4,
+     "terminalname": "A201教室音箱",
+     "typeid": 11,
+     "typeName": "一体化音箱",
+     "groupId": 1,
+     "groupName": "教学楼",
+     "netstate": 1,
+     "devicestate": 1,
+     "taskstate": 1,
+     "ip": "192.168.2.21",
+     "volume": 80,
+     "isspeech": 0,
+     "instancy": 0,
+     "isrecord": 0,
+     "issponsor": 0,
+     "isselectcall": 1,
+     "lopencircuit": 1,
+     "ropencircuit": 1,
+     "temperature": 26.799999237060547,
+     "humidity": 49.099998474121094,
+     "postion": "A栋201",
+     "hasShortcutKey": false,
+     "online": true,
+     "webUrl": "http://192.168.2.21",
+     "canDecode": true,
+     "canEncode": false,
+     "caps": {
+      "speech": false,
+      "sponsor": true,
+      "shortcut": true,
+      "quickTask": false,
+      "instancy": false,
+      "authPaging": false,
+      "autoCheck": true,
+      "circuit": true,
+      "password": false,
+      "switch": false,
+      "emergencyPlay": false,
+      "emergencyHost": false
+     }
+    },
+    {
+     "id": 5,
+     "terminalname": "A202教室音箱",
+     "typeid": 11,
+     "typeName": "一体化音箱",
+     "groupId": 1,
+     "groupName": "教学楼",
+     "netstate": 1,
+     "devicestate": 1,
+     "taskstate": 0,
+     "ip": "192.168.2.22",
+     "volume": 80,
+     "isspeech": 0,
+     "instancy": 0,
+     "isrecord": 0,
+     "issponsor": 0,
+     "isselectcall": 1,
+     "lopencircuit": 1,
+     "ropencircuit": 1,
+     "temperature": 26.200000762939453,
+     "humidity": 48.79999923706055,
+     "postion": "A栋202",
+     "hasShortcutKey": false,
+     "online": true,
+     "webUrl": "http://192.168.2.22",
+     "canDecode": true,
+     "canEncode": false,
+     "caps": {
+      "speech": false,
+      "sponsor": true,
+      "shortcut": true,
+      "quickTask": false,
+      "instancy": false,
+      "authPaging": false,
+      "autoCheck": true,
+      "circuit": true,
+      "password": false,
+      "switch": false,
+      "emergencyPlay": false,
+      "emergencyHost": false
+     }
+    },
+    {
+     "id": 6,
+     "terminalname": "广播室主话筒",
+     "typeid": 2,
+     "typeName": "网络话筒",
+     "groupId": 2,
+     "groupName": "办公区",
+     "netstate": 1,
+     "devicestate": 1,
+     "taskstate": 0,
+     "ip": "192.168.2.31",
+     "volume": 90,
+     "isspeech": 0,
+     "instancy": 1,
+     "isrecord": 0,
+     "issponsor": 0,
+     "isselectcall": 1,
+     "lopencircuit": 1,
+     "ropencircuit": 1,
+     "temperature": 0,
+     "humidity": 0,
+     "postion": "行政楼203",
+     "hasShortcutKey": true,
+     "online": true,
+     "webUrl": "http://192.168.2.31",
+     "canDecode": true,
+     "canEncode": true,
+     "caps": {
+      "speech": true,
+      "sponsor": true,
+      "shortcut": true,
+      "quickTask": true,
+      "instancy": true,
+      "authPaging": true,
+      "autoCheck": true,
+      "circuit": true,
+      "password": true,
+      "switch": false,
+      "emergencyPlay": false,
+      "emergencyHost": false
+     }
+    },
+    {
+     "id": 7,
+     "terminalname": "办公区功放",
+     "typeid": 5,
+     "typeName": "网络功放",
+     "groupId": 2,
+     "groupName": "办公区",
+     "netstate": 1,
+     "devicestate": 1,
+     "taskstate": 1,
+     "ip": "192.168.2.32",
+     "volume": 70,
+     "isspeech": 0,
+     "instancy": 0,
+     "isrecord": 0,
+     "issponsor": 0,
+     "isselectcall": 1,
+     "lopencircuit": 1,
+     "ropencircuit": 1,
+     "temperature": 31.399999618530273,
+     "humidity": 45,
+     "postion": "行政楼一层",
+     "hasShortcutKey": false,
+     "online": true,
+     "webUrl": "http://192.168.2.32",
+     "canDecode": true,
+     "canEncode": true,
+     "caps": {
+      "speech": true,
+      "sponsor": true,
+      "shortcut": true,
+      "quickTask": true,
+      "instancy": false,
+      "authPaging": true,
+      "autoCheck": true,
+      "circuit": true,
+      "password": true,
+      "switch": true,
+      "emergencyPlay": false,
+      "emergencyHost": false
+     }
+    },
+    {
+     "id": 8,
+     "terminalname": "操场号角01",
+     "typeid": 11,
+     "typeName": "一体化音箱",
+     "groupId": 3,
+     "groupName": "室外操场",
+     "netstate": 1,
+     "devicestate": 1,
+     "taskstate": 1,
+     "ip": "192.168.2.41",
+     "volume": 95,
+     "isspeech": 0,
+     "instancy": 0,
+     "isrecord": 0,
+     "issponsor": 0,
+     "isselectcall": 1,
+     "lopencircuit": 1,
+     "ropencircuit": 1,
+     "temperature": 33.900001525878906,
+     "humidity": 52.29999923706055,
+     "postion": "东侧看台",
+     "hasShortcutKey": false,
+     "online": true,
+     "webUrl": "http://192.168.2.41",
+     "canDecode": true,
+     "canEncode": false,
+     "caps": {
+      "speech": false,
+      "sponsor": true,
+      "shortcut": true,
+      "quickTask": false,
+      "instancy": false,
+      "authPaging": false,
+      "autoCheck": true,
+      "circuit": true,
+      "password": false,
+      "switch": false,
+      "emergencyPlay": false,
+      "emergencyHost": false
+     }
+    },
+    {
+     "id": 10,
+     "terminalname": "宿舍楼一键寻呼",
+     "typeid": 13,
+     "typeName": "一键寻呼终端",
+     "groupId": 4,
+     "groupName": "宿舍楼",
+     "netstate": 1,
+     "devicestate": 1,
+     "taskstate": 0,
+     "ip": "192.168.2.51",
+     "volume": 85,
+     "isspeech": 0,
+     "instancy": 1,
+     "isrecord": 0,
+     "issponsor": 0,
+     "isselectcall": 1,
+     "lopencircuit": 1,
+     "ropencircuit": 1,
+     "temperature": 0,
+     "humidity": 0,
+     "postion": "宿舍楼门厅",
+     "hasShortcutKey": false,
+     "online": true,
+     "webUrl": "http://192.168.2.51",
+     "canDecode": true,
+     "canEncode": true,
+     "caps": {
+      "speech": true,
+      "sponsor": true,
+      "shortcut": false,
+      "quickTask": false,
+      "instancy": true,
+      "authPaging": false,
+      "autoCheck": true,
+      "circuit": true,
+      "password": false,
+      "switch": false,
+      "emergencyPlay": false,
+      "emergencyHost": false
+     }
+    },
+    {
+     "id": 11,
+     "terminalname": "TTS主机",
+     "typeid": 22,
+     "typeName": "TTS主机",
+     "groupId": 2,
+     "groupName": "办公区",
+     "netstate": 1,
+     "devicestate": 1,
+     "taskstate": 0,
+     "ip": "192.168.2.60",
+     "volume": 80,
+     "isspeech": 0,
+     "instancy": 0,
+     "isrecord": 0,
+     "issponsor": 0,
+     "isselectcall": 1,
+     "lopencircuit": 1,
+     "ropencircuit": 1,
+     "temperature": 0,
+     "humidity": 0,
+     "postion": "",
+     "hasShortcutKey": false,
+     "online": true,
+     "webUrl": "http://192.168.2.60",
+     "canDecode": false,
+     "canEncode": true,
+     "caps": {
+      "speech": false,
+      "sponsor": true,
+      "shortcut": false,
+      "quickTask": false,
+      "instancy": false,
+      "authPaging": false,
+      "autoCheck": true,
+      "circuit": true,
+      "password": false,
+      "switch": false,
+      "emergencyPlay": false,
+      "emergencyHost": false
+     }
+    },
+    {
+     "id": 20,
+     "terminalname": "消防报警主机",
+     "typeid": 7,
+     "typeName": "报警主机",
+     "groupId": 2,
+     "groupName": "办公区",
+     "netstate": 1,
+     "devicestate": 1,
+     "taskstate": 0,
+     "ip": "192.168.2.90",
+     "volume": 80,
+     "isspeech": 0,
+     "instancy": 0,
+     "isrecord": 0,
+     "issponsor": 0,
+     "isselectcall": 0,
+     "lopencircuit": 1,
+     "ropencircuit": 1,
+     "temperature": 0,
+     "humidity": 0,
+     "postion": "",
+     "hasShortcutKey": false,
+     "online": true,
+     "webUrl": "http://192.168.2.90",
+     "canDecode": false,
+     "canEncode": false,
+     "caps": {
+      "speech": false,
+      "sponsor": false,
+      "shortcut": false,
+      "quickTask": false,
+      "instancy": false,
+      "authPaging": false,
+      "autoCheck": false,
+      "circuit": false,
+      "password": false,
+      "switch": true,
+      "emergencyPlay": false,
+      "emergencyHost": false
+     }
+    }
+   ],
+   "pageNum": 1,
+   "pageSize": 10,
+   "scopeNote": "",
+   "total": 12
+  }
+ },
+ "GET /api/terminal-types": {
+  "code": 200,
+  "msg": "ok",
+  "data": [
+   {
+    "id": 1,
+    "name": "网络终端",
+    "isDecode": true,
+    "isEncode": false
+   },
+   {
+    "id": 2,
+    "name": "网络话筒",
+    "isDecode": true,
+    "isEncode": true
+   },
+   {
+    "id": 3,
+    "name": "双向寻呼终端",
+    "isDecode": true,
+    "isEncode": true
+   },
+   {
+    "id": 4,
+    "name": "网络前置",
+    "isDecode": true,
+    "isEncode": true
+   },
+   {
+    "id": 5,
+    "name": "网络功放",
+    "isDecode": true,
+    "isEncode": true
+   },
+   {
+    "id": 8,
+    "name": "采样终端",
+    "isDecode": false,
+    "isEncode": true
+   },
+   {
+    "id": 10,
+    "name": "MP3",
+    "isDecode": false,
+    "isEncode": false
+   },
+   {
+    "id": 11,
+    "name": "一体化音箱",
+    "isDecode": true,
+    "isEncode": false
+   },
+   {
+    "id": 13,
+    "name": "一键寻呼终端",
+    "isDecode": true,
+    "isEncode": true
+   },
+   {
+    "id": 14,
+    "name": "分控前置",
+    "isDecode": true,
+    "isEncode": true
+   },
+   {
+    "id": 15,
+    "name": "背景音乐",
+    "isDecode": true,
+    "isEncode": true
+   },
+   {
+    "id": 16,
+    "name": "实话接口",
+    "isDecode": false,
+    "isEncode": true
+   },
+   {
+    "id": 17,
+    "name": "手机终端",
+    "isDecode": true,
+    "isEncode": true
+   },
+   {
+    "id": 18,
+    "name": "分控工作站",
+    "isDecode": false,
+    "isEncode": false
+   },
+   {
+    "id": 19,
+    "name": "透传终端",
+    "isDecode": true,
+    "isEncode": true
+   },
+   {
+    "id": 20,
+    "name": "网络终端",
+    "isDecode": true,
+    "isEncode": false
+   },
+   {
+    "id": 21,
+    "name": "监控主机",
+    "isDecode": true,
+    "isEncode": true
+   },
+   {
+    "id": 22,
+    "name": "TTS主机",
+    "isDecode": false,
+    "isEncode": true
+   },
+   {
+    "id": 23,
+    "name": "离线终端",
+    "isDecode": true,
+    "isEncode": true
+   },
+   {
+    "id": 24,
+    "name": "网络音柱/功放",
+    "isDecode": true,
+    "isEncode": true
+   },
+   {
+    "id": 25,
+    "name": "编码器",
+    "isDecode": false,
+    "isEncode": true
+   },
+   {
+    "id": 26,
+    "name": "网络调音台",
+    "isDecode": true,
+    "isEncode": true
+   },
+   {
+    "id": 27,
+    "name": "线阵音柱",
+    "isDecode": true,
+    "isEncode": false
+   },
+   {
+    "id": 28,
+    "name": "寻呼话筒",
+    "isDecode": true,
+    "isEncode": true
+   },
+   {
+    "id": 29,
+    "name": "遥控终端",
+    "isDecode": false,
+    "isEncode": false
+   },
+   {
+    "id": 30,
+    "name": "网络调音台",
+    "isDecode": true,
+    "isEncode": true
+   },
+   {
+    "id": 31,
+    "name": "网络音频采集器",
+    "isDecode": false,
+    "isEncode": true
+   },
+   {
+    "id": 32,
+    "name": "TTS主机",
+    "isDecode": false,
+    "isEncode": true
+   },
+   {
+    "id": 33,
+    "name": "一键寻呼终端",
+    "isDecode": true,
+    "isEncode": true
+   },
+   {
+    "id": 34,
+    "name": "网络前置",
+    "isDecode": true,
+    "isEncode": true
+   },
+   {
+    "id": 35,
+    "name": "双向寻呼终端",
+    "isDecode": true,
+    "isEncode": true
+   },
+   {
+    "id": 36,
+    "name": "网络分区前置",
+    "isDecode": true,
+    "isEncode": true
+   },
+   {
+    "id": 37,
+    "name": "网络功放",
+    "isDecode": true,
+    "isEncode": true
+   },
+   {
+    "id": 38,
+    "name": "一体化音箱",
+    "isDecode": true,
+    "isEncode": true
+   },
+   {
+    "id": 39,
+    "name": "网络前置",
+    "isDecode": true,
+    "isEncode": true
+   },
+   {
+    "id": 40,
+    "name": "寻呼终端",
+    "isDecode": true,
+    "isEncode": true
+   },
+   {
+    "id": 41,
+    "name": "应急终端",
+    "isDecode": true,
+    "isEncode": true
+   },
+   {
+    "id": 42,
+    "name": "LED设备",
+    "isDecode": true,
+    "isEncode": true
+   },
+   {
+    "id": 43,
+    "name": "小区广播主机",
+    "isDecode": false,
+    "isEncode": false
+   },
+   {
+    "id": 44,
+    "name": "防爆终端",
+    "isDecode": true,
+    "isEncode": true
+   },
+   {
+    "id": 45,
+    "name": "网络话筒",
+    "isDecode": true,
+    "isEncode": true
+   },
+   {
+    "id": 46,
+    "name": "一键寻呼终端",
+    "isDecode": true,
+    "isEncode": true
+   },
+   {
+    "id": 47,
+    "name": "网络前置",
+    "isDecode": true,
+    "isEncode": true
+   }
+  ]
+ },
+ "GET /api/zones/terminals?keyword=": {
+  "code": 200,
+  "msg": "ok",
+  "data": [
+   {
+    "id": 1,
+    "terminalname": "A101教室音箱",
+    "ip": "192.168.2.11",
+    "typeName": "一体化音箱",
+    "netstate": 1,
+    "currentZoneId": 1,
+    "currentZoneName": "教学楼"
+   },
+   {
+    "id": 2,
+    "terminalname": "A102教室音箱",
+    "ip": "192.168.2.12",
+    "typeName": "一体化音箱",
+    "netstate": 1,
+    "currentZoneId": 1,
+    "currentZoneName": "教学楼"
+   },
+   {
+    "id": 4,
+    "terminalname": "A201教室音箱",
+    "ip": "192.168.2.21",
+    "typeName": "一体化音箱",
+    "netstate": 1,
+    "currentZoneId": 1,
+    "currentZoneName": "教学楼"
+   },
+   {
+    "id": 5,
+    "terminalname": "A202教室音箱",
+    "ip": "192.168.2.22",
+    "typeName": "一体化音箱",
+    "netstate": 1,
+    "currentZoneId": 1,
+    "currentZoneName": "教学楼"
+   },
+   {
+    "id": 6,
+    "terminalname": "广播室主话筒",
+    "ip": "192.168.2.31",
+    "typeName": "网络话筒",
+    "netstate": 1,
+    "currentZoneId": 2,
+    "currentZoneName": "办公区"
+   },
+   {
+    "id": 7,
+    "terminalname": "办公区功放",
+    "ip": "192.168.2.32",
+    "typeName": "网络功放",
+    "netstate": 1,
+    "currentZoneId": 2,
+    "currentZoneName": "办公区"
+   },
+   {
+    "id": 8,
+    "terminalname": "操场号角01",
+    "ip": "192.168.2.41",
+    "typeName": "一体化音箱",
+    "netstate": 1,
+    "currentZoneId": 3,
+    "currentZoneName": "室外操场"
+   },
+   {
+    "id": 10,
+    "terminalname": "宿舍楼一键寻呼",
+    "ip": "192.168.2.51",
+    "typeName": "一键寻呼终端",
+    "netstate": 1,
+    "currentZoneId": 4,
+    "currentZoneName": "宿舍楼"
+   },
+   {
+    "id": 11,
+    "terminalname": "TTS主机",
+    "ip": "192.168.2.60",
+    "typeName": "TTS主机",
+    "netstate": 1,
+    "currentZoneId": 2,
+    "currentZoneName": "办公区"
+   },
+   {
+    "id": 20,
+    "terminalname": "消防报警主机",
+    "ip": "192.168.2.90",
+    "typeName": "报警主机",
+    "netstate": 1,
+    "currentZoneId": 2,
+    "currentZoneName": "办公区"
+   },
+   {
+    "id": 902,
+    "terminalname": "服务器",
+    "ip": "192.168.2.159",
+    "typeName": "服务器",
+    "netstate": 1,
+    "currentZoneId": 0,
+    "currentZoneName": ""
+   },
+   {
+    "id": 3,
+    "terminalname": "A103教室音箱",
+    "ip": "192.168.2.13",
+    "typeName": "一体化音箱",
+    "netstate": 0,
+    "currentZoneId": 1,
+    "currentZoneName": "教学楼"
+   },
+   {
+    "id": 9,
+    "terminalname": "操场号角02",
+    "ip": "192.168.2.42",
+    "typeName": "一体化音箱",
+    "netstate": 0,
+    "currentZoneId": 3,
+    "currentZoneName": "室外操场"
+   }
+  ]
+ },
+ "GET /api/zones?orderBy=&order=&pageNum=1&pageSize=10": {
+  "code": 200,
+  "msg": "ok",
+  "data": {
+   "list": [
+    {
+     "id": 4,
+     "name": "宿舍楼",
+     "info": "门厅寻呼",
+     "createTime": "2026-09-03 03:12:56",
+     "userId": 1,
+     "userName": "admin",
+     "terminalCount": 1,
+     "taskCount": 0,
+     "canModify": true
+    },
+    {
+     "id": 3,
+     "name": "室外操场",
+     "info": "看台号角",
+     "createTime": "2026-09-03 03:12:56",
+     "userId": 1,
+     "userName": "admin",
+     "terminalCount": 2,
+     "taskCount": 0,
+     "canModify": true
+    },
+    {
+     "id": 2,
+     "name": "办公区",
+     "info": "行政楼",
+     "createTime": "2026-09-03 03:12:56",
+     "userId": 1,
+     "userName": "admin",
+     "terminalCount": 4,
+     "taskCount": 13,
+     "canModify": true
+    },
+    {
+     "id": 1,
+     "name": "教学楼",
+     "info": "A栋教室终端",
+     "createTime": "2026-09-03 03:12:56",
+     "userId": 1,
+     "userName": "admin",
+     "terminalCount": 5,
+     "taskCount": 16,
+     "canModify": true
+    }
+   ],
+   "pageNum": 1,
+   "pageSize": 10,
+   "scopeNote": "",
+   "total": 4
+  }
+ },
+ "GET /api/folders/tree?scene=manage&includeMediaCount=true": {
+  "code": 200,
+  "msg": "ok",
+  "data": {
+   "rootName": "文件管理",
+   "tree": [
+    {
+     "id": 1,
+     "name": "共享媒体库",
+     "parentId": 0,
+     "userId": 1,
+     "shared": true,
+     "createTime": "2011-06-14 20:11:30",
+     "system": true,
+     "depth": 1,
+     "mediaCount": 0,
+     "canCreateChild": true,
+     "canModify": false,
+     "canDelete": false,
+     "children": [
+      {
+       "id": 9,
+       "name": "提示音",
+       "parentId": 1,
+       "userId": 1,
+       "shared": false,
+       "createTime": "2021-03-30 11:07:22",
+       "system": true,
+       "depth": 2,
+       "mediaCount": 1,
+       "canCreateChild": true,
+       "canModify": false,
+       "canDelete": false,
+       "children": []
+      }
+     ]
+    },
+    {
+     "id": 2,
+     "name": "铃声媒体库",
+     "parentId": 0,
+     "userId": 1,
+     "shared": true,
+     "createTime": "2011-06-14 20:11:44",
+     "system": true,
+     "depth": 1,
+     "mediaCount": 15,
+     "canCreateChild": true,
+     "canModify": false,
+     "canDelete": false,
+     "children": []
+    },
+    {
+     "id": 3,
+     "name": "点播媒体库",
+     "parentId": 0,
+     "userId": 1,
+     "shared": true,
+     "createTime": "2011-06-21 19:30:37",
+     "system": true,
+     "depth": 1,
+     "mediaCount": 0,
+     "canCreateChild": true,
+     "canModify": false,
+     "canDelete": false,
+     "children": []
+    },
+    {
+     "id": 4,
+     "name": "报警媒体库",
+     "parentId": 0,
+     "userId": 1,
+     "shared": true,
+     "createTime": "2011-06-21 19:30:38",
+     "system": true,
+     "depth": 1,
+     "mediaCount": 2,
+     "canCreateChild": true,
+     "canModify": false,
+     "canDelete": false,
+     "children": []
+    },
+    {
+     "id": 5,
+     "name": "录音媒体库",
+     "parentId": 0,
+     "userId": 1,
+     "shared": true,
+     "createTime": "2011-06-21 19:58:02",
+     "system": true,
+     "depth": 1,
+     "mediaCount": 0,
+     "canCreateChild": true,
+     "canModify": false,
+     "canDelete": false,
+     "children": [
+      {
+       "id": 7,
+       "name": "设备录音媒体",
+       "parentId": 5,
+       "userId": 1,
+       "shared": false,
+       "createTime": "2018-05-18 19:21:58",
+       "system": true,
+       "depth": 2,
+       "mediaCount": 0,
+       "canCreateChild": true,
+       "canModify": false,
+       "canDelete": false,
+       "children": []
+      },
+      {
+       "id": 8,
+       "name": "录音媒体库",
+       "parentId": 5,
+       "userId": 1,
+       "shared": false,
+       "createTime": "2021-03-30 11:07:22",
+       "system": true,
+       "depth": 2,
+       "mediaCount": 0,
+       "canCreateChild": true,
+       "canModify": false,
+       "canDelete": false,
+       "children": []
+      }
+     ]
+    },
+    {
+     "id": 6,
+     "name": "语音合成媒体库",
+     "parentId": 0,
+     "userId": 1,
+     "shared": true,
+     "createTime": "2011-06-21 19:58:02",
+     "system": true,
+     "depth": 1,
+     "mediaCount": 0,
+     "canCreateChild": true,
+     "canModify": false,
+     "canDelete": false,
+     "children": []
+    }
+   ],
+   "orphans": null
+  }
+ },
+ "GET /api/media?folderId=9&pageNum=1&pageSize=10": {
+  "code": 200,
+  "msg": "ok",
+  "data": {
+   "folder": {
+    "id": 9,
+    "name": "提示音",
+    "system": true,
+    "totalSizeKB": 61,
+    "totalSizeText": "61 K",
+    "canUpload": true,
+    "canCreateChild": true,
+    "isRecordLibrary": false
+   },
+   "list": [
+    {
+     "id": 1,
+     "name": "经典提示音",
+     "size": 61,
+     "sizeText": "61 K",
+     "typeid": "mp3",
+     "bitrate": 128000,
+     "bitrateText": "128 kbps",
+     "timelength": 5,
+     "timelengthText": "0分5秒",
+     "folderId": 9,
+     "userId": 0,
+     "streamUrl": "/api/media/1/stream",
+     "downloadUrl": "/api/media/1/download"
+    }
+   ],
+   "pageNum": 1,
+   "pageSize": 10,
+   "scopeNote": "",
+   "total": 1
+  }
+ },
+ "GET /api/alarm-options/terminals?keyword=": {
+  "code": 200,
+  "msg": "ok",
+  "data": [
+   {
+    "id": 1,
+    "name": "A101教室音箱",
+    "typeName": "一体化音箱",
+    "groupId": 1,
+    "groupName": "教学楼",
+    "netstate": 1,
+    "currentAreaId": 1,
+    "currentAreaName": "教学楼报警区"
+   },
+   {
+    "id": 2,
+    "name": "A102教室音箱",
+    "typeName": "一体化音箱",
+    "groupId": 1,
+    "groupName": "教学楼",
+    "netstate": 1,
+    "currentAreaId": 1,
+    "currentAreaName": "教学楼报警区"
+   },
+   {
+    "id": 4,
+    "name": "A201教室音箱",
+    "typeName": "一体化音箱",
+    "groupId": 1,
+    "groupName": "教学楼",
+    "netstate": 1,
+    "currentAreaId": 1,
+    "currentAreaName": "教学楼报警区"
+   },
+   {
+    "id": 5,
+    "name": "A202教室音箱",
+    "typeName": "一体化音箱",
+    "groupId": 1,
+    "groupName": "教学楼",
+    "netstate": 1,
+    "currentAreaId": -1,
+    "currentAreaName": ""
+   },
+   {
+    "id": 6,
+    "name": "广播室主话筒",
+    "typeName": "网络话筒",
+    "groupId": 2,
+    "groupName": "办公区",
+    "netstate": 1,
+    "currentAreaId": -1,
+    "currentAreaName": ""
+   },
+   {
+    "id": 7,
+    "name": "办公区功放",
+    "typeName": "网络功放",
+    "groupId": 2,
+    "groupName": "办公区",
+    "netstate": 1,
+    "currentAreaId": -1,
+    "currentAreaName": ""
+   },
+   {
+    "id": 8,
+    "name": "操场号角01",
+    "typeName": "一体化音箱",
+    "groupId": 3,
+    "groupName": "室外操场",
+    "netstate": 1,
+    "currentAreaId": -1,
+    "currentAreaName": ""
+   },
+   {
+    "id": 10,
+    "name": "宿舍楼一键寻呼",
+    "typeName": "一键寻呼终端",
+    "groupId": 4,
+    "groupName": "宿舍楼",
+    "netstate": 1,
+    "currentAreaId": -1,
+    "currentAreaName": ""
+   },
+   {
+    "id": 3,
+    "name": "A103教室音箱",
+    "typeName": "一体化音箱",
+    "groupId": 1,
+    "groupName": "教学楼",
+    "netstate": 0,
+    "currentAreaId": -1,
+    "currentAreaName": ""
+   },
+   {
+    "id": 9,
+    "name": "操场号角02",
+    "typeName": "一体化音箱",
+    "groupId": 3,
+    "groupName": "室外操场",
+    "netstate": 0,
+    "currentAreaId": -1,
+    "currentAreaName": ""
+   }
+  ]
+ },
+ "GET /api/alarm-areas?orderBy=&order=&pageNum=1&pageSize=10": {
+  "code": 200,
+  "msg": "ok",
+  "data": {
+   "list": [
+    {
+     "id": 1,
+     "name": "教学楼报警区",
+     "info": "演示",
+     "createTime": "2026-09-04 01:23:54",
+     "userId": 1,
+     "userName": "admin",
+     "terminalCount": 3,
+     "mappingCount": 1,
+     "canModify": true
+    }
+   ],
+   "pageNum": 1,
+   "pageSize": 10,
+   "scopeNote": "",
+   "total": 1
+  }
+ },
+ "GET /api/alarm-options/areas": {
+  "code": 200,
+  "msg": "ok",
+  "data": [
+   {
+    "id": 1,
+    "name": "教学楼报警区"
+   }
+  ]
+ },
+ "GET /api/alarm-mappings?orderBy=&order=&pageNum=1&pageSize=10": {
+  "code": 200,
+  "msg": "ok",
+  "data": {
+   "list": [
+    {
+     "id": 1,
+     "info": "火警一路",
+     "alarmTerminalId": 20,
+     "alarmTerminalName": "消防报警主机",
+     "terminalDeleted": false,
+     "terminalChannels": 2,
+     "alarmChannel": 1,
+     "alarmAreaId": 1,
+     "alarmAreaName": "教学楼报警区",
+     "areaDeleted": false,
+     "areaTerminalCount": 3,
+     "mediaId": 159,
+     "mediaName": "火警疏散提示",
+     "mediaDeleted": false,
+     "invalid": false,
+     "invalidReason": "",
+     "channelOutOfRange": false
+    }
+   ],
+   "pageNum": 1,
+   "pageSize": 10,
+   "scopeNote": "",
+   "total": 1
+  }
+ },
+ "GET /api/alarm-options/hosts": {
+  "code": 200,
+  "msg": "ok",
+  "data": [
+   {
+    "id": 20,
+    "name": "消防报警主机",
+    "ip": "192.168.2.90",
+    "channels": 16,
+    "deviceChannels": 2,
+    "typeSwitchCount": 16,
+    "netstate": 1,
+    "groupId": 2,
+    "groupName": "办公区"
+   }
+  ]
+ },
+ "GET /api/alarm-options/media?keyword=": {
+  "code": 200,
+  "msg": "ok",
+  "data": {
+   "list": [
+    {
+     "id": 160,
+     "name": "防空警报",
+     "timelength": 0,
+     "folderId": 4,
+     "folderName": "报警媒体库"
+    },
+    {
+     "id": 159,
+     "name": "火警疏散提示",
+     "timelength": 0,
+     "folderId": 4,
+     "folderName": "报警媒体库"
+    }
+   ],
+   "note": ""
+  }
+ },
+ "GET /api/remote-keys/tasks?kind=&keyword=": {
+  "code": 200,
+  "msg": "ok",
+  "data": [
+   {
+    "taskId": 70010,
+    "taskName": "课间采播",
+    "kind": "collect",
+    "kindText": "采播",
+    "usedBy": 0
+   },
+   {
+    "taskId": 70011,
+    "taskName": "升旗现场采播",
+    "kind": "collect",
+    "kindText": "采播",
+    "usedBy": 0
+   },
+   {
+    "taskId": 70012,
+    "taskName": "放学安全提示",
+    "kind": "file",
+    "kindText": "文件广播",
+    "usedBy": 0
+   },
+   {
+    "taskId": 70013,
+    "taskName": "防欺凌广播",
+    "kind": "file",
+    "kindText": "文件广播",
+    "usedBy": 1
+   },
+   {
+    "taskId": 70014,
+    "taskName": "晨间开功放",
+    "kind": "amplifier",
+    "kindText": "终端功放",
+    "usedBy": 0
+   },
+   {
+    "taskId": 70015,
+    "taskName": "晚间关功放",
+    "kind": "amplifier",
+    "kindText": "终端功放",
+    "usedBy": 0
+   }
+  ]
+ },
+ "GET /api/remote-keys?pageNum=1&pageSize=10": {
+  "code": 200,
+  "msg": "ok",
+  "data": {
+   "list": [
+    {
+     "keyId": 1,
+     "keyName": "防欺凌一键播",
+     "tasks": [
+      {
+       "taskId": 70013,
+       "taskName": "防欺凌广播",
+       "kind": "file",
+       "kindText": "文件广播",
+       "missing": false
+      }
+     ]
+    }
+   ],
+   "pageNum": 1,
+   "pageSize": 10,
+   "scopeNote": "",
+   "total": 1
+  }
+ },
+ "GET /api/bell-plans?orderBy=&order=&pageNum=1&pageSize=10": {
+  "code": 200,
+  "msg": "ok",
+  "data": {
+   "list": [
+    {
+     "planName": "春季作息",
+     "representativeTaskId": 1001,
+     "itemCount": 7,
+     "powerSubTasks": 0,
+     "startdate": "2026-01-01",
+     "enddate": "2026-12-31",
+     "projectstate": 0,
+     "projectStateText": "启用",
+     "mixedState": false,
+     "duplicateTimes": [],
+     "ownerUserId": 1,
+     "ownerUserName": "admin",
+     "ownerDeleted": false
+    }
+   ],
+   "pageNum": 1,
+   "pageSize": 10,
+   "scopeNote": "",
+   "total": 1
+  }
+ },
+ "GET /api/tasks?folderId=0&orderBy=&order=&pageNum=1&pageSize=10": {
+  "code": 200,
+  "msg": "ok",
+  "data": {
+   "list": [
+    {
+     "taskid": 1008,
+     "taskname": "升旗仪式-国歌",
+     "tasktype": 2,
+     "israndomplay": 0,
+     "playModeText": "随机",
+     "projectstate": 0,
+     "state": 1,
+     "stateText": "执行中",
+     "startdate": "2026-01-01",
+     "enddate": "2026-12-31",
+     "playtime": "07:50:00",
+     "endtime": "07:53:00",
+     "timelengthtype": 0,
+     "timelength": 180,
+     "timelengthText": "循环 180 次",
+     "exemodel": "1000000",
+     "weekdays": [
+      1
+     ],
+     "priority": 8,
+     "defaultvolume": 90,
+     "prepower": 1,
+     "folderId": 1,
+     "ownerUserId": 1,
+     "ownerUserName": "admin",
+     "powerTaskId": 70107,
+     "media": [
+      {
+       "mediaId": 138,
+       "name": "中华人民共和国国歌.mp3",
+       "size": 723,
+       "sort": 0,
+       "deleted": false
+      }
+     ],
+     "terminals": [
+      {
+       "terminalId": 8,
+       "terminalname": "操场号角01",
+       "typeName": "一体化音箱",
+       "netstate": 1,
+       "taskstate": 1,
+       "ip": "192.168.2.41",
+       "volume": 95,
+       "groupId": 0,
+       "area": "11111111",
+       "deleted": false
+      }
+     ],
+     "startable": true,
+     "blockReason": ""
+    },
+    {
+     "taskid": 1013,
+     "taskname": "运动会入场式",
+     "tasktype": 2,
+     "israndomplay": 0,
+     "playModeText": "随机",
+     "projectstate": 0,
+     "state": 0,
+     "stateText": "准备",
+     "startdate": "2026-01-01",
+     "enddate": "2026-12-31",
+     "playtime": "08:30:00",
+     "endtime": "08:45:00",
+     "timelengthtype": 0,
+     "timelength": 900,
+     "timelengthText": "循环 900 次",
+     "exemodel": "0000000",
+     "weekdays": [],
+     "priority": 7,
+     "defaultvolume": 95,
+     "prepower": 1,
+     "folderId": 1,
+     "ownerUserId": 1,
+     "ownerUserName": "admin",
+     "powerTaskId": 0,
+     "media": [
+      {
+       "mediaId": 136,
+       "name": "运动员进行曲.mp3",
+       "size": 2655,
+       "sort": 1,
+       "deleted": false
+      }
+     ],
+     "terminals": [
+      {
+       "terminalId": 8,
+       "terminalname": "操场号角01",
+       "typeName": "一体化音箱",
+       "netstate": 1,
+       "taskstate": 1,
+       "ip": "192.168.2.41",
+       "volume": 95,
+       "groupId": 0,
+       "area": "",
+       "deleted": false
+      },
+      {
+       "terminalId": 9,
+       "terminalname": "操场号角02",
+       "typeName": "一体化音箱",
+       "netstate": 0,
+       "taskstate": 0,
+       "ip": "192.168.2.42",
+       "volume": 95,
+       "groupId": 0,
+       "area": "",
+       "deleted": false
+      }
+     ],
+     "startable": true,
+     "blockReason": ""
+    },
+    {
+     "taskid": 1010,
+     "taskname": "课间轻音乐",
+     "tasktype": 2,
+     "israndomplay": 0,
+     "playModeText": "随机",
+     "projectstate": 0,
+     "state": 1,
+     "stateText": "执行中",
+     "startdate": "2026-01-01",
+     "enddate": "2026-12-31",
+     "playtime": "09:45:00",
+     "endtime": "10:00:00",
+     "timelengthtype": 0,
+     "timelength": 900,
+     "timelengthText": "循环 900 次",
+     "exemodel": "1111100",
+     "weekdays": [
+      1,
+      2,
+      3,
+      4,
+      5
+     ],
+     "priority": 3,
+     "defaultvolume": 65,
+     "prepower": 1,
+     "folderId": 1,
+     "ownerUserId": 1,
+     "ownerUserName": "admin",
+     "powerTaskId": 0,
+     "media": [
+      {
+       "mediaId": 126,
+       "name": "04.爱的纪念（下课）.mp3",
+       "size": 350,
+       "sort": 1,
+       "deleted": false
+      }
+     ],
+     "terminals": [
+      {
+       "terminalId": 1,
+       "terminalname": "A101教室音箱",
+       "typeName": "一体化音箱",
+       "netstate": 1,
+       "taskstate": 1,
+       "ip": "192.168.2.11",
+       "volume": 80,
+       "groupId": 0,
+       "area": "",
+       "deleted": false
+      },
+      {
+       "terminalId": 8,
+       "terminalname": "操场号角01",
+       "typeName": "一体化音箱",
+       "netstate": 1,
+       "taskstate": 1,
+       "ip": "192.168.2.41",
+       "volume": 95,
+       "groupId": 0,
+       "area": "",
+       "deleted": false
+      }
+     ],
+     "startable": true,
+     "blockReason": ""
+    },
+    {
+     "taskid": 1011,
+     "taskname": "午间食堂背景music",
+     "tasktype": 2,
+     "israndomplay": 0,
+     "playModeText": "随机",
+     "projectstate": 0,
+     "state": 1,
+     "stateText": "执行中",
+     "startdate": "2026-01-01",
+     "enddate": "2026-12-31",
+     "playtime": "11:40:00",
+     "endtime": "12:20:00",
+     "timelengthtype": 0,
+     "timelength": 2400,
+     "timelengthText": "循环 2400 次",
+     "exemodel": "1111100",
+     "weekdays": [
+      1,
+      2,
+      3,
+      4,
+      5
+     ],
+     "priority": 3,
+     "defaultvolume": 55,
+     "prepower": 1,
+     "folderId": 1,
+     "ownerUserId": 1,
+     "ownerUserName": "admin",
+     "powerTaskId": 0,
+     "media": [
+      {
+       "mediaId": 124,
+       "name": "大课间.mp3",
+       "size": 6018,
+       "sort": 1,
+       "deleted": false
+      }
+     ],
+     "terminals": [
+      {
+       "terminalId": 7,
+       "terminalname": "办公区功放",
+       "typeName": "网络功放",
+       "netstate": 1,
+       "taskstate": 1,
+       "ip": "192.168.2.32",
+       "volume": 70,
+       "groupId": 0,
+       "area": "",
+       "deleted": false
+      }
+     ],
+     "startable": true,
+     "blockReason": ""
+    },
+    {
+     "taskid": 1009,
+     "taskname": "消防疏散演练",
+     "tasktype": 2,
+     "israndomplay": 0,
+     "playModeText": "随机",
+     "projectstate": 0,
+     "state": 0,
+     "stateText": "准备",
+     "startdate": "2026-01-01",
+     "enddate": "2026-12-31",
+     "playtime": "15:00:00",
+     "endtime": "15:02:00",
+     "timelengthtype": 0,
+     "timelength": 120,
+     "timelengthText": "循环 120 次",
+     "exemodel": "0000000",
+     "weekdays": [],
+     "priority": 10,
+     "defaultvolume": 100,
+     "prepower": 1,
+     "folderId": 1,
+     "ownerUserId": 1,
+     "ownerUserName": "admin",
+     "powerTaskId": 0,
+     "media": [
+      {
+       "mediaId": 129,
+       "name": "电铃声.mp3",
+       "size": 278,
+       "sort": 1,
+       "deleted": false
+      }
+     ],
+     "terminals": [
+      {
+       "terminalId": 1,
+       "terminalname": "A101教室音箱",
+       "typeName": "一体化音箱",
+       "netstate": 1,
+       "taskstate": 1,
+       "ip": "192.168.2.11",
+       "volume": 80,
+       "groupId": 0,
+       "area": "",
+       "deleted": false
+      },
+      {
+       "terminalId": 4,
+       "terminalname": "A201教室音箱",
+       "typeName": "一体化音箱",
+       "netstate": 1,
+       "taskstate": 1,
+       "ip": "192.168.2.21",
+       "volume": 80,
+       "groupId": 0,
+       "area": "",
+       "deleted": false
+      },
+      {
+       "terminalId": 7,
+       "terminalname": "办公区功放",
+       "typeName": "网络功放",
+       "netstate": 1,
+       "taskstate": 1,
+       "ip": "192.168.2.32",
+       "volume": 70,
+       "groupId": 0,
+       "area": "",
+       "deleted": false
+      },
+      {
+       "terminalId": 8,
+       "terminalname": "操场号角01",
+       "typeName": "一体化音箱",
+       "netstate": 1,
+       "taskstate": 1,
+       "ip": "192.168.2.41",
+       "volume": 95,
+       "groupId": 0,
+       "area": "",
+       "deleted": false
+      },
+      {
+       "terminalId": 10,
+       "terminalname": "宿舍楼一键寻呼",
+       "typeName": "一键寻呼终端",
+       "netstate": 1,
+       "taskstate": 0,
+       "ip": "192.168.2.51",
+       "volume": 85,
+       "groupId": 0,
+       "area": "",
+       "deleted": false
+      }
+     ],
+     "startable": true,
+     "blockReason": ""
+    },
+    {
+     "taskid": 1012,
+     "taskname": "晚自习预备",
+     "tasktype": 2,
+     "israndomplay": 0,
+     "playModeText": "随机",
+     "projectstate": 0,
+     "state": 1,
+     "stateText": "执行中",
+     "startdate": "2026-01-01",
+     "enddate": "2026-12-31",
+     "playtime": "18:50:00",
+     "endtime": "18:50:30",
+     "timelengthtype": 0,
+     "timelength": 30,
+     "timelengthText": "循环 30 次",
+     "exemodel": "1111100",
+     "weekdays": [
+      1,
+      2,
+      3,
+      4,
+      5
+     ],
+     "priority": 5,
+     "defaultvolume": 80,
+     "prepower": 1,
+     "folderId": 1,
+     "ownerUserId": 1,
+     "ownerUserName": "admin",
+     "powerTaskId": 0,
+     "media": [
+      {
+       "mediaId": 135,
+       "name": "预备铃.mp3",
+       "size": 432,
+       "sort": 1,
+       "deleted": false
+      }
+     ],
+     "terminals": [
+      {
+       "terminalId": 1,
+       "terminalname": "A101教室音箱",
+       "typeName": "一体化音箱",
+       "netstate": 1,
+       "taskstate": 1,
+       "ip": "192.168.2.11",
+       "volume": 80,
+       "groupId": 0,
+       "area": "",
+       "deleted": false
+      },
+      {
+       "terminalId": 2,
+       "terminalname": "A102教室音箱",
+       "typeName": "一体化音箱",
+       "netstate": 1,
+       "taskstate": 0,
+       "ip": "192.168.2.12",
+       "volume": 75,
+       "groupId": 0,
+       "area": "",
+       "deleted": false
+      },
+      {
+       "terminalId": 4,
+       "terminalname": "A201教室音箱",
+       "typeName": "一体化音箱",
+       "netstate": 1,
+       "taskstate": 1,
+       "ip": "192.168.2.21",
+       "volume": 80,
+       "groupId": 0,
+       "area": "",
+       "deleted": false
+      },
+      {
+       "terminalId": 5,
+       "terminalname": "A202教室音箱",
+       "typeName": "一体化音箱",
+       "netstate": 1,
+       "taskstate": 0,
+       "ip": "192.168.2.22",
+       "volume": 80,
+       "groupId": 0,
+       "area": "",
+       "deleted": false
+      }
+     ],
+     "startable": true,
+     "blockReason": ""
+    }
+   ],
+   "pageNum": 1,
+   "pageSize": 10,
+   "scopeNote": "",
+   "total": 6
+  }
+ },
+ "GET /api/tasks?folderId=1&orderBy=&order=&pageNum=1&pageSize=10": {
+  "code": 200,
+  "msg": "ok",
+  "data": {
+   "list": [
+    {
+     "taskid": 1008,
+     "taskname": "升旗仪式-国歌",
+     "tasktype": 2,
+     "israndomplay": 0,
+     "playModeText": "随机",
+     "projectstate": 0,
+     "state": 1,
+     "stateText": "执行中",
+     "startdate": "2026-01-01",
+     "enddate": "2026-12-31",
+     "playtime": "07:50:00",
+     "endtime": "07:53:00",
+     "timelengthtype": 0,
+     "timelength": 180,
+     "timelengthText": "循环 180 次",
+     "exemodel": "1000000",
+     "weekdays": [
+      1
+     ],
+     "priority": 8,
+     "defaultvolume": 90,
+     "prepower": 1,
+     "folderId": 1,
+     "ownerUserId": 1,
+     "ownerUserName": "admin",
+     "powerTaskId": 70107,
+     "media": [
+      {
+       "mediaId": 138,
+       "name": "中华人民共和国国歌.mp3",
+       "size": 723,
+       "sort": 0,
+       "deleted": false
+      }
+     ],
+     "terminals": [
+      {
+       "terminalId": 8,
+       "terminalname": "操场号角01",
+       "typeName": "一体化音箱",
+       "netstate": 1,
+       "taskstate": 1,
+       "ip": "192.168.2.41",
+       "volume": 95,
+       "groupId": 0,
+       "area": "11111111",
+       "deleted": false
+      }
+     ],
+     "startable": true,
+     "blockReason": ""
+    },
+    {
+     "taskid": 1013,
+     "taskname": "运动会入场式",
+     "tasktype": 2,
+     "israndomplay": 0,
+     "playModeText": "随机",
+     "projectstate": 0,
+     "state": 0,
+     "stateText": "准备",
+     "startdate": "2026-01-01",
+     "enddate": "2026-12-31",
+     "playtime": "08:30:00",
+     "endtime": "08:45:00",
+     "timelengthtype": 0,
+     "timelength": 900,
+     "timelengthText": "循环 900 次",
+     "exemodel": "0000000",
+     "weekdays": [],
+     "priority": 7,
+     "defaultvolume": 95,
+     "prepower": 1,
+     "folderId": 1,
+     "ownerUserId": 1,
+     "ownerUserName": "admin",
+     "powerTaskId": 0,
+     "media": [
+      {
+       "mediaId": 136,
+       "name": "运动员进行曲.mp3",
+       "size": 2655,
+       "sort": 1,
+       "deleted": false
+      }
+     ],
+     "terminals": [
+      {
+       "terminalId": 8,
+       "terminalname": "操场号角01",
+       "typeName": "一体化音箱",
+       "netstate": 1,
+       "taskstate": 1,
+       "ip": "192.168.2.41",
+       "volume": 95,
+       "groupId": 0,
+       "area": "",
+       "deleted": false
+      },
+      {
+       "terminalId": 9,
+       "terminalname": "操场号角02",
+       "typeName": "一体化音箱",
+       "netstate": 0,
+       "taskstate": 0,
+       "ip": "192.168.2.42",
+       "volume": 95,
+       "groupId": 0,
+       "area": "",
+       "deleted": false
+      }
+     ],
+     "startable": true,
+     "blockReason": ""
+    },
+    {
+     "taskid": 1010,
+     "taskname": "课间轻音乐",
+     "tasktype": 2,
+     "israndomplay": 0,
+     "playModeText": "随机",
+     "projectstate": 0,
+     "state": 1,
+     "stateText": "执行中",
+     "startdate": "2026-01-01",
+     "enddate": "2026-12-31",
+     "playtime": "09:45:00",
+     "endtime": "10:00:00",
+     "timelengthtype": 0,
+     "timelength": 900,
+     "timelengthText": "循环 900 次",
+     "exemodel": "1111100",
+     "weekdays": [
+      1,
+      2,
+      3,
+      4,
+      5
+     ],
+     "priority": 3,
+     "defaultvolume": 65,
+     "prepower": 1,
+     "folderId": 1,
+     "ownerUserId": 1,
+     "ownerUserName": "admin",
+     "powerTaskId": 0,
+     "media": [
+      {
+       "mediaId": 126,
+       "name": "04.爱的纪念（下课）.mp3",
+       "size": 350,
+       "sort": 1,
+       "deleted": false
+      }
+     ],
+     "terminals": [
+      {
+       "terminalId": 1,
+       "terminalname": "A101教室音箱",
+       "typeName": "一体化音箱",
+       "netstate": 1,
+       "taskstate": 1,
+       "ip": "192.168.2.11",
+       "volume": 80,
+       "groupId": 0,
+       "area": "",
+       "deleted": false
+      },
+      {
+       "terminalId": 8,
+       "terminalname": "操场号角01",
+       "typeName": "一体化音箱",
+       "netstate": 1,
+       "taskstate": 1,
+       "ip": "192.168.2.41",
+       "volume": 95,
+       "groupId": 0,
+       "area": "",
+       "deleted": false
+      }
+     ],
+     "startable": true,
+     "blockReason": ""
+    },
+    {
+     "taskid": 1011,
+     "taskname": "午间食堂背景music",
+     "tasktype": 2,
+     "israndomplay": 0,
+     "playModeText": "随机",
+     "projectstate": 0,
+     "state": 1,
+     "stateText": "执行中",
+     "startdate": "2026-01-01",
+     "enddate": "2026-12-31",
+     "playtime": "11:40:00",
+     "endtime": "12:20:00",
+     "timelengthtype": 0,
+     "timelength": 2400,
+     "timelengthText": "循环 2400 次",
+     "exemodel": "1111100",
+     "weekdays": [
+      1,
+      2,
+      3,
+      4,
+      5
+     ],
+     "priority": 3,
+     "defaultvolume": 55,
+     "prepower": 1,
+     "folderId": 1,
+     "ownerUserId": 1,
+     "ownerUserName": "admin",
+     "powerTaskId": 0,
+     "media": [
+      {
+       "mediaId": 124,
+       "name": "大课间.mp3",
+       "size": 6018,
+       "sort": 1,
+       "deleted": false
+      }
+     ],
+     "terminals": [
+      {
+       "terminalId": 7,
+       "terminalname": "办公区功放",
+       "typeName": "网络功放",
+       "netstate": 1,
+       "taskstate": 1,
+       "ip": "192.168.2.32",
+       "volume": 70,
+       "groupId": 0,
+       "area": "",
+       "deleted": false
+      }
+     ],
+     "startable": true,
+     "blockReason": ""
+    },
+    {
+     "taskid": 1009,
+     "taskname": "消防疏散演练",
+     "tasktype": 2,
+     "israndomplay": 0,
+     "playModeText": "随机",
+     "projectstate": 0,
+     "state": 0,
+     "stateText": "准备",
+     "startdate": "2026-01-01",
+     "enddate": "2026-12-31",
+     "playtime": "15:00:00",
+     "endtime": "15:02:00",
+     "timelengthtype": 0,
+     "timelength": 120,
+     "timelengthText": "循环 120 次",
+     "exemodel": "0000000",
+     "weekdays": [],
+     "priority": 10,
+     "defaultvolume": 100,
+     "prepower": 1,
+     "folderId": 1,
+     "ownerUserId": 1,
+     "ownerUserName": "admin",
+     "powerTaskId": 0,
+     "media": [
+      {
+       "mediaId": 129,
+       "name": "电铃声.mp3",
+       "size": 278,
+       "sort": 1,
+       "deleted": false
+      }
+     ],
+     "terminals": [
+      {
+       "terminalId": 1,
+       "terminalname": "A101教室音箱",
+       "typeName": "一体化音箱",
+       "netstate": 1,
+       "taskstate": 1,
+       "ip": "192.168.2.11",
+       "volume": 80,
+       "groupId": 0,
+       "area": "",
+       "deleted": false
+      },
+      {
+       "terminalId": 4,
+       "terminalname": "A201教室音箱",
+       "typeName": "一体化音箱",
+       "netstate": 1,
+       "taskstate": 1,
+       "ip": "192.168.2.21",
+       "volume": 80,
+       "groupId": 0,
+       "area": "",
+       "deleted": false
+      },
+      {
+       "terminalId": 7,
+       "terminalname": "办公区功放",
+       "typeName": "网络功放",
+       "netstate": 1,
+       "taskstate": 1,
+       "ip": "192.168.2.32",
+       "volume": 70,
+       "groupId": 0,
+       "area": "",
+       "deleted": false
+      },
+      {
+       "terminalId": 8,
+       "terminalname": "操场号角01",
+       "typeName": "一体化音箱",
+       "netstate": 1,
+       "taskstate": 1,
+       "ip": "192.168.2.41",
+       "volume": 95,
+       "groupId": 0,
+       "area": "",
+       "deleted": false
+      },
+      {
+       "terminalId": 10,
+       "terminalname": "宿舍楼一键寻呼",
+       "typeName": "一键寻呼终端",
+       "netstate": 1,
+       "taskstate": 0,
+       "ip": "192.168.2.51",
+       "volume": 85,
+       "groupId": 0,
+       "area": "",
+       "deleted": false
+      }
+     ],
+     "startable": true,
+     "blockReason": ""
+    },
+    {
+     "taskid": 1012,
+     "taskname": "晚自习预备",
+     "tasktype": 2,
+     "israndomplay": 0,
+     "playModeText": "随机",
+     "projectstate": 0,
+     "state": 1,
+     "stateText": "执行中",
+     "startdate": "2026-01-01",
+     "enddate": "2026-12-31",
+     "playtime": "18:50:00",
+     "endtime": "18:50:30",
+     "timelengthtype": 0,
+     "timelength": 30,
+     "timelengthText": "循环 30 次",
+     "exemodel": "1111100",
+     "weekdays": [
+      1,
+      2,
+      3,
+      4,
+      5
+     ],
+     "priority": 5,
+     "defaultvolume": 80,
+     "prepower": 1,
+     "folderId": 1,
+     "ownerUserId": 1,
+     "ownerUserName": "admin",
+     "powerTaskId": 0,
+     "media": [
+      {
+       "mediaId": 135,
+       "name": "预备铃.mp3",
+       "size": 432,
+       "sort": 1,
+       "deleted": false
+      }
+     ],
+     "terminals": [
+      {
+       "terminalId": 1,
+       "terminalname": "A101教室音箱",
+       "typeName": "一体化音箱",
+       "netstate": 1,
+       "taskstate": 1,
+       "ip": "192.168.2.11",
+       "volume": 80,
+       "groupId": 0,
+       "area": "",
+       "deleted": false
+      },
+      {
+       "terminalId": 2,
+       "terminalname": "A102教室音箱",
+       "typeName": "一体化音箱",
+       "netstate": 1,
+       "taskstate": 0,
+       "ip": "192.168.2.12",
+       "volume": 75,
+       "groupId": 0,
+       "area": "",
+       "deleted": false
+      },
+      {
+       "terminalId": 4,
+       "terminalname": "A201教室音箱",
+       "typeName": "一体化音箱",
+       "netstate": 1,
+       "taskstate": 1,
+       "ip": "192.168.2.21",
+       "volume": 80,
+       "groupId": 0,
+       "area": "",
+       "deleted": false
+      },
+      {
+       "terminalId": 5,
+       "terminalname": "A202教室音箱",
+       "typeName": "一体化音箱",
+       "netstate": 1,
+       "taskstate": 0,
+       "ip": "192.168.2.22",
+       "volume": 80,
+       "groupId": 0,
+       "area": "",
+       "deleted": false
+      }
+     ],
+     "startable": true,
+     "blockReason": ""
+    }
+   ],
+   "pageNum": 1,
+   "pageSize": 10,
+   "scopeNote": "",
+   "total": 6
+  }
+ },
+ "GET /api/typed-tasks/amplifier?orderBy=&order=&folderId=0&pageNum=1&pageSize=10": {
+  "code": 200,
+  "msg": "ok",
+  "data": {
+   "list": [
+    {
+     "taskId": 70014,
+     "taskName": "晨间开功放",
+     "tasktype": 5,
+     "state": 0,
+     "stateText": "准备",
+     "projectstate": 0,
+     "projectText": "启用",
+     "startdate": "2026-01-01",
+     "enddate": "2026-12-31",
+     "playtime": "06:50:00",
+     "endtime": "06:51:00",
+     "exemodel": "1111111",
+     "cycleText": "每天",
+     "defaultvolume": 60,
+     "timelength": 60,
+     "timelengthtype": 1,
+     "lengthText": "1分0秒",
+     "cmd": 1,
+     "cmdargs": "0",
+     "parentid": 0,
+     "userId": 1,
+     "userName": "admin",
+     "terminalCount": 3,
+     "canModify": true,
+     "priority": 3,
+     "bandrate": 0,
+     "samplerate": 0,
+     "playfileid": 0,
+     "prepower": 0,
+     "datasendmodel": 0,
+     "switchText": "关闭",
+     "interval_s": 0,
+     "intplaylength": 0,
+     "intplaylengthtype": 0,
+     "playModeText": "普通模式",
+     "typeText": "终端功放"
+    },
+    {
+     "taskId": 70015,
+     "taskName": "晚间关功放",
+     "tasktype": 5,
+     "state": 0,
+     "stateText": "准备",
+     "projectstate": 0,
+     "projectText": "启用",
+     "startdate": "2026-01-01",
+     "enddate": "2026-12-31",
+     "playtime": "22:10:00",
+     "endtime": "22:11:00",
+     "exemodel": "1111111",
+     "cycleText": "每天",
+     "defaultvolume": 60,
+     "timelength": 60,
+     "timelengthtype": 1,
+     "lengthText": "1分0秒",
+     "cmd": 0,
+     "cmdargs": "0",
+     "parentid": 0,
+     "userId": 1,
+     "userName": "admin",
+     "terminalCount": 1,
+     "canModify": true,
+     "priority": 3,
+     "bandrate": 0,
+     "samplerate": 0,
+     "playfileid": 0,
+     "prepower": 0,
+     "datasendmodel": 0,
+     "switchText": "打开",
+     "interval_s": 0,
+     "intplaylength": 0,
+     "intplaylengthtype": 0,
+     "playModeText": "普通模式",
+     "typeText": "终端功放"
+    }
+   ],
+   "pageNum": 1,
+   "pageSize": 10,
+   "scopeNote": "",
+   "total": 2
+  }
+ },
+ "GET /api/typed-tasks/terminals?keyword=": {
+  "code": 200,
+  "msg": "ok",
+  "data": [
+   {
+    "id": 1,
+    "terminalname": "A101教室音箱",
+    "typeid": 11,
+    "typeName": "一体化音箱",
+    "ip": "192.168.2.11",
+    "netstate": 1,
+    "groupId": 1,
+    "groupName": "教学楼",
+    "switchCount": 0
+   },
+   {
+    "id": 2,
+    "terminalname": "A102教室音箱",
+    "typeid": 11,
+    "typeName": "一体化音箱",
+    "ip": "192.168.2.12",
+    "netstate": 1,
+    "groupId": 1,
+    "groupName": "教学楼",
+    "switchCount": 0
+   },
+   {
+    "id": 4,
+    "terminalname": "A201教室音箱",
+    "typeid": 11,
+    "typeName": "一体化音箱",
+    "ip": "192.168.2.21",
+    "netstate": 1,
+    "groupId": 1,
+    "groupName": "教学楼",
+    "switchCount": 0
+   },
+   {
+    "id": 5,
+    "terminalname": "A202教室音箱",
+    "typeid": 11,
+    "typeName": "一体化音箱",
+    "ip": "192.168.2.22",
+    "netstate": 1,
+    "groupId": 1,
+    "groupName": "教学楼",
+    "switchCount": 0
+   },
+   {
+    "id": 6,
+    "terminalname": "广播室主话筒",
+    "typeid": 2,
+    "typeName": "网络话筒",
+    "ip": "192.168.2.31",
+    "netstate": 1,
+    "groupId": 2,
+    "groupName": "办公区",
+    "switchCount": 1
+   },
+   {
+    "id": 7,
+    "terminalname": "办公区功放",
+    "typeid": 5,
+    "typeName": "网络功放",
+    "ip": "192.168.2.32",
+    "netstate": 1,
+    "groupId": 2,
+    "groupName": "办公区",
+    "switchCount": 8
+   },
+   {
+    "id": 8,
+    "terminalname": "操场号角01",
+    "typeid": 11,
+    "typeName": "一体化音箱",
+    "ip": "192.168.2.41",
+    "netstate": 1,
+    "groupId": 3,
+    "groupName": "室外操场",
+    "switchCount": 0
+   },
+   {
+    "id": 10,
+    "terminalname": "宿舍楼一键寻呼",
+    "typeid": 13,
+    "typeName": "一键寻呼终端",
+    "ip": "192.168.2.51",
+    "netstate": 1,
+    "groupId": 4,
+    "groupName": "宿舍楼",
+    "switchCount": 0
+   },
+   {
+    "id": 11,
+    "terminalname": "TTS主机",
+    "typeid": 22,
+    "typeName": "TTS主机",
+    "ip": "192.168.2.60",
+    "netstate": 1,
+    "groupId": 2,
+    "groupName": "办公区",
+    "switchCount": 0
+   },
+   {
+    "id": 20,
+    "terminalname": "消防报警主机",
+    "typeid": 7,
+    "typeName": "报警主机",
+    "ip": "192.168.2.90",
+    "netstate": 1,
+    "groupId": 2,
+    "groupName": "办公区",
+    "switchCount": 16
+   },
+   {
+    "id": 902,
+    "terminalname": "服务器",
+    "typeid": 0,
+    "typeName": "服务器",
+    "ip": "192.168.2.159",
+    "netstate": 1,
+    "groupId": 0,
+    "groupName": "",
+    "switchCount": 1
+   },
+   {
+    "id": 3,
+    "terminalname": "A103教室音箱",
+    "typeid": 11,
+    "typeName": "一体化音箱",
+    "ip": "192.168.2.13",
+    "netstate": 0,
+    "groupId": 1,
+    "groupName": "教学楼",
+    "switchCount": 0
+   },
+   {
+    "id": 9,
+    "terminalname": "操场号角02",
+    "typeid": 11,
+    "typeName": "一体化音箱",
+    "ip": "192.168.2.42",
+    "netstate": 0,
+    "groupId": 3,
+    "groupName": "室外操场",
+    "switchCount": 0
+   }
+  ]
+ },
+ "GET /api/typed-tasks/collect?orderBy=&order=&folderId=0&pageNum=1&pageSize=10": {
+  "code": 200,
+  "msg": "ok",
+  "data": {
+   "list": [
+    {
+     "taskId": 70011,
+     "taskName": "升旗现场采播",
+     "tasktype": 3,
+     "state": 0,
+     "stateText": "准备",
+     "projectstate": 0,
+     "projectText": "启用",
+     "startdate": "2026-01-01",
+     "enddate": "2026-12-31",
+     "playtime": "07:40:00",
+     "endtime": "07:41:00",
+     "exemodel": "1111111",
+     "cycleText": "每天",
+     "defaultvolume": 60,
+     "timelength": 60,
+     "timelengthtype": 1,
+     "lengthText": "1分0秒",
+     "cmd": 6,
+     "cmdargs": "0",
+     "parentid": 0,
+     "userId": 1,
+     "userName": "admin",
+     "terminalCount": 1,
+     "canModify": true,
+     "priority": 3,
+     "bandrate": 0,
+     "samplerate": 0,
+     "playfileid": 0,
+     "prepower": 0,
+     "datasendmodel": 0,
+     "sourceName": "广播室主话筒",
+     "interval_s": 0,
+     "intplaylength": 0,
+     "intplaylengthtype": 0,
+     "playModeText": "普通模式",
+     "typeText": "采播管理"
+    },
+    {
+     "taskId": 70010,
+     "taskName": "课间采播",
+     "tasktype": 3,
+     "state": 0,
+     "stateText": "准备",
+     "projectstate": 0,
+     "projectText": "启用",
+     "startdate": "2026-01-01",
+     "enddate": "2026-12-31",
+     "playtime": "09:40:00",
+     "endtime": "09:41:00",
+     "exemodel": "1111111",
+     "cycleText": "每天",
+     "defaultvolume": 60,
+     "timelength": 60,
+     "timelengthtype": 1,
+     "lengthText": "1分0秒",
+     "cmd": 6,
+     "cmdargs": "0",
+     "parentid": 0,
+     "userId": 1,
+     "userName": "admin",
+     "terminalCount": 3,
+     "canModify": true,
+     "priority": 3,
+     "bandrate": 0,
+     "samplerate": 0,
+     "playfileid": 0,
+     "prepower": 0,
+     "datasendmodel": 0,
+     "sourceName": "广播室主话筒",
+     "interval_s": 0,
+     "intplaylength": 0,
+     "intplaylengthtype": 0,
+     "playModeText": "普通模式",
+     "typeText": "采播管理"
+    }
+   ],
+   "pageNum": 1,
+   "pageSize": 10,
+   "scopeNote": "",
+   "total": 2
+  }
+ },
+ "GET /api/typed-tasks/tts?orderBy=&order=&folderId=0&pageNum=1&pageSize=10": {
+  "code": 200,
+  "msg": "ok",
+  "data": {
+   "list": [
+    {
+     "taskId": 70013,
+     "taskName": "防欺凌广播",
+     "tasktype": 15,
+     "state": 0,
+     "stateText": "准备",
+     "projectstate": 0,
+     "projectText": "启用",
+     "startdate": "2026-01-01",
+     "enddate": "2026-12-31",
+     "playtime": "12:10:00",
+     "endtime": "12:11:00",
+     "exemodel": "1111111",
+     "cycleText": "每天",
+     "defaultvolume": 60,
+     "timelength": 60,
+     "timelengthtype": 1,
+     "lengthText": "1分0秒",
+     "cmd": 0,
+     "cmdargs": "0",
+     "parentid": 0,
+     "userId": 1,
+     "userName": "admin",
+     "terminalCount": 1,
+     "canModify": true,
+     "priority": 3,
+     "bandrate": 0,
+     "samplerate": 0,
+     "playfileid": 0,
+     "prepower": 0,
+     "datasendmodel": 0,
+     "text": "同学之间要互相尊重，遇到欺凌请及时向老师报告。",
+     "interval_s": 0,
+     "intplaylength": 0,
+     "intplaylengthtype": 0,
+     "playModeText": "普通模式",
+     "typeText": "文字语音"
+    },
+    {
+     "taskId": 70012,
+     "taskName": "放学安全提示",
+     "tasktype": 15,
+     "state": 0,
+     "stateText": "准备",
+     "projectstate": 0,
+     "projectText": "启用",
+     "startdate": "2026-01-01",
+     "enddate": "2026-12-31",
+     "playtime": "17:25:00",
+     "endtime": "17:26:00",
+     "exemodel": "1111111",
+     "cycleText": "每天",
+     "defaultvolume": 60,
+     "timelength": 60,
+     "timelengthtype": 1,
+     "lengthText": "1分0秒",
+     "cmd": 0,
+     "cmdargs": "0",
+     "parentid": 0,
+     "userId": 1,
+     "userName": "admin",
+     "terminalCount": 3,
+     "canModify": true,
+     "priority": 3,
+     "bandrate": 0,
+     "samplerate": 0,
+     "playfileid": 0,
+     "prepower": 0,
+     "datasendmodel": 0,
+     "text": "放学请注意交通安全，排队有序离校。",
+     "interval_s": 0,
+     "intplaylength": 0,
+     "intplaylengthtype": 0,
+     "playModeText": "普通模式",
+     "typeText": "文字语音"
+    }
+   ],
+   "pageNum": 1,
+   "pageSize": 10,
+   "scopeNote": "",
+   "total": 2
+  }
+ },
+ "GET /api/typed-tasks/led?orderBy=&order=&folderId=0&pageNum=1&pageSize=10": {
+  "code": 200,
+  "msg": "ok",
+  "data": {
+   "list": [
+    {
+     "taskId": 70016,
+     "taskName": "欢迎标语",
+     "tasktype": 30,
+     "state": 0,
+     "stateText": "准备",
+     "projectstate": 0,
+     "projectText": "启用",
+     "startdate": "2026-01-01",
+     "enddate": "2026-12-31",
+     "playtime": "08:00:00",
+     "endtime": "08:01:00",
+     "exemodel": "1111111",
+     "cycleText": "每天",
+     "defaultvolume": 60,
+     "timelength": 60,
+     "timelengthtype": 1,
+     "lengthText": "1分0秒",
+     "cmd": 0,
+     "cmdargs": "0",
+     "parentid": 2,
+     "userId": 1,
+     "userName": "admin",
+     "terminalCount": 3,
+     "canModify": true,
+     "priority": 3,
+     "bandrate": 0,
+     "samplerate": 0,
+     "playfileid": 0,
+     "prepower": 0,
+     "datasendmodel": 0,
+     "text": "欢迎莅临指导",
+     "interval_s": 0,
+     "intplaylength": 0,
+     "intplaylengthtype": 0,
+     "playModeText": "普通模式",
+     "typeText": "led播放"
+    },
+    {
+     "taskId": 70017,
+     "taskName": "考试须知",
+     "tasktype": 30,
+     "state": 0,
+     "stateText": "准备",
+     "projectstate": 0,
+     "projectText": "启用",
+     "startdate": "2026-01-01",
+     "enddate": "2026-12-31",
+     "playtime": "08:30:00",
+     "endtime": "08:31:00",
+     "exemodel": "1111111",
+     "cycleText": "每天",
+     "defaultvolume": 60,
+     "timelength": 60,
+     "timelengthtype": 1,
+     "lengthText": "1分0秒",
+     "cmd": 0,
+     "cmdargs": "0",
+     "parentid": 2,
+     "userId": 1,
+     "userName": "admin",
+     "terminalCount": 1,
+     "canModify": true,
+     "priority": 3,
+     "bandrate": 0,
+     "samplerate": 0,
+     "playfileid": 0,
+     "prepower": 0,
+     "datasendmodel": 0,
+     "text": "诚信考试 从我做起",
+     "interval_s": 0,
+     "intplaylength": 0,
+     "intplaylengthtype": 0,
+     "playModeText": "普通模式",
+     "typeText": "led播放"
+    }
+   ],
+   "pageNum": 1,
+   "pageSize": 10,
+   "scopeNote": "",
+   "total": 2
+  }
+ },
+ "GET /api/led/folders": {
+  "code": 200,
+  "msg": "ok",
+  "data": [
+   {
+    "id": 2,
+    "name": "1",
+    "parentid": 0,
+    "userId": 1,
+    "taskCount": 2
+   }
+  ]
+ },
+ "GET /api/led/devices?keyword=": {
+  "code": 200,
+  "msg": "ok",
+  "data": [
+   {
+    "id": 1,
+    "name": "教学楼LED屏",
+    "terminalId": 6,
+    "terminalname": "广播室主话筒",
+    "devid": 1,
+    "ip": "192.168.1.60",
+    "width": 128,
+    "height": 32,
+    "sendport": 5200,
+    "mac": "",
+    "defaulttext": ""
+   }
+  ]
+ },
+ "GET /api/enable-plans/tasks?keyword=": {
+  "code": 200,
+  "msg": "ok",
+  "data": [
+   {
+    "taskId": 1001,
+    "taskName": "早读预备铃",
+    "tasktype": 1,
+    "typeText": "作息方案",
+    "info": "春季作息",
+    "projectstate": 0,
+    "stateText": "启用"
+   },
+   {
+    "taskId": 1002,
+    "taskName": "上午第一节上课",
+    "tasktype": 1,
+    "typeText": "作息方案",
+    "info": "春季作息",
+    "projectstate": 0,
+    "stateText": "启用"
+   },
+   {
+    "taskId": 1003,
+    "taskName": "第一节下课",
+    "tasktype": 1,
+    "typeText": "作息方案",
+    "info": "春季作息",
+    "projectstate": 0,
+    "stateText": "启用"
+   },
+   {
+    "taskId": 1004,
+    "taskName": "课间眼保健操",
+    "tasktype": 1,
+    "typeText": "作息方案",
+    "info": "春季作息",
+    "projectstate": 0,
+    "stateText": "启用"
+   },
+   {
+    "taskId": 1005,
+    "taskName": "大课间活动",
+    "tasktype": 1,
+    "typeText": "作息方案",
+    "info": "春季作息",
+    "projectstate": 0,
+    "stateText": "启用"
+   },
+   {
+    "taskId": 1006,
+    "taskName": "午休提示",
+    "tasktype": 1,
+    "typeText": "作息方案",
+    "info": "春季作息",
+    "projectstate": 0,
+    "stateText": "启用"
+   },
+   {
+    "taskId": 1007,
+    "taskName": "放学铃",
+    "tasktype": 1,
+    "typeText": "作息方案",
+    "info": "春季作息",
+    "projectstate": 0,
+    "stateText": "启用"
+   },
+   {
+    "taskId": 1008,
+    "taskName": "升旗仪式-国歌",
+    "tasktype": 2,
+    "typeText": "文件广播",
+    "info": "每周一",
+    "projectstate": 0,
+    "stateText": "启用"
+   },
+   {
+    "taskId": 1009,
+    "taskName": "消防疏散演练",
+    "tasktype": 2,
+    "typeText": "文件广播",
+    "info": "手动触发",
+    "projectstate": 0,
+    "stateText": "启用"
+   },
+   {
+    "taskId": 1010,
+    "taskName": "课间轻音乐",
+    "tasktype": 2,
+    "typeText": "文件广播",
+    "info": "走廊与操场",
+    "projectstate": 0,
+    "stateText": "启用"
+   },
+   {
+    "taskId": 1011,
+    "taskName": "午间食堂背景music",
+    "tasktype": 2,
+    "typeText": "文件广播",
+    "info": "食堂",
+    "projectstate": 0,
+    "stateText": "启用"
+   },
+   {
+    "taskId": 1012,
+    "taskName": "晚自习预备",
+    "tasktype": 2,
+    "typeText": "文件广播",
+    "info": "教学楼",
+    "projectstate": 0,
+    "stateText": "启用"
+   },
+   {
+    "taskId": 1013,
+    "taskName": "运动会入场式",
+    "tasktype": 2,
+    "typeText": "文件广播",
+    "info": "操场·临时",
+    "projectstate": 0,
+    "stateText": "启用"
+   },
+   {
+    "taskId": 70010,
+    "taskName": "课间采播",
+    "tasktype": 3,
+    "typeText": "采播管理",
+    "info": "",
+    "projectstate": 0,
+    "stateText": "启用"
+   },
+   {
+    "taskId": 70011,
+    "taskName": "升旗现场采播",
+    "tasktype": 3,
+    "typeText": "采播管理",
+    "info": "",
+    "projectstate": 0,
+    "stateText": "启用"
+   },
+   {
+    "taskId": 70014,
+    "taskName": "晨间开功放",
+    "tasktype": 5,
+    "typeText": "终端功放",
+    "info": "",
+    "projectstate": 0,
+    "stateText": "启用"
+   },
+   {
+    "taskId": 70015,
+    "taskName": "晚间关功放",
+    "tasktype": 5,
+    "typeText": "终端功放",
+    "info": "",
+    "projectstate": 0,
+    "stateText": "启用"
+   },
+   {
+    "taskId": 70107,
+    "taskName": "升旗仪式-国歌",
+    "tasktype": 9,
+    "typeText": "电源子任务",
+    "info": "",
+    "projectstate": 0,
+    "stateText": "启用"
+   },
+   {
+    "taskId": 70000,
+    "taskName": "reset",
+    "tasktype": 13,
+    "typeText": "系统任务",
+    "info": "",
+    "projectstate": 0,
+    "stateText": "启用"
+   },
+   {
+    "taskId": 70012,
+    "taskName": "放学安全提示",
+    "tasktype": 15,
+    "typeText": "文字语音",
+    "info": "",
+    "projectstate": 0,
+    "stateText": "启用"
+   },
+   {
+    "taskId": 70013,
+    "taskName": "防欺凌广播",
+    "tasktype": 15,
+    "typeText": "文字语音",
+    "info": "",
+    "projectstate": 0,
+    "stateText": "启用"
+   },
+   {
+    "taskId": 70006,
+    "taskName": "呼叫保安",
+    "tasktype": 20,
+    "typeText": "类型 20",
+    "info": "",
+    "projectstate": 0,
+    "stateText": "启用"
+   },
+   {
+    "taskId": 70008,
+    "taskName": "午间音乐",
+    "tasktype": 20,
+    "typeText": "类型 20",
+    "info": "",
+    "projectstate": 0,
+    "stateText": "启用"
+   },
+   {
+    "taskId": 70007,
+    "taskName": "课间提醒",
+    "tasktype": 21,
+    "typeText": "类型 21",
+    "info": "",
+    "projectstate": 0,
+    "stateText": "启用"
+   },
+   {
+    "taskId": 70016,
+    "taskName": "欢迎标语",
+    "tasktype": 30,
+    "typeText": "led播放",
+    "info": "",
+    "projectstate": 0,
+    "stateText": "启用"
+   },
+   {
+    "taskId": 70017,
+    "taskName": "考试须知",
+    "tasktype": 30,
+    "typeText": "led播放",
+    "info": "",
+    "projectstate": 0,
+    "stateText": "启用"
+   }
+  ]
+ },
+ "GET /api/enable-plans?pageNum=1&pageSize=10": {
+  "code": 200,
+  "msg": "ok",
+  "data": {
+   "list": [],
+   "pageNum": 1,
+   "pageSize": 10,
+   "total": 0
+  }
+ },
+ "GET /api/cloud/terminals?pageNum=1&pageSize=10": {
+  "code": 200,
+  "msg": "ok",
+  "data": {
+   "list": [],
+   "pageNum": 1,
+   "pageSize": 10,
+   "scopeNote": "",
+   "total": 0
+  }
+ },
+ "GET /api/offline/states": {
+  "code": 200,
+  "msg": "ok",
+  "data": [
+   {
+    "text": "非离线",
+    "value": 0,
+    "writable": false
+   },
+   {
+    "text": "空闲离线",
+    "value": 1,
+    "writable": true
+   },
+   {
+    "text": "立即离线",
+    "value": 2,
+    "writable": true
+   },
+   {
+    "text": "离线完成",
+    "value": 3,
+    "writable": false
+   },
+   {
+    "text": "空闲删除",
+    "value": 4,
+    "writable": true
+   },
+   {
+    "text": "立即删除",
+    "value": 5,
+    "writable": true
+   },
+   {
+    "text": "正在空闲离线",
+    "value": 6,
+    "writable": false
+   },
+   {
+    "text": "正在立即离线",
+    "value": 7,
+    "writable": false
+   },
+   {
+    "text": "删除完成",
+    "value": 8,
+    "writable": false
+   },
+   {
+    "text": "准备空闲传输",
+    "value": 9,
+    "writable": false
+   },
+   {
+    "text": "准备立即传输",
+    "value": 10,
+    "writable": false
+   },
+   {
+    "text": "停止传输",
+    "value": 11,
+    "writable": true
+   },
+   {
+    "text": "传输已停止",
+    "value": 12,
+    "writable": false
+   }
+  ]
+ },
+ "GET /api/task-options/media?keyword=&folderId=0": {
+  "code": 200,
+  "msg": "ok",
+  "data": [
+   {
+    "id": 160,
+    "name": "防空警报",
+    "size": 79,
+    "timelength": 0,
+    "folderId": 4,
+    "folderName": "报警媒体库"
+   },
+   {
+    "id": 159,
+    "name": "火警疏散提示",
+    "size": 79,
+    "timelength": 0,
+    "folderId": 4,
+    "folderName": "报警媒体库"
+   },
+   {
+    "id": 138,
+    "name": "中华人民共和国国歌.mp3",
+    "size": 723,
+    "timelength": 46,
+    "folderId": 2,
+    "folderName": "铃声媒体库"
+   },
+   {
+    "id": 137,
+    "name": "早读预备铃.mp3",
+    "size": 1565,
+    "timelength": 100,
+    "folderId": 2,
+    "folderName": "铃声媒体库"
+   },
+   {
+    "id": 136,
+    "name": "运动员进行曲.mp3",
+    "size": 2655,
+    "timelength": 169,
+    "folderId": 2,
+    "folderName": "铃声媒体库"
+   },
+   {
+    "id": 135,
+    "name": "预备铃.mp3",
+    "size": 432,
+    "timelength": 27,
+    "folderId": 2,
+    "folderName": "铃声媒体库"
+   },
+   {
+    "id": 134,
+    "name": "眼保健操.mp3",
+    "size": 306,
+    "timelength": 19,
+    "folderId": 2,
+    "folderName": "铃声媒体库"
+   },
+   {
+    "id": 133,
+    "name": "下课铃.mp3",
+    "size": 310,
+    "timelength": 19,
+    "folderId": 2,
+    "folderName": "铃声媒体库"
+   },
+   {
+    "id": 132,
+    "name": "午休.mp3",
+    "size": 1184,
+    "timelength": 60,
+    "folderId": 2,
+    "folderName": "铃声媒体库"
+   },
+   {
+    "id": 131,
+    "name": "放学.mp3",
+    "size": 828,
+    "timelength": 42,
+    "folderId": 2,
+    "folderName": "铃声媒体库"
+   },
+   {
+    "id": 130,
+    "name": "上课铃.mp3",
+    "size": 289,
+    "timelength": 18,
+    "folderId": 2,
+    "folderName": "铃声媒体库"
+   },
+   {
+    "id": 129,
+    "name": "电铃声.mp3",
+    "size": 278,
+    "timelength": 17,
+    "folderId": 2,
+    "folderName": "铃声媒体库"
+   },
+   {
+    "id": 128,
+    "name": "04.爱的纪念（上课）.mp3",
+    "size": 345,
+    "timelength": 22,
+    "folderId": 2,
+    "folderName": "铃声媒体库"
+   },
+   {
+    "id": 127,
+    "name": "出旗曲.mp3",
+    "size": 2630,
+    "timelength": 168,
+    "folderId": 2,
+    "folderName": "铃声媒体库"
+   },
+   {
+    "id": 126,
+    "name": "04.爱的纪念（下课）.mp3",
+    "size": 350,
+    "timelength": 22,
+    "folderId": 2,
+    "folderName": "铃声媒体库"
+   },
+   {
+    "id": 125,
+    "name": "10.起床号.mp3",
+    "size": 1406,
+    "timelength": 89,
+    "folderId": 2,
+    "folderName": "铃声媒体库"
+   },
+   {
+    "id": 124,
+    "name": "大课间.mp3",
+    "size": 6018,
+    "timelength": 385,
+    "folderId": 2,
+    "folderName": "铃声媒体库"
+   },
+   {
+    "id": 1,
+    "name": "经典提示音",
+    "size": 61,
+    "timelength": 5,
+    "folderId": 9,
+    "folderName": "提示音"
+   }
+  ]
+ },
+ "GET /api/offline/tasks?pageNum=1&pageSize=20": {
+  "code": 200,
+  "msg": "ok",
+  "data": {
+   "list": [],
+   "pageNum": 1,
+   "pageSize": 20,
+   "total": 0
+  }
+ },
+ "GET /api/task-options/terminals?keyword=&groupId=0": {
+  "code": 200,
+  "msg": "ok",
+  "data": [
+   {
+    "id": 1,
+    "name": "A101教室音箱",
+    "typeName": "一体化音箱",
+    "groupId": 1,
+    "groupName": "教学楼",
+    "netstate": 1,
+    "switchCount": 0
+   },
+   {
+    "id": 2,
+    "name": "A102教室音箱",
+    "typeName": "一体化音箱",
+    "groupId": 1,
+    "groupName": "教学楼",
+    "netstate": 1,
+    "switchCount": 0
+   },
+   {
+    "id": 4,
+    "name": "A201教室音箱",
+    "typeName": "一体化音箱",
+    "groupId": 1,
+    "groupName": "教学楼",
+    "netstate": 1,
+    "switchCount": 0
+   },
+   {
+    "id": 5,
+    "name": "A202教室音箱",
+    "typeName": "一体化音箱",
+    "groupId": 1,
+    "groupName": "教学楼",
+    "netstate": 1,
+    "switchCount": 0
+   },
+   {
+    "id": 6,
+    "name": "广播室主话筒",
+    "typeName": "网络话筒",
+    "groupId": 2,
+    "groupName": "办公区",
+    "netstate": 1,
+    "switchCount": 1
+   },
+   {
+    "id": 7,
+    "name": "办公区功放",
+    "typeName": "网络功放",
+    "groupId": 2,
+    "groupName": "办公区",
+    "netstate": 1,
+    "switchCount": 8
+   },
+   {
+    "id": 8,
+    "name": "操场号角01",
+    "typeName": "一体化音箱",
+    "groupId": 3,
+    "groupName": "室外操场",
+    "netstate": 1,
+    "switchCount": 0
+   },
+   {
+    "id": 10,
+    "name": "宿舍楼一键寻呼",
+    "typeName": "一键寻呼终端",
+    "groupId": 4,
+    "groupName": "宿舍楼",
+    "netstate": 1,
+    "switchCount": 0
+   },
+   {
+    "id": 11,
+    "name": "TTS主机",
+    "typeName": "TTS主机",
+    "groupId": 2,
+    "groupName": "办公区",
+    "netstate": 1,
+    "switchCount": 0
+   },
+   {
+    "id": 20,
+    "name": "消防报警主机",
+    "typeName": "报警主机",
+    "groupId": 2,
+    "groupName": "办公区",
+    "netstate": 1,
+    "switchCount": 16
+   },
+   {
+    "id": 3,
+    "name": "A103教室音箱",
+    "typeName": "一体化音箱",
+    "groupId": 1,
+    "groupName": "教学楼",
+    "netstate": 0,
+    "switchCount": 0
+   },
+   {
+    "id": 9,
+    "name": "操场号角02",
+    "typeName": "一体化音箱",
+    "groupId": 3,
+    "groupName": "室外操场",
+    "netstate": 0,
+    "switchCount": 0
+   }
+  ]
+ },
+ "GET /api/offline/summary": {
+  "code": 200,
+  "msg": "ok",
+  "data": {
+   "offlineMedia": 0,
+   "offlineMediaOfTerminal": 0,
+   "offlineTask": 0,
+   "offlineTaskOfTerminal": 0,
+   "tasksMarked": 0
+  }
+ },
+ "GET /api/transfer/tasks?kind=bell&pageNum=1&pageSize=10": {
+  "code": 200,
+  "msg": "ok",
+  "data": {
+   "list": [],
+   "pageNum": 1,
+   "pageSize": 10,
+   "total": 0
+  }
+ },
+ "GET /api/sound/devices?orderBy=&order=&pageNum=1&pageSize=10": {
+  "code": 200,
+  "msg": "ok",
+  "data": {
+   "list": [],
+   "pageNum": 1,
+   "pageSize": 10,
+   "total": 0
+  }
+ },
+ "GET /api/sound/devices/options?keyword=": {
+  "code": 200,
+  "msg": "ok",
+  "data": []
+ },
+ "GET /api/sound/groups/terminals?keyword=": {
+  "code": 200,
+  "msg": "ok",
+  "data": [
+   {
+    "terminalId": 1,
+    "terminalname": "A101教室音箱",
+    "typeName": "一体化音箱",
+    "ip": "192.168.2.11",
+    "netstate": 1,
+    "deleted": false,
+    "groupId": 1,
+    "groupName": "教学楼"
+   },
+   {
+    "terminalId": 2,
+    "terminalname": "A102教室音箱",
+    "typeName": "一体化音箱",
+    "ip": "192.168.2.12",
+    "netstate": 1,
+    "deleted": false,
+    "groupId": 1,
+    "groupName": "教学楼"
+   },
+   {
+    "terminalId": 4,
+    "terminalname": "A201教室音箱",
+    "typeName": "一体化音箱",
+    "ip": "192.168.2.21",
+    "netstate": 1,
+    "deleted": false,
+    "groupId": 1,
+    "groupName": "教学楼"
+   },
+   {
+    "terminalId": 5,
+    "terminalname": "A202教室音箱",
+    "typeName": "一体化音箱",
+    "ip": "192.168.2.22",
+    "netstate": 1,
+    "deleted": false,
+    "groupId": 1,
+    "groupName": "教学楼"
+   },
+   {
+    "terminalId": 6,
+    "terminalname": "广播室主话筒",
+    "typeName": "网络话筒",
+    "ip": "192.168.2.31",
+    "netstate": 1,
+    "deleted": false,
+    "groupId": 2,
+    "groupName": "办公区"
+   },
+   {
+    "terminalId": 7,
+    "terminalname": "办公区功放",
+    "typeName": "网络功放",
+    "ip": "192.168.2.32",
+    "netstate": 1,
+    "deleted": false,
+    "groupId": 2,
+    "groupName": "办公区"
+   },
+   {
+    "terminalId": 8,
+    "terminalname": "操场号角01",
+    "typeName": "一体化音箱",
+    "ip": "192.168.2.41",
+    "netstate": 1,
+    "deleted": false,
+    "groupId": 3,
+    "groupName": "室外操场"
+   },
+   {
+    "terminalId": 10,
+    "terminalname": "宿舍楼一键寻呼",
+    "typeName": "一键寻呼终端",
+    "ip": "192.168.2.51",
+    "netstate": 1,
+    "deleted": false,
+    "groupId": 4,
+    "groupName": "宿舍楼"
+   },
+   {
+    "terminalId": 11,
+    "terminalname": "TTS主机",
+    "typeName": "TTS主机",
+    "ip": "192.168.2.60",
+    "netstate": 1,
+    "deleted": false,
+    "groupId": 2,
+    "groupName": "办公区"
+   },
+   {
+    "terminalId": 20,
+    "terminalname": "消防报警主机",
+    "typeName": "报警主机",
+    "ip": "192.168.2.90",
+    "netstate": 1,
+    "deleted": false,
+    "groupId": 2,
+    "groupName": "办公区"
+   },
+   {
+    "terminalId": 902,
+    "terminalname": "服务器",
+    "typeName": "服务器",
+    "ip": "192.168.2.159",
+    "netstate": 1,
+    "deleted": false,
+    "groupId": 0,
+    "groupName": ""
+   },
+   {
+    "terminalId": 3,
+    "terminalname": "A103教室音箱",
+    "typeName": "一体化音箱",
+    "ip": "192.168.2.13",
+    "netstate": 0,
+    "deleted": false,
+    "groupId": 1,
+    "groupName": "教学楼"
+   },
+   {
+    "terminalId": 9,
+    "terminalname": "操场号角02",
+    "typeName": "一体化音箱",
+    "ip": "192.168.2.42",
+    "netstate": 0,
+    "deleted": false,
+    "groupId": 3,
+    "groupName": "室外操场"
+   }
+  ]
+ },
+ "GET /api/sound/groups?pageNum=1&pageSize=10": {
+  "code": 200,
+  "msg": "ok",
+  "data": {
+   "list": [],
+   "pageNum": 1,
+   "pageSize": 10,
+   "scopeNote": "",
+   "total": 0
+  }
+ },
+ "GET /api/usergroups/options": {
+  "code": 200,
+  "msg": "ok",
+  "data": [
+   {
+    "id": 1,
+    "name": "system group",
+    "level": 10,
+    "groupLevel": 1,
+    "system": true
+   },
+   {
+    "id": 2,
+    "name": "操作员",
+    "level": 5,
+    "groupLevel": 0,
+    "system": false
+   },
+   {
+    "id": 3,
+    "name": "只读查看",
+    "level": 1,
+    "groupLevel": 0,
+    "system": false
+   }
+  ]
+ },
+ "GET /api/users?pageNum=1&pageSize=10": {
+  "code": 200,
+  "msg": "ok",
+  "data": {
+   "list": [
+    {
+     "id": 4,
+     "username": "night",
+     "enable": 0,
+     "enableText": "停用",
+     "usergroupId": 2,
+     "usergroupName": "操作员",
+     "info": "已停用",
+     "fullname": "夜间值班",
+     "ctrlwind": 0,
+     "subwind": 0,
+     "camerawind": 0,
+     "terminalCount": 0,
+     "canModify": true,
+     "canDelete": true
+    },
+    {
+     "id": 3,
+     "username": "viewer",
+     "enable": 1,
+     "enableText": "启用",
+     "usergroupId": 3,
+     "usergroupName": "只读查看",
+     "info": "仅查看",
+     "fullname": "李主任",
+     "ctrlwind": 0,
+     "subwind": 0,
+     "camerawind": 0,
+     "terminalCount": 0,
+     "canModify": true,
+     "canDelete": true
+    },
+    {
+     "id": 2,
+     "username": "operator",
+     "enable": 1,
+     "enableText": "启用",
+     "usergroupId": 2,
+     "usergroupName": "操作员",
+     "info": "广播室日常操作",
+     "fullname": "张老师",
+     "ctrlwind": 0,
+     "subwind": 0,
+     "camerawind": 0,
+     "terminalCount": 0,
+     "canModify": true,
+     "canDelete": true
+    }
+   ],
+   "pageNum": 1,
+   "pageSize": 10,
+   "scopeNote": "",
+   "total": 3
+  }
+ },
+ "GET /api/users/wind-capacity": {
+  "code": 200,
+  "msg": "ok",
+  "data": {
+   "capacity": 4,
+   "ctrlUsed": 1,
+   "subUsed": 1,
+   "cameraUsed": 1,
+   "registerFlag": 1,
+   "canCreateUser": true
+  }
+ },
+ "GET /api/usergroups?pageNum=1&pageSize=10": {
+  "code": 200,
+  "msg": "ok",
+  "data": {
+   "list": [
+    {
+     "id": 3,
+     "name": "只读查看",
+     "info": "",
+     "level": 1,
+     "groupLevel": 0,
+     "priorityBase": 1,
+     "system": false,
+     "userCount": 1,
+     "rights": {
+      "taskpriv": 0,
+      "terminalpriv": 0,
+      "mediapriv": 0,
+      "userpriv": 0,
+      "serverpriv": 0,
+      "folderpriv": 0,
+      "terminalgrouppriv": 0,
+      "alarmgrouppriv": 0,
+      "bellpriv": 0,
+      "admpriv": 0,
+      "telephonepriv": 0,
+      "powerplay": 0,
+      "ttspriv": 0
+     },
+     "canModify": true,
+     "canDelete": true
+    },
+    {
+     "id": 2,
+     "name": "操作员",
+     "info": "",
+     "level": 5,
+     "groupLevel": 0,
+     "priorityBase": 5,
+     "system": false,
+     "userCount": 2,
+     "rights": {
+      "taskpriv": 1,
+      "terminalpriv": 1,
+      "mediapriv": 1,
+      "userpriv": 0,
+      "serverpriv": 0,
+      "folderpriv": 1,
+      "terminalgrouppriv": 1,
+      "alarmgrouppriv": 1,
+      "bellpriv": 1,
+      "admpriv": 0,
+      "telephonepriv": 1,
+      "powerplay": 1,
+      "ttspriv": 1
+     },
+     "canModify": true,
+     "canDelete": true
+    },
+    {
+     "id": 1,
+     "name": "system group",
+     "info": "",
+     "level": 10,
+     "groupLevel": 1,
+     "priorityBase": 0,
+     "system": true,
+     "userCount": 1,
+     "rights": {
+      "taskpriv": 1,
+      "terminalpriv": 1,
+      "mediapriv": 1,
+      "userpriv": 1,
+      "serverpriv": 1,
+      "folderpriv": 1,
+      "terminalgrouppriv": 1,
+      "alarmgrouppriv": 1,
+      "bellpriv": 1,
+      "admpriv": 1,
+      "telephonepriv": 1,
+      "powerplay": 1,
+      "ttspriv": 1
+     },
+     "canModify": true,
+     "canDelete": false
+    }
+   ],
+   "pageNum": 1,
+   "pageSize": 10,
+   "total": 3
+  }
+ },
+ "GET /api/terminals/6/shortcut-keys": {
+  "code": 200,
+  "msg": "ok",
+  "data": [
+   {
+    "id": 8,
+    "name": "呼叫A栋一层",
+    "ownerId": 6,
+    "key": 2,
+    "keyLabel": "2",
+    "sendmodul": 1,
+    "emergency": false,
+    "targets": [
+     {
+      "terminalId": 1,
+      "terminalname": "A101教室音箱",
+      "deleted": false,
+      "groupId": 1,
+      "area": "1111111111111111"
+     },
+     {
+      "terminalId": 2,
+      "terminalname": "A102教室音箱",
+      "deleted": false,
+      "groupId": 1,
+      "area": "1111111111111111"
+     },
+     {
+      "terminalId": 3,
+      "terminalname": "A103教室音箱",
+      "deleted": false,
+      "groupId": 1,
+      "area": "1111111111111111"
+     }
+    ]
+   },
+   {
+    "id": 9,
+    "name": "呼叫A栋二层",
+    "ownerId": 6,
+    "key": 3,
+    "keyLabel": "3",
+    "sendmodul": 1,
+    "emergency": false,
+    "targets": [
+     {
+      "terminalId": 4,
+      "terminalname": "A201教室音箱",
+      "deleted": false,
+      "groupId": 1,
+      "area": "1111111111111111"
+     },
+     {
+      "terminalId": 5,
+      "terminalname": "A202教室音箱",
+      "deleted": false,
+      "groupId": 1,
+      "area": "1111111111111111"
+     }
+    ]
+   },
+   {
+    "id": 10,
+    "name": "呼叫操场",
+    "ownerId": 6,
+    "key": 4,
+    "keyLabel": "4",
+    "sendmodul": 1,
+    "emergency": false,
+    "targets": [
+     {
+      "terminalId": 8,
+      "terminalname": "操场号角01",
+      "deleted": false,
+      "groupId": 3,
+      "area": "1111111111111111"
+     },
+     {
+      "terminalId": 9,
+      "terminalname": "操场号角02",
+      "deleted": false,
+      "groupId": 3,
+      "area": "1111111111111111"
+     }
+    ]
+   }
+  ]
+ },
+ "GET /api/terminals/6/folders": {
+  "code": 200,
+  "msg": "ok",
+  "data": {
+   "tree": [
+    {
+     "id": 7,
+     "parentid": 0,
+     "name": "目录管理",
+     "terminalId": 6,
+     "seqnumber": 0,
+     "count": 0,
+     "children": [
+      {
+       "id": 9,
+       "parentid": 7,
+       "name": "办公与后勤",
+       "terminalId": 6,
+       "seqnumber": 2,
+       "count": 3,
+       "children": []
+      },
+      {
+       "id": 15,
+       "parentid": 7,
+       "name": "教学区",
+       "terminalId": 6,
+       "seqnumber": 3,
+       "count": 3,
+       "children": [
+        {
+         "id": 16,
+         "parentid": 15,
+         "name": "一层教室",
+         "terminalId": 6,
+         "seqnumber": 4,
+         "count": 2,
+         "children": []
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  }
+ },
+ "GET /api/terminals/6/folders/terminals?folderId=7&keyword=": {
+  "code": 200,
+  "msg": "ok",
+  "data": {
+   "list": []
+  }
+ },
+ "GET /api/terminals/6/folders/terminals?folderId=9&keyword=": {
+  "code": 200,
+  "msg": "ok",
+  "data": {
+   "list": [
+    {
+     "id": 7,
+     "terminalname": "办公区功放",
+     "typeId": 5,
+     "typeName": "网络功放",
+     "netstate": 1,
+     "devicestate": 1,
+     "taskstate": 1,
+     "ip": "192.168.2.32",
+     "volume": 70
+    },
+    {
+     "id": 8,
+     "terminalname": "操场号角01",
+     "typeId": 11,
+     "typeName": "一体化音箱",
+     "netstate": 1,
+     "devicestate": 1,
+     "taskstate": 1,
+     "ip": "192.168.2.41",
+     "volume": 95
+    },
+    {
+     "id": 9,
+     "terminalname": "操场号角02",
+     "typeId": 11,
+     "typeName": "一体化音箱",
+     "netstate": 0,
+     "devicestate": 0,
+     "taskstate": 0,
+     "ip": "192.168.2.42",
+     "volume": 95
+    }
+   ]
+  }
+ },
+ "GET /api/terminals/6/folders/terminals?folderId=15&keyword=": {
+  "code": 200,
+  "msg": "ok",
+  "data": {
+   "list": [
+    {
+     "id": 1,
+     "terminalname": "A101教室音箱",
+     "typeId": 11,
+     "typeName": "一体化音箱",
+     "netstate": 1,
+     "devicestate": 1,
+     "taskstate": 1,
+     "ip": "192.168.2.11",
+     "volume": 80
+    },
+    {
+     "id": 2,
+     "terminalname": "A102教室音箱",
+     "typeId": 11,
+     "typeName": "一体化音箱",
+     "netstate": 1,
+     "devicestate": 1,
+     "taskstate": 0,
+     "ip": "192.168.2.12",
+     "volume": 75
+    },
+    {
+     "id": 4,
+     "terminalname": "A201教室音箱",
+     "typeId": 11,
+     "typeName": "一体化音箱",
+     "netstate": 1,
+     "devicestate": 1,
+     "taskstate": 1,
+     "ip": "192.168.2.21",
+     "volume": 80
+    }
+   ]
+  }
+ },
+ "GET /api/terminals/6/folders/terminals?folderId=16&keyword=": {
+  "code": 200,
+  "msg": "ok",
+  "data": {
+   "list": [
+    {
+     "id": 3,
+     "terminalname": "A103教室音箱",
+     "typeId": 11,
+     "typeName": "一体化音箱",
+     "netstate": 0,
+     "devicestate": 0,
+     "taskstate": 0,
+     "ip": "192.168.2.13",
+     "volume": 75
+    },
+    {
+     "id": 5,
+     "terminalname": "A202教室音箱",
+     "typeId": 11,
+     "typeName": "一体化音箱",
+     "netstate": 1,
+     "devicestate": 1,
+     "taskstate": 0,
+     "ip": "192.168.2.22",
+     "volume": 80
+    }
+   ]
+  }
+ },
+ "GET /api/terminals/6/folders/candidates?folderId=16&keyword=": {
+  "code": 200,
+  "msg": "ok",
+  "data": {
+   "list": [
+    {
+     "id": 1,
+     "terminalname": "A101教室音箱",
+     "typeId": 11,
+     "typeName": "一体化音箱",
+     "netstate": 1,
+     "devicestate": 1,
+     "taskstate": 1,
+     "ip": "192.168.2.11",
+     "volume": 80
+    },
+    {
+     "id": 2,
+     "terminalname": "A102教室音箱",
+     "typeId": 11,
+     "typeName": "一体化音箱",
+     "netstate": 1,
+     "devicestate": 1,
+     "taskstate": 0,
+     "ip": "192.168.2.12",
+     "volume": 75
+    },
+    {
+     "id": 4,
+     "terminalname": "A201教室音箱",
+     "typeId": 11,
+     "typeName": "一体化音箱",
+     "netstate": 1,
+     "devicestate": 1,
+     "taskstate": 1,
+     "ip": "192.168.2.21",
+     "volume": 80
+    },
+    {
+     "id": 7,
+     "terminalname": "办公区功放",
+     "typeId": 5,
+     "typeName": "网络功放",
+     "netstate": 1,
+     "devicestate": 1,
+     "taskstate": 1,
+     "ip": "192.168.2.32",
+     "volume": 70
+    },
+    {
+     "id": 10,
+     "terminalname": "宿舍楼一键寻呼",
+     "typeId": 13,
+     "typeName": "一键寻呼终端",
+     "netstate": 1,
+     "devicestate": 1,
+     "taskstate": 0,
+     "ip": "192.168.2.51",
+     "volume": 85
+    },
+    {
+     "id": 8,
+     "terminalname": "操场号角01",
+     "typeId": 11,
+     "typeName": "一体化音箱",
+     "netstate": 1,
+     "devicestate": 1,
+     "taskstate": 1,
+     "ip": "192.168.2.41",
+     "volume": 95
+    },
+    {
+     "id": 9,
+     "terminalname": "操场号角02",
+     "typeId": 11,
+     "typeName": "一体化音箱",
+     "netstate": 0,
+     "devicestate": 0,
+     "taskstate": 0,
+     "ip": "192.168.2.42",
+     "volume": 95
+    }
+   ]
+  }
+ },
+ "GET /api/terminals/6/call-groups?keyword=&orderBy=": {
+  "code": 200,
+  "msg": "ok",
+  "data": {
+   "list": [
+    {
+     "id": 3,
+     "name": "广播室可呼范围",
+     "terminalId": 6,
+     "memberCount": 6
+    }
+   ]
+  }
+ },
+ "GET /api/call-groups/3": {
+  "code": 200,
+  "msg": "ok",
+  "data": {
+   "id": 3,
+   "name": "广播室可呼范围",
+   "terminalId": 6,
+   "terminalName": "广播室主话筒",
+   "members": [
+    {
+     "id": 1,
+     "name": "A101教室音箱",
+     "typeId": 11,
+     "typeName": "一体化音箱",
+     "netstate": 1,
+     "devicestate": 1,
+     "taskstate": 1,
+     "ip": "192.168.2.11",
+     "volume": 80,
+     "groupId": 1,
+     "groupName": "教学楼",
+     "missing": false
+    },
+    {
+     "id": 2,
+     "name": "A102教室音箱",
+     "typeId": 11,
+     "typeName": "一体化音箱",
+     "netstate": 1,
+     "devicestate": 1,
+     "taskstate": 0,
+     "ip": "192.168.2.12",
+     "volume": 75,
+     "groupId": 1,
+     "groupName": "教学楼",
+     "missing": false
+    },
+    {
+     "id": 3,
+     "name": "A103教室音箱",
+     "typeId": 11,
+     "typeName": "一体化音箱",
+     "netstate": 0,
+     "devicestate": 0,
+     "taskstate": 0,
+     "ip": "192.168.2.13",
+     "volume": 75,
+     "groupId": 1,
+     "groupName": "教学楼",
+     "missing": false
+    },
+    {
+     "id": 4,
+     "name": "A201教室音箱",
+     "typeId": 11,
+     "typeName": "一体化音箱",
+     "netstate": 1,
+     "devicestate": 1,
+     "taskstate": 1,
+     "ip": "192.168.2.21",
+     "volume": 80,
+     "groupId": 1,
+     "groupName": "教学楼",
+     "missing": false
+    },
+    {
+     "id": 5,
+     "name": "A202教室音箱",
+     "typeId": 11,
+     "typeName": "一体化音箱",
+     "netstate": 1,
+     "devicestate": 1,
+     "taskstate": 0,
+     "ip": "192.168.2.22",
+     "volume": 80,
+     "groupId": 1,
+     "groupName": "教学楼",
+     "missing": false
+    },
+    {
+     "id": 7,
+     "name": "办公区功放",
+     "typeId": 5,
+     "typeName": "网络功放",
+     "netstate": 1,
+     "devicestate": 1,
+     "taskstate": 1,
+     "ip": "192.168.2.32",
+     "volume": 70,
+     "groupId": 2,
+     "groupName": "办公区",
+     "missing": false
+    }
+   ]
+  }
+ },
+ "GET /api/terminals/6/call-groups/candidates": {
+  "code": 200,
+  "msg": "ok",
+  "data": [
+   {
+    "id": 1,
+    "terminalname": "A101教室音箱",
+    "typeId": 11,
+    "typeName": "一体化音箱",
+    "ip": "192.168.2.11",
+    "netstate": 1,
+    "groupId": 1,
+    "groupName": "教学楼"
+   },
+   {
+    "id": 2,
+    "terminalname": "A102教室音箱",
+    "typeId": 11,
+    "typeName": "一体化音箱",
+    "ip": "192.168.2.12",
+    "netstate": 1,
+    "groupId": 1,
+    "groupName": "教学楼"
+   },
+   {
+    "id": 3,
+    "terminalname": "A103教室音箱",
+    "typeId": 11,
+    "typeName": "一体化音箱",
+    "ip": "192.168.2.13",
+    "netstate": 0,
+    "groupId": 1,
+    "groupName": "教学楼"
+   },
+   {
+    "id": 4,
+    "terminalname": "A201教室音箱",
+    "typeId": 11,
+    "typeName": "一体化音箱",
+    "ip": "192.168.2.21",
+    "netstate": 1,
+    "groupId": 1,
+    "groupName": "教学楼"
+   },
+   {
+    "id": 5,
+    "terminalname": "A202教室音箱",
+    "typeId": 11,
+    "typeName": "一体化音箱",
+    "ip": "192.168.2.22",
+    "netstate": 1,
+    "groupId": 1,
+    "groupName": "教学楼"
+   },
+   {
+    "id": 7,
+    "terminalname": "办公区功放",
+    "typeId": 5,
+    "typeName": "网络功放",
+    "ip": "192.168.2.32",
+    "netstate": 1,
+    "groupId": 2,
+    "groupName": "办公区"
+   },
+   {
+    "id": 10,
+    "terminalname": "宿舍楼一键寻呼",
+    "typeId": 13,
+    "typeName": "一键寻呼终端",
+    "ip": "192.168.2.51",
+    "netstate": 1,
+    "groupId": 4,
+    "groupName": "宿舍楼"
+   },
+   {
+    "id": 8,
+    "terminalname": "操场号角01",
+    "typeId": 11,
+    "typeName": "一体化音箱",
+    "ip": "192.168.2.41",
+    "netstate": 1,
+    "groupId": 3,
+    "groupName": "室外操场"
+   },
+   {
+    "id": 9,
+    "terminalname": "操场号角02",
+    "typeId": 11,
+    "typeName": "一体化音箱",
+    "ip": "192.168.2.42",
+    "netstate": 0,
+    "groupId": 3,
+    "groupName": "室外操场"
+   }
+  ]
+ },
+ "GET /api/terminals/6/quick-tasks": {
+  "code": 200,
+  "msg": "ok",
+  "data": [
+   {
+    "taskId": 70006,
+    "taskName": "呼叫保安",
+    "key": 5,
+    "keyLabel": "5",
+    "timeLength": 30,
+    "timeLengthType": 1,
+    "priority": 9,
+    "volume": 90,
+    "isRandomPlay": 0,
+    "dataSendMode": 0,
+    "taskType": 20,
+    "typeText": "媒体播放",
+    "terminalName": "广播室主话筒"
+   },
+   {
+    "taskId": 70007,
+    "taskName": "课间提醒",
+    "key": 6,
+    "keyLabel": "6",
+    "timeLength": 20,
+    "timeLengthType": 1,
+    "priority": 6,
+    "volume": 80,
+    "isRandomPlay": 0,
+    "dataSendMode": 0,
+    "taskType": 21,
+    "typeText": "文字播报",
+    "terminalName": "广播室主话筒"
+   }
+  ]
+ },
+ "GET /api/quick-task-audio-sources": {
+  "code": 200,
+  "msg": "ok",
+  "data": [
+   {
+    "id": 902,
+    "name": "服务器",
+    "typeId": 0,
+    "isServer": true
+   },
+   {
+    "id": 11,
+    "name": "TTS主机",
+    "typeId": 22,
+    "isServer": false
+   }
+  ]
+ },
+ "GET /api/folders/tree?scene=taskPicker&includeMediaCount=true": {
+  "code": 200,
+  "msg": "ok",
+  "data": {
+   "rootName": "文件管理",
+   "tree": [
+    {
+     "id": 1,
+     "name": "共享媒体库",
+     "parentId": 0,
+     "userId": 1,
+     "shared": true,
+     "createTime": "2011-06-14 20:11:30",
+     "system": true,
+     "depth": 1,
+     "mediaCount": 0,
+     "canCreateChild": true,
+     "canModify": false,
+     "canDelete": false,
+     "children": [
+      {
+       "id": 9,
+       "name": "提示音",
+       "parentId": 1,
+       "userId": 1,
+       "shared": false,
+       "createTime": "2021-03-30 11:07:22",
+       "system": true,
+       "depth": 2,
+       "mediaCount": 1,
+       "canCreateChild": true,
+       "canModify": false,
+       "canDelete": false,
+       "children": []
+      }
+     ]
+    },
+    {
+     "id": 2,
+     "name": "铃声媒体库",
+     "parentId": 0,
+     "userId": 1,
+     "shared": true,
+     "createTime": "2011-06-14 20:11:44",
+     "system": true,
+     "depth": 1,
+     "mediaCount": 15,
+     "canCreateChild": true,
+     "canModify": false,
+     "canDelete": false,
+     "children": []
+    },
+    {
+     "id": 3,
+     "name": "点播媒体库",
+     "parentId": 0,
+     "userId": 1,
+     "shared": true,
+     "createTime": "2011-06-21 19:30:37",
+     "system": true,
+     "depth": 1,
+     "mediaCount": 0,
+     "canCreateChild": true,
+     "canModify": false,
+     "canDelete": false,
+     "children": []
+    },
+    {
+     "id": 4,
+     "name": "报警媒体库",
+     "parentId": 0,
+     "userId": 1,
+     "shared": true,
+     "createTime": "2011-06-21 19:30:38",
+     "system": true,
+     "depth": 1,
+     "mediaCount": 2,
+     "canCreateChild": true,
+     "canModify": false,
+     "canDelete": false,
+     "children": []
+    },
+    {
+     "id": 5,
+     "name": "录音媒体库",
+     "parentId": 0,
+     "userId": 1,
+     "shared": true,
+     "createTime": "2011-06-21 19:58:02",
+     "system": true,
+     "depth": 1,
+     "mediaCount": 0,
+     "canCreateChild": true,
+     "canModify": false,
+     "canDelete": false,
+     "children": [
+      {
+       "id": 7,
+       "name": "设备录音媒体",
+       "parentId": 5,
+       "userId": 1,
+       "shared": false,
+       "createTime": "2018-05-18 19:21:58",
+       "system": true,
+       "depth": 2,
+       "mediaCount": 0,
+       "canCreateChild": true,
+       "canModify": false,
+       "canDelete": false,
+       "children": []
+      },
+      {
+       "id": 8,
+       "name": "录音媒体库",
+       "parentId": 5,
+       "userId": 1,
+       "shared": false,
+       "createTime": "2021-03-30 11:07:22",
+       "system": true,
+       "depth": 2,
+       "mediaCount": 0,
+       "canCreateChild": true,
+       "canModify": false,
+       "canDelete": false,
+       "children": []
+      }
+     ]
+    }
+   ],
+   "orphans": null
+  }
+ },
+ "GET /api/terminals/6/shortcut-keys/options?emergency=false": {
+  "code": 200,
+  "msg": "ok",
+  "data": [
+   {
+    "value": 0,
+    "label": "0（紧急触发）"
+   },
+   {
+    "value": 1,
+    "label": "1"
+   },
+   {
+    "value": 2,
+    "label": "2"
+   },
+   {
+    "value": 3,
+    "label": "3"
+   },
+   {
+    "value": 4,
+    "label": "4"
+   },
+   {
+    "value": 5,
+    "label": "5"
+   },
+   {
+    "value": 6,
+    "label": "6"
+   },
+   {
+    "value": 7,
+    "label": "7"
+   },
+   {
+    "value": 8,
+    "label": "8"
+   },
+   {
+    "value": 9,
+    "label": "9"
+   },
+   {
+    "value": 10,
+    "label": "10"
+   },
+   {
+    "value": 11,
+    "label": "11"
+   },
+   {
+    "value": 12,
+    "label": "12"
+   },
+   {
+    "value": 13,
+    "label": "13"
+   },
+   {
+    "value": 14,
+    "label": "14"
+   },
+   {
+    "value": 15,
+    "label": "15"
+   },
+   {
+    "value": 16,
+    "label": "16"
+   },
+   {
+    "value": 17,
+    "label": "17"
+   },
+   {
+    "value": 18,
+    "label": "18"
+   },
+   {
+    "value": 19,
+    "label": "19"
+   },
+   {
+    "value": 20,
+    "label": "20"
+   },
+   {
+    "value": 21,
+    "label": "21"
+   },
+   {
+    "value": 22,
+    "label": "22"
+   },
+   {
+    "value": 23,
+    "label": "23"
+   },
+   {
+    "value": 24,
+    "label": "24"
+   },
+   {
+    "value": 25,
+    "label": "25"
+   },
+   {
+    "value": 26,
+    "label": "26"
+   },
+   {
+    "value": 27,
+    "label": "27"
+   },
+   {
+    "value": 28,
+    "label": "28"
+   },
+   {
+    "value": 29,
+    "label": "29"
+   },
+   {
+    "value": 30,
+    "label": "30（短路触发）"
+   }
+  ]
+ },
+ "GET /api/terminals?pageNum=1&pageSize=500": {
+  "code": 200,
+  "msg": "ok",
+  "data": {
+   "list": [
+    {
+     "id": 1,
+     "terminalname": "A101教室音箱",
+     "typeid": 11,
+     "typeName": "一体化音箱",
+     "groupId": 1,
+     "groupName": "教学楼",
+     "netstate": 1,
+     "devicestate": 1,
+     "taskstate": 1,
+     "ip": "192.168.2.11",
+     "volume": 80,
+     "isspeech": 0,
+     "instancy": 0,
+     "isrecord": 0,
+     "issponsor": 0,
+     "isselectcall": 1,
+     "lopencircuit": 1,
+     "ropencircuit": 1,
+     "temperature": 26.5,
+     "humidity": 48.20000076293945,
+     "postion": "教学楼A栋一层101室",
+     "hasShortcutKey": false,
+     "online": true,
+     "webUrl": "http://192.168.2.11",
+     "canDecode": true,
+     "canEncode": false,
+     "caps": {
+      "speech": false,
+      "sponsor": true,
+      "shortcut": true,
+      "quickTask": false,
+      "instancy": false,
+      "authPaging": false,
+      "autoCheck": true,
+      "circuit": true,
+      "password": false,
+      "switch": false,
+      "emergencyPlay": false,
+      "emergencyHost": false
+     }
+    },
+    {
+     "id": 2,
+     "terminalname": "A102教室音箱",
+     "typeid": 11,
+     "typeName": "一体化音箱",
+     "groupId": 1,
+     "groupName": "教学楼",
+     "netstate": 1,
+     "devicestate": 1,
+     "taskstate": 0,
+     "ip": "192.168.2.12",
+     "volume": 75,
+     "isspeech": 0,
+     "instancy": 0,
+     "isrecord": 0,
+     "issponsor": 0,
+     "isselectcall": 1,
+     "lopencircuit": 1,
+     "ropencircuit": 1,
+     "temperature": 27.100000381469727,
+     "humidity": 47,
+     "postion": "A栋102",
+     "hasShortcutKey": false,
+     "online": true,
+     "webUrl": "http://192.168.2.12",
+     "canDecode": true,
+     "canEncode": false,
+     "caps": {
+      "speech": false,
+      "sponsor": true,
+      "shortcut": true,
+      "quickTask": false,
+      "instancy": false,
+      "authPaging": false,
+      "autoCheck": true,
+      "circuit": true,
+      "password": false,
+      "switch": false,
+      "emergencyPlay": false,
+      "emergencyHost": false
+     }
+    },
+    {
+     "id": 4,
+     "terminalname": "A201教室音箱",
+     "typeid": 11,
+     "typeName": "一体化音箱",
+     "groupId": 1,
+     "groupName": "教学楼",
+     "netstate": 1,
+     "devicestate": 1,
+     "taskstate": 1,
+     "ip": "192.168.2.21",
+     "volume": 80,
+     "isspeech": 0,
+     "instancy": 0,
+     "isrecord": 0,
+     "issponsor": 0,
+     "isselectcall": 1,
+     "lopencircuit": 1,
+     "ropencircuit": 1,
+     "temperature": 26.799999237060547,
+     "humidity": 49.099998474121094,
+     "postion": "A栋201",
+     "hasShortcutKey": false,
+     "online": true,
+     "webUrl": "http://192.168.2.21",
+     "canDecode": true,
+     "canEncode": false,
+     "caps": {
+      "speech": false,
+      "sponsor": true,
+      "shortcut": true,
+      "quickTask": false,
+      "instancy": false,
+      "authPaging": false,
+      "autoCheck": true,
+      "circuit": true,
+      "password": false,
+      "switch": false,
+      "emergencyPlay": false,
+      "emergencyHost": false
+     }
+    },
+    {
+     "id": 5,
+     "terminalname": "A202教室音箱",
+     "typeid": 11,
+     "typeName": "一体化音箱",
+     "groupId": 1,
+     "groupName": "教学楼",
+     "netstate": 1,
+     "devicestate": 1,
+     "taskstate": 0,
+     "ip": "192.168.2.22",
+     "volume": 80,
+     "isspeech": 0,
+     "instancy": 0,
+     "isrecord": 0,
+     "issponsor": 0,
+     "isselectcall": 1,
+     "lopencircuit": 1,
+     "ropencircuit": 1,
+     "temperature": 26.200000762939453,
+     "humidity": 48.79999923706055,
+     "postion": "A栋202",
+     "hasShortcutKey": false,
+     "online": true,
+     "webUrl": "http://192.168.2.22",
+     "canDecode": true,
+     "canEncode": false,
+     "caps": {
+      "speech": false,
+      "sponsor": true,
+      "shortcut": true,
+      "quickTask": false,
+      "instancy": false,
+      "authPaging": false,
+      "autoCheck": true,
+      "circuit": true,
+      "password": false,
+      "switch": false,
+      "emergencyPlay": false,
+      "emergencyHost": false
+     }
+    },
+    {
+     "id": 6,
+     "terminalname": "广播室主话筒",
+     "typeid": 2,
+     "typeName": "网络话筒",
+     "groupId": 2,
+     "groupName": "办公区",
+     "netstate": 1,
+     "devicestate": 1,
+     "taskstate": 0,
+     "ip": "192.168.2.31",
+     "volume": 90,
+     "isspeech": 0,
+     "instancy": 1,
+     "isrecord": 0,
+     "issponsor": 0,
+     "isselectcall": 1,
+     "lopencircuit": 1,
+     "ropencircuit": 1,
+     "temperature": 0,
+     "humidity": 0,
+     "postion": "行政楼203",
+     "hasShortcutKey": true,
+     "online": true,
+     "webUrl": "http://192.168.2.31",
+     "canDecode": true,
+     "canEncode": true,
+     "caps": {
+      "speech": true,
+      "sponsor": true,
+      "shortcut": true,
+      "quickTask": true,
+      "instancy": true,
+      "authPaging": true,
+      "autoCheck": true,
+      "circuit": true,
+      "password": true,
+      "switch": false,
+      "emergencyPlay": false,
+      "emergencyHost": false
+     }
+    },
+    {
+     "id": 7,
+     "terminalname": "办公区功放",
+     "typeid": 5,
+     "typeName": "网络功放",
+     "groupId": 2,
+     "groupName": "办公区",
+     "netstate": 1,
+     "devicestate": 1,
+     "taskstate": 1,
+     "ip": "192.168.2.32",
+     "volume": 70,
+     "isspeech": 0,
+     "instancy": 0,
+     "isrecord": 0,
+     "issponsor": 0,
+     "isselectcall": 1,
+     "lopencircuit": 1,
+     "ropencircuit": 1,
+     "temperature": 31.399999618530273,
+     "humidity": 45,
+     "postion": "行政楼一层",
+     "hasShortcutKey": false,
+     "online": true,
+     "webUrl": "http://192.168.2.32",
+     "canDecode": true,
+     "canEncode": true,
+     "caps": {
+      "speech": true,
+      "sponsor": true,
+      "shortcut": true,
+      "quickTask": true,
+      "instancy": false,
+      "authPaging": true,
+      "autoCheck": true,
+      "circuit": true,
+      "password": true,
+      "switch": true,
+      "emergencyPlay": false,
+      "emergencyHost": false
+     }
+    },
+    {
+     "id": 8,
+     "terminalname": "操场号角01",
+     "typeid": 11,
+     "typeName": "一体化音箱",
+     "groupId": 3,
+     "groupName": "室外操场",
+     "netstate": 1,
+     "devicestate": 1,
+     "taskstate": 1,
+     "ip": "192.168.2.41",
+     "volume": 95,
+     "isspeech": 0,
+     "instancy": 0,
+     "isrecord": 0,
+     "issponsor": 0,
+     "isselectcall": 1,
+     "lopencircuit": 1,
+     "ropencircuit": 1,
+     "temperature": 33.900001525878906,
+     "humidity": 52.29999923706055,
+     "postion": "东侧看台",
+     "hasShortcutKey": false,
+     "online": true,
+     "webUrl": "http://192.168.2.41",
+     "canDecode": true,
+     "canEncode": false,
+     "caps": {
+      "speech": false,
+      "sponsor": true,
+      "shortcut": true,
+      "quickTask": false,
+      "instancy": false,
+      "authPaging": false,
+      "autoCheck": true,
+      "circuit": true,
+      "password": false,
+      "switch": false,
+      "emergencyPlay": false,
+      "emergencyHost": false
+     }
+    },
+    {
+     "id": 10,
+     "terminalname": "宿舍楼一键寻呼",
+     "typeid": 13,
+     "typeName": "一键寻呼终端",
+     "groupId": 4,
+     "groupName": "宿舍楼",
+     "netstate": 1,
+     "devicestate": 1,
+     "taskstate": 0,
+     "ip": "192.168.2.51",
+     "volume": 85,
+     "isspeech": 0,
+     "instancy": 1,
+     "isrecord": 0,
+     "issponsor": 0,
+     "isselectcall": 1,
+     "lopencircuit": 1,
+     "ropencircuit": 1,
+     "temperature": 0,
+     "humidity": 0,
+     "postion": "宿舍楼门厅",
+     "hasShortcutKey": false,
+     "online": true,
+     "webUrl": "http://192.168.2.51",
+     "canDecode": true,
+     "canEncode": true,
+     "caps": {
+      "speech": true,
+      "sponsor": true,
+      "shortcut": false,
+      "quickTask": false,
+      "instancy": true,
+      "authPaging": false,
+      "autoCheck": true,
+      "circuit": true,
+      "password": false,
+      "switch": false,
+      "emergencyPlay": false,
+      "emergencyHost": false
+     }
+    },
+    {
+     "id": 11,
+     "terminalname": "TTS主机",
+     "typeid": 22,
+     "typeName": "TTS主机",
+     "groupId": 2,
+     "groupName": "办公区",
+     "netstate": 1,
+     "devicestate": 1,
+     "taskstate": 0,
+     "ip": "192.168.2.60",
+     "volume": 80,
+     "isspeech": 0,
+     "instancy": 0,
+     "isrecord": 0,
+     "issponsor": 0,
+     "isselectcall": 1,
+     "lopencircuit": 1,
+     "ropencircuit": 1,
+     "temperature": 0,
+     "humidity": 0,
+     "postion": "",
+     "hasShortcutKey": false,
+     "online": true,
+     "webUrl": "http://192.168.2.60",
+     "canDecode": false,
+     "canEncode": true,
+     "caps": {
+      "speech": false,
+      "sponsor": true,
+      "shortcut": false,
+      "quickTask": false,
+      "instancy": false,
+      "authPaging": false,
+      "autoCheck": true,
+      "circuit": true,
+      "password": false,
+      "switch": false,
+      "emergencyPlay": false,
+      "emergencyHost": false
+     }
+    },
+    {
+     "id": 20,
+     "terminalname": "消防报警主机",
+     "typeid": 7,
+     "typeName": "报警主机",
+     "groupId": 2,
+     "groupName": "办公区",
+     "netstate": 1,
+     "devicestate": 1,
+     "taskstate": 0,
+     "ip": "192.168.2.90",
+     "volume": 80,
+     "isspeech": 0,
+     "instancy": 0,
+     "isrecord": 0,
+     "issponsor": 0,
+     "isselectcall": 0,
+     "lopencircuit": 1,
+     "ropencircuit": 1,
+     "temperature": 0,
+     "humidity": 0,
+     "postion": "",
+     "hasShortcutKey": false,
+     "online": true,
+     "webUrl": "http://192.168.2.90",
+     "canDecode": false,
+     "canEncode": false,
+     "caps": {
+      "speech": false,
+      "sponsor": false,
+      "shortcut": false,
+      "quickTask": false,
+      "instancy": false,
+      "authPaging": false,
+      "autoCheck": false,
+      "circuit": false,
+      "password": false,
+      "switch": true,
+      "emergencyPlay": false,
+      "emergencyHost": false
+     }
+    },
+    {
+     "id": 3,
+     "terminalname": "A103教室音箱",
+     "typeid": 11,
+     "typeName": "一体化音箱",
+     "groupId": 1,
+     "groupName": "教学楼",
+     "netstate": 0,
+     "devicestate": 0,
+     "taskstate": 0,
+     "ip": "192.168.2.13",
+     "volume": 75,
+     "isspeech": 0,
+     "instancy": 0,
+     "isrecord": 0,
+     "issponsor": 0,
+     "isselectcall": 1,
+     "lopencircuit": 1,
+     "ropencircuit": 1,
+     "temperature": 0,
+     "humidity": 0,
+     "postion": "A栋103",
+     "hasShortcutKey": false,
+     "online": false,
+     "webUrl": "",
+     "canDecode": true,
+     "canEncode": false,
+     "caps": {
+      "speech": false,
+      "sponsor": true,
+      "shortcut": true,
+      "quickTask": false,
+      "instancy": false,
+      "authPaging": false,
+      "autoCheck": true,
+      "circuit": true,
+      "password": false,
+      "switch": false,
+      "emergencyPlay": false,
+      "emergencyHost": false
+     }
+    },
+    {
+     "id": 9,
+     "terminalname": "操场号角02",
+     "typeid": 11,
+     "typeName": "一体化音箱",
+     "groupId": 3,
+     "groupName": "室外操场",
+     "netstate": 0,
+     "devicestate": 0,
+     "taskstate": 0,
+     "ip": "192.168.2.42",
+     "volume": 95,
+     "isspeech": 0,
+     "instancy": 0,
+     "isrecord": 0,
+     "issponsor": 0,
+     "isselectcall": 1,
+     "lopencircuit": 1,
+     "ropencircuit": 1,
+     "temperature": 0,
+     "humidity": 0,
+     "postion": "",
+     "hasShortcutKey": false,
+     "online": false,
+     "webUrl": "",
+     "canDecode": true,
+     "canEncode": false,
+     "caps": {
+      "speech": false,
+      "sponsor": true,
+      "shortcut": true,
+      "quickTask": false,
+      "instancy": false,
+      "authPaging": false,
+      "autoCheck": true,
+      "circuit": true,
+      "password": false,
+      "switch": false,
+      "emergencyPlay": false,
+      "emergencyHost": false
+     }
+    }
+   ],
+   "pageNum": 1,
+   "pageSize": 18,
+   "scopeNote": "",
+   "total": 12
+  }
+ },
+ "GET /api/media?folderId=1&pageNum=1&pageSize=500": {
+  "code": 200,
+  "msg": "ok",
+  "data": {
+   "folder": {
+    "id": 1,
+    "name": "共享媒体库",
+    "system": true,
+    "totalSizeKB": 0,
+    "totalSizeText": "0 K",
+    "canUpload": true,
+    "canCreateChild": true,
+    "isRecordLibrary": false
+   },
+   "list": [],
+   "pageNum": 1,
+   "pageSize": 18,
+   "scopeNote": "",
+   "total": 0
+  }
+ },
+ "GET /api/media?folderId=9&pageNum=1&pageSize=500": {
+  "code": 200,
+  "msg": "ok",
+  "data": {
+   "folder": {
+    "id": 9,
+    "name": "提示音",
+    "system": true,
+    "totalSizeKB": 61,
+    "totalSizeText": "61 K",
+    "canUpload": true,
+    "canCreateChild": true,
+    "isRecordLibrary": false
+   },
+   "list": [
+    {
+     "id": 1,
+     "name": "经典提示音",
+     "size": 61,
+     "sizeText": "61 K",
+     "typeid": "mp3",
+     "bitrate": 128000,
+     "bitrateText": "128 kbps",
+     "timelength": 5,
+     "timelengthText": "0分5秒",
+     "folderId": 9,
+     "userId": 0,
+     "streamUrl": "/api/media/1/stream",
+     "downloadUrl": "/api/media/1/download"
+    }
+   ],
+   "pageNum": 1,
+   "pageSize": 18,
+   "scopeNote": "",
+   "total": 1
+  }
+ },
+ "GET /api/media?folderId=2&pageNum=1&pageSize=500": {
+  "code": 200,
+  "msg": "ok",
+  "data": {
+   "folder": {
+    "id": 2,
+    "name": "铃声媒体库",
+    "system": true,
+    "totalSizeKB": 19319,
+    "totalSizeText": "18.87 M",
+    "canUpload": true,
+    "canCreateChild": true,
+    "isRecordLibrary": false
+   },
+   "list": [
+    {
+     "id": 138,
+     "name": "中华人民共和国国歌.mp3",
+     "size": 723,
+     "sizeText": "723 K",
+     "typeid": "mp3",
+     "bitrate": 128000,
+     "bitrateText": "128 kbps",
+     "timelength": 46,
+     "timelengthText": "0分46秒",
+     "folderId": 2,
+     "userId": 1,
+     "streamUrl": "/api/media/138/stream",
+     "downloadUrl": "/api/media/138/download"
+    },
+    {
+     "id": 137,
+     "name": "早读预备铃.mp3",
+     "size": 1565,
+     "sizeText": "1.53 M",
+     "typeid": "mp3",
+     "bitrate": 128000,
+     "bitrateText": "128 kbps",
+     "timelength": 100,
+     "timelengthText": "1分40秒",
+     "folderId": 2,
+     "userId": 1,
+     "streamUrl": "/api/media/137/stream",
+     "downloadUrl": "/api/media/137/download"
+    },
+    {
+     "id": 136,
+     "name": "运动员进行曲.mp3",
+     "size": 2655,
+     "sizeText": "2.59 M",
+     "typeid": "mp3",
+     "bitrate": 128000,
+     "bitrateText": "128 kbps",
+     "timelength": 169,
+     "timelengthText": "2分49秒",
+     "folderId": 2,
+     "userId": 1,
+     "streamUrl": "/api/media/136/stream",
+     "downloadUrl": "/api/media/136/download"
+    },
+    {
+     "id": 135,
+     "name": "预备铃.mp3",
+     "size": 432,
+     "sizeText": "432 K",
+     "typeid": "mp3",
+     "bitrate": 128000,
+     "bitrateText": "128 kbps",
+     "timelength": 27,
+     "timelengthText": "0分27秒",
+     "folderId": 2,
+     "userId": 1,
+     "streamUrl": "/api/media/135/stream",
+     "downloadUrl": "/api/media/135/download"
+    },
+    {
+     "id": 134,
+     "name": "眼保健操.mp3",
+     "size": 306,
+     "sizeText": "306 K",
+     "typeid": "mp3",
+     "bitrate": 128000,
+     "bitrateText": "128 kbps",
+     "timelength": 19,
+     "timelengthText": "0分19秒",
+     "folderId": 2,
+     "userId": 1,
+     "streamUrl": "/api/media/134/stream",
+     "downloadUrl": "/api/media/134/download"
+    },
+    {
+     "id": 133,
+     "name": "下课铃.mp3",
+     "size": 310,
+     "sizeText": "310 K",
+     "typeid": "mp3",
+     "bitrate": 128000,
+     "bitrateText": "128 kbps",
+     "timelength": 19,
+     "timelengthText": "0分19秒",
+     "folderId": 2,
+     "userId": 1,
+     "streamUrl": "/api/media/133/stream",
+     "downloadUrl": "/api/media/133/download"
+    },
+    {
+     "id": 132,
+     "name": "午休.mp3",
+     "size": 1184,
+     "sizeText": "1.16 M",
+     "typeid": "mp3",
+     "bitrate": 160000,
+     "bitrateText": "160 kbps",
+     "timelength": 60,
+     "timelengthText": "1分0秒",
+     "folderId": 2,
+     "userId": 1,
+     "streamUrl": "/api/media/132/stream",
+     "downloadUrl": "/api/media/132/download"
+    },
+    {
+     "id": 131,
+     "name": "放学.mp3",
+     "size": 828,
+     "sizeText": "828 K",
+     "typeid": "mp3",
+     "bitrate": 160000,
+     "bitrateText": "160 kbps",
+     "timelength": 42,
+     "timelengthText": "0分42秒",
+     "folderId": 2,
+     "userId": 1,
+     "streamUrl": "/api/media/131/stream",
+     "downloadUrl": "/api/media/131/download"
+    },
+    {
+     "id": 130,
+     "name": "上课铃.mp3",
+     "size": 289,
+     "sizeText": "289 K",
+     "typeid": "mp3",
+     "bitrate": 128000,
+     "bitrateText": "128 kbps",
+     "timelength": 18,
+     "timelengthText": "0分18秒",
+     "folderId": 2,
+     "userId": 1,
+     "streamUrl": "/api/media/130/stream",
+     "downloadUrl": "/api/media/130/download"
+    },
+    {
+     "id": 129,
+     "name": "电铃声.mp3",
+     "size": 278,
+     "sizeText": "278 K",
+     "typeid": "mp3",
+     "bitrate": 128000,
+     "bitrateText": "128 kbps",
+     "timelength": 17,
+     "timelengthText": "0分17秒",
+     "folderId": 2,
+     "userId": 1,
+     "streamUrl": "/api/media/129/stream",
+     "downloadUrl": "/api/media/129/download"
+    },
+    {
+     "id": 128,
+     "name": "04.爱的纪念（上课）.mp3",
+     "size": 345,
+     "sizeText": "345 K",
+     "typeid": "mp3",
+     "bitrate": 128000,
+     "bitrateText": "128 kbps",
+     "timelength": 22,
+     "timelengthText": "0分22秒",
+     "folderId": 2,
+     "userId": 1,
+     "streamUrl": "/api/media/128/stream",
+     "downloadUrl": "/api/media/128/download"
+    },
+    {
+     "id": 127,
+     "name": "出旗曲.mp3",
+     "size": 2630,
+     "sizeText": "2.57 M",
+     "typeid": "mp3",
+     "bitrate": 128000,
+     "bitrateText": "128 kbps",
+     "timelength": 168,
+     "timelengthText": "2分48秒",
+     "folderId": 2,
+     "userId": 1,
+     "streamUrl": "/api/media/127/stream",
+     "downloadUrl": "/api/media/127/download"
+    },
+    {
+     "id": 126,
+     "name": "04.爱的纪念（下课）.mp3",
+     "size": 350,
+     "sizeText": "350 K",
+     "typeid": "mp3",
+     "bitrate": 128000,
+     "bitrateText": "128 kbps",
+     "timelength": 22,
+     "timelengthText": "0分22秒",
+     "folderId": 2,
+     "userId": 1,
+     "streamUrl": "/api/media/126/stream",
+     "downloadUrl": "/api/media/126/download"
+    },
+    {
+     "id": 125,
+     "name": "10.起床号.mp3",
+     "size": 1406,
+     "sizeText": "1.37 M",
+     "typeid": "mp3",
+     "bitrate": 128000,
+     "bitrateText": "128 kbps",
+     "timelength": 89,
+     "timelengthText": "1分29秒",
+     "folderId": 2,
+     "userId": 1,
+     "streamUrl": "/api/media/125/stream",
+     "downloadUrl": "/api/media/125/download"
+    },
+    {
+     "id": 124,
+     "name": "大课间.mp3",
+     "size": 6018,
+     "sizeText": "5.88 M",
+     "typeid": "mp3",
+     "bitrate": 128000,
+     "bitrateText": "128 kbps",
+     "timelength": 385,
+     "timelengthText": "6分25秒",
+     "folderId": 2,
+     "userId": 1,
+     "streamUrl": "/api/media/124/stream",
+     "downloadUrl": "/api/media/124/download"
+    }
+   ],
+   "pageNum": 1,
+   "pageSize": 18,
+   "scopeNote": "",
+   "total": 15
+  }
+ },
+ "GET /api/media?folderId=3&pageNum=1&pageSize=500": {
+  "code": 200,
+  "msg": "ok",
+  "data": {
+   "folder": {
+    "id": 3,
+    "name": "点播媒体库",
+    "system": true,
+    "totalSizeKB": 0,
+    "totalSizeText": "0 K",
+    "canUpload": true,
+    "canCreateChild": true,
+    "isRecordLibrary": false
+   },
+   "list": [],
+   "pageNum": 1,
+   "pageSize": 18,
+   "scopeNote": "",
+   "total": 0
+  }
+ },
+ "GET /api/media?folderId=5&pageNum=1&pageSize=500": {
+  "code": 200,
+  "msg": "ok",
+  "data": {
+   "folder": {
+    "id": 5,
+    "name": "录音媒体库",
+    "system": true,
+    "totalSizeKB": 0,
+    "totalSizeText": "0 K",
+    "canUpload": false,
+    "canCreateChild": false,
+    "isRecordLibrary": true
+   },
+   "list": [],
+   "pageNum": 1,
+   "pageSize": 18,
+   "scopeNote": "",
+   "total": 0
+  }
+ },
+ "GET /api/tasks?pageNum=1&pageSize=500": {
+  "code": 200,
+  "msg": "ok",
+  "data": {
+   "list": [
+    {
+     "taskid": 1008,
+     "taskname": "升旗仪式-国歌",
+     "tasktype": 2,
+     "israndomplay": 0,
+     "playModeText": "随机",
+     "projectstate": 0,
+     "state": 1,
+     "stateText": "执行中",
+     "startdate": "2026-01-01",
+     "enddate": "2026-12-31",
+     "playtime": "07:50:00",
+     "endtime": "07:53:00",
+     "timelengthtype": 0,
+     "timelength": 180,
+     "timelengthText": "循环 180 次",
+     "exemodel": "1000000",
+     "weekdays": [
+      1
+     ],
+     "priority": 8,
+     "defaultvolume": 90,
+     "prepower": 1,
+     "folderId": 1,
+     "ownerUserId": 1,
+     "ownerUserName": "admin",
+     "powerTaskId": 70107,
+     "media": [
+      {
+       "mediaId": 138,
+       "name": "中华人民共和国国歌.mp3",
+       "size": 723,
+       "sort": 0,
+       "deleted": false
+      }
+     ],
+     "terminals": [
+      {
+       "terminalId": 8,
+       "terminalname": "操场号角01",
+       "typeName": "一体化音箱",
+       "netstate": 1,
+       "taskstate": 1,
+       "ip": "192.168.2.41",
+       "volume": 95,
+       "groupId": 0,
+       "area": "11111111",
+       "deleted": false
+      }
+     ],
+     "startable": true,
+     "blockReason": ""
+    },
+    {
+     "taskid": 1013,
+     "taskname": "运动会入场式",
+     "tasktype": 2,
+     "israndomplay": 0,
+     "playModeText": "随机",
+     "projectstate": 0,
+     "state": 0,
+     "stateText": "准备",
+     "startdate": "2026-01-01",
+     "enddate": "2026-12-31",
+     "playtime": "08:30:00",
+     "endtime": "08:45:00",
+     "timelengthtype": 0,
+     "timelength": 900,
+     "timelengthText": "循环 900 次",
+     "exemodel": "0000000",
+     "weekdays": [],
+     "priority": 7,
+     "defaultvolume": 95,
+     "prepower": 1,
+     "folderId": 1,
+     "ownerUserId": 1,
+     "ownerUserName": "admin",
+     "powerTaskId": 0,
+     "media": [
+      {
+       "mediaId": 136,
+       "name": "运动员进行曲.mp3",
+       "size": 2655,
+       "sort": 1,
+       "deleted": false
+      }
+     ],
+     "terminals": [
+      {
+       "terminalId": 8,
+       "terminalname": "操场号角01",
+       "typeName": "一体化音箱",
+       "netstate": 1,
+       "taskstate": 1,
+       "ip": "192.168.2.41",
+       "volume": 95,
+       "groupId": 0,
+       "area": "",
+       "deleted": false
+      },
+      {
+       "terminalId": 9,
+       "terminalname": "操场号角02",
+       "typeName": "一体化音箱",
+       "netstate": 0,
+       "taskstate": 0,
+       "ip": "192.168.2.42",
+       "volume": 95,
+       "groupId": 0,
+       "area": "",
+       "deleted": false
+      }
+     ],
+     "startable": true,
+     "blockReason": ""
+    },
+    {
+     "taskid": 1010,
+     "taskname": "课间轻音乐",
+     "tasktype": 2,
+     "israndomplay": 0,
+     "playModeText": "随机",
+     "projectstate": 0,
+     "state": 1,
+     "stateText": "执行中",
+     "startdate": "2026-01-01",
+     "enddate": "2026-12-31",
+     "playtime": "09:45:00",
+     "endtime": "10:00:00",
+     "timelengthtype": 0,
+     "timelength": 900,
+     "timelengthText": "循环 900 次",
+     "exemodel": "1111100",
+     "weekdays": [
+      1,
+      2,
+      3,
+      4,
+      5
+     ],
+     "priority": 3,
+     "defaultvolume": 65,
+     "prepower": 1,
+     "folderId": 1,
+     "ownerUserId": 1,
+     "ownerUserName": "admin",
+     "powerTaskId": 0,
+     "media": [
+      {
+       "mediaId": 126,
+       "name": "04.爱的纪念（下课）.mp3",
+       "size": 350,
+       "sort": 1,
+       "deleted": false
+      }
+     ],
+     "terminals": [
+      {
+       "terminalId": 1,
+       "terminalname": "A101教室音箱",
+       "typeName": "一体化音箱",
+       "netstate": 1,
+       "taskstate": 1,
+       "ip": "192.168.2.11",
+       "volume": 80,
+       "groupId": 0,
+       "area": "",
+       "deleted": false
+      },
+      {
+       "terminalId": 8,
+       "terminalname": "操场号角01",
+       "typeName": "一体化音箱",
+       "netstate": 1,
+       "taskstate": 1,
+       "ip": "192.168.2.41",
+       "volume": 95,
+       "groupId": 0,
+       "area": "",
+       "deleted": false
+      }
+     ],
+     "startable": true,
+     "blockReason": ""
+    },
+    {
+     "taskid": 1011,
+     "taskname": "午间食堂背景music",
+     "tasktype": 2,
+     "israndomplay": 0,
+     "playModeText": "随机",
+     "projectstate": 0,
+     "state": 1,
+     "stateText": "执行中",
+     "startdate": "2026-01-01",
+     "enddate": "2026-12-31",
+     "playtime": "11:40:00",
+     "endtime": "12:20:00",
+     "timelengthtype": 0,
+     "timelength": 2400,
+     "timelengthText": "循环 2400 次",
+     "exemodel": "1111100",
+     "weekdays": [
+      1,
+      2,
+      3,
+      4,
+      5
+     ],
+     "priority": 3,
+     "defaultvolume": 55,
+     "prepower": 1,
+     "folderId": 1,
+     "ownerUserId": 1,
+     "ownerUserName": "admin",
+     "powerTaskId": 0,
+     "media": [
+      {
+       "mediaId": 124,
+       "name": "大课间.mp3",
+       "size": 6018,
+       "sort": 1,
+       "deleted": false
+      }
+     ],
+     "terminals": [
+      {
+       "terminalId": 7,
+       "terminalname": "办公区功放",
+       "typeName": "网络功放",
+       "netstate": 1,
+       "taskstate": 1,
+       "ip": "192.168.2.32",
+       "volume": 70,
+       "groupId": 0,
+       "area": "",
+       "deleted": false
+      }
+     ],
+     "startable": true,
+     "blockReason": ""
+    },
+    {
+     "taskid": 1009,
+     "taskname": "消防疏散演练",
+     "tasktype": 2,
+     "israndomplay": 0,
+     "playModeText": "随机",
+     "projectstate": 0,
+     "state": 0,
+     "stateText": "准备",
+     "startdate": "2026-01-01",
+     "enddate": "2026-12-31",
+     "playtime": "15:00:00",
+     "endtime": "15:02:00",
+     "timelengthtype": 0,
+     "timelength": 120,
+     "timelengthText": "循环 120 次",
+     "exemodel": "0000000",
+     "weekdays": [],
+     "priority": 10,
+     "defaultvolume": 100,
+     "prepower": 1,
+     "folderId": 1,
+     "ownerUserId": 1,
+     "ownerUserName": "admin",
+     "powerTaskId": 0,
+     "media": [
+      {
+       "mediaId": 129,
+       "name": "电铃声.mp3",
+       "size": 278,
+       "sort": 1,
+       "deleted": false
+      }
+     ],
+     "terminals": [
+      {
+       "terminalId": 1,
+       "terminalname": "A101教室音箱",
+       "typeName": "一体化音箱",
+       "netstate": 1,
+       "taskstate": 1,
+       "ip": "192.168.2.11",
+       "volume": 80,
+       "groupId": 0,
+       "area": "",
+       "deleted": false
+      },
+      {
+       "terminalId": 4,
+       "terminalname": "A201教室音箱",
+       "typeName": "一体化音箱",
+       "netstate": 1,
+       "taskstate": 1,
+       "ip": "192.168.2.21",
+       "volume": 80,
+       "groupId": 0,
+       "area": "",
+       "deleted": false
+      },
+      {
+       "terminalId": 7,
+       "terminalname": "办公区功放",
+       "typeName": "网络功放",
+       "netstate": 1,
+       "taskstate": 1,
+       "ip": "192.168.2.32",
+       "volume": 70,
+       "groupId": 0,
+       "area": "",
+       "deleted": false
+      },
+      {
+       "terminalId": 8,
+       "terminalname": "操场号角01",
+       "typeName": "一体化音箱",
+       "netstate": 1,
+       "taskstate": 1,
+       "ip": "192.168.2.41",
+       "volume": 95,
+       "groupId": 0,
+       "area": "",
+       "deleted": false
+      },
+      {
+       "terminalId": 10,
+       "terminalname": "宿舍楼一键寻呼",
+       "typeName": "一键寻呼终端",
+       "netstate": 1,
+       "taskstate": 0,
+       "ip": "192.168.2.51",
+       "volume": 85,
+       "groupId": 0,
+       "area": "",
+       "deleted": false
+      }
+     ],
+     "startable": true,
+     "blockReason": ""
+    },
+    {
+     "taskid": 1012,
+     "taskname": "晚自习预备",
+     "tasktype": 2,
+     "israndomplay": 0,
+     "playModeText": "随机",
+     "projectstate": 0,
+     "state": 1,
+     "stateText": "执行中",
+     "startdate": "2026-01-01",
+     "enddate": "2026-12-31",
+     "playtime": "18:50:00",
+     "endtime": "18:50:30",
+     "timelengthtype": 0,
+     "timelength": 30,
+     "timelengthText": "循环 30 次",
+     "exemodel": "1111100",
+     "weekdays": [
+      1,
+      2,
+      3,
+      4,
+      5
+     ],
+     "priority": 5,
+     "defaultvolume": 80,
+     "prepower": 1,
+     "folderId": 1,
+     "ownerUserId": 1,
+     "ownerUserName": "admin",
+     "powerTaskId": 0,
+     "media": [
+      {
+       "mediaId": 135,
+       "name": "预备铃.mp3",
+       "size": 432,
+       "sort": 1,
+       "deleted": false
+      }
+     ],
+     "terminals": [
+      {
+       "terminalId": 1,
+       "terminalname": "A101教室音箱",
+       "typeName": "一体化音箱",
+       "netstate": 1,
+       "taskstate": 1,
+       "ip": "192.168.2.11",
+       "volume": 80,
+       "groupId": 0,
+       "area": "",
+       "deleted": false
+      },
+      {
+       "terminalId": 2,
+       "terminalname": "A102教室音箱",
+       "typeName": "一体化音箱",
+       "netstate": 1,
+       "taskstate": 0,
+       "ip": "192.168.2.12",
+       "volume": 75,
+       "groupId": 0,
+       "area": "",
+       "deleted": false
+      },
+      {
+       "terminalId": 4,
+       "terminalname": "A201教室音箱",
+       "typeName": "一体化音箱",
+       "netstate": 1,
+       "taskstate": 1,
+       "ip": "192.168.2.21",
+       "volume": 80,
+       "groupId": 0,
+       "area": "",
+       "deleted": false
+      },
+      {
+       "terminalId": 5,
+       "terminalname": "A202教室音箱",
+       "typeName": "一体化音箱",
+       "netstate": 1,
+       "taskstate": 0,
+       "ip": "192.168.2.22",
+       "volume": 80,
+       "groupId": 0,
+       "area": "",
+       "deleted": false
+      }
+     ],
+     "startable": true,
+     "blockReason": ""
+    }
+   ],
+   "pageNum": 1,
+   "pageSize": 18,
+   "scopeNote": "",
+   "total": 6
+  }
+ },
+ "GET /api/typed-tasks/collect?folderId=0&pageNum=1&pageSize=500": {
+  "code": 200,
+  "msg": "ok",
+  "data": {
+   "list": [
+    {
+     "taskId": 70011,
+     "taskName": "升旗现场采播",
+     "tasktype": 3,
+     "state": 0,
+     "stateText": "准备",
+     "projectstate": 0,
+     "projectText": "启用",
+     "startdate": "2026-01-01",
+     "enddate": "2026-12-31",
+     "playtime": "07:40:00",
+     "endtime": "07:41:00",
+     "exemodel": "1111111",
+     "cycleText": "每天",
+     "defaultvolume": 60,
+     "timelength": 60,
+     "timelengthtype": 1,
+     "lengthText": "1分0秒",
+     "cmd": 6,
+     "cmdargs": "0",
+     "parentid": 0,
+     "userId": 1,
+     "userName": "admin",
+     "terminalCount": 1,
+     "canModify": true,
+     "priority": 3,
+     "bandrate": 0,
+     "samplerate": 0,
+     "playfileid": 0,
+     "prepower": 0,
+     "datasendmodel": 0,
+     "sourceName": "广播室主话筒",
+     "interval_s": 0,
+     "intplaylength": 0,
+     "intplaylengthtype": 0,
+     "playModeText": "普通模式",
+     "typeText": "采播管理"
+    },
+    {
+     "taskId": 70010,
+     "taskName": "课间采播",
+     "tasktype": 3,
+     "state": 0,
+     "stateText": "准备",
+     "projectstate": 0,
+     "projectText": "启用",
+     "startdate": "2026-01-01",
+     "enddate": "2026-12-31",
+     "playtime": "09:40:00",
+     "endtime": "09:41:00",
+     "exemodel": "1111111",
+     "cycleText": "每天",
+     "defaultvolume": 60,
+     "timelength": 60,
+     "timelengthtype": 1,
+     "lengthText": "1分0秒",
+     "cmd": 6,
+     "cmdargs": "0",
+     "parentid": 0,
+     "userId": 1,
+     "userName": "admin",
+     "terminalCount": 3,
+     "canModify": true,
+     "priority": 3,
+     "bandrate": 0,
+     "samplerate": 0,
+     "playfileid": 0,
+     "prepower": 0,
+     "datasendmodel": 0,
+     "sourceName": "广播室主话筒",
+     "interval_s": 0,
+     "intplaylength": 0,
+     "intplaylengthtype": 0,
+     "playModeText": "普通模式",
+     "typeText": "采播管理"
+    }
+   ],
+   "pageNum": 1,
+   "pageSize": 18,
+   "scopeNote": "",
+   "total": 2
+  }
+ },
+ "GET /api/typed-tasks/amplifier?folderId=0&pageNum=1&pageSize=500": {
+  "code": 200,
+  "msg": "ok",
+  "data": {
+   "list": [
+    {
+     "taskId": 70014,
+     "taskName": "晨间开功放",
+     "tasktype": 5,
+     "state": 0,
+     "stateText": "准备",
+     "projectstate": 0,
+     "projectText": "启用",
+     "startdate": "2026-01-01",
+     "enddate": "2026-12-31",
+     "playtime": "06:50:00",
+     "endtime": "06:51:00",
+     "exemodel": "1111111",
+     "cycleText": "每天",
+     "defaultvolume": 60,
+     "timelength": 60,
+     "timelengthtype": 1,
+     "lengthText": "1分0秒",
+     "cmd": 1,
+     "cmdargs": "0",
+     "parentid": 0,
+     "userId": 1,
+     "userName": "admin",
+     "terminalCount": 3,
+     "canModify": true,
+     "priority": 3,
+     "bandrate": 0,
+     "samplerate": 0,
+     "playfileid": 0,
+     "prepower": 0,
+     "datasendmodel": 0,
+     "switchText": "关闭",
+     "interval_s": 0,
+     "intplaylength": 0,
+     "intplaylengthtype": 0,
+     "playModeText": "普通模式",
+     "typeText": "终端功放"
+    },
+    {
+     "taskId": 70015,
+     "taskName": "晚间关功放",
+     "tasktype": 5,
+     "state": 0,
+     "stateText": "准备",
+     "projectstate": 0,
+     "projectText": "启用",
+     "startdate": "2026-01-01",
+     "enddate": "2026-12-31",
+     "playtime": "22:10:00",
+     "endtime": "22:11:00",
+     "exemodel": "1111111",
+     "cycleText": "每天",
+     "defaultvolume": 60,
+     "timelength": 60,
+     "timelengthtype": 1,
+     "lengthText": "1分0秒",
+     "cmd": 0,
+     "cmdargs": "0",
+     "parentid": 0,
+     "userId": 1,
+     "userName": "admin",
+     "terminalCount": 1,
+     "canModify": true,
+     "priority": 3,
+     "bandrate": 0,
+     "samplerate": 0,
+     "playfileid": 0,
+     "prepower": 0,
+     "datasendmodel": 0,
+     "switchText": "打开",
+     "interval_s": 0,
+     "intplaylength": 0,
+     "intplaylengthtype": 0,
+     "playModeText": "普通模式",
+     "typeText": "终端功放"
+    }
+   ],
+   "pageNum": 1,
+   "pageSize": 18,
+   "scopeNote": "",
+   "total": 2
+  }
+ },
+ "GET /api/typed-tasks/led?folderId=0&pageNum=1&pageSize=500": {
+  "code": 200,
+  "msg": "ok",
+  "data": {
+   "list": [
+    {
+     "taskId": 70016,
+     "taskName": "欢迎标语",
+     "tasktype": 30,
+     "state": 0,
+     "stateText": "准备",
+     "projectstate": 0,
+     "projectText": "启用",
+     "startdate": "2026-01-01",
+     "enddate": "2026-12-31",
+     "playtime": "08:00:00",
+     "endtime": "08:01:00",
+     "exemodel": "1111111",
+     "cycleText": "每天",
+     "defaultvolume": 60,
+     "timelength": 60,
+     "timelengthtype": 1,
+     "lengthText": "1分0秒",
+     "cmd": 0,
+     "cmdargs": "0",
+     "parentid": 2,
+     "userId": 1,
+     "userName": "admin",
+     "terminalCount": 3,
+     "canModify": true,
+     "priority": 3,
+     "bandrate": 0,
+     "samplerate": 0,
+     "playfileid": 0,
+     "prepower": 0,
+     "datasendmodel": 0,
+     "text": "欢迎莅临指导",
+     "interval_s": 0,
+     "intplaylength": 0,
+     "intplaylengthtype": 0,
+     "playModeText": "普通模式",
+     "typeText": "led播放"
+    },
+    {
+     "taskId": 70017,
+     "taskName": "考试须知",
+     "tasktype": 30,
+     "state": 0,
+     "stateText": "准备",
+     "projectstate": 0,
+     "projectText": "启用",
+     "startdate": "2026-01-01",
+     "enddate": "2026-12-31",
+     "playtime": "08:30:00",
+     "endtime": "08:31:00",
+     "exemodel": "1111111",
+     "cycleText": "每天",
+     "defaultvolume": 60,
+     "timelength": 60,
+     "timelengthtype": 1,
+     "lengthText": "1分0秒",
+     "cmd": 0,
+     "cmdargs": "0",
+     "parentid": 2,
+     "userId": 1,
+     "userName": "admin",
+     "terminalCount": 1,
+     "canModify": true,
+     "priority": 3,
+     "bandrate": 0,
+     "samplerate": 0,
+     "playfileid": 0,
+     "prepower": 0,
+     "datasendmodel": 0,
+     "text": "诚信考试 从我做起",
+     "interval_s": 0,
+     "intplaylength": 0,
+     "intplaylengthtype": 0,
+     "playModeText": "普通模式",
+     "typeText": "led播放"
+    }
+   ],
+   "pageNum": 1,
+   "pageSize": 18,
+   "scopeNote": "",
+   "total": 2
+  }
+ },
+ "GET /api/typed-tasks/tts?folderId=0&pageNum=1&pageSize=500": {
+  "code": 200,
+  "msg": "ok",
+  "data": {
+   "list": [
+    {
+     "taskId": 70013,
+     "taskName": "防欺凌广播",
+     "tasktype": 15,
+     "state": 0,
+     "stateText": "准备",
+     "projectstate": 0,
+     "projectText": "启用",
+     "startdate": "2026-01-01",
+     "enddate": "2026-12-31",
+     "playtime": "12:10:00",
+     "endtime": "12:11:00",
+     "exemodel": "1111111",
+     "cycleText": "每天",
+     "defaultvolume": 60,
+     "timelength": 60,
+     "timelengthtype": 1,
+     "lengthText": "1分0秒",
+     "cmd": 0,
+     "cmdargs": "0",
+     "parentid": 0,
+     "userId": 1,
+     "userName": "admin",
+     "terminalCount": 1,
+     "canModify": true,
+     "priority": 3,
+     "bandrate": 0,
+     "samplerate": 0,
+     "playfileid": 0,
+     "prepower": 0,
+     "datasendmodel": 0,
+     "text": "同学之间要互相尊重，遇到欺凌请及时向老师报告。",
+     "interval_s": 0,
+     "intplaylength": 0,
+     "intplaylengthtype": 0,
+     "playModeText": "普通模式",
+     "typeText": "文字语音"
+    },
+    {
+     "taskId": 70012,
+     "taskName": "放学安全提示",
+     "tasktype": 15,
+     "state": 0,
+     "stateText": "准备",
+     "projectstate": 0,
+     "projectText": "启用",
+     "startdate": "2026-01-01",
+     "enddate": "2026-12-31",
+     "playtime": "17:25:00",
+     "endtime": "17:26:00",
+     "exemodel": "1111111",
+     "cycleText": "每天",
+     "defaultvolume": 60,
+     "timelength": 60,
+     "timelengthtype": 1,
+     "lengthText": "1分0秒",
+     "cmd": 0,
+     "cmdargs": "0",
+     "parentid": 0,
+     "userId": 1,
+     "userName": "admin",
+     "terminalCount": 3,
+     "canModify": true,
+     "priority": 3,
+     "bandrate": 0,
+     "samplerate": 0,
+     "playfileid": 0,
+     "prepower": 0,
+     "datasendmodel": 0,
+     "text": "放学请注意交通安全，排队有序离校。",
+     "interval_s": 0,
+     "intplaylength": 0,
+     "intplaylengthtype": 0,
+     "playModeText": "普通模式",
+     "typeText": "文字语音"
+    }
+   ],
+   "pageNum": 1,
+   "pageSize": 18,
+   "scopeNote": "",
+   "total": 2
+  }
+ },
+ "GET /api/bell-plans?pageNum=1&pageSize=200": {
+  "code": 200,
+  "msg": "ok",
+  "data": {
+   "list": [
+    {
+     "planName": "春季作息",
+     "representativeTaskId": 1001,
+     "itemCount": 7,
+     "powerSubTasks": 0,
+     "startdate": "2026-01-01",
+     "enddate": "2026-12-31",
+     "projectstate": 0,
+     "projectStateText": "启用",
+     "mixedState": false,
+     "duplicateTimes": [],
+     "ownerUserId": 1,
+     "ownerUserName": "admin",
+     "ownerDeleted": false
+    }
+   ],
+   "pageNum": 1,
+   "pageSize": 18,
+   "scopeNote": "",
+   "total": 1
+  }
+ },
+ "GET /api/bell-plans/detail?plan=%E6%98%A5%E5%AD%A3%E4%BD%9C%E6%81%AF": {
+  "code": 200,
+  "msg": "ok",
+  "data": {
+   "planName": "春季作息",
+   "schedule": {
+    "startdate": "2026-01-01",
+    "enddate": "2026-12-31",
+    "exemodel": "0111110"
+   },
+   "playback": {
+    "defaultvolume": 66,
+    "priority": 10,
+    "prepower": 1,
+    "datasendmodel": 0,
+    "israndomplay": 0
+   },
+   "terminals": [
+    {
+     "terminalId": 1,
+     "terminalname": "A101教室音箱",
+     "typeName": "一体化音箱",
+     "netstate": 1,
+     "taskstate": 1,
+     "ip": "192.168.2.11",
+     "volume": 80,
+     "groupId": 1,
+     "area": "11111111",
+     "deleted": false
+    },
+    {
+     "terminalId": 2,
+     "terminalname": "A102教室音箱",
+     "typeName": "一体化音箱",
+     "netstate": 1,
+     "taskstate": 0,
+     "ip": "192.168.2.12",
+     "volume": 75,
+     "groupId": 1,
+     "area": "11111111",
+     "deleted": false
+    },
+    {
+     "terminalId": 4,
+     "terminalname": "A201教室音箱",
+     "typeName": "一体化音箱",
+     "netstate": 1,
+     "taskstate": 1,
+     "ip": "192.168.2.21",
+     "volume": 80,
+     "groupId": 1,
+     "area": "11111111",
+     "deleted": false
+    },
+    {
+     "terminalId": 5,
+     "terminalname": "A202教室音箱",
+     "typeName": "一体化音箱",
+     "netstate": 1,
+     "taskstate": 0,
+     "ip": "192.168.2.22",
+     "volume": 80,
+     "groupId": 1,
+     "area": "11111111",
+     "deleted": false
+    },
+    {
+     "terminalId": 11,
+     "terminalname": "TTS主机",
+     "typeName": "TTS主机",
+     "netstate": 1,
+     "taskstate": 0,
+     "ip": "192.168.2.60",
+     "volume": 80,
+     "groupId": 2,
+     "area": "11111111",
+     "deleted": false
+    },
+    {
+     "terminalId": 3,
+     "terminalname": "A103教室音箱",
+     "typeName": "一体化音箱",
+     "netstate": 0,
+     "taskstate": 0,
+     "ip": "192.168.2.13",
+     "volume": 75,
+     "groupId": 1,
+     "area": "11111111",
+     "deleted": false
+    }
+   ],
+   "items": [
+    {
+     "taskid": 1001,
+     "taskname": "早读预备铃",
+     "playtime": "07:20:00",
+     "timelengthtype": 0,
+     "timelength": 30,
+     "projectstate": 0,
+     "projectStateText": "启用",
+     "media": [
+      {
+       "mediaId": 137,
+       "name": "早读预备铃.mp3",
+       "size": 1565,
+       "sort": 1,
+       "deleted": false
+      }
+     ],
+     "powerTaskId": 0,
+     "powerPlayTime": "",
+     "duplicateTime": false,
+     "startdate": "2026-01-01",
+     "enddate": "2026-12-31",
+     "exemodel": "0111110"
+    },
+    {
+     "taskid": 1002,
+     "taskname": "上午第一节上课",
+     "playtime": "08:00:00",
+     "timelengthtype": 0,
+     "timelength": 30,
+     "projectstate": 0,
+     "projectStateText": "启用",
+     "media": [
+      {
+       "mediaId": 130,
+       "name": "上课铃.mp3",
+       "size": 289,
+       "sort": 1,
+       "deleted": false
+      }
+     ],
+     "powerTaskId": 0,
+     "powerPlayTime": "",
+     "duplicateTime": false,
+     "startdate": "2026-01-01",
+     "enddate": "2026-12-31",
+     "exemodel": "0111110"
+    },
+    {
+     "taskid": 1003,
+     "taskname": "第一节下课",
+     "playtime": "08:45:00",
+     "timelengthtype": 0,
+     "timelength": 30,
+     "projectstate": 0,
+     "projectStateText": "启用",
+     "media": [
+      {
+       "mediaId": 133,
+       "name": "下课铃.mp3",
+       "size": 310,
+       "sort": 1,
+       "deleted": false
+      }
+     ],
+     "powerTaskId": 0,
+     "powerPlayTime": "",
+     "duplicateTime": false,
+     "startdate": "2026-01-01",
+     "enddate": "2026-12-31",
+     "exemodel": "0111110"
+    },
+    {
+     "taskid": 1004,
+     "taskname": "课间眼保健操",
+     "playtime": "09:40:00",
+     "timelengthtype": 0,
+     "timelength": 210,
+     "projectstate": 0,
+     "projectStateText": "启用",
+     "media": [
+      {
+       "mediaId": 134,
+       "name": "眼保健操.mp3",
+       "size": 306,
+       "sort": 1,
+       "deleted": false
+      }
+     ],
+     "powerTaskId": 0,
+     "powerPlayTime": "",
+     "duplicateTime": false,
+     "startdate": "2026-01-01",
+     "enddate": "2026-12-31",
+     "exemodel": "0111110"
+    },
+    {
+     "taskid": 1005,
+     "taskname": "大课间活动",
+     "playtime": "10:00:00",
+     "timelengthtype": 0,
+     "timelength": 1500,
+     "projectstate": 0,
+     "projectStateText": "启用",
+     "media": [
+      {
+       "mediaId": 124,
+       "name": "大课间.mp3",
+       "size": 6018,
+       "sort": 1,
+       "deleted": false
+      }
+     ],
+     "powerTaskId": 0,
+     "powerPlayTime": "",
+     "duplicateTime": false,
+     "startdate": "2026-01-01",
+     "enddate": "2026-12-31",
+     "exemodel": "0111110"
+    },
+    {
+     "taskid": 1006,
+     "taskname": "午休提示",
+     "playtime": "12:30:00",
+     "timelengthtype": 0,
+     "timelength": 40,
+     "projectstate": 0,
+     "projectStateText": "启用",
+     "media": [
+      {
+       "mediaId": 132,
+       "name": "午休.mp3",
+       "size": 1184,
+       "sort": 1,
+       "deleted": false
+      }
+     ],
+     "powerTaskId": 0,
+     "powerPlayTime": "",
+     "duplicateTime": false,
+     "startdate": "2026-01-01",
+     "enddate": "2026-12-31",
+     "exemodel": "0111110"
+    },
+    {
+     "taskid": 1007,
+     "taskname": "放学铃",
+     "playtime": "17:30:00",
+     "timelengthtype": 0,
+     "timelength": 45,
+     "projectstate": 0,
+     "projectStateText": "启用",
+     "media": [
+      {
+       "mediaId": 131,
+       "name": "放学.mp3",
+       "size": 828,
+       "sort": 1,
+       "deleted": false
+      }
+     ],
+     "powerTaskId": 0,
+     "powerPlayTime": "",
+     "duplicateTime": false,
+     "startdate": "2026-01-01",
+     "enddate": "2026-12-31",
+     "exemodel": "0111110"
+    }
+   ],
+   "ownerUserId": 1,
+   "led": null,
+   "mixedAttrs": [],
+   "priorityMin": 10,
+   "priorityMax": 109
+  }
+ },
+ "GET /api/media?folderId=4&pageNum=1&pageSize=500": {
+  "code": 200,
+  "msg": "ok",
+  "data": {
+   "folder": {
+    "id": 4,
+    "name": "报警媒体库",
+    "system": true,
+    "totalSizeKB": 158,
+    "totalSizeText": "158 K",
+    "canUpload": true,
+    "canCreateChild": true,
+    "isRecordLibrary": false
+   },
+   "list": [
+    {
+     "id": 160,
+     "name": "防空警报",
+     "size": 79,
+     "sizeText": "79 K",
+     "typeid": "mp3",
+     "bitrate": 128000,
+     "bitrateText": "128 kbps",
+     "timelength": 0,
+     "timelengthText": "0分0秒",
+     "folderId": 4,
+     "userId": 1,
+     "streamUrl": "/api/media/160/stream",
+     "downloadUrl": "/api/media/160/download"
+    },
+    {
+     "id": 159,
+     "name": "火警疏散提示",
+     "size": 79,
+     "sizeText": "79 K",
+     "typeid": "mp3",
+     "bitrate": 128000,
+     "bitrateText": "128 kbps",
+     "timelength": 0,
+     "timelengthText": "0分0秒",
+     "folderId": 4,
+     "userId": 1,
+     "streamUrl": "/api/media/159/stream",
+     "downloadUrl": "/api/media/159/download"
+    }
+   ],
+   "pageNum": 1,
+   "pageSize": 18,
+   "scopeNote": "",
+   "total": 2
+  }
+ },
+ "GET /api/media?folderId=7&pageNum=1&pageSize=500": {
+  "code": 200,
+  "msg": "ok",
+  "data": {
+   "folder": {
+    "id": 7,
+    "name": "设备录音媒体",
+    "system": true,
+    "totalSizeKB": 0,
+    "totalSizeText": "0 K",
+    "canUpload": false,
+    "canCreateChild": false,
+    "isRecordLibrary": true
+   },
+   "list": [],
+   "pageNum": 1,
+   "pageSize": 18,
+   "scopeNote": "",
+   "total": 0
+  }
+ },
+ "GET /api/media?folderId=8&pageNum=1&pageSize=500": {
+  "code": 200,
+  "msg": "ok",
+  "data": {
+   "folder": {
+    "id": 8,
+    "name": "录音媒体库",
+    "system": true,
+    "totalSizeKB": 0,
+    "totalSizeText": "0 K",
+    "canUpload": false,
+    "canCreateChild": false,
+    "isRecordLibrary": true
+   },
+   "list": [],
+   "pageNum": 1,
+   "pageSize": 18,
+   "scopeNote": "",
+   "total": 0
+  }
+ },
+ "GET /api/terminals/6/folders/candidates?folderId=7&keyword=": {
+  "code": 200,
+  "msg": "ok",
+  "data": {
+   "list": [
+    {
+     "id": 1,
+     "terminalname": "A101教室音箱",
+     "typeId": 11,
+     "typeName": "一体化音箱",
+     "netstate": 1,
+     "devicestate": 1,
+     "taskstate": 1,
+     "ip": "192.168.2.11",
+     "volume": 80
+    },
+    {
+     "id": 2,
+     "terminalname": "A102教室音箱",
+     "typeId": 11,
+     "typeName": "一体化音箱",
+     "netstate": 1,
+     "devicestate": 1,
+     "taskstate": 0,
+     "ip": "192.168.2.12",
+     "volume": 75
+    },
+    {
+     "id": 4,
+     "terminalname": "A201教室音箱",
+     "typeId": 11,
+     "typeName": "一体化音箱",
+     "netstate": 1,
+     "devicestate": 1,
+     "taskstate": 1,
+     "ip": "192.168.2.21",
+     "volume": 80
+    },
+    {
+     "id": 5,
+     "terminalname": "A202教室音箱",
+     "typeId": 11,
+     "typeName": "一体化音箱",
+     "netstate": 1,
+     "devicestate": 1,
+     "taskstate": 0,
+     "ip": "192.168.2.22",
+     "volume": 80
+    },
+    {
+     "id": 7,
+     "terminalname": "办公区功放",
+     "typeId": 5,
+     "typeName": "网络功放",
+     "netstate": 1,
+     "devicestate": 1,
+     "taskstate": 1,
+     "ip": "192.168.2.32",
+     "volume": 70
+    },
+    {
+     "id": 10,
+     "terminalname": "宿舍楼一键寻呼",
+     "typeId": 13,
+     "typeName": "一键寻呼终端",
+     "netstate": 1,
+     "devicestate": 1,
+     "taskstate": 0,
+     "ip": "192.168.2.51",
+     "volume": 85
+    },
+    {
+     "id": 8,
+     "terminalname": "操场号角01",
+     "typeId": 11,
+     "typeName": "一体化音箱",
+     "netstate": 1,
+     "devicestate": 1,
+     "taskstate": 1,
+     "ip": "192.168.2.41",
+     "volume": 95
+    },
+    {
+     "id": 3,
+     "terminalname": "A103教室音箱",
+     "typeId": 11,
+     "typeName": "一体化音箱",
+     "netstate": 0,
+     "devicestate": 0,
+     "taskstate": 0,
+     "ip": "192.168.2.13",
+     "volume": 75
+    },
+    {
+     "id": 9,
+     "terminalname": "操场号角02",
+     "typeId": 11,
+     "typeName": "一体化音箱",
+     "netstate": 0,
+     "devicestate": 0,
+     "taskstate": 0,
+     "ip": "192.168.2.42",
+     "volume": 95
+    }
+   ]
+  }
+ },
+ "GET /api/terminals/6/folders/candidates?folderId=9&keyword=": {
+  "code": 200,
+  "msg": "ok",
+  "data": {
+   "list": [
+    {
+     "id": 1,
+     "terminalname": "A101教室音箱",
+     "typeId": 11,
+     "typeName": "一体化音箱",
+     "netstate": 1,
+     "devicestate": 1,
+     "taskstate": 1,
+     "ip": "192.168.2.11",
+     "volume": 80
+    },
+    {
+     "id": 2,
+     "terminalname": "A102教室音箱",
+     "typeId": 11,
+     "typeName": "一体化音箱",
+     "netstate": 1,
+     "devicestate": 1,
+     "taskstate": 0,
+     "ip": "192.168.2.12",
+     "volume": 75
+    },
+    {
+     "id": 4,
+     "terminalname": "A201教室音箱",
+     "typeId": 11,
+     "typeName": "一体化音箱",
+     "netstate": 1,
+     "devicestate": 1,
+     "taskstate": 1,
+     "ip": "192.168.2.21",
+     "volume": 80
+    },
+    {
+     "id": 5,
+     "terminalname": "A202教室音箱",
+     "typeId": 11,
+     "typeName": "一体化音箱",
+     "netstate": 1,
+     "devicestate": 1,
+     "taskstate": 0,
+     "ip": "192.168.2.22",
+     "volume": 80
+    },
+    {
+     "id": 10,
+     "terminalname": "宿舍楼一键寻呼",
+     "typeId": 13,
+     "typeName": "一键寻呼终端",
+     "netstate": 1,
+     "devicestate": 1,
+     "taskstate": 0,
+     "ip": "192.168.2.51",
+     "volume": 85
+    },
+    {
+     "id": 3,
+     "terminalname": "A103教室音箱",
+     "typeId": 11,
+     "typeName": "一体化音箱",
+     "netstate": 0,
+     "devicestate": 0,
+     "taskstate": 0,
+     "ip": "192.168.2.13",
+     "volume": 75
+    }
+   ]
+  }
+ },
+ "GET /api/terminals/6/folders/candidates?folderId=15&keyword=": {
+  "code": 200,
+  "msg": "ok",
+  "data": {
+   "list": [
+    {
+     "id": 5,
+     "terminalname": "A202教室音箱",
+     "typeId": 11,
+     "typeName": "一体化音箱",
+     "netstate": 1,
+     "devicestate": 1,
+     "taskstate": 0,
+     "ip": "192.168.2.22",
+     "volume": 80
+    },
+    {
+     "id": 7,
+     "terminalname": "办公区功放",
+     "typeId": 5,
+     "typeName": "网络功放",
+     "netstate": 1,
+     "devicestate": 1,
+     "taskstate": 1,
+     "ip": "192.168.2.32",
+     "volume": 70
+    },
+    {
+     "id": 10,
+     "terminalname": "宿舍楼一键寻呼",
+     "typeId": 13,
+     "typeName": "一键寻呼终端",
+     "netstate": 1,
+     "devicestate": 1,
+     "taskstate": 0,
+     "ip": "192.168.2.51",
+     "volume": 85
+    },
+    {
+     "id": 8,
+     "terminalname": "操场号角01",
+     "typeId": 11,
+     "typeName": "一体化音箱",
+     "netstate": 1,
+     "devicestate": 1,
+     "taskstate": 1,
+     "ip": "192.168.2.41",
+     "volume": 95
+    },
+    {
+     "id": 3,
+     "terminalname": "A103教室音箱",
+     "typeId": 11,
+     "typeName": "一体化音箱",
+     "netstate": 0,
+     "devicestate": 0,
+     "taskstate": 0,
+     "ip": "192.168.2.13",
+     "volume": 75
+    },
+    {
+     "id": 9,
+     "terminalname": "操场号角02",
+     "typeId": 11,
+     "typeName": "一体化音箱",
+     "netstate": 0,
+     "devicestate": 0,
+     "taskstate": 0,
+     "ip": "192.168.2.42",
+     "volume": 95
+    }
+   ]
+  }
+ },
+ "GET /api/tasks/1008": {
+  "code": 200,
+  "msg": "ok",
+  "data": {
+   "taskid": 1008,
+   "taskname": "升旗仪式-国歌",
+   "tasktype": 2,
+   "folderId": 1,
+   "projectstate": 0,
+   "israndomplay": 0,
+   "startdate": "2026-01-01",
+   "enddate": "2026-12-31",
+   "playtime": "07:50:00",
+   "endtime": "07:53:00",
+   "exemodel": "1000000",
+   "disableday": "0000-00-00",
+   "timelengthtype": 0,
+   "timelength": 180,
+   "interval_s": 0,
+   "intplaylength": 1,
+   "intplaylengthtype": 2,
+   "defaultvolume": 90,
+   "priority": 8,
+   "localplay": 0,
+   "prepower": 1,
+   "datasendmodel": 0,
+   "ownerUserId": 1,
+   "media": [
+    {
+     "mediaId": 138,
+     "name": "中华人民共和国国歌.mp3",
+     "size": 723,
+     "sort": 0,
+     "deleted": false
+    }
+   ],
+   "terminals": [
+    {
+     "terminalId": 8,
+     "terminalname": "操场号角01",
+     "typeName": "一体化音箱",
+     "netstate": 1,
+     "taskstate": 1,
+     "ip": "192.168.2.41",
+     "volume": 95,
+     "groupId": 0,
+     "area": "11111111",
+     "deleted": false
+    }
+   ],
+   "led": null,
+   "priorityMin": 10,
+   "priorityMax": 109
+  }
+ },
+ "GET /api/tasks/1013": {
+  "code": 200,
+  "msg": "ok",
+  "data": {
+   "taskid": 1013,
+   "taskname": "运动会入场式",
+   "tasktype": 2,
+   "folderId": 1,
+   "projectstate": 0,
+   "israndomplay": 0,
+   "startdate": "2026-01-01",
+   "enddate": "2026-12-31",
+   "playtime": "08:30:00",
+   "endtime": "08:45:00",
+   "exemodel": "0000000",
+   "disableday": "0000-00-00",
+   "timelengthtype": 0,
+   "timelength": 900,
+   "interval_s": 0,
+   "intplaylength": 1,
+   "intplaylengthtype": 2,
+   "defaultvolume": 95,
+   "priority": 7,
+   "localplay": 0,
+   "prepower": 1,
+   "datasendmodel": 0,
+   "ownerUserId": 1,
+   "media": [
+    {
+     "mediaId": 136,
+     "name": "运动员进行曲.mp3",
+     "size": 2655,
+     "sort": 1,
+     "deleted": false
+    }
+   ],
+   "terminals": [
+    {
+     "terminalId": 8,
+     "terminalname": "操场号角01",
+     "typeName": "一体化音箱",
+     "netstate": 1,
+     "taskstate": 1,
+     "ip": "192.168.2.41",
+     "volume": 95,
+     "groupId": 0,
+     "area": "",
+     "deleted": false
+    },
+    {
+     "terminalId": 9,
+     "terminalname": "操场号角02",
+     "typeName": "一体化音箱",
+     "netstate": 0,
+     "taskstate": 0,
+     "ip": "192.168.2.42",
+     "volume": 95,
+     "groupId": 0,
+     "area": "",
+     "deleted": false
+    }
+   ],
+   "led": null,
+   "priorityMin": 10,
+   "priorityMax": 109
+  }
+ },
+ "GET /api/tasks/1010": {
+  "code": 200,
+  "msg": "ok",
+  "data": {
+   "taskid": 1010,
+   "taskname": "课间轻音乐",
+   "tasktype": 2,
+   "folderId": 1,
+   "projectstate": 0,
+   "israndomplay": 0,
+   "startdate": "2026-01-01",
+   "enddate": "2026-12-31",
+   "playtime": "09:45:00",
+   "endtime": "10:00:00",
+   "exemodel": "1111100",
+   "disableday": "0000-00-00",
+   "timelengthtype": 0,
+   "timelength": 900,
+   "interval_s": 0,
+   "intplaylength": 1,
+   "intplaylengthtype": 2,
+   "defaultvolume": 65,
+   "priority": 3,
+   "localplay": 0,
+   "prepower": 1,
+   "datasendmodel": 0,
+   "ownerUserId": 1,
+   "media": [
+    {
+     "mediaId": 126,
+     "name": "04.爱的纪念（下课）.mp3",
+     "size": 350,
+     "sort": 1,
+     "deleted": false
+    }
+   ],
+   "terminals": [
+    {
+     "terminalId": 1,
+     "terminalname": "A101教室音箱",
+     "typeName": "一体化音箱",
+     "netstate": 1,
+     "taskstate": 1,
+     "ip": "192.168.2.11",
+     "volume": 80,
+     "groupId": 0,
+     "area": "",
+     "deleted": false
+    },
+    {
+     "terminalId": 8,
+     "terminalname": "操场号角01",
+     "typeName": "一体化音箱",
+     "netstate": 1,
+     "taskstate": 1,
+     "ip": "192.168.2.41",
+     "volume": 95,
+     "groupId": 0,
+     "area": "",
+     "deleted": false
+    }
+   ],
+   "led": null,
+   "priorityMin": 10,
+   "priorityMax": 109
+  }
+ },
+ "GET /api/typed-tasks/collect/sources": {
+  "code": 200,
+  "msg": "ok",
+  "data": [
+   {
+    "id": 902,
+    "terminalname": "服务器",
+    "typeid": 0,
+    "typeName": "服务器",
+    "ip": "192.168.2.159",
+    "netstate": 1,
+    "groupId": 0,
+    "groupName": "",
+    "switchCount": 1
+   }
+  ]
+ },
+ "GET /api/typed-tasks/tts/sources": {
+  "code": 200,
+  "msg": "ok",
+  "data": [
+   {
+    "id": 11,
+    "terminalname": "TTS主机",
+    "typeid": 22,
+    "typeName": "TTS主机",
+    "ip": "192.168.2.60",
+    "netstate": 1,
+    "groupId": 2,
+    "groupName": "",
+    "switchCount": 0
+   },
+   {
+    "id": 902,
+    "terminalname": "服务器",
+    "typeid": 0,
+    "typeName": "服务器",
+    "ip": "192.168.2.159",
+    "netstate": 1,
+    "groupId": 0,
+    "groupName": "",
+    "switchCount": 1
+   }
+  ]
+ },
+ "GET /api/typed-tasks/prompts": {
+  "code": 200,
+  "msg": "ok",
+  "data": [
+   {
+    "id": 1,
+    "name": "经典提示音",
+    "timelength": 5
+   }
+  ]
+ },
+ "GET /api/register": {
+  "code": 200,
+  "msg": "ok",
+  "data": {
+   "registerflag": 1,
+   "statusText": "服务器已注册",
+   "registered": true,
+   "machineCode": "",
+   "trialDaysLeft": 1,
+   "trialNotice": "",
+   "trialUsed": false,
+   "canTrial": false,
+   "serialFileMissing": false,
+   "loginBlocked": false
+  }
+ },
+ "GET /api/register/status": {
+  "code": 200,
+  "msg": "ok",
+  "data": {
+   "registerflag": 1,
+   "statusText": "服务器已注册",
+   "registered": true,
+   "machineCode": "",
+   "trialDaysLeft": 1,
+   "trialNotice": "",
+   "trialUsed": false,
+   "canTrial": false,
+   "serialFileMissing": false,
+   "loginBlocked": false
+  }
+ },
+ "GET /api/logs/retention": {
+  "code": 200,
+  "msg": "ok",
+  "data": {
+   "option": "1m",
+   "label": "1 个月",
+   "cutoffDate": "2026-08-07",
+   "choices": [
+    {
+     "value": "1m",
+     "label": "1 个月"
+    },
+    {
+     "value": "3m",
+     "label": "3 个月"
+    },
+    {
+     "value": "6m",
+     "label": "半年"
+    },
+    {
+     "value": "1y",
+     "label": "1 年"
+    }
+   ],
+   "lastRunAt": "2026-09-07 02:07:49",
+   "lastResult": "保留 1 个月（2026-08-07 之前的已清理）：操作日志 0 条、任务日志 0 个文件",
+   "taskLogEnabled": true
+  }
+ },
+ "GET /api/assistant/status": {
+  "code": 200,
+  "msg": "ok",
+  "data": {
+   "enabled": true,
+   "lastOkAt": "2026-09-08 07:08:42",
+   "nluReady": true,
+   "nluUrl": "http://127.0.0.1:5013"
+  }
+ },
+ "GET /api/assistant/settings": {
+  "code": 200,
+  "msg": "ok",
+  "data": {}
+ },
+ "POST /api/assistant/chat": {
+  "code": 200,
+  "msg": "ok",
+  "data": {
+   "reply": "小电已经帮您查到 20 条任务，先给您看几条：晨间开功放(06:50)、春季作息/早读预备铃(07:20)、升旗现场采播(07:40)、春季作息/上午第一节上课(08:00)、欢迎标语(08:00)。 还有别的需要随时叫我哈~",
+   "intent": "query_task",
+   "confidence": 0.95,
+   "slots": {
+    "source_time": [
+     "今天"
+    ]
+   },
+   "missingSlots": [],
+   "tokens": [
+    "今",
+    "天",
+    "有",
+    "哪",
+    "些",
+    "任",
+    "务"
+   ],
+   "tags": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "actionLog": [
+    {
+     "details": {
+      "count": 20,
+      "schedule_name": "",
+      "task_name": "",
+      "tasks": [
+       {
+        "schedule_name": "",
+        "state": 0,
+        "status": "启用",
+        "task_id": "70014",
+        "task_name": "晨间开功放",
+        "time": "06:50"
+       },
+       {
+        "schedule_name": "春季作息",
+        "state": 0,
+        "status": "启用",
+        "task_id": "1001",
+        "task_name": "早读预备铃",
+        "time": "07:20"
+       },
+       {
+        "schedule_name": "",
+        "state": 0,
+        "status": "启用",
+        "task_id": "70011",
+        "task_name": "升旗现场采播",
+        "time": "07:40"
+       },
+       {
+        "schedule_name": "春季作息",
+        "state": 0,
+        "status": "启用",
+        "task_id": "1002",
+        "task_name": "上午第一节上课",
+        "time": "08:00"
+       },
+       {
+        "schedule_name": "",
+        "state": 0,
+        "status": "启用",
+        "task_id": "70016",
+        "task_name": "欢迎标语",
+        "time": "08:00"
+       },
+       {
+        "schedule_name": "操场·临时",
+        "state": 0,
+        "status": "启用",
+        "task_id": "1013",
+        "task_name": "运动会入场式",
+        "time": "08:30"
+       },
+       {
+        "schedule_name": "",
+        "state": 0,
+        "status": "启用",
+        "task_id": "70017",
+        "task_name": "考试须知",
+        "time": "08:30"
+       },
+       {
+        "schedule_name": "春季作息",
+        "state": 0,
+        "status": "启用",
+        "task_id": "1003",
+        "task_name": "第一节下课",
+        "time": "08:45"
+       },
+       {
+        "schedule_name": "春季作息",
+        "state": 0,
+        "status": "启用",
+        "task_id": "1004",
+        "task_name": "课间眼保健操",
+        "time": "09:40"
+       },
+       {
+        "schedule_name": "",
+        "state": 0,
+        "status": "启用",
+        "task_id": "70010",
+        "task_name": "课间采播",
+        "time": "09:40"
+       },
+       {
+        "schedule_name": "走廊与操场",
+        "state": 0,
+        "status": "启用",
+        "task_id": "1010",
+        "task_name": "课间轻音乐",
+        "time": "09:45"
+       },
+       {
+        "schedule_name": "春季作息",
+        "state": 0,
+        "status": "启用",
+        "task_id": "1005",
+        "task_name": "大课间活动",
+        "time": "10:00"
+       },
+       {
+        "schedule_name": "食堂",
+        "state": 0,
+        "status": "启用",
+        "task_id": "1011",
+        "task_name": "午间食堂背景music",
+        "time": "11:40"
+       },
+       {
+        "schedule_name": "",
+        "state": 0,
+        "status": "启用",
+        "task_id": "70013",
+        "task_name": "防欺凌广播",
+        "time": "12:10"
+       },
+       {
+        "schedule_name": "春季作息",
+        "state": 0,
+        "status": "启用",
+        "task_id": "1006",
+        "task_name": "午休提示",
+        "time": "12:30"
+       },
+       {
+        "schedule_name": "手动触发",
+        "state": 0,
+        "status": "启用",
+        "task_id": "1009",
+        "task_name": "消防疏散演练",
+        "time": "15:00"
+       },
+       {
+        "schedule_name": "",
+        "state": 0,
+        "status": "启用",
+        "task_id": "70012",
+        "task_name": "放学安全提示",
+        "time": "17:25"
+       },
+       {
+        "schedule_name": "春季作息",
+        "state": 0,
+        "status": "启用",
+        "task_id": "1007",
+        "task_name": "放学铃",
+        "time": "17:30"
+       },
+       {
+        "schedule_name": "教学楼",
+        "state": 0,
+        "status": "启用",
+        "task_id": "1012",
+        "task_name": "晚自习预备",
+        "time": "18:50"
+       },
+       {
+        "schedule_name": "",
+        "state": 0,
+        "status": "启用",
+        "task_id": "70015",
+        "task_name": "晚间关功放",
+        "time": "22:10"
+       }
+      ],
+      "time_range_end": "",
+      "time_range_start": "今天"
+     },
+     "intent": "query_task",
+     "mode": "query",
+     "schedule_name": ""
+    }
+   ],
+   "diagnostics": [],
+   "warnings": []
+  }
+ },
+ "GET /api/assistant/history": {
+  "code": 200,
+  "msg": "ok",
+  "data": {
+   "list": [
+    {
+     "id": 348,
+     "sessionKey": "preview",
+     "userId": 1,
+     "username": "admin",
+     "role": "assistant",
+     "text": "搞定，这次取消已经设好啦，事后会自动恢复~\n停用于 2026-09-09 07:19，恢复于 2026-09-09 07:20，涉及 早读预备铃(07:20)。",
+     "intent": "cancel_schedule",
+     "confidence": 0,
+     "slots": {},
+     "actionLog": [
+      {
+       "details": {
+        "count": 1,
+        "disable_plan_id": 17,
+        "restore_plan_id": 18,
+        "task_ids": [
+         1001
+        ],
+        "time_end": "2026-09-09 07:20:30",
+        "time_start": "2026-09-09 07:19:30"
+       },
+       "intent": "cancel_schedule",
+       "mode": "once",
+       "schedule_name": ""
+      }
+     ],
+     "status": "ok",
+     "createtime": "2026-09-08 07:08:43"
+    },
+    {
+     "id": 347,
+     "sessionKey": "preview",
+     "userId": 1,
+     "username": "admin",
+     "role": "user",
+     "text": "只这一次",
+     "intent": "",
+     "confidence": 0,
+     "slots": null,
+     "actionLog": null,
+     "status": "",
+     "createtime": "2026-09-08 07:08:43"
+    },
+    {
+     "id": 346,
+     "sessionKey": "preview",
+     "userId": 1,
+     "username": "admin",
+     "role": "assistant",
+     "text": "结果在这儿哈：当前启用中的作息方案里匹配到 1 条任务：早读预备铃(07:20)。您想这次只执行一次，还是永久这么改呢？告诉我一声哈~",
+     "intent": "cancel_schedule",
+     "confidence": 0.95,
+     "slots": {
+      "source_time": [
+       "明天"
+      ],
+      "task_name": [
+       "早读预备铃"
+      ]
+     },
+     "actionLog": [],
+     "status": "pending",
+     "createtime": "2026-09-08 07:08:43"
+    },
+    {
+     "id": 345,
+     "sessionKey": "preview",
+     "userId": 1,
+     "username": "admin",
+     "role": "user",
+     "text": "取消明天早读预备铃",
+     "intent": "",
+     "confidence": 0,
+     "slots": null,
+     "actionLog": null,
+     "status": "",
+     "createtime": "2026-09-08 07:08:42"
+    },
+    {
+     "id": 344,
+     "sessionKey": "preview",
+     "userId": 1,
+     "username": "admin",
+     "role": "assistant",
+     "text": "小电已经帮您查到 A101教室音箱 的状态：在线 1 个，离线 0 个，未知 0 个。 还有别的需要随时叫我哈~",
+     "intent": "query_terminal",
+     "confidence": 0.95,
+     "slots": {
+      "terminal_name": [
+       "A101教室"
+      ]
+     },
+     "actionLog": [
+      {
+       "details": {
+        "count": 1,
+        "offline": 0,
+        "offline_names": [],
+        "online": 1,
+        "online_ids": [
+         "1"
+        ],
+        "terminals": [
+         {
+          "devicestate": 1,
+          "netstate": "1",
+          "status": "播放中",
+          "terminal_id": 1,
+          "terminal_name": "A101教室音箱",
+          "zone": ""
+         }
+        ],
+        "unknown": 0,
+        "unknown_names": [],
+        "unresolved": {}
+       },
+       "intent": "query_terminal",
+       "mode": "query"
+      }
+     ],
+     "status": "ok",
+     "createtime": "2026-09-08 07:08:42"
+    },
+    {
+     "id": 343,
+     "sessionKey": "preview",
+     "userId": 1,
+     "username": "admin",
+     "role": "user",
+     "text": "查一下A101的状态",
+     "intent": "",
+     "confidence": 0,
+     "slots": null,
+     "actionLog": null,
+     "status": "",
+     "createtime": "2026-09-08 07:08:42"
+    },
+    {
+     "id": 342,
+     "sessionKey": "preview",
+     "userId": 1,
+     "username": "admin",
+     "role": "assistant",
+     "text": "小电已经帮您查到 20 条任务，先给您看几条：晨间开功放(06:50)、春季作息/早读预备铃(07:20)、升旗现场采播(07:40)、春季作息/上午第一节上课(08:00)、欢迎标语(08:00)。 还有别的需要随时叫我哈~",
+     "intent": "query_task",
+     "confidence": 0.95,
+     "slots": {
+      "source_time": [
+       "今天"
+      ]
+     },
+     "actionLog": [
+      {
+       "details": {
+        "count": 20,
+        "schedule_name": "",
+        "task_name": "",
+        "tasks": [
+         {
+          "schedule_name": "",
+          "state": 0,
+          "status": "启用",
+          "task_id": "70014",
+          "task_name": "晨间开功放",
+          "time": "06:50"
+         },
+         {
+          "schedule_name": "春季作息",
+          "state": 0,
+          "status": "启用",
+          "task_id": "1001",
+          "task_name": "早读预备铃",
+          "time": "07:20"
+         },
+         {
+          "schedule_name": "",
+          "state": 0,
+          "status": "启用",
+          "task_id": "70011",
+          "task_name": "升旗现场采播",
+          "time": "07:40"
+         },
+         {
+          "schedule_name": "春季作息",
+          "state": 0,
+          "status": "启用",
+          "task_id": "1002",
+          "task_name": "上午第一节上课",
+          "time": "08:00"
+         },
+         {
+          "schedule_name": "",
+          "state": 0,
+          "status": "启用",
+          "task_id": "70016",
+          "task_name": "欢迎标语",
+          "time": "08:00"
+         },
+         {
+          "schedule_name": "操场·临时",
+          "state": 0,
+          "status": "启用",
+          "task_id": "1013",
+          "task_name": "运动会入场式",
+          "time": "08:30"
+         },
+         {
+          "schedule_name": "",
+          "state": 0,
+          "status": "启用",
+          "task_id": "70017",
+          "task_name": "考试须知",
+          "time": "08:30"
+         },
+         {
+          "schedule_name": "春季作息",
+          "state": 0,
+          "status": "启用",
+          "task_id": "1003",
+          "task_name": "第一节下课",
+          "time": "08:45"
+         },
+         {
+          "schedule_name": "春季作息",
+          "state": 0,
+          "status": "启用",
+          "task_id": "1004",
+          "task_name": "课间眼保健操",
+          "time": "09:40"
+         },
+         {
+          "schedule_name": "",
+          "state": 0,
+          "status": "启用",
+          "task_id": "70010",
+          "task_name": "课间采播",
+          "time": "09:40"
+         },
+         {
+          "schedule_name": "走廊与操场",
+          "state": 0,
+          "status": "启用",
+          "task_id": "1010",
+          "task_name": "课间轻音乐",
+          "time": "09:45"
+         },
+         {
+          "schedule_name": "春季作息",
+          "state": 0,
+          "status": "启用",
+          "task_id": "1005",
+          "task_name": "大课间活动",
+          "time": "10:00"
+         },
+         {
+          "schedule_name": "食堂",
+          "state": 0,
+          "status": "启用",
+          "task_id": "1011",
+          "task_name": "午间食堂背景music",
+          "time": "11:40"
+         },
+         {
+          "schedule_name": "",
+          "state": 0,
+          "status": "启用",
+          "task_id": "70013",
+          "task_name": "防欺凌广播",
+          "time": "12:10"
+         },
+         {
+          "schedule_name": "春季作息",
+          "state": 0,
+          "status": "启用",
+          "task_id": "1006",
+          "task_name": "午休提示",
+          "time": "12:30"
+         },
+         {
+          "schedule_name": "手动触发",
+          "state": 0,
+          "status": "启用",
+          "task_id": "1009",
+          "task_name": "消防疏散演练",
+          "time": "15:00"
+         },
+         {
+          "schedule_name": "",
+          "state": 0,
+          "status": "启用",
+          "task_id": "70012",
+          "task_name": "放学安全提示",
+          "time": "17:25"
+         },
+         {
+          "schedule_name": "春季作息",
+          "state": 0,
+          "status": "启用",
+          "task_id": "1007",
+          "task_name": "放学铃",
+          "time": "17:30"
+         },
+         {
+          "schedule_name": "教学楼",
+          "state": 0,
+          "status": "启用",
+          "task_id": "1012",
+          "task_name": "晚自习预备",
+          "time": "18:50"
+         },
+         {
+          "schedule_name": "",
+          "state": 0,
+          "status": "启用",
+          "task_id": "70015",
+          "task_name": "晚间关功放",
+          "time": "22:10"
+         }
+        ],
+        "time_range_end": "",
+        "time_range_start": "今天"
+       },
+       "intent": "query_task",
+       "mode": "query",
+       "schedule_name": ""
+      }
+     ],
+     "status": "ok",
+     "createtime": "2026-09-08 07:08:42"
+    },
+    {
+     "id": 341,
+     "sessionKey": "preview",
+     "userId": 1,
+     "username": "admin",
+     "role": "user",
+     "text": "今天有哪些任务",
+     "intent": "",
+     "confidence": 0,
+     "slots": null,
+     "actionLog": null,
+     "status": "",
+     "createtime": "2026-09-08 07:08:42"
+    }
+   ]
+  }
+ }
+}
