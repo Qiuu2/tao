@@ -9,6 +9,7 @@ import (
 	"htweb/internal/auth"
 	"htweb/internal/httpx"
 	"htweb/internal/openapi"
+	"htweb/internal/task"
 )
 
 // 开发者接口（/openapi/v1）的 handler。
@@ -112,9 +113,102 @@ func (a *app) failOpen(w http.ResponseWriter, where string, err error) {
 	switch {
 	case errors.As(err, &ve):
 		httpx.Fail(w, httpx.CodeBadRequest, ve.Error())
-	case errors.Is(err, openapi.ErrKeyNotFound):
+	case errors.Is(err, openapi.ErrKeyNotFound), errors.Is(err, task.ErrNotFound):
 		httpx.Fail(w, httpx.CodeNotFound, "对象不存在")
+	case errors.Is(err, task.ErrNoPermission), errors.Is(err, task.ErrFolderDenied):
+		httpx.Fail(w, httpx.CodeForbidden, err.Error())
 	default:
+		// 动作是交给 task.Service 做的，它的校验错误也是**调用方填错了**，
+		// 得原样说出来。复用界面那边同一个判别器，别在这里另写一套 ——
+		// 两套关键词表迟早会分叉，分叉的表现是同一个错误在界面上说得清楚、
+		// 在接口上却只回一句「服务器内部错误」。
+		if isTaskValidationErr(err) {
+			httpx.Fail(w, httpx.CodeBadRequest, err.Error())
+			return
+		}
 		httpx.Internal(w, where, err)
 	}
 }
+
+// ---------- 任务：新建 / 修改 / 删除 / 启停 ----------
+
+func (a *app) handleOpenTaskCreate(w http.ResponseWriter, r *http.Request) {
+	var in openapi.TaskInput
+	if !httpx.DecodeJSON(w, r, &in) {
+		return
+	}
+	res, err := a.openAPI.CreateTask(r.Context(), auth.From(r.Context()), in)
+	if err != nil {
+		a.failOpen(w, "新建任务", err)
+		return
+	}
+	httpx.OK(w, res)
+}
+
+func (a *app) handleOpenTaskUpdate(w http.ResponseWriter, r *http.Request) {
+	var in openapi.TaskInput
+	if !httpx.DecodeJSON(w, r, &in) {
+		return
+	}
+	res, err := a.openAPI.UpdateTask(r.Context(), auth.From(r.Context()), pathRef(r), in)
+	if err != nil {
+		a.failOpen(w, "修改任务", err)
+		return
+	}
+	httpx.OK(w, res)
+}
+
+// openRefsReq 是「一批对象」的通用请求体，名字或编号都行。
+type openRefsReq struct {
+	Tasks []openapi.Ref `json:"tasks"`
+}
+
+func (a *app) handleOpenTaskAction(w http.ResponseWriter, r *http.Request) {
+	var in openRefsReq
+	if !httpx.DecodeJSON(w, r, &in) {
+		return
+	}
+	action := openapi.TaskAction(r.PathValue("action"))
+	res, err := a.openAPI.ControlTasks(r.Context(), auth.From(r.Context()), action, in.Tasks)
+	if err != nil {
+		a.failOpen(w, "任务启停", err)
+		return
+	}
+	httpx.OK(w, res)
+}
+
+func (a *app) handleOpenTaskDelete(w http.ResponseWriter, r *http.Request) {
+	// 删除既支持 DELETE /tasks/{ref} 删一条，也支持 DELETE /tasks 批量。
+	// 单条那条路径存在的理由很实际：大多数调用方的 HTTP 客户端
+	// 给 DELETE 带请求体很别扭，有的干脆不支持。
+	var refs []openapi.Ref
+	if ref := pathRef(r); !refEmpty(ref) {
+		refs = []openapi.Ref{ref}
+	} else {
+		var in openRefsReq
+		if !httpx.DecodeJSON(w, r, &in) {
+			return
+		}
+		refs = in.Tasks
+	}
+	res, err := a.openAPI.DeleteTasks(r.Context(), auth.From(r.Context()), refs)
+	if err != nil {
+		a.failOpen(w, "删除任务", err)
+		return
+	}
+	httpx.OK(w, res)
+}
+
+// pathRef 把路径上的 {ref} 读成一个引用：纯数字当编号，其余当名字。
+func pathRef(r *http.Request) openapi.Ref {
+	v := strings.TrimSpace(r.PathValue("ref"))
+	if v == "" {
+		return openapi.Ref{}
+	}
+	if n, err := strconv.ParseInt(v, 10, 64); err == nil && n > 0 {
+		return openapi.Ref{ID: n}
+	}
+	return openapi.Ref{Name: v}
+}
+
+func refEmpty(ref openapi.Ref) bool { return ref.ID == 0 && ref.Name == "" }

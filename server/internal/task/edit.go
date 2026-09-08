@@ -754,6 +754,9 @@ func mustTypeInPlain() string {
 func typeArgsPlain() []interface{} { return typeArgs() }
 
 // PriorityRange 是当前用户能选的任务级别区间，供各任务表单的下拉直接用。
+//
+// ⚠ 返回的是 [最高, 最低] —— 优先级**数字小的赢**（10 最高、109 最低），
+// 所以第二个返回值才是「最低优先级」。开发者接口没给优先级时取的就是它。
 func (s *Service) PriorityRange(ctx context.Context, u *auth.User) (int, int, error) {
 	return s.priorityRange(ctx, u.ID)
 }

@@ -69,6 +69,12 @@ func LEDSubTypes() []int { return append([]int{}, ledSubTypes...) }
 // fileTypes 是「文件广播任务」的类型集合（BR-159）。
 var fileTypes = []int{TypeFile, TypeFileAlt}
 
+// FileTypes 给包外用的只读副本。
+//
+// 开发者接口要按同一个集合限定「任务」的范围 —— 写死一份 {2,7} 在那边的话，
+// 这里哪天加一个类型，那边就会静默地少认一类任务。
+func FileTypes() []int { return append([]int{}, fileTypes...) }
+
 // AreaAll 是终端区域掩码的默认值。
 //
 // 注意：旧 addfileplaytask_msg 里写死的是 16 个 1，而列定义的默认值和

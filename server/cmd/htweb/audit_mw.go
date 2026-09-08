@@ -44,6 +44,16 @@ var auditLabels = map[string]string{
 	"DELETE /api/media":                  "删除媒体",
 	"POST /api/folders/{id}/media:clear": "清空媒体目录",
 
+	// 开发者接口的写操作。**标签上带「开发者接口」四个字**是有意的：
+	// 同样是新建任务，界面上点的和第三方系统调的，追责时是两回事 ——
+	// 混成一个名字的话，日志里只能看到「admin 新建任务」，
+	// 看不出这一下到底是人点的还是某个集成系统自动发的。
+	"POST /openapi/v1/tasks":                  "开发者接口：新建任务",
+	"PUT /openapi/v1/tasks/{ref}":             "开发者接口：修改任务",
+	"POST /openapi/v1/tasks/actions/{action}": "开发者接口：任务启停",
+	"DELETE /openapi/v1/tasks/{ref}":          "开发者接口：删除任务",
+	"DELETE /openapi/v1/tasks":                "开发者接口：删除任务",
+
 	// 开发者密钥。发一把密钥等于把一个账号的权限借出去，
 	// 这三个动作必须留痕 —— 出事时要能回答「这把密钥是谁什么时候发的」。
 	"POST /api/openapi-keys":           "新建开发者密钥",

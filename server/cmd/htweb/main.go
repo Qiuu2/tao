@@ -750,6 +750,22 @@ func (a *app) routes() http.Handler {
 	mux.HandleFunc("GET /openapi/v1/schedules", openq(a.handleOpenScheduleList))
 	mux.HandleFunc("GET /openapi/v1/schedules/{name}", openq(a.handleOpenScheduleGet))
 
+	// 写操作再要一个权限位。取的是**密钥归属账号**的权限位 ——
+	// 想给第三方多大权限，就在用户管理里给那个账号配多大，一处配置两处生效。
+	openTask := func(h http.HandlerFunc) http.HandlerFunc {
+		return a.openRight(auth.PrivTask, h)
+	}
+	// 「添加任务」是一次调用带上媒体、终端、任务信息 —— 与界面上那一屏对应。
+	mux.HandleFunc("POST /openapi/v1/tasks", openTask(a.handleOpenTaskCreate))
+	mux.HandleFunc("PUT /openapi/v1/tasks/{ref}", openTask(a.handleOpenTaskUpdate))
+	// {action} ∈ start / stop（现在播、现在停）| enable / disable（启用、停用）
+	//
+	// ⚠ 动作单独占一段路径，不写成 /tasks:{action} —— ServeMux 的通配符
+	//   必须是**完整的一段**，写成那样启动时就 panic 了。
+	mux.HandleFunc("POST /openapi/v1/tasks/actions/{action}", openTask(a.handleOpenTaskAction))
+	mux.HandleFunc("DELETE /openapi/v1/tasks/{ref}", openTask(a.handleOpenTaskDelete))
+	mux.HandleFunc("DELETE /openapi/v1/tasks", openTask(a.handleOpenTaskDelete))
+
 	// —— 健康检查（不需要登录，便于运维探活）——
 	mux.HandleFunc("GET /api/health", a.handleHealth)
 
