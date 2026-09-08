@@ -495,6 +495,20 @@
       "path": "/user/group"
      },
      {
+      "component": "/openapi/keys/index",
+      "meta": {
+       "icon": "Key",
+       "isAffix": false,
+       "isFull": false,
+       "isHide": false,
+       "isKeepAlive": true,
+       "isLink": "",
+       "title": "开发者密钥"
+      },
+      "name": "openapiKeys",
+      "path": "/user/openapi-keys"
+     },
+     {
       "component": "/register/index",
       "meta": {
        "icon": "Ticket",
@@ -573,6 +587,11 @@
     "delete": true,
     "folder": true,
     "upload": true
+   },
+   "openapikey": {
+    "add": true,
+    "control": true,
+    "delete": true
    },
    "remote": {
     "edit": true
@@ -9160,5 +9179,35 @@
     }
    ]
   }
+ },
+ "GET /api/openapi-keys": {
+  "code": 200,
+  "msg": "ok",
+  "data": [
+   {
+    "id": 5,
+    "name": "消防告警平台",
+    "prefix": "bwzYAaqk",
+    "userId": 1,
+    "userName": "admin",
+    "enabled": false,
+    "expiretime": "2027-06-30 23:59:59",
+    "lastusedtime": "",
+    "lastusedip": "",
+    "createtime": "2026-09-08 08:20:42"
+   },
+   {
+    "id": 4,
+    "name": "教务系统",
+    "prefix": "PRTQCc38",
+    "userId": 1,
+    "userName": "admin",
+    "enabled": true,
+    "expiretime": "",
+    "lastusedtime": "2026-09-08 07:41:12",
+    "lastusedip": "192.168.2.240",
+    "createtime": "2026-09-08 08:20:42"
+   }
+  ]
  }
 }
