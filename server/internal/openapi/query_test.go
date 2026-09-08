@@ -3,6 +3,8 @@ package openapi
 import (
 	"reflect"
 	"testing"
+
+	"htweb/internal/auth"
 )
 
 // exemodel 的位序是这套系统里最容易搞反的一件事，而搞反了**不报错**——
@@ -111,5 +113,18 @@ func TestHintNear(t *testing.T) {
 	}
 	if got := hintNear("完全不沾边", rows); got != "" {
 		t.Fatalf("不沾边的名字不该有提示，得到 %q", got)
+	}
+}
+
+// 密钥的请求头名在两个包里各有一份常量：openapi.HeaderAPIKey（规格与文档用）
+// 和 auth.HeaderAPIKey（中间件用）。不能合并 —— openapi 依赖 auth，
+// 反过来 import 就成环了。
+//
+// 两处一旦不一致，症状很难查：规格和文档里写着一个头名，中间件认的是另一个，
+// 集成方照着文档写，收到的却是「缺少 X-API-Key」。所以钉住它。
+func TestHeaderNameMatchesAuthPackage(t *testing.T) {
+	if HeaderAPIKey != auth.HeaderAPIKey {
+		t.Fatalf("openapi.HeaderAPIKey = %q，auth.HeaderAPIKey = %q —— 两处必须一致",
+			HeaderAPIKey, auth.HeaderAPIKey)
 	}
 }

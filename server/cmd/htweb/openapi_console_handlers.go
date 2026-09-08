@@ -28,8 +28,17 @@ import (
 // 走后端代理的话，代理是用登录身份还是用密钥就成了一个说不清的问题，
 // 而「在平台上能跑、在你那儿跑不通」是最难查的一类问题。
 
+// handleOpenAPISpec 把两类接口合成一份目录给界面。
+//
+//	常用接口    /openapi/v1 那 15 个 —— 名字寻址、参数是人话、只增不改
+//	全部功能接口 /api 里开放给密钥的那些 —— 覆盖每一个页面功能，跟着界面走
+//
+// 分两段列而不是混在一起，是因为它们的定位不同：
+// 混着列会让人以为随便挑一个都一样，然后把集成建在一条会随界面改版的路径上。
 func (a *app) handleOpenAPISpec(w http.ResponseWriter, r *http.Request) {
-	httpx.OK(w, openapi.Catalog())
+	spec := openapi.Catalog()
+	spec.Groups = append(spec.Groups, APICatalog()...)
+	httpx.OK(w, spec)
 }
 
 // handleOpenAPIJSON 吐标准 OpenAPI 文档。

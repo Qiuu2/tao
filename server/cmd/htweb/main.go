@@ -158,6 +158,16 @@ func main() {
 	// 开发者接口同理：认证换成密钥，动作还是这几个 service
 	a.openAPI = openapi.New(st.DB(), a.authMgr)
 	a.openAPI.Attach(a.tasks, a.bells, a.terminals, a.zones, a.medias, a.enables, a.notifier)
+	// 让**全站**的鉴权中间件也认开发者密钥。
+	//
+	// 装在这一处，而不是给密钥另建一套路由：另建一套就是另一套鉴权代码，
+	// 两套迟早分叉，而分叉的表现是「接口上比界面多一条口子」。
+	// 现在密钥与会话共用同一条中间件、同一个 *auth.User，
+	// 所以「用密钥能做什么」永远等于「这个账号在界面上能做什么」。
+	//
+	// 哪些接口允许密钥调，是另一件事（暴露面），由 keyGate 的白名单管，
+	// 见 openapi_expose.go。
+	a.authMgr.SetKeyAuth(a.openAPI.Authenticate)
 
 	srv := &http.Server{
 		Addr:              cfg.Server.Listen,
@@ -805,7 +815,10 @@ type auditMux struct {
 }
 
 func (x *auditMux) HandleFunc(pattern string, h http.HandlerFunc) {
-	x.m.HandleFunc(pattern, x.a.withAudit(auditFor(pattern), h))
+	// keyGate 在最外层：不在开放清单里的接口，用开发者密钥调一律拒绝。
+	// 放最外层是为了让它先于操作日志跑 —— 被拒的请求不该在日志里
+	// 留下一条「某某做了某某」。
+	x.m.HandleFunc(pattern, keyGate(pattern, x.a.withAudit(auditFor(pattern), h)))
 }
 
 // ---------- 认证 ----------

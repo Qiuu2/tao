@@ -75,19 +75,28 @@
       <!-- 左：接口目录 -->
       <div class="card nav">
         <el-input v-model="filter" placeholder="搜接口" clearable size="small" :prefix-icon="Search" class="nav-search" />
-        <div v-for="g in visibleGroups" :key="g.name" class="nav-group">
-          <div class="nav-group-name">{{ g.name }}</div>
-          <div
-            v-for="ep in g.endpoints"
-            :key="ep.id"
-            class="nav-item"
-            :class="{ active: current?.id === ep.id }"
-            @click="select(ep)"
-          >
-            <span class="method" :class="'m-' + ep.method.toLowerCase()">{{ ep.method }}</span>
-            <span class="nav-summary">{{ ep.summary }}</span>
+        <!-- 两类接口分两段列，不混在一起：它们的定位不同，
+             混着列会让人以为随便挑一个都一样，然后把集成建在一条
+             会随界面改版的路径上。 -->
+        <template v-for="sec in sections" :key="sec.key">
+          <div v-if="sec.groups.length" class="nav-section">
+            <div class="nav-section-title">{{ sec.title }}</div>
+            <div class="nav-section-hint">{{ sec.hint }}</div>
           </div>
-        </div>
+          <div v-for="g in sec.groups" :key="g.name" class="nav-group">
+            <div class="nav-group-name">{{ g.name }}</div>
+            <div
+              v-for="ep in g.endpoints"
+              :key="ep.id"
+              class="nav-item"
+              :class="{ active: current?.id === ep.id }"
+              @click="select(ep, g)"
+            >
+              <span class="method" :class="'m-' + ep.method.toLowerCase()">{{ ep.method }}</span>
+              <span class="nav-summary">{{ ep.summary }}</span>
+            </div>
+          </div>
+        </template>
         <div v-if="!visibleGroups.length" class="nav-empty">没有匹配的接口</div>
       </div>
 
@@ -95,11 +104,21 @@
       <div class="card detail" v-if="current">
         <div class="detail-head">
           <span class="method big" :class="'m-' + current.method.toLowerCase()">{{ current.method }}</span>
-          <span class="mono path">{{ spec?.prefix }}{{ current.path }}</span>
+          <span class="mono path">{{ currentPrefix }}{{ current.path }}</span>
           <el-tag size="small" effect="plain" class="right-tag">需要：{{ current.right }}</el-tag>
         </div>
         <h3 class="detail-title">{{ current.summary }}</h3>
-        <p class="detail-desc">{{ current.desc }}</p>
+        <p v-if="current.desc" class="detail-desc">{{ current.desc }}</p>
+
+        <!-- 全功能那一组要把「跟着界面走」说在前面，别让人把集成建在会变的路径上 -->
+        <el-alert
+          v-if="current.freeform"
+          type="info"
+            :closable="false"
+          class="note"
+          title="这是「全部功能接口」里的一条 —— 界面自己用的那套接口"
+          description="它覆盖到这个页面功能的每一个动作，但参数就是界面在用的那套，这里没有逐条抄（抄了势必抄错、也跟不上改动）。要看确切参数，用浏览器开发者工具看一次界面发的请求最准。另外这一组跟着界面走，页面改版时可能变；能用「常用接口」解决的，优先用那边。"
+        />
 
         <el-alert
           v-for="(n, i) in current.notes"
@@ -152,7 +171,14 @@
         <!-- 试一试 -->
         <h4 class="sec">试一试</h4>
         <div class="try">
-          <div v-if="current.params?.length" class="try-params">
+          <!-- 没有逐参数说明的：给一个可编辑的完整路径。
+               路径里的 {id} 之类要自己换成真值，query 也直接写在后面。 -->
+          <div v-if="current.freeform" class="try-row">
+            <label class="try-label">请求路径</label>
+            <el-input v-model="freePath" size="small" class="mono" placeholder="/api/... 路径里的 {id} 换成真值，query 直接写在后面" />
+          </div>
+
+          <div v-else-if="current.params?.length" class="try-params">
             <div v-for="p in current.params" :key="p.name" class="try-row">
               <label class="try-label">
                 {{ p.name }}
@@ -162,7 +188,22 @@
             </div>
           </div>
 
-          <div v-if="current.body !== undefined && current.body !== ''" class="try-body">
+          <div v-if="current.freeform && current.method !== 'GET'" class="try-body">
+            <div class="try-body-head">
+              <span>请求体（JSON，没有就留空）</span>
+            </div>
+            <el-input
+              v-model="bodyText"
+              type="textarea"
+              :rows="bodyRows"
+              class="mono"
+              spellcheck="false"
+              placeholder='比如 { "ids": [1, 2] }'
+            />
+            <div v-if="bodyErr" class="err">{{ bodyErr }}</div>
+          </div>
+
+          <div v-else-if="!current.freeform && current.body !== undefined && current.body !== ''" class="try-body">
             <div class="try-body-head">
               <span>请求体（JSON）</span>
               <el-button link type="primary" size="small" @click="resetBody">恢复示例</el-button>
@@ -226,7 +267,7 @@ import { computed, onMounted, reactive, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 
 import { getApiSpecApi } from "@/api/modules/openapispec";
-import type { ApiSpec, SpecEndpoint } from "@/api/modules/openapispec";
+import type { ApiSpec, SpecEndpoint, SpecGroup } from "@/api/modules/openapispec";
 import { useUserStore } from "@/stores/modules/user";
 
 const router = useRouter();
@@ -256,13 +297,51 @@ const visibleGroups = computed(() => {
   const groups = spec.value?.groups ?? [];
   if (!kw) return groups;
   return groups
-    .map(g => ({ ...g, endpoints: g.endpoints.filter(e => (e.summary + e.path + e.desc).toLowerCase().includes(kw)) }))
+    .map(g => {
+      // 分组名也参与匹配：找接口的人多半按**页面**想（「看板」「作息方案」），
+      // 而单条接口的说明里未必出现那个词。搜「看板」只命中不到「首页总览数据」
+      // 会让人以为没有这个接口。
+      const groupHit = (g.name + g.desc).toLowerCase().includes(kw);
+      return {
+        ...g,
+        endpoints: groupHit
+          ? g.endpoints
+          : g.endpoints.filter(e => (e.summary + e.path + (e.desc ?? "")).toLowerCase().includes(kw))
+      };
+    })
     .filter(g => g.endpoints.length);
 });
+
+/**
+ * 两段：常用接口 / 全部功能接口。
+ *
+ * 分开列而不是混在一起 —— 它们的定位不同：一个是不会变的合同，
+ * 一个跟着界面走。混着列会让人以为随便挑一个都一样，
+ * 然后把集成建在一条会随界面改版的路径上。
+ */
+const sections = computed(() => [
+  {
+    key: "curated",
+    title: "常用接口",
+    hint: "名字寻址、参数是人话、路径带版本号，只增不改。集成优先用这些。",
+    groups: visibleGroups.value.filter(g => g.section === "curated")
+  },
+  {
+    key: "full",
+    title: "全部功能接口",
+    hint: "界面自己用的那套，覆盖每一个页面功能。跟着界面走，改版时可能变。",
+    groups: visibleGroups.value.filter(g => g.section !== "curated")
+  }
+]);
+
+/** 当前接口所属分组的路径前缀（常用接口是 /openapi/v1，全功能那组是空串）。 */
+const currentPrefix = ref("");
 
 /* ---------------- 试一试的表单 ---------------- */
 
 const paramValues = reactive<Record<string, string>>({});
+/** 全功能那组用的可编辑路径（含 query）。 */
+const freePath = ref("");
 const bodyText = ref("");
 const bodyErr = ref("");
 const sending = ref(false);
@@ -270,13 +349,16 @@ const resp = ref<{ ok: boolean; code: number | string; msg: string; text: string
 
 const bodyRows = computed(() => Math.min(18, Math.max(4, bodyText.value.split("\n").length + 1)));
 
-const select = (ep: SpecEndpoint) => {
+const select = (ep: SpecEndpoint, group?: SpecGroup) => {
   current.value = ep;
+  currentPrefix.value = group?.prefix ?? spec.value?.prefix ?? "";
   resp.value = undefined;
   bodyErr.value = "";
   Object.keys(paramValues).forEach(k => delete paramValues[k]);
   (ep.params ?? []).forEach(p => (paramValues[p.name] = p.example ?? ""));
   bodyText.value = ep.body ?? "";
+  // 没有逐参数说明的：路径本身可编辑，预填原样（含 {id} 这类占位）
+  freePath.value = currentPrefix.value + ep.path;
 };
 
 const resetBody = () => {
@@ -288,7 +370,10 @@ const resetBody = () => {
 const builtPath = computed(() => {
   const ep = current.value;
   if (!ep) return "";
-  let path = (spec.value?.prefix ?? "") + ep.path;
+  // 没有逐参数说明的：整条路径由用户自己写（含 query），原样发出去
+  if (ep.freeform) return freePath.value.trim();
+
+  let path = currentPrefix.value + ep.path;
   const qs: string[] = [];
   for (const p of ep.params ?? []) {
     const v = (paramValues[p.name] ?? "").trim();
@@ -418,8 +503,9 @@ watch(apiKey, v => {
 onMounted(async () => {
   const { data } = await getApiSpecApi();
   spec.value = data;
-  const first = data?.groups?.[0]?.endpoints?.[0];
-  if (first) select(first);
+  const firstGroup = data?.groups?.[0];
+  const first = firstGroup?.endpoints?.[0];
+  if (first) select(first, firstGroup);
 
   try {
     const saved = sessionStorage.getItem(SESSION_KEY);
@@ -520,6 +606,27 @@ onMounted(async () => {
 
   .nav-search {
     margin-bottom: 10px;
+  }
+  .nav-section {
+    padding: 14px 6px 4px;
+    margin-top: 6px;
+    border-top: 1px solid var(--el-border-color-lighter);
+
+    &:first-child {
+      margin-top: 0;
+      border-top: 0;
+    }
+  }
+  .nav-section-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--el-text-color-primary);
+  }
+  .nav-section-hint {
+    margin-top: 2px;
+    font-size: 11px;
+    line-height: 1.6;
+    color: var(--el-text-color-secondary);
   }
   .nav-group-name {
     padding: 10px 6px 6px;

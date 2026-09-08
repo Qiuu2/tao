@@ -153,6 +153,53 @@ type Manager struct {
 
 	mu       sync.RWMutex
 	sessions map[string]*session
+
+	// keyAuth 认一把开发者密钥，返回它归属的账号。
+	//
+	// ⚠ 用函数字段而不是直接调 openapi 包：openapi 依赖 auth（它要返回
+	// *auth.User），反过来 import 就成环了。启动时由 main 装进来；
+	// 没装的时候恒为 nil，行为与从前完全一致。
+	keyAuth func(ctx context.Context, plain string) (*User, string, error)
+}
+
+// SetKeyAuth 装上开发者密钥的认证函数。启动时调用一次。
+func (m *Manager) SetKeyAuth(fn func(ctx context.Context, plain string) (*User, string, error)) {
+	m.keyAuth = fn
+}
+
+// HeaderAPIKey 是开发者密钥的请求头名。
+//
+// ⚠ 与 openapi.HeaderAPIKey 必须是同一个值，但这里不能 import 那个包
+// （会成环）。openapi 包里有一个测试盯着这两个常量是否一致。
+const HeaderAPIKey = "X-API-Key"
+
+// viaKeyCtx 标记「这个请求是用密钥认证的」，值是那把密钥的前缀。
+type viaKeyCtx struct{}
+
+// ViaAPIKey 报告这个请求是不是用开发者密钥认证的，以及是哪一把（前缀）。
+//
+// ⚠ 只有在**鉴权中间件跑过之后**才有值。要在中间件之前判断，用 WillUseAPIKey。
+func ViaAPIKey(ctx context.Context) (prefix string, ok bool) {
+	v, ok := ctx.Value(viaKeyCtx{}).(string)
+	return v, ok
+}
+
+// WillUseAPIKey 预判这个请求会不会走密钥这条路。
+//
+// # 为什么需要「预判」这么个东西
+//
+// 路由层要挡住「用密钥调不开放的接口」，而那一层跑在鉴权中间件**之前**，
+// 那时候上下文里还什么都没有。第一版就栽在这儿：keyGate 去问 ViaAPIKey，
+// 永远拿到 false，于是恢复出厂、发密钥、助手对话全都能用密钥调通 ——
+// 挡板装了，但装在了它要挡的东西前面。
+//
+// 判断规则必须与 require 里的**完全一致**（有会话令牌就走会话，
+// 没有才看密钥），所以两处都从这一个函数出发，不各写各的。
+func WillUseAPIKey(r *http.Request) bool {
+	if strings.TrimSpace(r.Header.Get(HeaderToken)) != "" {
+		return false
+	}
+	return strings.TrimSpace(r.Header.Get(HeaderAPIKey)) != ""
 }
 
 func NewManager(db *sql.DB, secret string, ttl time.Duration) *Manager {
@@ -422,18 +469,48 @@ func (m *Manager) RequireAllowQueryToken(next http.HandlerFunc) http.HandlerFunc
 
 func (m *Manager) require(next http.HandlerFunc, allowQuery bool) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		// ⚠ 这里的取舍顺序（先会话、后密钥）就是 WillUseAPIKey 判断的依据，
+		//   两处必须一致，改一处要改两处。
 		token := r.Header.Get(HeaderToken)
 		if token == "" && allowQuery {
 			token = r.URL.Query().Get("token")
 		}
-		u, ok := m.Resolve(token)
-		if !ok {
+		if u, ok := m.Resolve(token); ok {
+			next(w, r.WithContext(context.WithValue(r.Context(), userKey, u)))
+			return
+		}
+
+		// 没有有效会话时再看开发者密钥。
+		//
+		// # 为什么让密钥走同一条中间件，而不是另建一套路由
+		//
+		// 「用密钥能做什么」必须与「这个账号在界面上能做什么」完全一致。
+		// 另建一套路由就意味着另一套鉴权代码，两套迟早会分叉 ——
+		// 分叉的表现是**接口上比界面多一条口子**，而没有人会注意到。
+		// 同一条中间件、同一个 *User，权限位与可见范围自然就是一致的。
+		//
+		// 「哪些接口允许密钥调」是另一件事（暴露面），由路由层的开放清单
+		// 决定，见 cmd/htweb 的 keyGate。身份归身份，暴露面归暴露面。
+		if key := strings.TrimSpace(r.Header.Get(HeaderAPIKey)); key != "" && m.keyAuth != nil {
+			u, prefix, err := m.keyAuth(r.Context(), key)
+			if err == nil && u != nil {
+				ctx := context.WithValue(r.Context(), userKey, u)
+				ctx = context.WithValue(ctx, viaKeyCtx{}, prefix)
+				next(w, r.WithContext(ctx))
+				return
+			}
+			// ⚠ 对外恒定一句话。真实原因（不存在 / 已停用 / 已过期 /
+			// 归属账号被停用）由 keyAuth 写进服务端日志 ——
+			// 对着接口试密钥的人不该从错误信息里学到任何东西。
 			writeJSON(w, map[string]interface{}{
-				"code": 401, "msg": "登录已过期，请重新登录", "data": nil,
+				"code": 401, "msg": "密钥无效", "data": nil,
 			})
 			return
 		}
-		next(w, r.WithContext(context.WithValue(r.Context(), userKey, u)))
+
+		writeJSON(w, map[string]interface{}{
+			"code": 401, "msg": "登录已过期，请重新登录", "data": nil,
+		})
 	}
 }
 

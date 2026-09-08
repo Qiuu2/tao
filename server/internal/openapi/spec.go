@@ -63,12 +63,29 @@ type Endpoint struct {
 	// Danger 为真时界面上会把「试一试」标红并要求再确认 ——
 	// 这些接口会真的让喇叭响、或者真的删东西。
 	Danger bool `json:"danger"`
+	// Freeform 为真表示**这一条没有逐参数的说明**，平台上给一个可编辑的
+	// 完整路径 + 自由 JSON 请求体。
+	//
+	// ⚠ 这是刻意的诚实，不是偷懒的借口：全功能那 200 多条接口的参数
+	// 就是界面在用的那一套，逐条抄一遍势必抄错、也势必跟不上改动，
+	// 而一份**看起来完整但有错**的参数说明，比明说「这里没有」更坏。
+	// 要参数照着抄，用浏览器开发者工具看一次界面发的请求最准。
+	Freeform bool `json:"freeform"`
 }
 
 // Group 是一组按**界面功能**归拢的接口。
 type Group struct {
-	Name      string     `json:"name"`
-	Desc      string     `json:"desc"`
+	Name string `json:"name"`
+	Desc string `json:"desc"`
+	// Prefix 是这一组接口的路径前缀。
+	//
+	// 「常用接口」那几组是 /openapi/v1（带版本号的稳定合同）；
+	// 「全部功能接口」那些的 Path 本身就是完整路径（/api/...），Prefix 留空。
+	Prefix string `json:"prefix"`
+	// Section 把两类接口在界面上分开：curated / full。
+	// 它们的定位不同（一个是稳定合同，一个跟着界面走），
+	// 混在一起列会让人以为随便挑一个都一样。
+	Section   string     `json:"section"`
 	Endpoints []Endpoint `json:"endpoints"`
 }
 
@@ -85,18 +102,34 @@ type Spec struct {
 // ⚠ 加接口时**这里也要加一条**。漏了的后果不是报错，而是这个接口对外
 // 等于不存在 —— 没人知道它能用。
 func Catalog() Spec {
+	groups := []Group{
+		groupQuery(),
+		groupTask(),
+		groupPlay(),
+		groupSchedule(),
+	}
+	// 这四组都是 /openapi/v1 下的「常用接口」
+	for i := range groups {
+		groups[i].Prefix = "/openapi/v1"
+		groups[i].Section = SectionCurated
+	}
 	return Spec{
 		Title:   "IP数字网络广播系统 · 开发者接口",
 		Version: "v1",
 		Prefix:  "/openapi/v1",
-		Groups: []Group{
-			groupQuery(),
-			groupTask(),
-			groupPlay(),
-			groupSchedule(),
-		},
+		Groups:  groups,
 	}
 }
+
+// 两类接口的分区标记。
+const (
+	// SectionCurated 是 /openapi/v1 那一组：名字寻址、参数是人话、
+	// 路径带版本号、**只增不改**。集成时优先用它。
+	SectionCurated = "curated"
+	// SectionFull 是全部功能接口（/api）：界面用什么，它就是什么，
+	// 覆盖每一个页面功能，但**跟着界面走**，页面改版时可能变。
+	SectionFull = "full"
+)
 
 func groupQuery() Group {
 	return Group{
