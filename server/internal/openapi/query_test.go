@@ -128,3 +128,83 @@ func TestHeaderNameMatchesAuthPackage(t *testing.T) {
 			HeaderAPIKey, auth.HeaderAPIKey)
 	}
 }
+
+// 每一条**有响应示例**的接口，都必须逐字段解释那个示例。
+//
+// # 为什么
+//
+// 光贴一段示例 JSON 是不够的：`"priority": 8` 里的 8 是什么？数字大就优先吗
+// （不是，正好反过来）？`"weekdays": [7]` 的 7 是周日还是周六？
+// 集成方猜错了**不会报错**，只会在错误的那天广播。
+//
+// 漏写 Returns 不会有任何症状 —— 平台上少一块，没人会发现。所以要有测试。
+func TestEverySampleIsExplained(t *testing.T) {
+	for _, g := range Catalog().Groups {
+		for _, ep := range g.Endpoints {
+			if ep.Sample == "" {
+				continue
+			}
+			if len(ep.Returns) == 0 {
+				t.Errorf("%s %s（%s）给了响应示例却没解释里面的字段",
+					ep.Method, ep.Path, ep.Summary)
+				continue
+			}
+			for _, f := range ep.Returns {
+				if f.Name == "" || f.Desc == "" {
+					t.Errorf("%s %s 的响应字段说明有空项：%+v", ep.Method, ep.Path, f)
+				}
+			}
+		}
+	}
+}
+
+// 取值对照表本身也要完整：每张表都得有字段名、标题、说明和至少两个取值。
+//
+// 只有一个取值的「对照表」说明没写全 —— 二值字段至少两条，
+// 而一个字段如果真的只有一个可能取值，它就不需要对照表。
+func TestCodeTablesAreComplete(t *testing.T) {
+	tables := Catalog().Codes
+	if len(tables) < 8 {
+		t.Fatalf("取值对照表只有 %d 张，太少了 —— 反直觉的那几个（projectstate / "+
+			"israndomplay / priority / exemodel）是不是漏了？", len(tables))
+	}
+	seen := map[string]bool{}
+	for _, ct := range tables {
+		if ct.Field == "" || ct.Title == "" || ct.Desc == "" {
+			t.Errorf("对照表 %q 缺字段名/标题/说明", ct.Title)
+		}
+		if seen[ct.Field] {
+			t.Errorf("对照表 %q 重复了", ct.Field)
+		}
+		seen[ct.Field] = true
+		if len(ct.Values) < 2 {
+			t.Errorf("对照表 %q 只有 %d 个取值 —— 对照表至少要两个，"+
+				"只有一个取值的字段不需要对照表", ct.Field, len(ct.Values))
+		}
+		for _, v := range ct.Values {
+			if v.Value == "" || v.Means == "" {
+				t.Errorf("对照表 %q 有空的取值项：%+v", ct.Field, v)
+			}
+		}
+	}
+	// 这四个是**猜必然猜错**的，必须在表里，而且必须标红。
+	for _, must := range []string{"projectstate", "israndomplay", "priority", "exemodel"} {
+		if !seen[must] {
+			t.Errorf("%q 不在取值对照表里 —— 它是反直觉的，猜错了不报错、只会播错", must)
+		}
+	}
+	for _, ct := range tables {
+		switch ct.Field {
+		case "projectstate", "israndomplay", "priority", "exemodel":
+			warned := false
+			for _, v := range ct.Values {
+				if v.Warn {
+					warned = true
+				}
+			}
+			if !warned {
+				t.Errorf("对照表 %q 一个 Warn 都没标 —— 它正是要提醒人别猜的那种", ct.Field)
+			}
+		}
+	}
+}

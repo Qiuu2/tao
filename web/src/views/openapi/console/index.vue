@@ -48,6 +48,13 @@
       <div class="intro-side">
         <el-button type="primary" :icon="Download" @click="downloadSpec">下载 OpenAPI 文件</el-button>
         <div class="side-tip">标准 OpenAPI 3.0，可以直接导进 Postman / Apifox / 代码生成器。</div>
+        <!-- 取值对照放在最显眼的地方：全功能那 213 条返回的是库里的原始值，
+             而其中好几个（projectstate / israndomplay / priority / exemodel）
+             取值是反直觉的，猜错不报错、只会播错。 -->
+        <el-button class="mt8" :icon="Notebook" @click="codesVisible = true">
+          取值对照表（{{ spec?.codes?.length || 0 }} 张）
+        </el-button>
+        <div class="side-tip">返回里的 0/1 是什么意思，看这个。有几个取值是反直觉的。</div>
       </div>
     </div>
 
@@ -123,11 +130,12 @@
         <el-alert
           v-for="(n, i) in current.notes"
           :key="i"
-          :title="n"
           :type="n.startsWith('⚠') ? 'warning' : 'info'"
           :closable="false"
           class="note"
-        />
+        >
+          <template #title><RichText :text="n" /></template>
+        </el-alert>
 
         <!-- 参数 -->
         <template v-if="current.params?.length">
@@ -146,7 +154,9 @@
                 <span v-else class="muted">否</span>
               </template>
             </el-table-column>
-            <el-table-column prop="desc" label="说明" min-width="260" />
+            <el-table-column label="说明" min-width="260">
+              <template #default="{ row }"><RichText :text="row.desc" /></template>
+            </el-table-column>
           </el-table>
         </template>
 
@@ -164,7 +174,9 @@
                 <span v-else class="muted">否</span>
               </template>
             </el-table-column>
-            <el-table-column prop="desc" label="说明" min-width="260" />
+            <el-table-column label="说明" min-width="260">
+              <template #default="{ row }"><RichText :text="row.desc" /></template>
+            </el-table-column>
           </el-table>
         </template>
 
@@ -248,24 +260,73 @@
           </div>
         </div>
 
-        <!-- 响应示例 -->
+        <!-- 响应示例 + 逐字段说明 -->
         <template v-if="current.sample">
           <h4 class="sec">响应示例（data 部分）</h4>
           <pre class="mono sample">{{ current.sample }}</pre>
+        </template>
+
+        <!-- 光有示例不够：示例里每个值是什么意思，必须写出来。
+             `"priority": 8` 的 8 是什么？数字大就优先吗（反过来）？
+             猜错了不报错，只会在错误的那天广播。 -->
+        <template v-if="current.returns?.length">
+          <h4 class="sec">响应字段说明</h4>
+          <el-table :data="current.returns" size="small" class="param-table">
+            <el-table-column label="字段" width="210">
+              <template #default="{ row }"><span class="mono">{{ row.name }}</span></template>
+            </el-table-column>
+            <el-table-column prop="type" label="类型" width="80" />
+            <el-table-column label="是什么" min-width="320">
+              <template #default="{ row }"><RichText :text="row.desc" /></template>
+            </el-table-column>
+          </el-table>
         </template>
       </div>
 
       <div class="card detail placeholder" v-else>从左边挑一个接口</div>
     </div>
+
+    <!-- 取值对照表 -->
+    <el-dialog v-model="codesVisible" title="取值对照表" width="860px" top="5vh">
+      <el-alert
+        type="warning"
+        :closable="false"
+        title="有几个字段的取值是反直觉的"
+        description="标红的那几行，凭直觉猜必然猜错，而猜错了不会报错 —— 只会让广播在错误的时间、以错误的顺序、在错误的那一天响。集成前请先看一遍。"
+      />
+      <div v-for="ct in spec?.codes" :key="ct.field" class="code-table">
+        <div class="code-head">
+          <span class="mono code-field">{{ ct.field }}</span>
+          <span class="code-title">{{ ct.title }}</span>
+        </div>
+        <div class="code-desc"><RichText :text="ct.desc" /></div>
+        <el-table :data="ct.values" size="small" class="param-table">
+          <el-table-column label="取值" width="150">
+            <template #default="{ row }">
+              <span class="mono" :class="{ 'code-warn': row.warn }">{{ row.value }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="含义" min-width="420">
+            <template #default="{ row }">
+              <span :class="{ 'code-warn': row.warn }"><RichText :text="row.means" /></span>
+            </template>
+          </el-table-column>
+        </el-table>
+      </div>
+      <template #footer>
+        <el-button type="primary" @click="codesVisible = false">知道了</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts" name="openapiConsole">
-import { CopyDocument, Download, Hide, Search, View } from "@element-plus/icons-vue";
+import { CopyDocument, Download, Hide, Notebook, Search, View } from "@element-plus/icons-vue";
 import { ElMessage } from "element-plus";
 import { computed, onMounted, reactive, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 
+import RichText from "./RichText.vue";
 import { getApiSpecApi } from "@/api/modules/openapispec";
 import type { ApiSpec, SpecEndpoint, SpecGroup } from "@/api/modules/openapispec";
 import { useUserStore } from "@/stores/modules/user";
@@ -279,6 +340,7 @@ const filter = ref("");
 const apiKey = ref("");
 const showKey = ref(false);
 const fromSession = ref(false);
+const codesVisible = ref(false);
 
 /**
  * 接口的绝对地址前缀。取当前站点 —— 这一页就开在广播服务器上。
@@ -828,6 +890,32 @@ onMounted(async () => {
     font-size: 12px;
     color: var(--el-color-warning);
   }
+}
+.code-table {
+  margin-top: 18px;
+}
+.code-head {
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+}
+.code-field {
+  font-size: 14px;
+  font-weight: 700;
+}
+.code-title {
+  font-size: 13px;
+  color: var(--el-text-color-regular);
+}
+.code-desc {
+  margin: 4px 0 8px;
+  font-size: 12px;
+  line-height: 1.8;
+  color: var(--el-text-color-secondary);
+}
+.code-warn {
+  font-weight: 600;
+  color: var(--el-color-danger);
 }
 .sample {
   padding: 10px 12px;

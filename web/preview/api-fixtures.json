@@ -9215,28 +9215,28 @@
   "msg": "ok",
   "data": [
    {
-    "id": 16,
+    "id": 18,
     "name": "消防告警平台",
-    "prefix": "HLC6GfnA",
+    "prefix": "XjE3qQCv",
     "userId": 1,
     "userName": "admin",
     "enabled": false,
     "expiretime": "2027-06-30 23:59:59",
     "lastusedtime": "",
     "lastusedip": "",
-    "createtime": "2026-09-08 09:47:15"
+    "createtime": "2026-09-08 10:14:20"
    },
    {
-    "id": 15,
+    "id": 17,
     "name": "教务系统",
-    "prefix": "reiHp3yi",
+    "prefix": "awhyVCGv",
     "userId": 1,
     "userName": "admin",
     "enabled": true,
     "expiretime": "",
     "lastusedtime": "2026-09-08 07:41:12",
     "lastusedip": "192.168.2.240",
-    "createtime": "2026-09-08 09:47:15"
+    "createtime": "2026-09-08 10:14:20"
    }
   ]
  },
@@ -9297,7 +9297,93 @@
        ],
        "fields": null,
        "body": "",
-       "sample": "{\n  \"list\": [{\n    \"id\": 2, \"name\": \"A102教室音箱\", \"type\": \"一体化音箱\", \"zone\": \"教学楼\",\n    \"ip\": \"192.168.2.12\",\n    \"online\": true, \"playing\": false, \"stateText\": \"在线空闲\",\n    \"volume\": 75, \"powerOn\": true, \"powerStateText\": \"已开机\"\n  }],\n  \"total\": 12, \"pageNum\": 1, \"pageSize\": 20\n}",
+       "sample": "{\n  \"list\": [{\n    \"id\": 2, \"name\": \"A102教室音箱\", \"type\": \"一体化音箱\", \"zone\": \"教学楼\",\n    \"ip\": \"192.168.2.12\",\n    \"online\": true, \"playing\": false, \"stateText\": \"在线空闲\",\n    \"volume\": 75, \"running\": true, \"runStateText\": \"已启动\"\n  }],\n  \"total\": 12, \"pageNum\": 1, \"pageSize\": 20\n}",
+       "returns": [
+        {
+         "name": "list[].id",
+         "type": "int",
+         "required": false,
+         "desc": "终端编号。下发广播时可以用它，也可以直接用 name"
+        },
+        {
+         "name": "list[].name",
+         "type": "string",
+         "required": false,
+         "desc": "终端名。就是界面上显示的那个，也是寻址时写的名字"
+        },
+        {
+         "name": "list[].type",
+         "type": "string",
+         "required": false,
+         "desc": "设备型号，如「一体化音箱」。只是展示，不参与寻址"
+        },
+        {
+         "name": "list[].zone",
+         "type": "string",
+         "required": false,
+         "desc": "所属分区名。没归分区的是「(未分区)」，不是空串"
+        },
+        {
+         "name": "list[].ip",
+         "type": "string",
+         "required": false,
+         "desc": "终端当前 IP。离线时可能是最后一次的"
+        },
+        {
+         "name": "list[].online",
+         "type": "bool",
+         "required": false,
+         "desc": "网络在线。对应库里 netstate = 1"
+        },
+        {
+         "name": "list[].playing",
+         "type": "bool",
+         "required": false,
+         "desc": "此刻正在播任务。⚠ 与 online 是两件事；离线时恒为 false"
+        },
+        {
+         "name": "list[].stateText",
+         "type": "string",
+         "required": false,
+         "desc": "上面两个的中文合并版：离线 / 播放中 / 在线空闲。给人看的，程序请判 online 和 playing"
+        },
+        {
+         "name": "list[].volume",
+         "type": "int",
+         "required": false,
+         "desc": "当前音量，0~100"
+        },
+        {
+         "name": "list[].running",
+         "type": "bool",
+         "required": false,
+         "desc": "运行开关是不是打开的（界面上的「启动终端 / 停止终端」）。⚠ 不是电源"
+        },
+        {
+         "name": "list[].runStateText",
+         "type": "string",
+         "required": false,
+         "desc": "上一条的中文版：已启动 / 已停止"
+        },
+        {
+         "name": "total",
+         "type": "int",
+         "required": false,
+         "desc": "符合条件的总条数（不是本页条数）。翻页时按它算总页数"
+        },
+        {
+         "name": "pageNum",
+         "type": "int",
+         "required": false,
+         "desc": "当前页码，从 1 开始"
+        },
+        {
+         "name": "pageSize",
+         "type": "int",
+         "required": false,
+         "desc": "本次每页几条。传什么就是什么，不会被静默改掉"
+        }
+       ],
        "notes": [
         "online 是网络在线，playing 是正在播任务 —— 两件事。离线的终端 playing 恒为假。",
         "没归到任何分区的终端，zone 是「(未分区)」。"
@@ -9349,6 +9435,50 @@
        "fields": null,
        "body": "",
        "sample": "{\n  \"list\": [{ \"id\": 125, \"name\": \"10.起床号.mp3\", \"seconds\": 89,\n             \"sizeKB\": 1406, \"folderId\": 2, \"type\": \"mp3\" }],\n  \"total\": 1, \"pageNum\": 1, \"pageSize\": 20\n}",
+       "returns": [
+        {
+         "name": "list[].id",
+         "type": "int",
+         "required": false,
+         "desc": "媒体编号"
+        },
+        {
+         "name": "list[].name",
+         "type": "string",
+         "required": false,
+         "desc": "媒体名（含扩展名）。就是寻址时写的名字"
+        },
+        {
+         "name": "list[].seconds",
+         "type": "int",
+         "required": false,
+         "desc": "时长，秒。⚠ 0 表示库里没记时长，不是「零秒」——建任务时会退回按兜底值算"
+        },
+        {
+         "name": "list[].sizeKB",
+         "type": "int",
+         "required": false,
+         "desc": "文件大小，KB"
+        },
+        {
+         "name": "list[].folderId",
+         "type": "int",
+         "required": false,
+         "desc": "所在媒体目录的编号"
+        },
+        {
+         "name": "list[].type",
+         "type": "string",
+         "required": false,
+         "desc": "文件类型，如 mp3、wav"
+        },
+        {
+         "name": "total / pageNum / pageSize",
+         "type": "int",
+         "required": false,
+         "desc": "分页信息，含义同终端列表"
+        }
+       ],
        "notes": [
         "seconds 为 0 表示库里没记时长，不是「零秒」。"
        ],
@@ -9399,6 +9529,104 @@
        "fields": null,
        "body": "",
        "sample": "{\n  \"list\": [{\n    \"id\": 1008, \"name\": \"升旗仪式-国歌\", \"note\": \"每周一\",\n    \"enabled\": true, \"running\": true, \"stateText\": \"执行中\",\n    \"startDate\": \"2026-01-01\", \"endDate\": \"2026-12-31\",\n    \"playTime\": \"07:50:00\", \"endTime\": \"07:53:00\",\n    \"weekdays\": [7], \"priority\": 8, \"volume\": 90,\n    \"media\": [{ \"id\": 138, \"name\": \"中华人民共和国国歌.mp3\" }],\n    \"terminals\": [{ \"id\": 8, \"name\": \"操场号角01\" }]\n  }],\n  \"total\": 6, \"pageNum\": 1, \"pageSize\": 20\n}",
+       "returns": [
+        {
+         "name": "list[].id",
+         "type": "int",
+         "required": false,
+         "desc": "任务编号"
+        },
+        {
+         "name": "list[].name",
+         "type": "string",
+         "required": false,
+         "desc": "任务名。也是寻址时写的名字"
+        },
+        {
+         "name": "list[].note",
+         "type": "string",
+         "required": false,
+         "desc": "备注（库里 task.info）。⚠ 只读，改不了；作息任务上这一列才是方案名，这里只是备注"
+        },
+        {
+         "name": "list[].enabled",
+         "type": "bool",
+         "required": false,
+         "desc": "启没启用。true 对应库里 projectstate = 0（那一列 0 才是启用）"
+        },
+        {
+         "name": "list[].running",
+         "type": "bool",
+         "required": false,
+         "desc": "此刻正在播。⚠ 与 enabled 是两件事"
+        },
+        {
+         "name": "list[].stateText",
+         "type": "string",
+         "required": false,
+         "desc": "执行状态的中文：准备 / 执行中 / 已停止 / 立即执行"
+        },
+        {
+         "name": "list[].startDate",
+         "type": "string",
+         "required": false,
+         "desc": "生效起始日 YYYY-MM-DD。不在区间内的日子不会触发"
+        },
+        {
+         "name": "list[].endDate",
+         "type": "string",
+         "required": false,
+         "desc": "生效结束日 YYYY-MM-DD"
+        },
+        {
+         "name": "list[].playTime",
+         "type": "string",
+         "required": false,
+         "desc": "每天几点开播 HH:MM:SS"
+        },
+        {
+         "name": "list[].endTime",
+         "type": "string",
+         "required": false,
+         "desc": "每天几点结束 HH:MM:SS"
+        },
+        {
+         "name": "list[].weekdays",
+         "type": "数组",
+         "required": false,
+         "desc": "哪几天播。**1=周一 … 7=周日**。⚠ 空数组 = 手动任务，后台永远不会自动触发它"
+        },
+        {
+         "name": "list[].priority",
+         "type": "int",
+         "required": false,
+         "desc": "任务级别 10~109。⚠ **数字小的优先级高**，抢同一台终端时小的赢"
+        },
+        {
+         "name": "list[].volume",
+         "type": "int",
+         "required": false,
+         "desc": "播放音量 0~100"
+        },
+        {
+         "name": "list[].media[]",
+         "type": "数组",
+         "required": false,
+         "desc": "播放清单，**按数组顺序播**。每项 {id, name}"
+        },
+        {
+         "name": "list[].terminals[]",
+         "type": "数组",
+         "required": false,
+         "desc": "播到哪些终端。每项 {id, name}。⚠ 这里是终端不是分区 —— 分区在建任务时就展开了"
+        },
+        {
+         "name": "total / pageNum / pageSize",
+         "type": "int",
+         "required": false,
+         "desc": "分页信息"
+        }
+       ],
        "notes": [
         "enabled = 这条任务启没启用（停用的永不触发）；running = 此刻正在播。两件事。",
         "weekdays 是 1=周一 … 7=周日。空数组表示手动任务，后台永远不会自动触发它。",
@@ -9418,6 +9646,26 @@
        "fields": null,
        "body": "",
        "sample": "[{ \"name\": \"春季作息\", \"tasks\": 7, \"enabled\": 7 }]",
+       "returns": [
+        {
+         "name": "[].name",
+         "type": "string",
+         "required": false,
+         "desc": "方案名。⚠ 方案**没有编号**，这个名字就是它的身份，寻址只能用它"
+        },
+        {
+         "name": "[].tasks",
+         "type": "int",
+         "required": false,
+         "desc": "方案里一共有几条打铃"
+        },
+        {
+         "name": "[].enabled",
+         "type": "int",
+         "required": false,
+         "desc": "其中处于**启用**状态的有几条。与 tasks 不相等时说明这个方案被部分停用了"
+        }
+       ],
        "notes": [
         "方案没有编号，名字就是它的身份。"
        ],
@@ -9444,6 +9692,86 @@
        "fields": null,
        "body": "",
        "sample": "{\n  \"name\": \"春季作息\", \"volume\": 66, \"priority\": 10,\n  \"terminals\": [{ \"id\": 1, \"name\": \"A101教室音箱\" }],\n  \"items\": [{\n    \"taskId\": 1001, \"name\": \"早读预备铃\", \"playTime\": \"07:20:00\", \"enabled\": true,\n    \"seconds\": 30, \"loopTimes\": 0, \"weekdays\": [1,2,3,4,5],\n    \"startDate\": \"2026-01-01\", \"endDate\": \"2026-12-31\",\n    \"media\": [{ \"id\": 125, \"name\": \"10.起床号.mp3\" }]\n  }]\n}",
+       "returns": [
+        {
+         "name": "name",
+         "type": "string",
+         "required": false,
+         "desc": "方案名"
+        },
+        {
+         "name": "volume",
+         "type": "int",
+         "required": false,
+         "desc": "**方案级**音量 0~100，方案里所有条目共用一份"
+        },
+        {
+         "name": "priority",
+         "type": "int",
+         "required": false,
+         "desc": "**方案级**任务级别 10~109，数字小的优先级高"
+        },
+        {
+         "name": "terminals[]",
+         "type": "数组",
+         "required": false,
+         "desc": "这个方案打到哪些终端。每项 {id, name}。方案里所有条目共用同一份终端清单"
+        },
+        {
+         "name": "items[].taskId",
+         "type": "int",
+         "required": false,
+         "desc": "这条打铃在 task 表里的编号"
+        },
+        {
+         "name": "items[].name",
+         "type": "string",
+         "required": false,
+         "desc": "条目名，如「早读预备铃」"
+        },
+        {
+         "name": "items[].playTime",
+         "type": "string",
+         "required": false,
+         "desc": "几点打 HH:MM:SS"
+        },
+        {
+         "name": "items[].enabled",
+         "type": "bool",
+         "required": false,
+         "desc": "这一条启没启用。方案可以被部分停用"
+        },
+        {
+         "name": "items[].seconds",
+         "type": "int",
+         "required": false,
+         "desc": "播多少秒。⚠ 与 loopTimes **只有一个非零**"
+        },
+        {
+         "name": "items[].loopTimes",
+         "type": "int",
+         "required": false,
+         "desc": "把清单循环几遍。按次数循环的条目没有确定秒数，所以那时 seconds 给 0"
+        },
+        {
+         "name": "items[].weekdays",
+         "type": "数组",
+         "required": false,
+         "desc": "哪几天打，1=周一 … 7=周日"
+        },
+        {
+         "name": "items[].startDate / endDate",
+         "type": "string",
+         "required": false,
+         "desc": "这一条的生效区间。理论上组内一致，但「智能排课」能按条目改"
+        },
+        {
+         "name": "items[].media[]",
+         "type": "数组",
+         "required": false,
+         "desc": "这一条播什么。每项 {id, name}"
+        }
+       ],
        "notes": [
         "seconds 与 loopTimes 只有一个非零：按次数循环的条目没有确定的秒数，所以 seconds 给 0、次数放在 loopTimes 上。"
        ],
@@ -9461,6 +9789,62 @@
        "fields": null,
        "body": "",
        "sample": "[{\n  \"playId\": 1, \"taskId\": 70231, \"media\": \"中华人民共和国国歌.mp3\",\n  \"terminals\": [{ \"id\": 8, \"name\": \"操场号角01\" }],\n  \"volume\": 90, \"seconds\": 46, \"state\": \"playing\",\n  \"startTime\": \"2026-09-08 08:00:52\", \"endTime\": \"\"\n}]",
+       "returns": [
+        {
+         "name": "playId",
+         "type": "int",
+         "required": false,
+         "desc": "这次播放的句柄。⚠ **记下来** —— 停止时要用它"
+        },
+        {
+         "name": "taskId",
+         "type": "int",
+         "required": false,
+         "desc": "为这次播放临时建的任务编号。停止时会连它一起删掉，不用你管"
+        },
+        {
+         "name": "media",
+         "type": "string",
+         "required": false,
+         "desc": "正在播的媒体名"
+        },
+        {
+         "name": "terminals[]",
+         "type": "数组",
+         "required": false,
+         "desc": "播到了哪些终端。每项 {id, name}。分区在这里已经展开成终端了"
+        },
+        {
+         "name": "volume",
+         "type": "int",
+         "required": false,
+         "desc": "音量 0~100"
+        },
+        {
+         "name": "seconds",
+         "type": "int",
+         "required": false,
+         "desc": "最多播多久，秒。没指定时取的是媒体自身时长"
+        },
+        {
+         "name": "state",
+         "type": "string",
+         "required": false,
+         "desc": "playing = 还在播；stopped = 已停止"
+        },
+        {
+         "name": "startTime",
+         "type": "string",
+         "required": false,
+         "desc": "开始时间 YYYY-MM-DD HH:MM:SS"
+        },
+        {
+         "name": "endTime",
+         "type": "string",
+         "required": false,
+         "desc": "停止时间。还在播时是空串"
+        }
+       ],
        "notes": null,
        "danger": false,
        "freeform": false
@@ -9587,6 +9971,26 @@
        ],
        "body": "{\n  \"name\": \"课间音乐\",\n  \"media\": [\"大课间.mp3\"],\n  \"zones\": [\"教学楼\"],\n  \"playTime\": \"09:50\",\n  \"weekdays\": [1, 2, 3, 4, 5],\n  \"seconds\": 600,\n  \"volume\": 70\n}",
        "sample": "{ \"id\": 70230, \"mediaCount\": 1, \"terminalCount\": 4 }",
+       "returns": [
+        {
+         "name": "id",
+         "type": "int",
+         "required": false,
+         "desc": "任务编号。之后改它、启停它、删它都用这个（也可以继续用任务名）"
+        },
+        {
+         "name": "mediaCount",
+         "type": "int",
+         "required": false,
+         "desc": "实际写进去几条媒体"
+        },
+        {
+         "name": "terminalCount",
+         "type": "int",
+         "required": false,
+         "desc": "实际写进去几台终端。⚠ **对一下这个数** —— 给了分区的话它是展开后的终端数，比你传的条目多是正常的"
+        }
+       ],
        "notes": [
         "⚠ weekdays 留空 = 手动任务，永远不会自动响。想每天响要写 [1,2,3,4,5,6,7]。默认成「每天」太危险 —— 少写一个字段就变成每天全校广播。",
         "⚠ 分区是在写入那一刻展开成终端的。建完任务再往分区里加终端，这条任务不会自动带上它 —— 加了终端要重新调一次「修改任务」。",
@@ -9615,6 +10019,26 @@
        "fields": null,
        "body": "{ \"volume\": 55 }",
        "sample": "{ \"id\": 70230, \"mediaCount\": 1, \"terminalCount\": 4 }",
+       "returns": [
+        {
+         "name": "id",
+         "type": "int",
+         "required": false,
+         "desc": "任务编号。之后改它、启停它、删它都用这个（也可以继续用任务名）"
+        },
+        {
+         "name": "mediaCount",
+         "type": "int",
+         "required": false,
+         "desc": "实际写进去几条媒体"
+        },
+        {
+         "name": "terminalCount",
+         "type": "int",
+         "required": false,
+         "desc": "实际写进去几台终端。⚠ **对一下这个数** —— 给了分区的话它是展开后的终端数，比你传的条目多是正常的"
+        }
+       ],
        "notes": [
         "⚠ 清单类字段（media / terminals / zones）给了就是整体替换，不是追加。传 media: [\"A.mp3\"] 会把原来的清单换成只有 A.mp3。不传则保持原样。"
        ],
@@ -9641,6 +10065,26 @@
        "fields": null,
        "body": "{ \"tasks\": [\"课间音乐\"] }",
        "sample": "{\n  \"succeeded\": [{ \"id\": 1008, \"name\": \"升旗仪式-国歌\" }],\n  \"blocked\":   [{ \"id\": 1010, \"name\": \"课间轻音乐\", \"reason\": \"只能操作自己创建的任务\" }]\n}",
+       "returns": [
+        {
+         "name": "succeeded[]",
+         "type": "数组",
+         "required": false,
+         "desc": "做成了的。每项 {id, name}"
+        },
+        {
+         "name": "blocked[]",
+         "type": "数组",
+         "required": false,
+         "desc": "没做成的。每项 {id, name, reason}"
+        },
+        {
+         "name": "blocked[].reason",
+         "type": "string",
+         "required": false,
+         "desc": "为什么没做成，中文，可直接透传给你们的运维界面"
+        }
+       ],
        "notes": [
         "⚠ 回执是「部分成功」的语义：能做的做掉、做不了的逐条给原因。**要检查 blocked 是不是空的** —— 一次给二十条，因为其中一条不归你就把另外十九条也拒掉是不合理的。"
        ],
@@ -9667,6 +10111,20 @@
        "fields": null,
        "body": "",
        "sample": "{ \"succeeded\": [{ \"id\": 70230, \"name\": \"课间音乐\" }], \"blocked\": [] }",
+       "returns": [
+        {
+         "name": "succeeded[]",
+         "type": "数组",
+         "required": false,
+         "desc": "真的删掉了的。每项 {id, name}，名字是**删之前**取的"
+        },
+        {
+         "name": "blocked[]",
+         "type": "数组",
+         "required": false,
+         "desc": "没删成的。每项 {id, name, reason}。⚠ 要检查它是不是空的"
+        }
+       ],
        "notes": null,
        "danger": true,
        "freeform": false
@@ -9721,6 +10179,62 @@
        ],
        "body": "{\n  \"media\": \"中华人民共和国国歌.mp3\",\n  \"zones\": [\"室外操场\"],\n  \"volume\": 90\n}",
        "sample": "{\n  \"playId\": 1, \"taskId\": 70231, \"media\": \"中华人民共和国国歌.mp3\",\n  \"terminals\": [{ \"id\": 8, \"name\": \"操场号角01\" }],\n  \"volume\": 90, \"seconds\": 46, \"state\": \"playing\",\n  \"startTime\": \"2026-09-08 08:00:52\", \"endTime\": \"\"\n}",
+       "returns": [
+        {
+         "name": "playId",
+         "type": "int",
+         "required": false,
+         "desc": "这次播放的句柄。⚠ **记下来** —— 停止时要用它"
+        },
+        {
+         "name": "taskId",
+         "type": "int",
+         "required": false,
+         "desc": "为这次播放临时建的任务编号。停止时会连它一起删掉，不用你管"
+        },
+        {
+         "name": "media",
+         "type": "string",
+         "required": false,
+         "desc": "正在播的媒体名"
+        },
+        {
+         "name": "terminals[]",
+         "type": "数组",
+         "required": false,
+         "desc": "播到了哪些终端。每项 {id, name}。分区在这里已经展开成终端了"
+        },
+        {
+         "name": "volume",
+         "type": "int",
+         "required": false,
+         "desc": "音量 0~100"
+        },
+        {
+         "name": "seconds",
+         "type": "int",
+         "required": false,
+         "desc": "最多播多久，秒。没指定时取的是媒体自身时长"
+        },
+        {
+         "name": "state",
+         "type": "string",
+         "required": false,
+         "desc": "playing = 还在播；stopped = 已停止"
+        },
+        {
+         "name": "startTime",
+         "type": "string",
+         "required": false,
+         "desc": "开始时间 YYYY-MM-DD HH:MM:SS"
+        },
+        {
+         "name": "endTime",
+         "type": "string",
+         "required": false,
+         "desc": "停止时间。还在播时是空串"
+        }
+       ],
        "notes": [
         "把返回的 playId 记下来，停止时要用。",
         "⚠ 以**最高优先级**下发，会压住正在播的排期任务。这是有意的 —— 它是你此刻主动要求的。上课时间请谨慎。",
@@ -9749,6 +10263,26 @@
        "fields": null,
        "body": "",
        "sample": "{ \"playId\": 1, \"state\": \"stopped\", \"endTime\": \"2026-09-08 08:01:24\" }",
+       "returns": [
+        {
+         "name": "playId",
+         "type": "int",
+         "required": false,
+         "desc": "刚停掉的那次播放"
+        },
+        {
+         "name": "state",
+         "type": "string",
+         "required": false,
+         "desc": "stopped。幂等 —— 本来就停了的再调一次也回这个，不报错"
+        },
+        {
+         "name": "endTime",
+         "type": "string",
+         "required": false,
+         "desc": "停止时间"
+        }
+       ],
        "notes": null,
        "danger": true,
        "freeform": false
@@ -9833,6 +10367,32 @@
        ],
        "body": "{\n  \"name\": \"夏季作息\",\n  \"zones\": [\"教学楼\"],\n  \"weekdays\": [1, 2, 3, 4, 5],\n  \"volume\": 75,\n  \"items\": [\n    { \"name\": \"早读预备\",   \"playTime\": \"07:20\", \"media\": [\"10.起床号.mp3\"], \"seconds\": 30 },\n    { \"name\": \"第一节下课\", \"playTime\": \"09:50\", \"media\": [\"04.爱的纪念（下课）.mp3\"] }\n  ]\n}",
        "sample": "{ \"name\": \"夏季作息\", \"itemCount\": 2, \"taskIds\": [70232, 70233], \"warnings\": [] }",
+       "returns": [
+        {
+         "name": "name",
+         "type": "string",
+         "required": false,
+         "desc": "建出来的方案名。之后启停、删除都用它寻址"
+        },
+        {
+         "name": "itemCount",
+         "type": "int",
+         "required": false,
+         "desc": "实际建出几条打铃"
+        },
+        {
+         "name": "taskIds",
+         "type": "数组",
+         "required": false,
+         "desc": "每条打铃在 task 表里的编号，按 items 的顺序"
+        },
+        {
+         "name": "warnings",
+         "type": "数组",
+         "required": false,
+         "desc": "⚠ **要看一眼**。「建成了，但有件事你该知道」，比如同一时刻排了两条铃。不拦截，但空数组才是完全干净"
+        }
+       ],
        "notes": [
         "⚠ weekdays 留空时这里默认**周一到周五**，而新建任务那边默认「手动」。不是笔误：作息方案天然是上课日打铃，建一个永不触发的方案没有意义；而文件广播任务建来手动触发是常见用法。两边都别漏填。",
         "warnings 是「建成了，但有件事你该知道」，比如同一时刻排了两条铃。不拦截，但要看。"
@@ -9860,6 +10420,20 @@
        "fields": null,
        "body": "{ \"enabled\": false }",
        "sample": "{ \"name\": \"夏季作息\", \"affectedTasks\": 2 }",
+       "returns": [
+        {
+         "name": "name",
+         "type": "string",
+         "required": false,
+         "desc": "被操作的方案名（服务端核实过的那个，不是你传的原文）"
+        },
+        {
+         "name": "affectedTasks",
+         "type": "int",
+         "required": false,
+         "desc": "这一下动了几条打铃。方案里有几条就是几条 —— 与预期对不上说明方案内容和你以为的不一样"
+        }
+       ],
        "notes": null,
        "danger": true,
        "freeform": false
@@ -9884,6 +10458,20 @@
        "fields": null,
        "body": "",
        "sample": "{ \"name\": \"夏季作息\", \"affectedTasks\": 2 }",
+       "returns": [
+        {
+         "name": "name",
+         "type": "string",
+         "required": false,
+         "desc": "被操作的方案名（服务端核实过的那个，不是你传的原文）"
+        },
+        {
+         "name": "affectedTasks",
+         "type": "int",
+         "required": false,
+         "desc": "这一下动了几条打铃。方案里有几条就是几条 —— 与预期对不上说明方案内容和你以为的不一样"
+        }
+       ],
        "notes": null,
        "danger": true,
        "freeform": false
@@ -9907,6 +10495,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": false,
        "freeform": true
@@ -9922,6 +10511,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": true,
        "freeform": true
@@ -9937,6 +10527,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": true,
        "freeform": true
@@ -9952,6 +10543,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": false,
        "freeform": true
@@ -9967,6 +10559,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": true,
        "freeform": true
@@ -9982,6 +10575,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": false,
        "freeform": true
@@ -9997,6 +10591,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": true,
        "freeform": true
@@ -10012,6 +10607,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": false,
        "freeform": true
@@ -10027,6 +10623,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": true,
        "freeform": true
@@ -10042,6 +10639,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": true,
        "freeform": true
@@ -10057,6 +10655,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": false,
        "freeform": true
@@ -10080,6 +10679,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": false,
        "freeform": true
@@ -10095,6 +10695,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": false,
        "freeform": true
@@ -10110,6 +10711,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": false,
        "freeform": true
@@ -10125,6 +10727,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": false,
        "freeform": true
@@ -10140,6 +10743,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": false,
        "freeform": true
@@ -10155,6 +10759,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": true,
        "freeform": true
@@ -10170,6 +10775,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": true,
        "freeform": true
@@ -10185,6 +10791,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": true,
        "freeform": true
@@ -10200,6 +10807,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": true,
        "freeform": true
@@ -10215,6 +10823,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": true,
        "freeform": true
@@ -10230,6 +10839,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": true,
        "freeform": true
@@ -10245,6 +10855,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": true,
        "freeform": true
@@ -10260,6 +10871,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": true,
        "freeform": true
@@ -10275,6 +10887,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": true,
        "freeform": true
@@ -10290,6 +10903,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": false,
        "freeform": true
@@ -10305,6 +10919,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": false,
        "freeform": true
@@ -10320,6 +10935,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": true,
        "freeform": true
@@ -10335,6 +10951,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": true,
        "freeform": true
@@ -10350,6 +10967,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": true,
        "freeform": true
@@ -10365,6 +10983,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": true,
        "freeform": true
@@ -10380,6 +10999,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": false,
        "freeform": true
@@ -10395,6 +11015,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": false,
        "freeform": true
@@ -10410,6 +11031,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": false,
        "freeform": true
@@ -10425,6 +11047,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": true,
        "freeform": true
@@ -10440,6 +11063,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": true,
        "freeform": true
@@ -10455,6 +11079,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": false,
        "freeform": true
@@ -10470,6 +11095,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": false,
        "freeform": true
@@ -10485,6 +11111,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": false,
        "freeform": true
@@ -10500,6 +11127,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": true,
        "freeform": true
@@ -10515,6 +11143,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": true,
        "freeform": true
@@ -10530,6 +11159,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": true,
        "freeform": true
@@ -10545,6 +11175,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": true,
        "freeform": true
@@ -10560,6 +11191,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": false,
        "freeform": true
@@ -10575,6 +11207,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": false,
        "freeform": true
@@ -10590,6 +11223,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": true,
        "freeform": true
@@ -10605,6 +11239,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": true,
        "freeform": true
@@ -10620,6 +11255,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": true,
        "freeform": true
@@ -10643,6 +11279,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": false,
        "freeform": true
@@ -10658,6 +11295,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": false,
        "freeform": true
@@ -10673,6 +11311,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": false,
        "freeform": true
@@ -10688,6 +11327,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": false,
        "freeform": true
@@ -10703,6 +11343,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": false,
        "freeform": true
@@ -10718,6 +11359,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": true,
        "freeform": true
@@ -10733,6 +11375,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": true,
        "freeform": true
@@ -10748,6 +11391,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": true,
        "freeform": true
@@ -10771,6 +11415,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": false,
        "freeform": true
@@ -10786,6 +11431,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": false,
        "freeform": true
@@ -10801,6 +11447,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": true,
        "freeform": true
@@ -10816,6 +11463,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": true,
        "freeform": true
@@ -10831,6 +11479,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": true,
        "freeform": true
@@ -10846,6 +11495,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": true,
        "freeform": true
@@ -10861,6 +11511,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": false,
        "freeform": true
@@ -10876,6 +11527,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": true,
        "freeform": true
@@ -10891,6 +11543,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": false,
        "freeform": true
@@ -10906,6 +11559,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": true,
        "freeform": true
@@ -10921,6 +11575,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": true,
        "freeform": true
@@ -10936,6 +11591,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": true,
        "freeform": true
@@ -10951,6 +11607,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": false,
        "freeform": true
@@ -10966,6 +11623,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": false,
        "freeform": true
@@ -10981,6 +11639,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": false,
        "freeform": true
@@ -10996,6 +11655,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": false,
        "freeform": true
@@ -11011,6 +11671,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": true,
        "freeform": true
@@ -11026,6 +11687,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": true,
        "freeform": true
@@ -11041,6 +11703,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": true,
        "freeform": true
@@ -11056,6 +11719,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": false,
        "freeform": true
@@ -11071,6 +11735,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": true,
        "freeform": true
@@ -11086,6 +11751,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": true,
        "freeform": true
@@ -11109,6 +11775,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": false,
        "freeform": true
@@ -11124,6 +11791,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": false,
        "freeform": true
@@ -11139,6 +11807,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": true,
        "freeform": true
@@ -11154,6 +11823,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": true,
        "freeform": true
@@ -11169,6 +11839,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": true,
        "freeform": true
@@ -11184,6 +11855,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": true,
        "freeform": true
@@ -11199,6 +11871,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": true,
        "freeform": true
@@ -11214,6 +11887,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": true,
        "freeform": true
@@ -11229,6 +11903,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": true,
        "freeform": true
@@ -11244,6 +11919,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": true,
        "freeform": true
@@ -11259,6 +11935,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": false,
        "freeform": true
@@ -11274,6 +11951,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": true,
        "freeform": true
@@ -11289,6 +11967,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": true,
        "freeform": true
@@ -11312,6 +11991,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": false,
        "freeform": true
@@ -11327,6 +12007,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": false,
        "freeform": true
@@ -11342,6 +12023,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": false,
        "freeform": true
@@ -11357,6 +12039,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": true,
        "freeform": true
@@ -11372,6 +12055,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": true,
        "freeform": true
@@ -11387,6 +12071,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": true,
        "freeform": true
@@ -11402,6 +12087,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": true,
        "freeform": true
@@ -11425,6 +12111,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": false,
        "freeform": true
@@ -11440,6 +12127,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": false,
        "freeform": true
@@ -11455,6 +12143,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": false,
        "freeform": true
@@ -11470,6 +12159,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": false,
        "freeform": true
@@ -11485,6 +12175,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": false,
        "freeform": true
@@ -11500,6 +12191,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": true,
        "freeform": true
@@ -11515,6 +12207,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": true,
        "freeform": true
@@ -11530,6 +12223,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": true,
        "freeform": true
@@ -11545,6 +12239,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": true,
        "freeform": true
@@ -11560,6 +12255,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": true,
        "freeform": true
@@ -11575,6 +12271,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": false,
        "freeform": true
@@ -11590,6 +12287,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": true,
        "freeform": true
@@ -11605,6 +12303,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": true,
        "freeform": true
@@ -11620,6 +12319,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": true,
        "freeform": true
@@ -11635,6 +12335,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": true,
        "freeform": true
@@ -11650,6 +12351,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": false,
        "freeform": true
@@ -11665,6 +12367,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": true,
        "freeform": true
@@ -11680,6 +12383,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": true,
        "freeform": true
@@ -11695,6 +12399,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": true,
        "freeform": true
@@ -11718,6 +12423,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": false,
        "freeform": true
@@ -11733,6 +12439,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": false,
        "freeform": true
@@ -11748,6 +12455,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": false,
        "freeform": true
@@ -11763,6 +12471,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": true,
        "freeform": true
@@ -11778,6 +12487,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": true,
        "freeform": true
@@ -11793,6 +12503,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": true,
        "freeform": true
@@ -11816,6 +12527,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": false,
        "freeform": true
@@ -11831,6 +12543,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": false,
        "freeform": true
@@ -11846,6 +12559,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": false,
        "freeform": true
@@ -11861,6 +12575,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": true,
        "freeform": true
@@ -11876,6 +12591,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": true,
        "freeform": true
@@ -11891,6 +12607,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": true,
        "freeform": true
@@ -11906,6 +12623,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": false,
        "freeform": true
@@ -11921,6 +12639,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": false,
        "freeform": true
@@ -11936,6 +12655,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": true,
        "freeform": true
@@ -11951,6 +12671,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": true,
        "freeform": true
@@ -11966,6 +12687,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": true,
        "freeform": true
@@ -11981,6 +12703,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": false,
        "freeform": true
@@ -11996,6 +12719,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": false,
        "freeform": true
@@ -12011,6 +12735,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": false,
        "freeform": true
@@ -12026,6 +12751,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": false,
        "freeform": true
@@ -12049,6 +12775,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": false,
        "freeform": true
@@ -12064,6 +12791,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": false,
        "freeform": true
@@ -12079,6 +12807,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": false,
        "freeform": true
@@ -12094,6 +12823,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": true,
        "freeform": true
@@ -12109,6 +12839,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": true,
        "freeform": true
@@ -12124,6 +12855,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": true,
        "freeform": true
@@ -12139,6 +12871,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": false,
        "freeform": true
@@ -12154,6 +12887,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": false,
        "freeform": true
@@ -12169,6 +12903,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": false,
        "freeform": true
@@ -12184,6 +12919,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": false,
        "freeform": true
@@ -12199,6 +12935,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": true,
        "freeform": true
@@ -12214,6 +12951,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": true,
        "freeform": true
@@ -12229,6 +12967,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": true,
        "freeform": true
@@ -12252,6 +12991,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": false,
        "freeform": true
@@ -12267,6 +13007,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": false,
        "freeform": true
@@ -12282,6 +13023,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": false,
        "freeform": true
@@ -12297,6 +13039,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": false,
        "freeform": true
@@ -12312,6 +13055,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": true,
        "freeform": true
@@ -12327,6 +13071,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": true,
        "freeform": true
@@ -12342,6 +13087,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": true,
        "freeform": true
@@ -12357,6 +13103,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": false,
        "freeform": true
@@ -12372,6 +13119,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": false,
        "freeform": true
@@ -12387,6 +13135,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": true,
        "freeform": true
@@ -12402,6 +13151,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": false,
        "freeform": true
@@ -12417,6 +13167,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": false,
        "freeform": true
@@ -12432,6 +13183,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": false,
        "freeform": true
@@ -12447,6 +13199,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": true,
        "freeform": true
@@ -12470,6 +13223,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": false,
        "freeform": true
@@ -12485,6 +13239,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": false,
        "freeform": true
@@ -12500,6 +13255,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": false,
        "freeform": true
@@ -12515,6 +13271,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": true,
        "freeform": true
@@ -12530,6 +13287,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": true,
        "freeform": true
@@ -12545,6 +13303,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": true,
        "freeform": true
@@ -12568,6 +13327,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": false,
        "freeform": true
@@ -12583,6 +13343,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": false,
        "freeform": true
@@ -12598,6 +13359,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": true,
        "freeform": true
@@ -12613,6 +13375,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": true,
        "freeform": true
@@ -12628,6 +13391,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": true,
        "freeform": true
@@ -12643,6 +13407,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": true,
        "freeform": true
@@ -12658,6 +13423,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": false,
        "freeform": true
@@ -12673,6 +13439,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": true,
        "freeform": true
@@ -12688,6 +13455,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": false,
        "freeform": true
@@ -12703,6 +13471,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": true,
        "freeform": true
@@ -12718,6 +13487,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": false,
        "freeform": true
@@ -12741,6 +13511,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": false,
        "freeform": true
@@ -12756,6 +13527,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": false,
        "freeform": true
@@ -12771,6 +13543,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": false,
        "freeform": true
@@ -12786,6 +13559,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": false,
        "freeform": true
@@ -12801,6 +13575,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": false,
        "freeform": true
@@ -12816,6 +13591,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": true,
        "freeform": true
@@ -12831,6 +13607,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": false,
        "freeform": true
@@ -12846,6 +13623,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": true,
        "freeform": true
@@ -12861,6 +13639,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": false,
        "freeform": true
@@ -12876,6 +13655,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": false,
        "freeform": true
@@ -12891,6 +13671,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": false,
        "freeform": true
@@ -12906,6 +13687,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": true,
        "freeform": true
@@ -12929,6 +13711,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": false,
        "freeform": true
@@ -12944,6 +13727,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": false,
        "freeform": true
@@ -12959,6 +13743,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": false,
        "freeform": true
@@ -12974,6 +13759,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": false,
        "freeform": true
@@ -12989,6 +13775,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": false,
        "freeform": true
@@ -13004,6 +13791,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": true,
        "freeform": true
@@ -13019,6 +13807,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": true,
        "freeform": true
@@ -13034,6 +13823,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": true,
        "freeform": true
@@ -13049,6 +13839,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": true,
        "freeform": true
@@ -13064,6 +13855,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": false,
        "freeform": true
@@ -13079,6 +13871,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": false,
        "freeform": true
@@ -13094,6 +13887,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": false,
        "freeform": true
@@ -13109,6 +13903,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": true,
        "freeform": true
@@ -13124,6 +13919,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": true,
        "freeform": true
@@ -13139,6 +13935,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": true,
        "freeform": true
@@ -13162,6 +13959,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": false,
        "freeform": true
@@ -13177,6 +13975,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": true,
        "freeform": true
@@ -13192,6 +13991,7 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": true,
        "freeform": true
@@ -13207,9 +14007,274 @@
        "fields": null,
        "body": "",
        "sample": "",
+       "returns": null,
        "notes": null,
        "danger": false,
        "freeform": true
+      }
+     ]
+    }
+   ],
+   "codes": [
+    {
+     "field": "code",
+     "title": "业务码（所有响应）",
+     "desc": "HTTP 状态码恒为 200，**看 body 里的 code**。",
+     "values": [
+      {
+       "value": "200",
+       "means": "成功",
+       "warn": false
+      },
+      {
+       "value": "40001",
+       "means": "请求填错了。msg 里写了错在哪，照着改 —— 重试没用",
+       "warn": false
+      },
+      {
+       "value": "401",
+       "means": "密钥无效：写错了 / 被停用 / 已过期 / 归属账号被停用",
+       "warn": false
+      },
+      {
+       "value": "40301",
+       "means": "权限不够，或这个接口不开放给密钥调",
+       "warn": false
+      },
+      {
+       "value": "40302",
+       "means": "服务器处于备机模式，全站只读",
+       "warn": false
+      },
+      {
+       "value": "40401",
+       "means": "找不到这个对象",
+       "warn": false
+      },
+      {
+       "value": "50001",
+       "means": "服务器出错，可以重试",
+       "warn": false
+      }
+     ]
+    },
+    {
+     "field": "projectstate",
+     "title": "任务的启停状态",
+     "desc": "出现在任务、作息方案、分类任务的返回里。⚠ **0 才是启用**，和直觉相反。",
+     "values": [
+      {
+       "value": "0",
+       "means": "启用（会按排期自动触发）",
+       "warn": true
+      },
+      {
+       "value": "1",
+       "means": "停用（永远不会自动触发）",
+       "warn": true
+      }
+     ]
+    },
+    {
+     "field": "state",
+     "title": "任务的执行状态",
+     "desc": "这一条**此刻**在不在播。与 projectstate 是两件事：停用的任务 state 也可能是历史遗留值。",
+     "values": [
+      {
+       "value": "0",
+       "means": "准备（没在播）",
+       "warn": false
+      },
+      {
+       "value": "1",
+       "means": "执行中（正在播）",
+       "warn": false
+      },
+      {
+       "value": "2",
+       "means": "已停止",
+       "warn": false
+      },
+      {
+       "value": "3",
+       "means": "立即执行（刚被启动）",
+       "warn": false
+      }
+     ]
+    },
+    {
+     "field": "israndomplay",
+     "title": "播放顺序",
+     "desc": "⚠ 取值反直觉：**0 是随机、1 是顺序**。列名里的 random 会让人读反。",
+     "values": [
+      {
+       "value": "0",
+       "means": "随机播放",
+       "warn": true
+      },
+      {
+       "value": "1",
+       "means": "顺序播放",
+       "warn": true
+      }
+     ]
+    },
+    {
+     "field": "priority",
+     "title": "任务级别（优先级）",
+     "desc": "范围 10~109。⚠ **数字小的优先级高** —— 10 最高、109 最低。两条任务抢同一台终端时，数字小的那条赢。",
+     "values": [
+      {
+       "value": "10",
+       "means": "最高。立即播放用的就是它",
+       "warn": true
+      },
+      {
+       "value": "109",
+       "means": "最低。新建任务不填优先级时的默认值",
+       "warn": true
+      }
+     ]
+    },
+    {
+     "field": "exemodel",
+     "title": "星期掩码（哪几天执行）",
+     "desc": "7 个字符的 0/1 串。⚠ **周日打头**，不是周一 —— 位序依据是旧系统判「今天该不该响」的那条 SQL。/openapi/v1 那组接口已经替你转成了 1=周一…7=周日 的 weekdays，不必自己解这个串。",
+     "values": [
+      {
+       "value": "第 1 位",
+       "means": "周日",
+       "warn": true
+      },
+      {
+       "value": "第 2~7 位",
+       "means": "周一 … 周六",
+       "warn": true
+      },
+      {
+       "value": "\"0000000\"",
+       "means": "手动任务 —— 后台**永远不会**自动触发它",
+       "warn": true
+      },
+      {
+       "value": "\"0111110\"",
+       "means": "周一到周五",
+       "warn": false
+      },
+      {
+       "value": "\"1111111\"",
+       "means": "每天",
+       "warn": false
+      }
+     ]
+    },
+    {
+     "field": "timelengthtype",
+     "title": "时长的单位",
+     "desc": "决定同一行里 timelength 那个数字怎么读。⚠ 读错的后果是算出来的结束时间差出十几分钟。",
+     "values": [
+      {
+       "value": "1",
+       "means": "timelength 是**秒数**",
+       "warn": false
+      },
+      {
+       "value": "2",
+       "means": "timelength 是**循环次数**（播完清单算一次）",
+       "warn": true
+      }
+     ]
+    },
+    {
+     "field": "tasktype",
+     "title": "任务类型",
+     "desc": "同一张 task 表装了好几种任务，靠它区分。",
+     "values": [
+      {
+       "value": "1",
+       "means": "作息方案里的打铃条目",
+       "warn": false
+      },
+      {
+       "value": "2",
+       "means": "文件广播任务（最常见的那种）",
+       "warn": false
+      },
+      {
+       "value": "7",
+       "means": "文件广播的另一种取值，现网无数据但旧查询一直带着",
+       "warn": false
+      },
+      {
+       "value": "9",
+       "means": "功放子任务（跟着主任务自动建的）",
+       "warn": false
+      },
+      {
+       "value": "15",
+       "means": "作息方案里的文件播放",
+       "warn": false
+      },
+      {
+       "value": "30 / 24",
+       "means": "LED 字幕子任务（24 是旧数据）",
+       "warn": false
+      }
+     ]
+    },
+    {
+     "field": "netstate / devicestate / taskstate",
+     "title": "终端的三个状态",
+     "desc": "三个是**并列**的三件事，别混。⚠ devicestate 是「启动/停止」这个运行开关（对应界面上的启动终端 / 停止终端），**不是电源**。",
+     "values": [
+      {
+       "value": "netstate = 1",
+       "means": "网络在线；其它值 = 离线",
+       "warn": false
+      },
+      {
+       "value": "devicestate = 1",
+       "means": "已启动；0 = 已停止",
+       "warn": true
+      },
+      {
+       "value": "taskstate = 1",
+       "means": "正在播任务；0 = 空闲",
+       "warn": false
+      }
+     ]
+    },
+    {
+     "field": "holidaytime.projectstate",
+     "title": "节假日的启停状态",
+     "desc": "⚠ **和 task 表正好相反**，这是旧系统留下的。改节假日时别照搬任务那套。",
+     "values": [
+      {
+       "value": "1",
+       "means": "启用（这一天按节假日规则走）",
+       "warn": true
+      },
+      {
+       "value": "0",
+       "means": "停用",
+       "warn": true
+      }
+     ]
+    },
+    {
+     "field": "enabletask.enstate",
+     "title": "启用计划里的动作",
+     "desc": "「到点把这批任务怎么样」。与 task.projectstate 同一套取值。",
+     "values": [
+      {
+       "value": "0",
+       "means": "到点启用",
+       "warn": false
+      },
+      {
+       "value": "1",
+       "means": "到点停用",
+       "warn": false
       }
      ]
     }

@@ -72,12 +72,19 @@ type TerminalBrief struct {
 	Zone string `json:"zone"`
 	IP   string `json:"ip"`
 	// Online 是网络在线；Playing 是正在播任务。离线的终端 Playing 恒为假。
-	Online     bool   `json:"online"`
-	Playing    bool   `json:"playing"`
-	StateText  string `json:"stateText"`
-	Volume     int    `json:"volume"`
-	PowerOn    bool   `json:"powerOn"`
-	PowerState string `json:"powerStateText"`
+	Online    bool   `json:"online"`
+	Playing   bool   `json:"playing"`
+	StateText string `json:"stateText"`
+	Volume    int    `json:"volume"`
+	// Running 是终端的**运行开关**（界面上的「启动终端 / 停止终端」，
+	// 库里 devicestate）。
+	//
+	// ⚠ 早先这里叫 powerOn / powerStateText（「已开机 / 已关机」）—— 是错的。
+	// devicestate 由 PUT /api/terminals/start|stop 控制，是运行状态，不是电源。
+	// 叫 powerOn 会让集成方以为能靠它判断设备通没通电，而那是另一回事
+	// （断电的终端表现为 netstate 离线）。名字错的字段比没有这个字段更坏。
+	Running   bool   `json:"running"`
+	RunState  string `json:"runStateText"`
 }
 
 // MediaBrief 是媒体文件。
@@ -293,8 +300,9 @@ func (s *Service) ListTerminals(ctx context.Context, u *auth.User, q ListQuery) 
 			Playing:    playing,
 			StateText:  terminalStateText(online, playing),
 			Volume:     it.Volume,
-			PowerOn:    it.DeviceState == 1,
-			PowerState: map[bool]string{true: "已开机", false: "已关机"}[it.DeviceState == 1],
+			// 措辞与界面终端列表一致（已启动 / 已停止），别自造一套说法
+			Running:  it.DeviceState == 1,
+			RunState: map[bool]string{true: "已启动", false: "已停止"}[it.DeviceState == 1],
 		})
 	}
 	p := q.pager()

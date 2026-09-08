@@ -35,6 +35,13 @@ export interface SpecEndpoint {
   body?: string;
   /** 响应示例（JSON 文本，不含 code/msg 信封） */
   sample?: string;
+  /**
+   * 逐条解释响应示例里的每个字段。
+   *
+   * 光贴示例 JSON 不够：`"priority": 8` 的 8 是什么？数字大就优先吗（反过来）？
+   * 猜错不会报错，只会在错误的那天广播。
+   */
+  returns?: SpecField[];
   notes?: string[];
   /** 真的会让喇叭响、或者真的删东西 */
   danger?: boolean;
@@ -57,12 +64,30 @@ export interface SpecGroup {
   endpoints: SpecEndpoint[];
 }
 
+/** 一个编码取值和它的含义。 */
+export interface SpecCodeValue {
+  value: string;
+  means: string;
+  /** 猜必然猜错的取值，界面上标红 */
+  warn: boolean;
+}
+
+/** 「这个数字到底是什么意思」的对照表。 */
+export interface SpecCodeTable {
+  field: string;
+  title: string;
+  desc: string;
+  values: SpecCodeValue[];
+}
+
 export interface ApiSpec {
   title: string;
   version: string;
   /** /openapi/v1 */
   prefix: string;
   groups: SpecGroup[];
+  /** 全站通用的取值对照表。全功能那组返回的是库里的原始值，靠它读懂 */
+  codes: SpecCodeTable[];
 }
 
 export const getApiSpecApi = () => http.get<ApiSpec>(PORT1 + `/api/openapi/spec`, {}, { loading: false });

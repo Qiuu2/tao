@@ -58,6 +58,13 @@ type Endpoint struct {
 	Fields []Field `json:"fields"`
 	Body   string  `json:"body"`
 	Sample string  `json:"sample"`
+	// Returns 逐条解释**响应示例里每个字段是什么**。
+	//
+	// ⚠ 光贴一段示例 JSON 是不够的：`"priority": 8` 里的 8 是什么意思？
+	// 数字大就优先吗（不是，正好反过来）？`"weekdays": [7]` 的 7 是周日
+	// 还是周六？集成方猜错了**不会报错**，只会在错误的那天广播。
+	// 所以每个字段都要写出来，取值有编码的还要写明对照。
+	Returns []Field `json:"returns"`
 	// Notes 是「不写清楚就会变成故障」的那些事。
 	Notes []string `json:"notes"`
 	// Danger 为真时界面上会把「试一试」标红并要求再确认 ——
@@ -89,12 +96,46 @@ type Group struct {
 	Endpoints []Endpoint `json:"endpoints"`
 }
 
+// CodeValue 是一个编码取值和它的含义。
+type CodeValue struct {
+	Value string `json:"value"`
+	Means string `json:"means"`
+	// Warn 为真时界面上标红 —— 这些是**猜必然猜错**的取值。
+	Warn bool `json:"warn"`
+}
+
+// CodeTable 是「这个数字到底是什么意思」的对照表。
+type CodeTable struct {
+	Field string `json:"field"`
+	Title string `json:"title"`
+	// Desc 说它出现在哪、为什么要特别看一眼。
+	Desc   string      `json:"desc"`
+	Values []CodeValue `json:"values"`
+}
+
 // Spec 是整份目录。
 type Spec struct {
 	Title   string  `json:"title"`
 	Version string  `json:"version"`
 	Prefix  string  `json:"prefix"`
 	Groups  []Group `json:"groups"`
+	// Codes 是全站通用的取值对照表。
+	//
+	// # 为什么要单独有这么一张表
+	//
+	// 「全部功能接口」那 213 条返回的是**库里的原始值**：netstate、
+	// projectstate、israndomplay、exemodel、tasktype……这些数字对集成方
+	// 毫无意义，而其中好几个的取值是**反直觉**的：
+	//
+	//	projectstate  0 才是启用
+	//	israndomplay  0 是随机、1 是顺序
+	//	priority      数字**小**的优先级高
+	//	exemodel      7 位掩码，**周日打头**
+	//
+	// 猜错这几个不会报错 —— 只会让广播在错误的时间、以错误的顺序、
+	// 在错误的那一天响。所以它们必须摊开在平台上，而不是藏在某份文档的
+	// 某一段里。
+	Codes []CodeTable `json:"codes"`
 }
 
 // Catalog 返回接口目录。
@@ -118,6 +159,137 @@ func Catalog() Spec {
 		Version: "v1",
 		Prefix:  "/openapi/v1",
 		Groups:  groups,
+		Codes:   codeTables(),
+	}
+}
+
+// codeTables 是全站通用的取值对照。
+//
+// ⚠ 每一条都对着源码核过，不是照记忆写的。改这里之前先去看对应的常量：
+//
+//	task.StateEnabled / StateDisabled     internal/task/task.go
+//	任务执行状态 state 的四个取值          internal/task/task.go 的 stateText
+//	netstate / devicestate / taskstate    internal/terminal/control.go 的 SetRunning
+//	                                      与 web 终端列表页的渲染
+//	exemodel 的位序                        ok112/Browse_active_task.php 的 SQL
+//	                                      （推导见 query_test.go）
+//	holidaytime.projectstate               internal/holiday 的包注释
+func codeTables() []CodeTable {
+	return []CodeTable{
+		{
+			Field: "code",
+			Title: "业务码（所有响应）",
+			Desc:  "HTTP 状态码恒为 200，**看 body 里的 code**。",
+			Values: []CodeValue{
+				{"200", "成功", false},
+				{"40001", "请求填错了。msg 里写了错在哪，照着改 —— 重试没用", false},
+				{"401", "密钥无效：写错了 / 被停用 / 已过期 / 归属账号被停用", false},
+				{"40301", "权限不够，或这个接口不开放给密钥调", false},
+				{"40302", "服务器处于备机模式，全站只读", false},
+				{"40401", "找不到这个对象", false},
+				{"50001", "服务器出错，可以重试", false},
+			},
+		},
+		{
+			Field: "projectstate",
+			Title: "任务的启停状态",
+			Desc:  "出现在任务、作息方案、分类任务的返回里。⚠ **0 才是启用**，和直觉相反。",
+			Values: []CodeValue{
+				{"0", "启用（会按排期自动触发）", true},
+				{"1", "停用（永远不会自动触发）", true},
+			},
+		},
+		{
+			Field: "state",
+			Title: "任务的执行状态",
+			Desc:  "这一条**此刻**在不在播。与 projectstate 是两件事：停用的任务 state 也可能是历史遗留值。",
+			Values: []CodeValue{
+				{"0", "准备（没在播）", false},
+				{"1", "执行中（正在播）", false},
+				{"2", "已停止", false},
+				{"3", "立即执行（刚被启动）", false},
+			},
+		},
+		{
+			Field: "israndomplay",
+			Title: "播放顺序",
+			Desc:  "⚠ 取值反直觉：**0 是随机、1 是顺序**。列名里的 random 会让人读反。",
+			Values: []CodeValue{
+				{"0", "随机播放", true},
+				{"1", "顺序播放", true},
+			},
+		},
+		{
+			Field: "priority",
+			Title: "任务级别（优先级）",
+			Desc:  "范围 10~109。⚠ **数字小的优先级高** —— 10 最高、109 最低。两条任务抢同一台终端时，数字小的那条赢。",
+			Values: []CodeValue{
+				{"10", "最高。立即播放用的就是它", true},
+				{"109", "最低。新建任务不填优先级时的默认值", true},
+			},
+		},
+		{
+			Field: "exemodel",
+			Title: "星期掩码（哪几天执行）",
+			Desc:  "7 个字符的 0/1 串。⚠ **周日打头**，不是周一 —— 位序依据是旧系统判「今天该不该响」的那条 SQL。/openapi/v1 那组接口已经替你转成了 1=周一…7=周日 的 weekdays，不必自己解这个串。",
+			Values: []CodeValue{
+				{"第 1 位", "周日", true},
+				{"第 2~7 位", "周一 … 周六", true},
+				{`"0000000"`, "手动任务 —— 后台**永远不会**自动触发它", true},
+				{`"0111110"`, "周一到周五", false},
+				{`"1111111"`, "每天", false},
+			},
+		},
+		{
+			Field: "timelengthtype",
+			Title: "时长的单位",
+			Desc:  "决定同一行里 timelength 那个数字怎么读。⚠ 读错的后果是算出来的结束时间差出十几分钟。",
+			Values: []CodeValue{
+				{"1", "timelength 是**秒数**", false},
+				{"2", "timelength 是**循环次数**（播完清单算一次）", true},
+			},
+		},
+		{
+			Field: "tasktype",
+			Title: "任务类型",
+			Desc:  "同一张 task 表装了好几种任务，靠它区分。",
+			Values: []CodeValue{
+				{"1", "作息方案里的打铃条目", false},
+				{"2", "文件广播任务（最常见的那种）", false},
+				{"7", "文件广播的另一种取值，现网无数据但旧查询一直带着", false},
+				{"9", "功放子任务（跟着主任务自动建的）", false},
+				{"15", "作息方案里的文件播放", false},
+				{"30 / 24", "LED 字幕子任务（24 是旧数据）", false},
+			},
+		},
+		{
+			Field: "netstate / devicestate / taskstate",
+			Title: "终端的三个状态",
+			Desc:  "三个是**并列**的三件事，别混。⚠ devicestate 是「启动/停止」这个运行开关（对应界面上的启动终端 / 停止终端），**不是电源**。",
+			Values: []CodeValue{
+				{"netstate = 1", "网络在线；其它值 = 离线", false},
+				{"devicestate = 1", "已启动；0 = 已停止", true},
+				{"taskstate = 1", "正在播任务；0 = 空闲", false},
+			},
+		},
+		{
+			Field: "holidaytime.projectstate",
+			Title: "节假日的启停状态",
+			Desc:  "⚠ **和 task 表正好相反**，这是旧系统留下的。改节假日时别照搬任务那套。",
+			Values: []CodeValue{
+				{"1", "启用（这一天按节假日规则走）", true},
+				{"0", "停用", true},
+			},
+		},
+		{
+			Field: "enabletask.enstate",
+			Title: "启用计划里的动作",
+			Desc:  "「到点把这批任务怎么样」。与 task.projectstate 同一套取值。",
+			Values: []CodeValue{
+				{"0", "到点启用", false},
+				{"1", "到点停用", false},
+			},
+		},
 	}
 }
 
@@ -152,10 +324,26 @@ func groupQuery() Group {
     "id": 2, "name": "A102教室音箱", "type": "一体化音箱", "zone": "教学楼",
     "ip": "192.168.2.12",
     "online": true, "playing": false, "stateText": "在线空闲",
-    "volume": 75, "powerOn": true, "powerStateText": "已开机"
+    "volume": 75, "running": true, "runStateText": "已启动"
   }],
   "total": 12, "pageNum": 1, "pageSize": 20
 }`,
+				Returns: []Field{
+					{Name: "list[].id", Type: "int", Desc: "终端编号。下发广播时可以用它，也可以直接用 name"},
+					{Name: "list[].name", Type: "string", Desc: "终端名。就是界面上显示的那个，也是寻址时写的名字"},
+					{Name: "list[].type", Type: "string", Desc: "设备型号，如「一体化音箱」。只是展示，不参与寻址"},
+					{Name: "list[].zone", Type: "string", Desc: "所属分区名。没归分区的是「(未分区)」，不是空串"},
+					{Name: "list[].ip", Type: "string", Desc: "终端当前 IP。离线时可能是最后一次的"},
+					{Name: "list[].online", Type: "bool", Desc: "网络在线。对应库里 netstate = 1"},
+					{Name: "list[].playing", Type: "bool", Desc: "此刻正在播任务。⚠ 与 online 是两件事；离线时恒为 false"},
+					{Name: "list[].stateText", Type: "string", Desc: "上面两个的中文合并版：离线 / 播放中 / 在线空闲。给人看的，程序请判 online 和 playing"},
+					{Name: "list[].volume", Type: "int", Desc: "当前音量，0~100"},
+					{Name: "list[].running", Type: "bool", Desc: "运行开关是不是打开的（界面上的「启动终端 / 停止终端」）。⚠ 不是电源"},
+					{Name: "list[].runStateText", Type: "string", Desc: "上一条的中文版：已启动 / 已停止"},
+					{Name: "total", Type: "int", Desc: "符合条件的总条数（不是本页条数）。翻页时按它算总页数"},
+					{Name: "pageNum", Type: "int", Desc: "当前页码，从 1 开始"},
+					{Name: "pageSize", Type: "int", Desc: "本次每页几条。传什么就是什么，不会被静默改掉"},
+				},
 				Notes: []string{
 					"online 是网络在线，playing 是正在播任务 —— 两件事。离线的终端 playing 恒为假。",
 					"没归到任何分区的终端，zone 是「(未分区)」。",
@@ -177,6 +365,15 @@ func groupQuery() Group {
              "sizeKB": 1406, "folderId": 2, "type": "mp3" }],
   "total": 1, "pageNum": 1, "pageSize": 20
 }`,
+				Returns: []Field{
+					{Name: "list[].id", Type: "int", Desc: "媒体编号"},
+					{Name: "list[].name", Type: "string", Desc: "媒体名（含扩展名）。就是寻址时写的名字"},
+					{Name: "list[].seconds", Type: "int", Desc: "时长，秒。⚠ 0 表示库里没记时长，不是「零秒」——建任务时会退回按兜底值算"},
+					{Name: "list[].sizeKB", Type: "int", Desc: "文件大小，KB"},
+					{Name: "list[].folderId", Type: "int", Desc: "所在媒体目录的编号"},
+					{Name: "list[].type", Type: "string", Desc: "文件类型，如 mp3、wav"},
+					{Name: "total / pageNum / pageSize", Type: "int", Desc: "分页信息，含义同终端列表"},
+				},
 				Notes: []string{"seconds 为 0 表示库里没记时长，不是「零秒」。"},
 			},
 			{
@@ -202,6 +399,24 @@ func groupQuery() Group {
   }],
   "total": 6, "pageNum": 1, "pageSize": 20
 }`,
+				Returns: []Field{
+					{Name: "list[].id", Type: "int", Desc: "任务编号"},
+					{Name: "list[].name", Type: "string", Desc: "任务名。也是寻址时写的名字"},
+					{Name: "list[].note", Type: "string", Desc: "备注（库里 task.info）。⚠ 只读，改不了；作息任务上这一列才是方案名，这里只是备注"},
+					{Name: "list[].enabled", Type: "bool", Desc: "启没启用。true 对应库里 projectstate = 0（那一列 0 才是启用）"},
+					{Name: "list[].running", Type: "bool", Desc: "此刻正在播。⚠ 与 enabled 是两件事"},
+					{Name: "list[].stateText", Type: "string", Desc: "执行状态的中文：准备 / 执行中 / 已停止 / 立即执行"},
+					{Name: "list[].startDate", Type: "string", Desc: "生效起始日 YYYY-MM-DD。不在区间内的日子不会触发"},
+					{Name: "list[].endDate", Type: "string", Desc: "生效结束日 YYYY-MM-DD"},
+					{Name: "list[].playTime", Type: "string", Desc: "每天几点开播 HH:MM:SS"},
+					{Name: "list[].endTime", Type: "string", Desc: "每天几点结束 HH:MM:SS"},
+					{Name: "list[].weekdays", Type: "数组", Desc: "哪几天播。**1=周一 … 7=周日**。⚠ 空数组 = 手动任务，后台永远不会自动触发它"},
+					{Name: "list[].priority", Type: "int", Desc: "任务级别 10~109。⚠ **数字小的优先级高**，抢同一台终端时小的赢"},
+					{Name: "list[].volume", Type: "int", Desc: "播放音量 0~100"},
+					{Name: "list[].media[]", Type: "数组", Desc: "播放清单，**按数组顺序播**。每项 {id, name}"},
+					{Name: "list[].terminals[]", Type: "数组", Desc: "播到哪些终端。每项 {id, name}。⚠ 这里是终端不是分区 —— 分区在建任务时就展开了"},
+					{Name: "total / pageNum / pageSize", Type: "int", Desc: "分页信息"},
+				},
 				Notes: []string{
 					"enabled = 这条任务启没启用（停用的永不触发）；running = 此刻正在播。两件事。",
 					"weekdays 是 1=周一 … 7=周日。空数组表示手动任务，后台永远不会自动触发它。",
@@ -213,8 +428,13 @@ func groupQuery() Group {
 				Summary: "作息方案清单",
 				Desc:    "有哪些作息方案，每个里面有几条铃、几条是启用的。",
 				Right:   "有效密钥即可",
-				Sample:  `[{ "name": "春季作息", "tasks": 7, "enabled": 7 }]`,
-				Notes:   []string{"方案没有编号，名字就是它的身份。"},
+				Sample: `[{ "name": "春季作息", "tasks": 7, "enabled": 7 }]`,
+				Returns: []Field{
+					{Name: "[].name", Type: "string", Desc: "方案名。⚠ 方案**没有编号**，这个名字就是它的身份，寻址只能用它"},
+					{Name: "[].tasks", Type: "int", Desc: "方案里一共有几条打铃"},
+					{Name: "[].enabled", Type: "int", Desc: "其中处于**启用**状态的有几条。与 tasks 不相等时说明这个方案被部分停用了"},
+				},
+				Notes: []string{"方案没有编号，名字就是它的身份。"},
 			},
 			{
 				ID: "schedules.get", Method: "GET", Path: "/schedules/{name}",
@@ -235,6 +455,21 @@ func groupQuery() Group {
     "media": [{ "id": 125, "name": "10.起床号.mp3" }]
   }]
 }`,
+				Returns: []Field{
+					{Name: "name", Type: "string", Desc: "方案名"},
+					{Name: "volume", Type: "int", Desc: "**方案级**音量 0~100，方案里所有条目共用一份"},
+					{Name: "priority", Type: "int", Desc: "**方案级**任务级别 10~109，数字小的优先级高"},
+					{Name: "terminals[]", Type: "数组", Desc: "这个方案打到哪些终端。每项 {id, name}。方案里所有条目共用同一份终端清单"},
+					{Name: "items[].taskId", Type: "int", Desc: "这条打铃在 task 表里的编号"},
+					{Name: "items[].name", Type: "string", Desc: "条目名，如「早读预备铃」"},
+					{Name: "items[].playTime", Type: "string", Desc: "几点打 HH:MM:SS"},
+					{Name: "items[].enabled", Type: "bool", Desc: "这一条启没启用。方案可以被部分停用"},
+					{Name: "items[].seconds", Type: "int", Desc: "播多少秒。⚠ 与 loopTimes **只有一个非零**"},
+					{Name: "items[].loopTimes", Type: "int", Desc: "把清单循环几遍。按次数循环的条目没有确定秒数，所以那时 seconds 给 0"},
+					{Name: "items[].weekdays", Type: "数组", Desc: "哪几天打，1=周一 … 7=周日"},
+					{Name: "items[].startDate / endDate", Type: "string", Desc: "这一条的生效区间。理论上组内一致，但「智能排课」能按条目改"},
+					{Name: "items[].media[]", Type: "数组", Desc: "这一条播什么。每项 {id, name}"},
+				},
 				Notes: []string{
 					"seconds 与 loopTimes 只有一个非零：按次数循环的条目没有确定的秒数，所以 seconds 给 0、次数放在 loopTimes 上。",
 				},
@@ -250,6 +485,17 @@ func groupQuery() Group {
   "volume": 90, "seconds": 46, "state": "playing",
   "startTime": "2026-09-08 08:00:52", "endTime": ""
 }]`,
+				Returns: []Field{
+					{Name: "playId", Type: "int", Desc: "这次播放的句柄。⚠ **记下来** —— 停止时要用它"},
+					{Name: "taskId", Type: "int", Desc: "为这次播放临时建的任务编号。停止时会连它一起删掉，不用你管"},
+					{Name: "media", Type: "string", Desc: "正在播的媒体名"},
+					{Name: "terminals[]", Type: "数组", Desc: "播到了哪些终端。每项 {id, name}。分区在这里已经展开成终端了"},
+					{Name: "volume", Type: "int", Desc: "音量 0~100"},
+					{Name: "seconds", Type: "int", Desc: "最多播多久，秒。没指定时取的是媒体自身时长"},
+					{Name: "state", Type: "string", Desc: "playing = 还在播；stopped = 已停止"},
+					{Name: "startTime", Type: "string", Desc: "开始时间 YYYY-MM-DD HH:MM:SS"},
+					{Name: "endTime", Type: "string", Desc: "停止时间。还在播时是空串"},
+				},
 			},
 		},
 	}
@@ -294,6 +540,11 @@ func groupTask() Group {
   "volume": 70
 }`,
 				Sample: `{ "id": 70230, "mediaCount": 1, "terminalCount": 4 }`,
+				Returns: []Field{
+					{Name: "id", Type: "int", Desc: "任务编号。之后改它、启停它、删它都用这个（也可以继续用任务名）"},
+					{Name: "mediaCount", Type: "int", Desc: "实际写进去几条媒体"},
+					{Name: "terminalCount", Type: "int", Desc: "实际写进去几台终端。⚠ **对一下这个数** —— 给了分区的话它是展开后的终端数，比你传的条目多是正常的"},
+				},
 				Notes: []string{
 					"⚠ weekdays 留空 = 手动任务，永远不会自动响。想每天响要写 [1,2,3,4,5,6,7]。默认成「每天」太危险 —— 少写一个字段就变成每天全校广播。",
 					"⚠ 分区是在写入那一刻展开成终端的。建完任务再往分区里加终端，这条任务不会自动带上它 —— 加了终端要重新调一次「修改任务」。",
@@ -312,6 +563,11 @@ func groupTask() Group {
 				},
 				Body:   `{ "volume": 55 }`,
 				Sample: `{ "id": 70230, "mediaCount": 1, "terminalCount": 4 }`,
+				Returns: []Field{
+					{Name: "id", Type: "int", Desc: "任务编号。之后改它、启停它、删它都用这个（也可以继续用任务名）"},
+					{Name: "mediaCount", Type: "int", Desc: "实际写进去几条媒体"},
+					{Name: "terminalCount", Type: "int", Desc: "实际写进去几台终端。⚠ **对一下这个数** —— 给了分区的话它是展开后的终端数，比你传的条目多是正常的"},
+				},
 				Notes: []string{
 					"⚠ 清单类字段（media / terminals / zones）给了就是整体替换，不是追加。传 media: [\"A.mp3\"] 会把原来的清单换成只有 A.mp3。不传则保持原样。",
 				},
@@ -331,6 +587,11 @@ func groupTask() Group {
   "succeeded": [{ "id": 1008, "name": "升旗仪式-国歌" }],
   "blocked":   [{ "id": 1010, "name": "课间轻音乐", "reason": "只能操作自己创建的任务" }]
 }`,
+				Returns: []Field{
+					{Name: "succeeded[]", Type: "数组", Desc: "做成了的。每项 {id, name}"},
+					{Name: "blocked[]", Type: "数组", Desc: "没做成的。每项 {id, name, reason}"},
+					{Name: "blocked[].reason", Type: "string", Desc: "为什么没做成，中文，可直接透传给你们的运维界面"},
+				},
 				Notes: []string{
 					"⚠ 回执是「部分成功」的语义：能做的做掉、做不了的逐条给原因。**要检查 blocked 是不是空的** —— 一次给二十条，因为其中一条不归你就把另外十九条也拒掉是不合理的。",
 				},
@@ -346,6 +607,10 @@ func groupTask() Group {
 						Desc: "任务名或编号", Example: ""},
 				},
 				Sample: `{ "succeeded": [{ "id": 70230, "name": "课间音乐" }], "blocked": [] }`,
+				Returns: []Field{
+					{Name: "succeeded[]", Type: "数组", Desc: "真的删掉了的。每项 {id, name}，名字是**删之前**取的"},
+					{Name: "blocked[]", Type: "数组", Desc: "没删成的。每项 {id, name, reason}。⚠ 要检查它是不是空的"},
+				},
 				Danger: true,
 			},
 		},
@@ -380,6 +645,17 @@ func groupPlay() Group {
   "volume": 90, "seconds": 46, "state": "playing",
   "startTime": "2026-09-08 08:00:52", "endTime": ""
 }`,
+				Returns: []Field{
+					{Name: "playId", Type: "int", Desc: "这次播放的句柄。⚠ **记下来** —— 停止时要用它"},
+					{Name: "taskId", Type: "int", Desc: "为这次播放临时建的任务编号。停止时会连它一起删掉，不用你管"},
+					{Name: "media", Type: "string", Desc: "正在播的媒体名"},
+					{Name: "terminals[]", Type: "数组", Desc: "播到了哪些终端。每项 {id, name}。分区在这里已经展开成终端了"},
+					{Name: "volume", Type: "int", Desc: "音量 0~100"},
+					{Name: "seconds", Type: "int", Desc: "最多播多久，秒。没指定时取的是媒体自身时长"},
+					{Name: "state", Type: "string", Desc: "playing = 还在播；stopped = 已停止"},
+					{Name: "startTime", Type: "string", Desc: "开始时间 YYYY-MM-DD HH:MM:SS"},
+					{Name: "endTime", Type: "string", Desc: "停止时间。还在播时是空串"},
+				},
 				Notes: []string{
 					"把返回的 playId 记下来，停止时要用。",
 					"⚠ 以**最高优先级**下发，会压住正在播的排期任务。这是有意的 —— 它是你此刻主动要求的。上课时间请谨慎。",
@@ -397,6 +673,11 @@ func groupPlay() Group {
 						Desc: "立即播放返回的 playId", Example: ""},
 				},
 				Sample: `{ "playId": 1, "state": "stopped", "endTime": "2026-09-08 08:01:24" }`,
+				Returns: []Field{
+					{Name: "playId", Type: "int", Desc: "刚停掉的那次播放"},
+					{Name: "state", Type: "string", Desc: "stopped。幂等 —— 本来就停了的再调一次也回这个，不报错"},
+					{Name: "endTime", Type: "string", Desc: "停止时间"},
+				},
 				Danger: true,
 			},
 		},
@@ -436,6 +717,12 @@ func groupSchedule() Group {
   ]
 }`,
 				Sample: `{ "name": "夏季作息", "itemCount": 2, "taskIds": [70232, 70233], "warnings": [] }`,
+				Returns: []Field{
+					{Name: "name", Type: "string", Desc: "建出来的方案名。之后启停、删除都用它寻址"},
+					{Name: "itemCount", Type: "int", Desc: "实际建出几条打铃"},
+					{Name: "taskIds", Type: "数组", Desc: "每条打铃在 task 表里的编号，按 items 的顺序"},
+					{Name: "warnings", Type: "数组", Desc: "⚠ **要看一眼**。「建成了，但有件事你该知道」，比如同一时刻排了两条铃。不拦截，但空数组才是完全干净"},
+				},
 				Notes: []string{
 					"⚠ weekdays 留空时这里默认**周一到周五**，而新建任务那边默认「手动」。不是笔误：作息方案天然是上课日打铃，建一个永不触发的方案没有意义；而文件广播任务建来手动触发是常见用法。两边都别漏填。",
 					"warnings 是「建成了，但有件事你该知道」，比如同一时刻排了两条铃。不拦截，但要看。",
@@ -453,6 +740,10 @@ func groupSchedule() Group {
 				},
 				Body:   `{ "enabled": false }`,
 				Sample: `{ "name": "夏季作息", "affectedTasks": 2 }`,
+				Returns: []Field{
+					{Name: "name", Type: "string", Desc: "被操作的方案名（服务端核实过的那个，不是你传的原文）"},
+					{Name: "affectedTasks", Type: "int", Desc: "这一下动了几条打铃。方案里有几条就是几条 —— 与预期对不上说明方案内容和你以为的不一样"},
+				},
 				Danger: true,
 			},
 			{
@@ -465,6 +756,10 @@ func groupSchedule() Group {
 						Desc: "方案名", Example: ""},
 				},
 				Sample: `{ "name": "夏季作息", "affectedTasks": 2 }`,
+				Returns: []Field{
+					{Name: "name", Type: "string", Desc: "被操作的方案名（服务端核实过的那个，不是你传的原文）"},
+					{Name: "affectedTasks", Type: "int", Desc: "这一下动了几条打铃。方案里有几条就是几条 —— 与预期对不上说明方案内容和你以为的不一样"},
+				},
 				Danger: true,
 			},
 		},
