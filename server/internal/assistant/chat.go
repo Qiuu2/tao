@@ -149,11 +149,57 @@ func (s *Service) Chat(ctx context.Context, u *auth.User, in ChatRequest) (*Chat
 
 	// ── 7. 执行 ──
 	spec, _ := Spec(res.Intent)
-	out.Reply = "我听懂了：" + spec.Title + "。这个动作还在接入中，暂时没有真正执行。"
-	out.DialogState = "not_implemented"
-	out.Warnings = append(out.Warnings, map[string]any{
-		"kind": "not_implemented", "intent": string(res.Intent), "title": spec.Title,
-	})
+	exec, ok := s.executors()[res.Intent]
+	if !ok {
+		// 还没接的意图**如实说**，不假装做了。
+		out.Reply = "我听懂了：" + spec.Title + "。这个动作还在接入中，暂时没有真正执行。"
+		out.DialogState = "not_implemented"
+		out.Warnings = append(out.Warnings, map[string]any{
+			"kind": "not_implemented", "intent": string(res.Intent), "title": spec.Title,
+		})
+		sess.LastIntent = res.Intent
+		sess.LastSlots = res.Slots
+		s.finish(ctx, in, u, sess, out, text)
+		return out, nil
+	}
+
+	ar := exec(ctx, u, res.Slots)
+	if ar.Err != nil {
+		// 执行出错：给用户一句能懂的话，真实原因进 diagnostics 给运维。
+		// 不把 SQL 错误直接甩到聊天框里。
+		logf("执行 %s 失败: %v", res.Intent, ar.Err)
+		out.Reply = "这条我没能查成功，稍后再试试；如果一直这样，麻烦让管理员看一眼日志。"
+		out.DialogState = "action_error"
+		out.Diagnostics = append(out.Diagnostics, map[string]any{
+			"kind": "action_error", "intent": string(res.Intent), "detail": ar.Err.Error(),
+		})
+		s.finish(ctx, in, u, sess, out, text)
+		return out, nil
+	}
+
+	out.Reply = ar.Reply
+	out.MissingSlots = ar.MissingSlots
+	if out.MissingSlots == nil {
+		out.MissingSlots = []string{}
+	}
+	if len(ar.ActionLog) > 0 {
+		out.ActionLog = ar.ActionLog
+	}
+	if len(ar.Choices) > 0 {
+		out.Choices = ar.Choices
+	}
+	if ar.ConfirmKind != "" {
+		out.ConfirmKind = ar.ConfirmKind
+	}
+	if len(ar.Pending) > 0 {
+		out.PendingAction = ar.Pending
+		sess.Pending = ar.Pending
+		out.DialogState = "pending_action_followup"
+	}
+	// 缺槽位时不算成功，让前端能区分"做完了"和"还差东西"
+	if len(out.MissingSlots) > 0 && out.DialogState == "" {
+		out.DialogState = "missing_slots"
+	}
 
 	sess.LastIntent = res.Intent
 	sess.LastSlots = res.Slots
@@ -170,9 +216,9 @@ func (s *Service) finish(ctx context.Context, in ChatRequest, u *auth.User,
 
 	status := "ok"
 	switch out.DialogState {
-	case "not_understood", "forbidden", "nlu_unavailable":
+	case "not_understood", "forbidden", "nlu_unavailable", "action_error":
 		status = "failed"
-	case "not_implemented":
+	case "not_implemented", "missing_slots", "pending_action_followup":
 		status = "pending"
 	}
 	if err := s.AppendMessage(ctx, &Message{

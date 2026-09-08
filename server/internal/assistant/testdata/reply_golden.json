@@ -1,0 +1,175 @@
+{
+ "query": [
+  {
+   "intent": "query_terminal",
+   "desc": "A101教室",
+   "online": 1,
+   "offline": 0,
+   "unknown": 0,
+   "want": "A101教室 的状态已经查到：在线 1 个，离线 0 个，未知 0 个~ 看一下是这些哈。"
+  },
+  {
+   "intent": "query_terminal",
+   "desc": "A101教室、A102教室",
+   "online": 2,
+   "offline": 0,
+   "unknown": 0,
+   "want": "小电已经帮您查到 A101教室、A102教室 的状态：在线 2 个，离线 0 个，未知 0 个。"
+  },
+  {
+   "intent": "query_terminal",
+   "desc": "A101教室、A102教室、A103教室等5个终端",
+   "online": 3,
+   "offline": 1,
+   "unknown": 1,
+   "want": "终端查询结果已经出来了：A101教室、A102教室、A103教室等5个终端 在线 3 个，离线 1 个，未知 1 个~ 看一下是这些哈。"
+  },
+  {
+   "intent": "query_terminal",
+   "desc": "7个终端",
+   "online": 0,
+   "offline": 7,
+   "unknown": 0,
+   "want": "7个终端 的状态已经查到：在线 0 个，离线 7 个，未知 0 个~ 都帮您整理好了。"
+  },
+  {
+   "intent": "query_terminal",
+   "desc": "广播室主话筒",
+   "online": 0,
+   "offline": 0,
+   "unknown": 1,
+   "want": "小电已经帮您查到 广播室主话筒 的状态：在线 0 个，离线 0 个，未知 1 个。"
+  },
+  {
+   "intent": "check_terminal",
+   "desc": "A101教室",
+   "online": 1,
+   "offline": 0,
+   "unknown": 0,
+   "want": "这条我已经帮您查完了，A101教室 当前状态是：在线 1 个，离线 0 个，未知 0 个，结果在这儿啦~"
+  },
+  {
+   "intent": "check_terminal",
+   "desc": "A101教室、A102教室",
+   "online": 2,
+   "offline": 0,
+   "unknown": 0,
+   "want": "这条我已经帮您查完了，A101教室、A102教室 当前状态是：在线 2 个，离线 0 个，未知 0 个，看一下哦~"
+  },
+  {
+   "intent": "check_terminal",
+   "desc": "A101教室、A102教室、A103教室等5个终端",
+   "online": 3,
+   "offline": 1,
+   "unknown": 1,
+   "want": "这条我已经帮您查完了，A101教室、A102教室、A103教室等5个终端 当前状态是：在线 3 个，离线 1 个，未知 1 个，结果在这儿啦~"
+  },
+  {
+   "intent": "check_terminal",
+   "desc": "7个终端",
+   "online": 0,
+   "offline": 7,
+   "unknown": 0,
+   "want": "查到啦，终端自检我已经查完了，涉及 7个终端：在线 0 个，离线 7 个，未知 0 个~"
+  },
+  {
+   "intent": "check_terminal",
+   "desc": "广播室主话筒",
+   "online": 0,
+   "offline": 0,
+   "unknown": 1,
+   "want": "查到啦，广播室主话筒 的自检结果已经回来了：在线 0 个，离线 0 个，未知 1 个~"
+  }
+ ],
+ "preview": [
+  {
+   "vals": [
+    "A",
+    "B"
+   ],
+   "limit": 3,
+   "noun": "个终端",
+   "want": "A、B"
+  },
+  {
+   "vals": [
+    "A",
+    "B",
+    "C"
+   ],
+   "limit": 3,
+   "noun": "个终端",
+   "want": "A、B、C"
+  },
+  {
+   "vals": [
+    "A",
+    "B",
+    "C",
+    "D"
+   ],
+   "limit": 3,
+   "noun": "个终端",
+   "want": "A、B、C等4个终端"
+  },
+  {
+   "vals": [
+    "A",
+    "A",
+    "B",
+    ""
+   ],
+   "limit": 3,
+   "noun": "个终端",
+   "want": "A、B"
+  },
+  {
+   "vals": [],
+   "limit": 3,
+   "noun": "个终端",
+   "want": ""
+  },
+  {
+   "vals": [
+    "甲",
+    "乙",
+    "丙",
+    "丁",
+    "戊"
+   ],
+   "limit": 2,
+   "noun": "个分区",
+   "want": "甲、乙等5个分区"
+  }
+ ],
+ "finalize": [
+  {
+   "intent": "query_terminal",
+   "reply": "A101的状态已经查到：在线 1 个，离线 0 个，未知 0 个。",
+   "details": [],
+   "want": "A101的状态已经查到：在线 1 个，离线 0 个，未知 0 个。 还有别的需要随时叫我哈~"
+  },
+  {
+   "intent": "query_terminal",
+   "reply": "A101的状态已经查到：在线 1 个。",
+   "details": [
+    "以下对象没有匹配上：{'terminal_name': ['A999']}。"
+   ],
+   "want": "A101的状态已经查到：在线 1 个，以下对象没有匹配上：{'terminal_name': ['A999']}。 还有别的需要随时叫我哈~"
+  },
+  {
+   "intent": "check_terminal",
+   "reply": "终端自检我已经查完了。",
+   "details": [
+    "离线终端：A102。"
+   ],
+   "want": "终端自检我已经查完了，离线终端：A102。"
+  },
+  {
+   "intent": "query_task",
+   "reply": "今天有 3 条任务。",
+   "details": [],
+   "want": "今天有 3 条任务。 还有别的需要随时叫我哈~"
+  }
+ ]
+}
