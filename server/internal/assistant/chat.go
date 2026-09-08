@@ -102,6 +102,15 @@ func (s *Service) Chat(ctx context.Context, u *auth.User, in ChatRequest) (*Chat
 		Role: "user", Text: text,
 	})
 
+	// ── 1. 待确认动作：必须在 NLU 之前 ──
+	//
+	// 上一轮问了「这次还是永久」，这一轮用户回一句「就这一次」。
+	// 这句话送进模型只会得到一个莫名其妙的意图 —— 它不是一条广播指令。
+	if handled := s.handlePending(ctx, u, sess, out, text); handled {
+		s.finish(ctx, in, u, sess, out, text)
+		return out, nil
+	}
+
 	// ── 2. NLU ──
 	res, err := s.nlu.Infer(ctx, text)
 	if err != nil {
@@ -201,6 +210,10 @@ func (s *Service) Chat(ctx context.Context, u *auth.User, in ChatRequest) (*Chat
 		out.PendingAction = ar.Pending
 		sess.Pending = ar.Pending
 		out.DialogState = "pending_action_followup"
+	} else {
+		// 这一轮说的是别的事 —— 上一轮挂着的待确认作废。
+		// 留着它的话，用户下下轮随口说个「这次」会触发一个他早忘了的动作。
+		sess.Pending = nil
 	}
 	// 缺槽位时不算成功，让前端能区分"做完了"和"还差东西"
 	if len(out.MissingSlots) > 0 && out.DialogState == "" {
@@ -267,4 +280,148 @@ func errText(err error) string {
 		return "未配置 assistant.nlu_url，助手的识别服务没有启用"
 	}
 	return err.Error()
+}
+
+// handlePending 处理「上一轮问了、这一轮答」的情形。
+// 返回 true 表示这一轮已经处理完，不再走 NLU。
+//
+// 流程照搬原实现的 _handle_pending_action：
+//
+//	没有待确认           → 不管，往下走
+//	超时                 → 说一句超时，清掉
+//	说「算了」            → 清掉，回一句轻松的
+//	答上来了             → 带着模式重新执行当初那个意图
+//	答的不是这个问题      → 把问题再问一遍（不清掉，用户可能只是打岔）
+func (s *Service) handlePending(ctx context.Context, u *auth.User,
+	sess *Session, out *ChatResponse, text string) bool {
+
+	p := pendingFromMap(sess.Pending)
+	if p == nil || p.Intent == "" {
+		return false
+	}
+
+	if p.expired() {
+		sess.Pending = nil
+		out.Reply = "刚才的操作已超时，请重新说明。"
+		out.DialogState = "pending_expired"
+		return true
+	}
+
+	for _, w := range pendingAbortWords {
+		if strings.Contains(text, w) {
+			// ⚠「取消」既是放弃词、又是 cancel_schedule 的关键词。
+			// 但这里是**回答一个问题**的语境，用户说「取消」意思是"别做了"。
+			// 原实现也是这么判的。
+			sess.Pending = nil
+			out.Reply = "好哒~ 想起别的随时叫我就行~"
+			out.DialogState = "pending_aborted"
+			return true
+		}
+	}
+
+	execSlots := map[string][]string{"__raw__": {p.Text}}
+	for k, v := range p.Slots {
+		execSlots[k] = v
+	}
+
+	// 没答上来时把问题连同按钮再发一遍。只回一句光秃秃的问话、
+	// 按钮却没了，用户就只能靠打字 —— 而他刚才正是打字没打对才走到这儿。
+	//
+	// 但**不能一直问下去**：待确认是在 NLU 之前截住这一轮的，
+	// 用户改主意去说别的事也会被当成在答这个问题。所以问过
+	// maxPendingReasks 遍还没答上来就放手，让这一轮正常走 NLU。
+	// 返回 false 表示"这一轮我不管了"。
+	reask := func(kind string, choices []map[string]any) bool {
+		if p.Attempts >= maxPendingReasks {
+			sess.Pending = nil
+			return false
+		}
+		p.Attempts++
+		out.Reply = p.Prompt
+		out.PendingAction = p.toMap()
+		out.ConfirmKind = kind
+		out.Choices = choices
+		out.Intent = string(p.Intent)
+		out.DialogState = "pending_action_followup"
+		sess.Pending = p.toMap()
+		return true
+	}
+
+	switch p.Kind {
+	case "apply_mode":
+		mode, ok := detectApplyMode(text)
+		if !ok {
+			return reask("apply_mode", applyModeChoices)
+		}
+		execSlots["__mode__"] = []string{string(mode)}
+	case "yes_no":
+		yes, ok := detectYesNo(text)
+		if !ok {
+			return reask("yes_no", yesNoChoices)
+		}
+		if !yes {
+			sess.Pending = nil
+			out.Reply = "好哒~ 那就先不动它。"
+			out.DialogState = "pending_aborted"
+			return true
+		}
+		execSlots["__confirmed__"] = []string{"1"}
+	default:
+		sess.Pending = nil
+		return false
+	}
+
+	sess.Pending = nil
+	out.Intent = string(p.Intent)
+
+	// 权限在这里**再查一遍**。上一轮查过了，但两轮之间用户的权限可能被改掉，
+	// 而这一轮才是真正动手的那一轮。
+	if ok, why := Allowed(u, p.Intent); !ok {
+		out.Reply = why
+		out.DialogState = "forbidden"
+		return true
+	}
+
+	exec, ok := s.executors()[p.Intent]
+	if !ok {
+		out.Reply = "这个动作还在接入中，暂时没有真正执行。"
+		out.DialogState = "not_implemented"
+		return true
+	}
+	ar := exec(ctx, u, execSlots)
+	if ar.Err != nil {
+		logf("确认后执行 %s 失败: %v", p.Intent, ar.Err)
+		out.Reply = "这条我没能做成功，稍后再试试；如果一直这样，麻烦让管理员看一眼日志。"
+		out.DialogState = "action_error"
+		out.Diagnostics = append(out.Diagnostics, map[string]any{
+			"kind": "action_error", "intent": string(p.Intent), "detail": ar.Err.Error(),
+		})
+		return true
+	}
+	out.Reply = ar.Reply
+	out.MissingSlots = ar.MissingSlots
+	if out.MissingSlots == nil {
+		out.MissingSlots = []string{}
+	}
+	if len(ar.ActionLog) > 0 {
+		out.ActionLog = ar.ActionLog
+	}
+	if len(ar.Choices) > 0 {
+		out.Choices = ar.Choices
+	}
+	out.DialogState = "confirmed"
+	return true
+}
+
+// applyModeOf 从执行器收到的槽位里取确认结果。没有就表示这一轮还没确认过。
+func applyModeOf(slots map[string][]string) (applyMode, bool) {
+	if v := slots["__mode__"]; len(v) > 0 {
+		return applyMode(v[0]), true
+	}
+	return "", false
+}
+
+// confirmedOf 报告用户是不是已经点头了。
+func confirmedOf(slots map[string][]string) bool {
+	return len(slots["__confirmed__"]) > 0
 }

@@ -1,0 +1,112 @@
+[
+ {
+  "name": "schedule_not_found/春季作息",
+  "want": "\"春季作息\"这个作息方案我没看到呀，您再说一遍？",
+  "kind": "schedule_not_found",
+  "name_arg": "春季作息"
+ },
+ {
+  "name": "schedule_not_found/冬季作息",
+  "want": "找不到叫\"冬季作息\"的作息方案哎，是不是名字差一点？",
+  "kind": "schedule_not_found",
+  "name_arg": "冬季作息"
+ },
+ {
+  "name": "schedule_not_found/admin",
+  "want": "咦，\"admin\"这个作息方案我这边没匹配上，确认一下名字哈~",
+  "kind": "schedule_not_found",
+  "name_arg": "admin"
+ },
+ {
+  "name": "schedule_not_found/(空)",
+  "want": "没找到对应的作息方案哎，再说一下名字哈~",
+  "kind": "schedule_not_found",
+  "name_arg": ""
+ },
+ {
+  "name": "no_matching_tasks/挪动",
+  "want": "挪动的任务没匹配上呢，再说细一点我接着帮您找~",
+  "kind": "no_matching_tasks",
+  "action_label": "挪动"
+ },
+ {
+  "name": "no_matching_tasks/对调",
+  "want": "哎，没找到可以对调的任务呢，时间或方案再说细一点哈~",
+  "kind": "no_matching_tasks",
+  "action_label": "对调"
+ },
+ {
+  "name": "no_matching_tasks/取消",
+  "want": "哎，没找到可以取消的任务呢，时间或方案再说细一点哈~",
+  "kind": "no_matching_tasks",
+  "action_label": "取消"
+ },
+ {
+  "name": "no_matching_tasks/删除",
+  "want": "咦，没看到符合条件的可删除任务，换个说法或者补充时间哈~",
+  "kind": "no_matching_tasks",
+  "action_label": "删除"
+ },
+ {
+  "name": "no_matching_tasks/操作",
+  "want": "操作的任务没匹配上呢，再说细一点我接着帮您找~",
+  "kind": "no_matching_tasks",
+  "action_label": "操作"
+ },
+ {
+  "name": "confirm/cancel_schedule",
+  "want": "找到这些：要取消的是方案“admin”里 07:20 的早读预备铃。您想这次只执行一次，还是永久这么改呢？告诉我一声哈~",
+  "kind": "confirm",
+  "intent": "cancel_schedule",
+  "summary": "要取消的是方案“admin”里 07:20 的早读预备铃",
+  "question": "您想这次只执行一次，还是永久这么改呢？告诉我一声哈~"
+ },
+ {
+  "name": "confirm/move_schedule",
+  "want": "查到这些内容啦：要把“早读预备铃”从 07:20 挪到 08:00。您想这次只执行一次，还是永久这么改呢？告诉我一声哈~",
+  "kind": "confirm",
+  "intent": "move_schedule",
+  "summary": "要把“早读预备铃”从 07:20 挪到 08:00",
+  "question": "您想这次只执行一次，还是永久这么改呢？告诉我一声哈~"
+ },
+ {
+  "name": "confirm/swap_schedule",
+  "want": "要把“早读预备铃”和“放学铃”对调~ 您想这次只执行一次，还是永久这么改呢？告诉我一声哈~",
+  "kind": "confirm",
+  "intent": "swap_schedule",
+  "summary": "要把“早读预备铃”和“放学铃”对调",
+  "question": "您想这次只执行一次，还是永久这么改呢？告诉我一声哈~"
+ },
+ {
+  "name": "ask/enable_schedule",
+  "want": "嗯，要操作哪个作息方案还差点信息，补一下我就帮您安排~\n举个例子：比如冬季作息",
+  "kind": "ask",
+  "intent": "enable_schedule",
+  "need": "要操作哪个作息方案",
+  "example": "比如冬季作息"
+ },
+ {
+  "name": "ask/disable_schedule",
+  "want": "再告诉我一下要操作哪个作息方案吧~\n举个例子：比如冬季作息",
+  "kind": "ask",
+  "intent": "disable_schedule",
+  "need": "要操作哪个作息方案",
+  "example": "比如冬季作息"
+ },
+ {
+  "name": "ask/delete_schedule",
+  "want": "要删除的方案名称还没说呢，补一下哈~\n举个例子：比如删除冬季作息",
+  "kind": "ask",
+  "intent": "delete_schedule",
+  "need": "要删除的方案名称",
+  "example": "比如删除冬季作息"
+ },
+ {
+  "name": "ask/shift_schedule",
+  "want": "嗯，源方案、位移量和新方案名称还差点信息，补一下我就帮您安排~\n举个例子：比如把冬季作息整体后移 30 分钟生成临时方案",
+  "kind": "ask",
+  "intent": "shift_schedule",
+  "need": "源方案、位移量和新方案名称",
+  "example": "比如把冬季作息整体后移 30 分钟生成临时方案"
+ }
+]

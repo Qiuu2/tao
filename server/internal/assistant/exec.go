@@ -53,6 +53,11 @@ func (s *Service) executors() map[Intent]executor {
 		IntentDeleteZone:             s.execDeleteZone,
 		IntentAddTerminalToZone:      s.execZoneMembership("add_terminal_to_zone", true),
 		IntentRemoveTerminalFromZone: s.execZoneMembership("remove_terminal_from_zone", false),
+
+		// 作息方案。见 exec_schedule.go。
+		IntentEnableSchedule:  s.execScheduleState("enable_schedule", true),
+		IntentDisableSchedule: s.execScheduleState("disable_schedule", false),
+		IntentDeleteSchedule:  s.execDeleteSchedule,
 	}
 }
 
