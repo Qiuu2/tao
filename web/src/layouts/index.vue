@@ -3,6 +3,8 @@
   <el-watermark id="watermark" :font="font" :content="watermark ? ['IP数字网络广播系统'] : ''">
     <component :is="LayoutComponents[layout]" />
     <ThemeDrawer />
+    <!-- AI 助手浮在所有页面之上。助手功能关掉时它自己不出现，见组件里的 ready -->
+    <AiAssistant />
   </el-watermark>
 </template>
 
@@ -11,6 +13,8 @@ import { type Component, computed, reactive, watch } from "vue";
 
 import { LayoutType } from "@/stores/interface";
 import { useGlobalStore } from "@/stores/modules/global";
+
+import AiAssistant from "@/components/AiAssistant/index.vue";
 
 import ThemeDrawer from "./components/ThemeDrawer/index.vue";
 import LayoutClassic from "./LayoutClassic/index.vue";
