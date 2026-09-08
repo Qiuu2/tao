@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"htweb/internal/auth"
+	"htweb/internal/task"
 )
 
 // 意图执行的调度层。
@@ -34,6 +35,14 @@ func (s *Service) executors() map[Intent]executor {
 		IntentQueryTerminal: s.execQueryTerminal,
 		IntentCheckTerminal: s.execCheckTerminal,
 		IntentQueryTask:     s.execQueryTask,
+
+		// 单任务写操作。动作本身交给页面用的 task.Service，
+		// 这一层只负责"把话变成任务 id"，见 exec_task_state.go。
+		IntentPlayTask:     s.execTaskState("play_task", task.ActionStart),
+		IntentStopTask:     s.execTaskState("stop_task", task.ActionStop),
+		IntentTaskPause:    s.execTaskState("task_pause", task.ActionPause),
+		IntentTaskResume:   s.execTaskState("task_resume", task.ActionResume),
+		IntentAdjustVolume: s.execAdjustVolume,
 	}
 }
 

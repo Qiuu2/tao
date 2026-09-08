@@ -1,0 +1,234 @@
+[
+ {
+  "name": "success_plain/play_task/早读预备铃",
+  "want": "搞定，任务“早读预备铃”现在是开始播放状态~",
+  "kind": "success_plain",
+  "intent": "play_task",
+  "task_name": "早读预备铃",
+  "action_label": "开始播放"
+ },
+ {
+  "name": "success_plain/play_task/课间轻音乐",
+  "want": "“课间轻音乐”已经调整为开始播放，安排好啦~",
+  "kind": "success_plain",
+  "intent": "play_task",
+  "task_name": "课间轻音乐",
+  "action_label": "开始播放"
+ },
+ {
+  "name": "success_plain/play_task/升旗仪式-国歌",
+  "want": "OK，“升旗仪式-国歌”已经调整为开始播放~",
+  "kind": "success_plain",
+  "intent": "play_task",
+  "task_name": "升旗仪式-国歌",
+  "action_label": "开始播放"
+ },
+ {
+  "name": "success_plain/stop_task/早读预备铃",
+  "want": "搞定，已为您将任务“早读预备铃”设为停止~",
+  "kind": "success_plain",
+  "intent": "stop_task",
+  "task_name": "早读预备铃",
+  "action_label": "停止"
+ },
+ {
+  "name": "success_plain/stop_task/课间轻音乐",
+  "want": "搞定，已为您将任务“课间轻音乐”设为停止~",
+  "kind": "success_plain",
+  "intent": "stop_task",
+  "task_name": "课间轻音乐",
+  "action_label": "停止"
+ },
+ {
+  "name": "success_plain/stop_task/升旗仪式-国歌",
+  "want": "好哒，任务“升旗仪式-国歌”现在是停止状态~",
+  "kind": "success_plain",
+  "intent": "stop_task",
+  "task_name": "升旗仪式-国歌",
+  "action_label": "停止"
+ },
+ {
+  "name": "success_plain/task_pause/早读预备铃",
+  "want": "搞定，任务“早读预备铃”现在是暂停状态~",
+  "kind": "success_plain",
+  "intent": "task_pause",
+  "task_name": "早读预备铃",
+  "action_label": "暂停"
+ },
+ {
+  "name": "success_plain/task_pause/课间轻音乐",
+  "want": "OK，任务“课间轻音乐”现在是暂停状态~",
+  "kind": "success_plain",
+  "intent": "task_pause",
+  "task_name": "课间轻音乐",
+  "action_label": "暂停"
+ },
+ {
+  "name": "success_plain/task_pause/升旗仪式-国歌",
+  "want": "OK，已为您将任务“升旗仪式-国歌”设为暂停~",
+  "kind": "success_plain",
+  "intent": "task_pause",
+  "task_name": "升旗仪式-国歌",
+  "action_label": "暂停"
+ },
+ {
+  "name": "success_plain/task_resume/早读预备铃",
+  "want": "嗯嗯，“早读预备铃”已经调整为恢复播放~",
+  "kind": "success_plain",
+  "intent": "task_resume",
+  "task_name": "早读预备铃",
+  "action_label": "恢复播放"
+ },
+ {
+  "name": "success_plain/task_resume/课间轻音乐",
+  "want": "搞定，“课间轻音乐”已经调整为恢复播放~",
+  "kind": "success_plain",
+  "intent": "task_resume",
+  "task_name": "课间轻音乐",
+  "action_label": "恢复播放"
+ },
+ {
+  "name": "success_plain/task_resume/升旗仪式-国歌",
+  "want": "任务“升旗仪式-国歌”现在是恢复播放状态，搞定啦~",
+  "kind": "success_plain",
+  "intent": "task_resume",
+  "task_name": "升旗仪式-国歌",
+  "action_label": "恢复播放"
+ },
+ {
+  "name": "success_scoped/play_task/admin/早读预备铃",
+  "want": "好哒，方案“admin”中的“早读预备铃”现在是开始播放状态~",
+  "kind": "success_scoped",
+  "intent": "play_task",
+  "schedule_name": "admin",
+  "task_name": "早读预备铃",
+  "action_label": "开始播放"
+ },
+ {
+  "name": "success_scoped/play_task/春季作息/课间轻音乐",
+  "want": "方案“春季作息”中的“课间轻音乐”现在是开始播放状态，搞定啦~",
+  "kind": "success_scoped",
+  "intent": "play_task",
+  "schedule_name": "春季作息",
+  "task_name": "课间轻音乐",
+  "action_label": "开始播放"
+ },
+ {
+  "name": "success_scoped/stop_task/admin/早读预备铃",
+  "want": "已将方案“admin”里的任务“早读预备铃”设为停止，搞定啦~",
+  "kind": "success_scoped",
+  "intent": "stop_task",
+  "schedule_name": "admin",
+  "task_name": "早读预备铃",
+  "action_label": "停止"
+ },
+ {
+  "name": "success_scoped/stop_task/春季作息/课间轻音乐",
+  "want": "好哒，已将方案“春季作息”里的任务“课间轻音乐”设为停止~",
+  "kind": "success_scoped",
+  "intent": "stop_task",
+  "schedule_name": "春季作息",
+  "task_name": "课间轻音乐",
+  "action_label": "停止"
+ },
+ {
+  "name": "success_volume/任务“早读预备铃”/80",
+  "want": "OK啦，音量已调整：任务“早读预备铃” 现在是 80~",
+  "kind": "success_volume",
+  "intent": "adjust_volume",
+  "scope_desc": "任务“早读预备铃”",
+  "volume": 80
+ },
+ {
+  "name": "success_volume/任务“课间轻音乐”/30",
+  "want": "搞定啦，任务“课间轻音乐”的音量已经设为 30 了~",
+  "kind": "success_volume",
+  "intent": "adjust_volume",
+  "scope_desc": "任务“课间轻音乐”",
+  "volume": 30
+ },
+ {
+  "name": "success_volume/任务“放学铃”/100",
+  "want": "好嘞，音量已调整：任务“放学铃” 现在是 100~ 还有别的随时叫我哈~",
+  "kind": "success_volume",
+  "intent": "adjust_volume",
+  "scope_desc": "任务“放学铃”",
+  "volume": 100
+ },
+ {
+  "name": "ask/play_task",
+  "want": "您把要执行的任务名称补齐我就接着做啦~\n举个例子：比如说出任务的名字哈~",
+  "kind": "ask",
+  "intent": "play_task",
+  "need": "要执行的任务名称",
+  "example": "比如说出任务的名字哈~"
+ },
+ {
+  "name": "ask/stop_task",
+  "want": "再告诉我一下要停止的任务名称吧~\n举个例子：比如说出任务的名字哈~",
+  "kind": "ask",
+  "intent": "stop_task",
+  "need": "要停止的任务名称",
+  "example": "比如说出任务的名字哈~"
+ },
+ {
+  "name": "ask/task_pause",
+  "want": "要暂停的任务名称还没说呢，补一下哈~\n举个例子：比如说出任务的名字哈~",
+  "kind": "ask",
+  "intent": "task_pause",
+  "need": "要暂停的任务名称",
+  "example": "比如说出任务的名字哈~"
+ },
+ {
+  "name": "ask/task_resume",
+  "want": "嗯，要恢复的任务名称还差点信息，补一下我就帮您安排~\n举个例子：比如说出任务的名字哈~",
+  "kind": "ask",
+  "intent": "task_resume",
+  "need": "要恢复的任务名称",
+  "example": "比如说出任务的名字哈~"
+ },
+ {
+  "name": "ask/adjust_volume",
+  "want": "要调整到的音量值还没说呢，补一下哈~\n举个例子：比如说“把音量调到 80”哈~",
+  "kind": "ask",
+  "intent": "adjust_volume",
+  "need": "要调整到的音量值",
+  "example": "比如说“把音量调到 80”哈~"
+ },
+ {
+  "name": "failure/play_task/任务“早读预备铃”的执行",
+  "want": "哎，这次任务“早读预备铃”的执行没成功，因为方案已停用，请先启用后再启动。\n您可以换个说法再试，或者补充更明确的任务名。",
+  "kind": "failure",
+  "intent": "play_task",
+  "topic": "任务“早读预备铃”的执行",
+  "reason": "方案已停用，请先启用后再启动",
+  "suggestion": "您可以换个说法再试，或者补充更明确的任务名。"
+ },
+ {
+  "name": "failure/stop_task/任务“课间轻音乐”的停止",
+  "want": "唉，任务“课间轻音乐”的停止失败了，只能操作自己创建的任务。\n您可以换个说法再试，或者补充更明确的任务名。",
+  "kind": "failure",
+  "intent": "stop_task",
+  "topic": "任务“课间轻音乐”的停止",
+  "reason": "只能操作自己创建的任务",
+  "suggestion": "您可以换个说法再试，或者补充更明确的任务名。"
+ },
+ {
+  "name": "failure/play_task/任务“放学铃”的执行",
+  "want": "任务“放学铃”的执行这次没成功呢，再试一下哈~",
+  "kind": "failure",
+  "intent": "play_task",
+  "topic": "任务“放学铃”的执行",
+  "reason": "",
+  "suggestion": ""
+ },
+ {
+  "name": "failure/adjust_volume/任务“升旗仪式-国歌”的音量调整",
+  "want": "任务“升旗仪式-国歌”的音量调整这次出了点问题，音量只能是 0 ~ 100。",
+  "kind": "failure",
+  "intent": "adjust_volume",
+  "topic": "任务“升旗仪式-国歌”的音量调整",
+  "reason": "音量只能是 0 ~ 100",
+  "suggestion": ""
+ }
+]

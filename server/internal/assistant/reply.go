@@ -331,3 +331,108 @@ func sortStrings(s []string) {
 		}
 	}
 }
+
+// ---------- 成功 / 追问 / 失败 三类回话 ----------
+//
+// 下面三个取自 runtime_reply.py 的 _light_success_reply / success_runtime /
+// ask_runtime / failure_runtime。写操作的回话都从这里出。
+
+// highPersonaSuccessIntents 取自 HIGH_PERSONA_SUCCESS_INTENTS。
+// ⚠ 与 highPersonaFollowupIntents 不是同一张表：这张里没有两个 query_*，
+// 却多了三个 adjust_volume_* 变体。抄错一张，措辞就整批换掉。
+var highPersonaSuccessIntents = map[string]bool{
+	"create_schedule":        true,
+	"play_media":             true,
+	"adjust_volume":          true,
+	"adjust_volume_global":   true,
+	"adjust_volume_task":     true,
+	"adjust_volume_terminal": true,
+}
+
+// lightSuccessReply 取自 _light_success_reply。
+//
+// ⚠ 与 lightQueryReply 有一处不同：这里**没有** core[:8] 里找「小电已经」
+// 那一步，只按前缀表判断。看着像遗漏，但它决定了现网的措辞，照搬。
+func lightSuccessReply(intent, base string, seedParts []string) string {
+	core := trimTerminalPunct(base)
+	if core == "" {
+		return finalizeSentence(base)
+	}
+	for _, tok := range lightPrefixTokens {
+		if strings.HasPrefix(core, tok) {
+			return finalizeSentence(base)
+		}
+	}
+	var variants []string
+	if highPersonaSuccessIntents[baseIntentName(intent)] {
+		variants = []string{
+			"搞定啦，{core}~",
+			"好嘞，{core}~ 还有别的随时叫我哈~",
+			"{core}，小电已经帮您安排好啦~",
+			"OK啦，{core}~",
+			"{core}~ 搞定！",
+			"安排好啦，{core}~",
+		}
+	} else {
+		variants = []string{
+			"搞定，{core}~",
+			"好哒，{core}~",
+			"{core}，搞定啦~",
+			"嗯嗯，{core}~",
+			"{core}，安排好啦~",
+			"OK，{core}~",
+		}
+	}
+	seed := append([]string{core}, seedParts...)
+	return stableReply(intent+":success:light", variants, seed, map[string]string{"core": core})
+}
+
+// successRuntimeReply 取自 success_runtime。
+func successRuntimeReply(intent string, variants []string, seedParts []string, kv map[string]string) string {
+	base := stableReply(intent, variants, seedParts, kv)
+	return lightSuccessReply(intent, base, seedParts)
+}
+
+// askRuntimeReply 取自 ask_runtime：缺东西时问一句。
+func askRuntimeReply(intent, need, example string) string {
+	base := stableReply(intent+":ask", []string{
+		"还差{need}哦，告诉我一下哈~",
+		"{need}还没说呢，补一下哈~",
+		"再告诉我一下{need}吧~",
+		"嗯，{need}还差点信息，补一下我就帮您安排~",
+		"您把{need}补齐我就接着做啦~",
+	}, []string{need, example}, map[string]string{"need": need, "example": example})
+	if example != "" {
+		return appendReplyDetails(base, "举个例子："+example)
+	}
+	return base
+}
+
+// failureRuntimeReply 取自 failure_runtime：没做成时说一句，能说清原因就说原因。
+func failureRuntimeReply(intent, topic string, seedParts []string, reason, suggestion string) string {
+	var variants []string
+	if reason != "" {
+		variants = []string{
+			"哎，这次{topic}没成功，因为{reason}。",
+			"{topic}没搞定呢，原因是{reason}~",
+			"唉，{topic}失败了，{reason}。",
+			"emm，{topic}没成，{reason}哎。",
+			"{topic}这次出了点问题，{reason}。",
+		}
+	} else {
+		variants = []string{
+			"哎，这次{topic}没处理好...",
+			"{topic}这次没成功呢，再试一下哈~",
+			"唉，{topic}没弄成，要不换种方式再来？",
+			"emm，{topic}没搞定，能告诉我详细点情况吗？",
+			"{topic}这次有点不顺，重试一下看看哈~",
+		}
+	}
+	seed := append([]string{topic, reason}, seedParts...)
+	main := stableReply(intent+":failure", variants, seed,
+		map[string]string{"topic": topic, "reason": reason})
+	if suggestion != "" {
+		return appendReplyDetails(main, suggestion)
+	}
+	return main
+}
