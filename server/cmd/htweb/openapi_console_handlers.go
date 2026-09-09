@@ -38,6 +38,8 @@ import (
 func (a *app) handleOpenAPISpec(w http.ResponseWriter, r *http.Request) {
 	spec := openapi.Catalog()
 	spec.Groups = append(spec.Groups, APICatalog()...)
+	// 目录整份是中文写的，读的时候按请求语言翻一遍 —— 见 openapi.Localize。
+	openapi.Localize(r.Context(), &spec)
 	httpx.OK(w, spec)
 }
 
@@ -46,7 +48,7 @@ func (a *app) handleOpenAPISpec(w http.ResponseWriter, r *http.Request) {
 // ⚠ 直接写 JSON，不套 {code,msg,data} 那个信封 ——
 // Postman / Apifox 只认裸的 OpenAPI 文档，套了信封它们会说「不是有效的规格」。
 func (a *app) handleOpenAPIJSON(w http.ResponseWriter, r *http.Request) {
-	doc, err := openapi.OpenAPIJSON(baseURLOf(r))
+	doc, err := openapi.OpenAPIJSON(r.Context(), baseURLOf(r))
 	if err != nil {
 		httpx.Internal(w, "生成接口规格", err)
 		return

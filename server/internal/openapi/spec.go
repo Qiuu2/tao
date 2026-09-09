@@ -1,6 +1,7 @@
 package openapi
 
 import (
+	"context"
 	"encoding/json"
 	"strings"
 )
@@ -1059,8 +1060,10 @@ func groupSchedule() Group {
 // 给集成方导进 Postman / Apifox / 代码生成器用。我们自己那个界面是给人看的
 // （中文、带「为什么」、能直接试），这一份是给工具看的。
 // 两份同一个来源，不会分叉。
-func OpenAPIJSON(baseURL string) ([]byte, error) {
+func OpenAPIJSON(ctx context.Context, baseURL string) ([]byte, error) {
 	spec := Catalog()
+	// 导出的规格也跟着请求语言走 —— 集成方把它导进 Postman 之后就只剩这份文字了。
+	Localize(ctx, &spec)
 
 	paths := map[string]map[string]any{}
 	for _, g := range spec.Groups {

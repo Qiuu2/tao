@@ -3,6 +3,7 @@ package i18n
 import (
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
 )
@@ -17,6 +18,9 @@ import (
 //
 // 反过来（代码里有、字典里没有）不算错：翻译是一批一批补的，
 // 没补的原样显示中文，看得见、能补。
+// stringJoint 匹配 Go 里两个相邻字符串字面量之间的拼接点。
+var stringJoint = regexp.MustCompile(`"\s*\+\s*\n\s*"`)
+
 func TestDictKeysStillExistInCode(t *testing.T) {
 	// 包在 internal/i18n 下，服务端根目录要往上两级 ——
 	// 写成 ".." 只会扫到 internal/，cmd/htweb 里那一半提示全漏掉，
@@ -43,16 +47,25 @@ func TestDictKeysStillExistInCode(t *testing.T) {
 	if err != nil {
 		t.Fatalf("扫描源码失败: %v", err)
 	}
-	src := all.String()
+	// Go 源码里长文案常写成 `"前半" +\n\t"后半"`，
+	// 拼接点在文件里是一串 `" + 换行 缩进 "`。不抹掉它，
+	// 整句的字典键就永远匹配不上 —— 那不是失配，是排版。
+	src := stringJoint.ReplaceAllString(all.String(), "")
 	if len(src) < 10000 {
 		t.Fatalf("只扫到 %d 字节源码，路径大概不对 —— 这个测试就白跑了", len(src))
 	}
 
+	// 带引号的文案在 Go 源码里是转义写法（\" 而不是 "），
+	// 直接拿字典键去比会全部落空 —— 那不是失配，是转义。
+	// 所以两种形态都试一次。
+	escaped := strings.NewReplacer(`\`, `\\`, `"`, `\"`)
+
 	var orphan []string
 	for zh := range codeDict {
-		if !strings.Contains(src, zh) {
-			orphan = append(orphan, zh)
+		if strings.Contains(src, zh) || strings.Contains(src, escaped.Replace(zh)) {
+			continue
 		}
+		orphan = append(orphan, zh)
 	}
 	if len(orphan) > 0 {
 		t.Errorf("字典里这 %d 条中文在代码里已经找不到了 —— "+

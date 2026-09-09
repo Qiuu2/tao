@@ -27,133 +27,133 @@
     <div class="card key-page">
       <div class="header-bar">
         <div class="header-left">
-          <el-button type="primary" :icon="Plus" :disabled="!canAdd" @click="openCreate">新建密钥</el-button>
-          <el-button :icon="Refresh" @click="load">刷新</el-button>
+          <el-button type="primary" :icon="Plus" :disabled="!canAdd" @click="openCreate">{{ $t("keys.newKey") }}</el-button>
+          <el-button :icon="Refresh" @click="load">{{ $t("common.refresh") }}</el-button>
         </div>
         <div class="header-right">
           <el-tag type="info" size="small" effect="plain">
-            密钥的权限 = 它归属账号的权限。想给第三方多大权限，就在「用户」页给那个账号配多大。
+            {{ $t("keys.rightsNote") }}
           </el-tag>
         </div>
       </div>
 
-      <el-table :data="rows" v-loading="loading" empty-text="还没有发过密钥" class="mt8">
-        <el-table-column prop="name" label="名称" min-width="160" show-overflow-tooltip />
+      <el-table :data="rows" v-loading="loading" :empty-text='$t("keys.noKeysYet")' class="mt8">
+        <el-table-column prop="name" :label='$t("common.name")' min-width="160" show-overflow-tooltip />
         <!-- ⚠ nowrap：这一串不能折行。折了之后最后一个 • 会掉到第二行，
              看起来像是显示坏了，而它其实只是遮住的部分。 -->
-        <el-table-column label="密钥" width="210">
+        <el-table-column :label='$t("keys.key")' width="210">
           <template #default="{ row }">
             <span class="mono nowrap">hb_{{ row.prefix }}_••••••••</span>
           </template>
         </el-table-column>
-        <el-table-column prop="userName" label="归属账号" width="140" show-overflow-tooltip />
-        <el-table-column label="状态" width="110">
+        <el-table-column prop="userName" :label='$t("keys.owner")' width="140" show-overflow-tooltip />
+        <el-table-column :label='$t("common.status")' width="110">
           <template #default="{ row }">
-            <el-tag v-if="expired(row)" type="danger" size="small" effect="plain">已过期</el-tag>
-            <el-tag v-else-if="row.enabled" type="success" size="small" effect="plain">启用</el-tag>
-            <el-tag v-else type="info" size="small" effect="plain">已停用</el-tag>
+            <el-tag v-if="expired(row)" type="danger" size="small" effect="plain">{{ $t("keys.expired") }}</el-tag>
+            <el-tag v-else-if="row.enabled" type="success" size="small" effect="plain">{{ $t("common.enable") }}</el-tag>
+            <el-tag v-else type="info" size="small" effect="plain">{{ $t("keys.disabled") }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="到期" width="170">
+        <el-table-column :label='$t("keys.expiry")' width="170">
           <template #default="{ row }">
             <span v-if="row.expiretime">{{ row.expiretime }}</span>
-            <span v-else class="muted">不过期</span>
+            <span v-else class="muted">{{ $t("keys.neverExpires") }}</span>
           </template>
         </el-table-column>
-        <el-table-column label="最后使用" min-width="230">
+        <el-table-column :label='$t("keys.lastUsed")' min-width="230">
           <template #default="{ row }">
             <template v-if="row.lastusedtime">
               {{ row.lastusedtime }}
               <span class="muted"> · {{ row.lastusedip || "未知来源" }}</span>
             </template>
-            <span v-else class="muted">从未调用过</span>
+            <span v-else class="muted">{{ $t("keys.neverUsed") }}</span>
           </template>
         </el-table-column>
-        <el-table-column prop="createtime" label="创建时间" width="170" />
-        <el-table-column label="操作" fixed="right" width="170">
+        <el-table-column prop="createtime" :label='$t("common.createTime")' width="170" />
+        <el-table-column :label='$t("common.operation")' fixed="right" width="170">
           <template #default="{ row }">
             <el-button type="primary" link :disabled="!canControl" @click="toggle(row)">
               {{ row.enabled ? "停用" : "启用" }}
             </el-button>
-            <el-button type="danger" link :icon="Delete" :disabled="!canDelete" @click="remove(row)">删除</el-button>
+            <el-button type="danger" link :icon="Delete" :disabled="!canDelete" @click="remove(row)">{{ $t("common.delete") }}</el-button>
           </template>
         </el-table-column>
       </el-table>
 
       <div class="tip">
-        调用方式：请求头带 <code class="mono">X-API-Key: hb_前缀_密钥</code>，接口路径以 <code class="mono">/openapi/v1</code> 开头。
-        媒体、终端、分区、作息方案都可以直接写名字，不必先查编号。
+        {{ $t("keys.callPrefix") }} <code class="mono">{{ $t("keys.headerSample") }}</code>{{ $t("keys.pathPrefix") }} <code class="mono">/openapi/v1</code>{{ $t("keys.pathSuffix") }}
       </div>
     </div>
 
     <!-- 新建 -->
-    <el-dialog v-model="dlg.visible" title="新建开发者密钥" width="560px">
+    <el-dialog v-model="dlg.visible" :title='$t("keys.newKeyTitle")' width="560px">
       <el-form :model="form" label-width="96px">
-        <el-form-item label="名称" required>
-          <el-input v-model="form.name" placeholder="这把钥匙给谁用，比如「教务系统」" maxlength="32" show-word-limit />
+        <el-form-item :label='$t("common.name")' required>
+          <el-input v-model="form.name" :placeholder='$t("keys.namePlaceholder")' maxlength="32" show-word-limit />
           <div v-if="err.name" class="err">{{ err.name }}</div>
         </el-form-item>
-        <el-form-item label="归属账号" required>
+        <el-form-item :label='$t("keys.owner")' required>
           <!-- 候选名单来自后端，与「谁能发给谁」的判断同一条规则 ——
                能选的就一定能提交成功。停用的账号后端已经过滤掉了：
                给它发的密钥永远调不通（认证时因账号停用回 401，
                对外还是恒定那句「密钥无效」，对接方查不出原因）。 -->
-          <el-select v-model="form.userId" filterable placeholder="请选择" class="fill">
+          <el-select v-model="form.userId" filterable :placeholder='$t("common.pleaseSelect")' class="fill">
             <el-option v-for="u in accounts" :key="u.id" :label="u.username" :value="u.id">
               <span>{{ u.username }}</span>
               <span class="opt-group">{{ u.groupName }}</span>
             </el-option>
           </el-select>
-          <div class="tip inline">这把密钥能做的事，与这个账号在界面上能做的事完全一致。</div>
+          <div class="tip inline">{{ $t("keys.sameAsUi") }}</div>
           <el-alert
             v-if="pickedIsAdmin"
             type="warning"
             :closable="false"
             class="mt6"
-            title="这是管理员账号，密钥将拥有全部权限"
-            description="给第三方对接时，建议单独建一个账号、只勾它真正需要的权限位，别把管理员借出去。"
+            :title='$t("keys.adminWarnTitle")'
+            :description='$t("keys.adminWarnDesc")'
           />
           <div v-if="err.userId" class="err">{{ err.userId }}</div>
         </el-form-item>
-        <el-form-item label="到期时间">
+        <el-form-item :label='$t("keys.expiryTime")'>
           <el-date-picker
             v-model="form.expiretime"
             type="date"
             value-format="YYYY-MM-DD"
-            placeholder="留空 = 不过期"
+            :placeholder='$t("keys.expiryPlaceholder")'
             class="fill"
           />
-          <div class="tip inline">填了日期的话，到那天结束就失效。</div>
+          <div class="tip inline">{{ $t("keys.expiryHint") }}</div>
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="dlg.visible = false">取消</el-button>
-        <el-button type="primary" :loading="dlg.saving" @click="submit">生成</el-button>
+        <el-button @click="dlg.visible = false">{{ $t("common.cancel") }}</el-button>
+        <el-button type="primary" :loading="dlg.saving" @click="submit">{{ $t("keys.generate") }}</el-button>
       </template>
     </el-dialog>
 
     <!-- 明文密钥。只有这一次能看到 -->
-    <el-dialog v-model="secretDlg.visible" title="请立刻保存这把密钥" width="620px" :close-on-click-modal="false" :show-close="false">
+    <el-dialog v-model="secretDlg.visible" :title='$t("keys.saveNowTitle")' width="620px" :close-on-click-modal="false" :show-close="false">
       <el-alert
         type="warning"
         :closable="false"
-        title="这是唯一一次能看到完整密钥的机会"
-        description="服务器里只存了它的摘要，关掉这个窗口之后谁也拿不回来。抄丢了只能删掉重发一把。"
+        :title='$t("keys.onlyChanceTitle")'
+        :description='$t("keys.onlyChanceDesc")'
       />
       <div class="secret-box mt8">
         <span class="mono secret">{{ secretDlg.secret }}</span>
-        <el-button type="primary" :icon="CopyDocument" @click="copySecret">复制</el-button>
+        <el-button type="primary" :icon="CopyDocument" @click="copySecret">{{ $t("common.copy") }}</el-button>
       </div>
-      <div class="tip">用法：在请求头里带 <code class="mono">X-API-Key: {{ secretDlg.secret }}</code></div>
+      <div class="tip">{{ $t("keys.usagePrefix") }} <code class="mono">X-API-Key: {{ secretDlg.secret }}</code></div>
       <template #footer>
-        <el-button @click="goConsole">拿去试一试</el-button>
-        <el-button type="primary" @click="secretDlg.visible = false">我已经保存好了</el-button>
+        <el-button @click="goConsole">{{ $t("keys.tryIt") }}</el-button>
+        <el-button type="primary" @click="secretDlg.visible = false">{{ $t("keys.savedIt") }}</el-button>
       </template>
     </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts" name="openapiKeys">
+import { useI18n } from "vue-i18n";
 import { CopyDocument, Delete, Plus, Refresh } from "@element-plus/icons-vue";
 import { ElMessage, ElMessageBox } from "element-plus";
 import { computed, onMounted, reactive, ref } from "vue";
@@ -168,6 +168,9 @@ import {
 } from "@/api/modules/openapikey";
 import type { ApiKeyAccount, ApiKeyItem } from "@/api/modules/openapikey";
 import { useAuthStore } from "@/stores/modules/auth";
+
+// 脚本里拼的文案用 t()；模板里的 $t 不用引入
+const { t } = useI18n();
 
 const router = useRouter();
 const authStore = useAuthStore();
@@ -218,8 +221,8 @@ const openCreate = () => {
 
 const submit = async () => {
   clearErr();
-  if (!form.name.trim()) err.name = "请给这把密钥起个名字";
-  if (!form.userId) err.userId = "请选择归属账号";
+  if (!form.name.trim()) err.name = t("keys.nameRequired");
+  if (!form.userId) err.userId = t("keys.ownerRequired");
   if (err.name || err.userId) return;
 
   dlg.saving = true;
@@ -256,29 +259,28 @@ const goConsole = () => {
 const copySecret = async () => {
   try {
     await navigator.clipboard.writeText(secretDlg.secret);
-    ElMessage.success("已复制到剪贴板");
+    ElMessage.success(t("keys.copiedToClipboard"));
   } catch {
     // 非 https 或浏览器不给权限时 clipboard 用不了。
     // 不报错吓人 —— 密钥就在上面摆着，选中它照样能抄。
-    ElMessage.warning("这个浏览器不允许自动复制，请手动选中上面那串字符");
+    ElMessage.warning(t("keys.copyNotAllowed"));
   }
 };
 
 const toggle = async (row: ApiKeyItem) => {
   await setApiKeyStateApi(row.id, !row.enabled);
-  ElMessage.success(row.enabled ? "已停用，这把密钥立刻就调不通了" : "已启用");
+  ElMessage.success(row.enabled ? t("keys.disabledNow") : t("keys.enabled"));
   load();
 };
 
 const remove = async (row: ApiKeyItem) => {
   await ElMessageBox.confirm(
-    `删除「${row.name}」之后，用它调接口的系统会立刻收到 401，而且再也查不到这把密钥当时是谁的、什么时候发的。
-     只是想先停下来查一查的话，用「停用」。`,
-    "确认删除这把密钥？",
-    { type: "warning", confirmButtonText: "确认删除", cancelButtonText: "取消" }
+    t("keys.deleteWarn", { name: row.name }) + "\n" + t("keys.deleteWarnTail"),
+    t("keys.confirmDelete"),
+    { type: "warning", confirmButtonText: t("common.confirmDelete"), cancelButtonText: t("common.cancel") }
   );
   await deleteApiKeyApi(row.id);
-  ElMessage.success("已删除");
+  ElMessage.success(t("keys.deleted"));
   load();
 };
 

@@ -30,51 +30,50 @@
     <!-- 顶部：这是什么 + 密钥 -->
     <div class="card intro">
       <div class="intro-main">
-        <h2 class="title">{{ spec?.title || "开发者接口" }}</h2>
+        <h2 class="title">{{ spec?.title || $t("console.devApi") }}</h2>
         <p class="lead">
-          第三方系统（教务、门禁、消防告警）可以直接调这些接口，让广播系统播点什么、查点什么。
-          下面每个接口都能<b>当场试一次</b>，返回的就是对方程序会拿到的东西。
+          {{ $t("console.intro") }}
+          {{ $t("console.introTail") }}<b>{{ $t("console.tryHere") }}</b>{{ $t("console.introTail2") }}
         </p>
         <ol class="steps">
           <li>
-            管理员在
-            <el-link type="primary" :underline="false" @click="goKeys">「开发者密钥」</el-link>
-            页发一把密钥，把生成的那串抄给对接方
+            {{ $t("console.keyHeaderMid") }}
+            <el-link type="primary" :underline="false" @click="goKeys">{{ $t("console.devKeyPage") }}</el-link>
+            {{ $t("console.keyHeaderTail") }}
           </li>
-          <li>对接方每个请求带上请求头 <code class="mono">X-API-Key: 那串密钥</code></li>
+          <li>{{ $t("console.keyHeaderPrefix") }} <code class="mono">{{ $t("console.keyHeader") }}</code></li>
           <li>
-            接口地址以 <code class="mono">{{ base }}{{ spec?.prefix }}</code> 开头
+            {{ $t("console.baseUrlPrefix") }} <code class="mono">{{ base }}{{ spec?.prefix }}</code> {{ $t("console.baseUrlTail") }}
           </li>
         </ol>
         <!-- 寻址这件事必须说在最前面：媒体名和终端名在库里没有唯一索引，
              是真的可以重名的。照着名字对接的人，会在上线之后才第一次撞上
              「找到多个同名终端」—— 那时候没人记得当初是抄的哪段示例。 -->
         <p class="lead addr">
-          <b>寻址：能用编号就用编号。</b>
-          媒体、终端、分区、任务、分组都同时认<b>编号</b>和名字，但只有编号是唯一的 ——
-          媒体名和终端名在库里没有唯一约束，真的可以重名，重了接口只能报错要你改用编号。
-          编号从对应的查询接口里拿（终端状态、媒体列表、任务列表）。 只有<b>作息方案</b>是例外：它根本没有编号，只能用名字。
+          <b>{{ $t("console.addressing") }}</b>
+          {{ $t("console.addressingBody") }}<b>{{ $t("console.idWord") }}</b>{{ $t("console.andName") }}
+          {{ $t("console.nameNotUnique") }}<b>{{ $t("console.bell") }}</b>{{ $t("console.bellException") }}
         </p>
       </div>
       <div class="intro-side">
-        <el-button type="primary" :icon="Download" @click="downloadSpec">下载 OpenAPI 文件</el-button>
-        <div class="side-tip">标准 OpenAPI 3.0，可以直接导进 Postman / Apifox / 代码生成器。</div>
+        <el-button type="primary" :icon="Download" @click="downloadSpec">{{ $t("console.downloadSpec") }}</el-button>
+        <div class="side-tip">{{ $t("console.downloadSpecHint") }}</div>
         <!-- 取值对照放在最显眼的地方：全功能那 213 条返回的是库里的原始值，
              而其中好几个（projectstate / israndomplay / priority / exemodel）
              取值是反直觉的，猜错不报错、只会播错。 -->
         <el-button class="mt8" :icon="Notebook" @click="codesVisible = true">
-          取值对照表（{{ spec?.codes?.length || 0 }} 张）
+          {{ $t("console.codeTablesN", { n: spec?.codes?.length || 0 }) }}
         </el-button>
-        <div class="side-tip">返回里的 0/1 是什么意思，看这个。有几个取值是反直觉的。</div>
+        <div class="side-tip">{{ $t("console.valueMeaning") }}</div>
       </div>
     </div>
 
     <!-- 密钥输入 -->
     <div class="card keybar" :class="{ 'keybar--empty': !apiKey }">
-      <span class="keybar-label">试一试用的密钥</span>
+      <span class="keybar-label">{{ $t("console.tryItKey") }}</span>
       <el-input
         v-model="apiKey"
-        placeholder="粘贴一把密钥，形如 hb_xxxxxxxx_xxxxxxxx…"
+        :placeholder='$t("console.keyPlaceholder")'
         clearable
         class="keybar-input mono"
         :type="showKey ? 'text' : 'password'"
@@ -83,16 +82,16 @@
           <el-icon class="eye" @click="showKey = !showKey"><View v-if="!showKey" /><Hide v-else /></el-icon>
         </template>
       </el-input>
-      <el-tag v-if="fromSession" type="success" size="small" effect="plain">已自动带入刚才新建的那把</el-tag>
+      <el-tag v-if="fromSession" type="success" size="small" effect="plain">{{ $t("console.keyPrefilled") }}</el-tag>
       <span v-else-if="!apiKey" class="keybar-hint">
-        没有密钥？到「开发者密钥」页发一把 —— 服务器只存摘要，已发出去的看不到明文。
+        {{ $t("console.noKeyHint") }}
       </span>
     </div>
 
     <div class="body">
       <!-- 左：接口目录 -->
       <div class="card nav">
-        <el-input v-model="filter" placeholder="搜接口" clearable size="small" :prefix-icon="Search" class="nav-search" />
+        <el-input v-model="filter" :placeholder='$t("console.searchApi")' clearable size="small" :prefix-icon="Search" class="nav-search" />
         <!-- 两类接口分两段列，不混在一起：它们的定位不同，
              混着列会让人以为随便挑一个都一样，然后把集成建在一条
              会随界面改版的路径上。 -->
@@ -115,7 +114,7 @@
             </div>
           </div>
         </template>
-        <div v-if="!visibleGroups.length" class="nav-empty">没有匹配的接口</div>
+        <div v-if="!visibleGroups.length" class="nav-empty">{{ $t("console.noMatch") }}</div>
       </div>
 
       <!-- 右：详情 + 试一试 -->
@@ -123,7 +122,7 @@
         <div class="detail-head">
           <span class="method big" :class="'m-' + current.method.toLowerCase()">{{ current.method }}</span>
           <span class="mono path">{{ currentPrefix }}{{ current.path }}</span>
-          <el-tag size="small" effect="plain" class="right-tag">需要：{{ current.right }}</el-tag>
+          <el-tag size="small" effect="plain" class="right-tag">{{ $t("console.needsRight", { right: current.right }) }}</el-tag>
         </div>
         <h3 class="detail-title">{{ current.summary }}</h3>
         <!-- 目录里的说明和 Notes 用的是同一套 **加粗** 记法，
@@ -136,8 +135,8 @@
           type="info"
           :closable="false"
           class="note"
-          title="这是「全部功能接口」里的一条 —— 界面自己用的那套接口"
-          description="它覆盖到这个页面功能的每一个动作，但参数就是界面在用的那套，这里没有逐条抄（抄了势必抄错、也跟不上改动）。要看确切参数，用浏览器开发者工具看一次界面发的请求最准。另外这一组跟着界面走，页面改版时可能变；能用「常用接口」解决的，优先用那边。"
+          :title='$t("console.uiApiNote")'
+          :description='$t("console.allApisDesc")'
         />
 
         <el-alert
@@ -152,22 +151,22 @@
 
         <!-- 参数 -->
         <template v-if="current.params?.length">
-          <h4 class="sec">参数</h4>
+          <h4 class="sec">{{ $t("console.params") }}</h4>
           <el-table :data="current.params" size="small" class="param-table">
-            <el-table-column label="名称" width="150">
+            <el-table-column :label='$t("console.name")' width="150">
               <template #default="{ row }">
                 <span class="mono">{{ row.name }}</span>
-                <span v-if="row.in === 'path'" class="in-tag">路径</span>
+                <span v-if="row.in === 'path'" class="in-tag">{{ $t("console.path") }}</span>
               </template>
             </el-table-column>
-            <el-table-column prop="type" label="类型" width="90" />
-            <el-table-column label="必填" width="70">
+            <el-table-column prop="type" :label='$t("console.type")' width="90" />
+            <el-table-column :label='$t("console.required")' width="70">
               <template #default="{ row }">
-                <span v-if="row.required || row.in === 'path'" class="req">是</span>
-                <span v-else class="muted">否</span>
+                <span v-if="row.required || row.in === 'path'" class="req">{{ $t("console.yes") }}</span>
+                <span v-else class="muted">{{ $t("console.no") }}</span>
               </template>
             </el-table-column>
-            <el-table-column label="说明" min-width="260">
+            <el-table-column :label='$t("console.desc")' min-width="260">
               <template #default="{ row }"><RichText :text="row.desc" /></template>
             </el-table-column>
           </el-table>
@@ -179,7 +178,7 @@
              想改时长的人要的是上面那排场景，不是把 30 行读一遍。 -->
         <template v-if="current.fields?.length">
           <h4 class="sec">
-            请求体字段
+            {{ $t("console.requestBodyFields") }}
             <el-button
               v-if="current.fields.length > FIELD_PEEK"
               link
@@ -188,29 +187,33 @@
               class="sec-more"
               @click="allFields = !allFields"
             >
-              {{ allFields ? "只看前 " + FIELD_PEEK + " 个" : "展开全部 " + current.fields.length + " 个字段" }}
+              {{
+                allFields
+                  ? $t("console.peekFirstN", { n: FIELD_PEEK })
+                  : $t("console.expandAllFields", { n: current.fields.length })
+              }}
             </el-button>
           </h4>
           <el-table :data="shownFields" size="small" class="param-table">
-            <el-table-column label="名称" width="150">
+            <el-table-column :label='$t("console.name")' width="150">
               <template #default="{ row }"
                 ><span class="mono">{{ row.name }}</span></template
               >
             </el-table-column>
-            <el-table-column prop="type" label="类型" width="90" />
-            <el-table-column label="必填" width="70">
+            <el-table-column prop="type" :label='$t("console.type")' width="90" />
+            <el-table-column :label='$t("console.required")' width="70">
               <template #default="{ row }">
-                <span v-if="row.required" class="req">是</span>
-                <span v-else class="muted">否</span>
+                <span v-if="row.required" class="req">{{ $t("console.yes") }}</span>
+                <span v-else class="muted">{{ $t("console.no") }}</span>
               </template>
             </el-table-column>
-            <el-table-column label="说明" min-width="260">
+            <el-table-column :label='$t("console.desc")' min-width="260">
               <template #default="{ row }"><RichText :text="row.desc" /></template>
             </el-table-column>
           </el-table>
           <div v-if="!allFields && current.fields.length > FIELD_PEEK" class="more-hint">
-            还有 {{ current.fields.length - FIELD_PEEK }} 个字段没显示 ——
-            <el-link type="primary" :underline="false" @click="allFields = true">全部展开</el-link>
+            {{ $t("console.moreFieldsHidden", { n: current.fields.length - FIELD_PEEK }) }}
+            <el-link type="primary" :underline="false" @click="allFields = true">{{ $t("console.expandAll") }}</el-link>
           </div>
         </template>
 
@@ -220,7 +223,7 @@
              修改任务这一条尤其明显 —— 它上面有 30 行字段表和十个场景，
              示例落在三屏以外，等于不存在。 -->
         <template v-if="current.sample">
-          <h4 class="sec">响应示例（data 部分）</h4>
+          <h4 class="sec">{{ $t("console.respExample") }}</h4>
           <pre class="mono sample">{{ current.sample }}</pre>
         </template>
 
@@ -228,32 +231,32 @@
              `"priority": 8` 的 8 是什么？数字大就优先吗（反过来）？
              猜错了不报错，只会在错误的那天广播。 -->
         <template v-if="current.returns?.length">
-          <h4 class="sec">响应字段说明</h4>
+          <h4 class="sec">{{ $t("console.respFields") }}</h4>
           <el-table :data="current.returns" size="small" class="param-table">
-            <el-table-column label="字段" width="210">
+            <el-table-column :label='$t("console.field")' width="210">
               <template #default="{ row }"
                 ><span class="mono">{{ row.name }}</span></template
               >
             </el-table-column>
-            <el-table-column prop="type" label="类型" width="80" />
-            <el-table-column label="是什么" min-width="320">
+            <el-table-column prop="type" :label='$t("console.type")' width="80" />
+            <el-table-column :label='$t("console.whatIsIt")' min-width="320">
               <template #default="{ row }"><RichText :text="row.desc" /></template>
             </el-table-column>
           </el-table>
         </template>
 
         <!-- 试一试 -->
-        <h4 class="sec">试一试</h4>
+        <h4 class="sec">{{ $t("console.tryIt") }}</h4>
         <div class="try">
           <!-- 没有逐参数说明的：给一个可编辑的完整路径。
                路径里的 {id} 之类要自己换成真值，query 也直接写在后面。 -->
           <div v-if="current.freeform" class="try-row">
-            <label class="try-label">请求路径</label>
+            <label class="try-label">{{ $t("console.requestPath") }}</label>
             <el-input
               v-model="freePath"
               size="small"
               class="mono"
-              placeholder="/api/... 路径里的 {id} 换成真值，query 直接写在后面"
+              :placeholder='$t("console.pathPlaceholder")'
             />
           </div>
 
@@ -269,7 +272,7 @@
 
           <div v-if="current.freeform && current.method !== 'GET'" class="try-body">
             <div class="try-body-head">
-              <span>请求体（JSON，没有就留空）</span>
+              <span>{{ $t("console.requestBodyOptional") }}</span>
             </div>
             <el-input
               v-model="bodyText"
@@ -277,7 +280,7 @@
               :rows="bodyRows"
               class="mono"
               spellcheck="false"
-              placeholder='比如 { "ids": [1, 2] }'
+              :placeholder='$t("console.bodyPlaceholder")'
             />
             <div v-if="bodyErr" class="err">{{ bodyErr }}</div>
           </div>
@@ -288,7 +291,7 @@
                  给一段写满 30 个字段的 JSON，照抄下来是把每一项都覆盖一遍，
                  而人只是想改个时长。 -->
             <div v-if="current.examples?.length" class="cases">
-              <div class="cases-head">我想…（点一下就填进下面）</div>
+              <div class="cases-head">{{ $t("console.iWantTo") }}</div>
               <div class="cases-chips">
                 <el-button
                   v-for="ex in current.examples"
@@ -306,8 +309,8 @@
               </el-alert>
             </div>
             <div class="try-body-head">
-              <span>请求体（JSON）</span>
-              <el-button link type="primary" size="small" @click="resetBody">恢复示例</el-button>
+              <span>{{ $t("console.requestBody") }}</span>
+              <el-button link type="primary" size="small" @click="resetBody">{{ $t("console.restoreExample") }}</el-button>
             </div>
             <el-input v-model="bodyText" type="textarea" :rows="bodyRows" class="mono" spellcheck="false" />
             <div v-if="bodyErr" class="err">{{ bodyErr }}</div>
@@ -315,19 +318,19 @@
 
           <div class="curl">
             <div class="curl-head">
-              <span>等价的 curl 命令</span>
-              <el-button link type="primary" size="small" :icon="CopyDocument" @click="copyCurl">复制</el-button>
+              <span>{{ $t("console.curlEquivalent") }}</span>
+              <el-button link type="primary" size="small" :icon="CopyDocument" @click="copyCurl">{{ $t("console.copy") }}</el-button>
             </div>
             <pre class="mono curl-body">{{ curl }}</pre>
           </div>
 
           <div class="try-bar">
             <el-button :type="current.danger ? 'danger' : 'primary'" :loading="sending" :disabled="!apiKey" @click="send">
-              {{ current.danger ? "执行（会真的生效）" : "发送请求" }}
+              {{ current.danger ? $t("console.executeForReal") : $t("console.sendRequest") }}
             </el-button>
-            <span v-if="!apiKey" class="muted">先在上面粘一把密钥</span>
+            <span v-if="!apiKey" class="muted">{{ $t("console.pasteKeyFirst") }}</span>
             <span v-else-if="current.danger" class="danger-hint">
-              这个接口会真的改动系统 —— 建好的任务、播出去的声音都是真的。
+              {{ $t("console.writesForReal") }}
             </span>
           </div>
 
@@ -343,16 +346,16 @@
         </div>
       </div>
 
-      <div class="card detail placeholder" v-else>从左边挑一个接口</div>
+      <div class="card detail placeholder" v-else>{{ $t("console.pickAnApi") }}</div>
     </div>
 
     <!-- 取值对照表 -->
-    <el-dialog v-model="codesVisible" title="取值对照表" width="860px" top="5vh">
+    <el-dialog v-model="codesVisible" :title='$t("console.valueTableTitle")' width="860px" top="5vh">
       <el-alert
         type="warning"
         :closable="false"
-        title="有几个字段的取值是反直觉的"
-        description="标红的那几行，凭直觉猜必然猜错，而猜错了不会报错 —— 只会让广播在错误的时间、以错误的顺序、在错误的那一天响。集成前请先看一遍。"
+        :title='$t("console.counterIntuitive")'
+        :description='$t("console.counterIntuitiveDesc")'
       />
       <div v-for="ct in spec?.codes" :key="ct.field" class="code-table">
         <div class="code-head">
@@ -361,12 +364,12 @@
         </div>
         <div class="code-desc"><RichText :text="ct.desc" /></div>
         <el-table :data="ct.values" size="small" class="param-table">
-          <el-table-column label="取值" width="150">
+          <el-table-column :label='$t("console.value")' width="150">
             <template #default="{ row }">
               <span class="mono" :class="{ 'code-warn': row.warn }">{{ row.value }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="含义" min-width="420">
+          <el-table-column :label='$t("console.meaning")' min-width="420">
             <template #default="{ row }">
               <span :class="{ 'code-warn': row.warn }"><RichText :text="row.means" /></span>
             </template>
@@ -374,13 +377,14 @@
         </el-table>
       </div>
       <template #footer>
-        <el-button type="primary" @click="codesVisible = false">知道了</el-button>
+        <el-button type="primary" @click="codesVisible = false">{{ $t("console.gotIt") }}</el-button>
       </template>
     </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts" name="openapiConsole">
+import { useI18n } from "vue-i18n";
 import { CopyDocument, Download, Hide, Notebook, Search, View } from "@element-plus/icons-vue";
 import { ElMessage } from "element-plus";
 import { computed, onMounted, reactive, ref, watch } from "vue";
@@ -390,6 +394,9 @@ import RichText from "./RichText.vue";
 import { getApiSpecApi } from "@/api/modules/openapispec";
 import type { ApiSpec, SpecEndpoint, SpecExample, SpecGroup } from "@/api/modules/openapispec";
 import { useUserStore } from "@/stores/modules/user";
+
+// 脚本里拼的文案用 t()；模板里的 $t 不用引入
+const { t } = useI18n();
 
 const router = useRouter();
 const userStore = useUserStore();
@@ -409,7 +416,7 @@ const codesVisible = ref(false);
  *   照抄出来就成了 "file:///openapi/v1"，看着像坏了。
  *   这种情况下给一个占位地址，让人知道该换成自己的服务器。
  */
-const base = /^https?:$/.test(location.protocol) ? location.origin : "http://广播服务器:8080";
+const base = /^https?:$/.test(location.protocol) ? location.origin : t("console.serverHost");
 
 /** 刚在「开发者密钥」页发完的那把会存在这里，省得用户再翻一遍。 */
 const SESSION_KEY = "openapi.lastSecret";
@@ -444,14 +451,14 @@ const visibleGroups = computed(() => {
 const sections = computed(() => [
   {
     key: "curated",
-    title: "常用接口",
-    hint: "编号寻址（名字也认）、参数是人话、路径带版本号，只增不改。集成优先用这些。",
+    title: t("console.commonApis"),
+    hint: t("console.commonApisHint"),
     groups: visibleGroups.value.filter(g => g.section === "curated")
   },
   {
     key: "full",
-    title: "全部功能接口",
-    hint: "界面自己用的那套，覆盖每一个页面功能。跟着界面走，改版时可能变。",
+    title: t("console.allApis"),
+    hint: t("console.allApisHint"),
     groups: visibleGroups.value.filter(g => g.section !== "curated")
   }
 ]);
@@ -536,7 +543,7 @@ const builtPath = computed(() => {
 const curl = computed(() => {
   const ep = current.value;
   if (!ep) return "";
-  const key = apiKey.value.trim() || "你的密钥";
+  const key = apiKey.value.trim() || t("console.yourKey");
   const lines = [`curl -X ${ep.method} '${base}${builtPath.value}' \\`, `     -H 'X-API-Key: ${key}'`];
   if (bodyText.value.trim()) {
     lines[lines.length - 1] += " \\";
@@ -550,10 +557,10 @@ const curl = computed(() => {
 const copyCurl = async () => {
   try {
     await navigator.clipboard.writeText(curl.value);
-    ElMessage.success("已复制");
+    ElMessage.success(t("console.copied"));
   } catch {
     // 非 https 下 clipboard 用不了。不报错吓人 —— 命令就摆在上面，选中能抄。
-    ElMessage.warning("这个浏览器不允许自动复制，请手动选中");
+    ElMessage.warning(t("console.copyNotAllowed"));
   }
 };
 
@@ -605,9 +612,9 @@ const send = async () => {
   } catch (e: any) {
     resp.value = {
       ok: false,
-      code: "网络错误",
+      code: t("console.networkError"),
       msg: String(e?.message ?? e),
-      text: "请求没能发出去。检查服务器地址、或者浏览器是不是拦了跨域。",
+      text: t("console.networkErrorBody"),
       ms: Math.round(performance.now() - t0)
     };
   } finally {
@@ -619,15 +626,15 @@ const send = async () => {
 const codeHelp = (code: number | string) => {
   switch (code) {
     case 40001:
-      return "请求填错了。上面 msg 里写了错在哪，照着改 —— 重试没用。";
+      return t("console.help40001");
     case 401:
-      return "密钥无效：写错了、被停用了、过期了或被删了。到「开发者密钥」页看看，或者换一把。";
+      return t("console.help401");
     case 40301:
-      return "权限不够：这把密钥归属的账号缺对应权限位，去「用户」页给那个账号配上；也可能服务器正处于备机只读。";
+      return t("console.help40301");
     case 40401:
-      return "找不到这个对象。";
+      return t("console.help40401");
     case 50001:
-      return "服务器出错，可以重试。反复出现的话让管理员看服务端日志。";
+      return t("console.help50001");
     default:
       return "";
   }

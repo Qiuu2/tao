@@ -6,6 +6,9 @@ import (
 	"sort"
 	"strings"
 	"testing"
+	"unicode"
+
+	"htweb/internal/i18n"
 )
 
 // 这个测试盯着一件事：**每一条 /api 路由都必须有人表过态**——
@@ -141,4 +144,42 @@ func TestDenyReasonsAreWritten(t *testing.T) {
 			t.Errorf("%q 的不开放理由太敷衍：%q", p, reason)
 		}
 	}
+}
+
+// 「全部功能接口」那一组的分组名与摘要也得在字典里有英文。
+//
+// spec.go 那边有一条同名的检查（internal/openapi/localize_test.go）；
+// 这一组在 cmd/htweb 里，Catalog() 看不见它，所以要各查各的 ——
+// 漏了不报错，只会让英文界面上的左侧目录半中半英。
+func TestExposedCatalogIsTranslated(t *testing.T) {
+	var missing []string
+	check := func(s string) {
+		if s == "" || !hasHan(s) {
+			return
+		}
+		if i18n.T(i18n.EN, s) == s {
+			missing = append(missing, s)
+		}
+	}
+	for _, g := range APICatalog() {
+		check(g.Name)
+		check(g.Desc)
+		for _, ep := range g.Endpoints {
+			check(ep.Summary)
+			check(ep.Right)
+		}
+	}
+	if len(missing) > 0 {
+		t.Errorf("这 %d 句中文还没进字典（internal/i18n/dict.go）：\n  %s",
+			len(missing), strings.Join(missing, "\n  "))
+	}
+}
+
+func hasHan(s string) bool {
+	for _, r := range s {
+		if unicode.Is(unicode.Han, r) {
+			return true
+		}
+	}
+	return false
 }
