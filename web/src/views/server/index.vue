@@ -27,9 +27,9 @@
     <div class="sp-card">
       <el-tabs v-model="tab" class="sp-tabs">
         <!-- ============ 服务器基本信息 ============ -->
-        <el-tab-pane label="服务器基本信息" name="basic">
+        <el-tab-pane :label="$t('server.basicInfo')" name="basic">
           <template v-if="p">
-            <el-divider content-position="center" class="wide">服务器信息</el-divider>
+            <el-divider content-position="center" class="wide">{{ $t("server.serverInfo") }}</el-divider>
 
             <!-- 服务器信息：两列，标签宽度与下面的表单一致，两段才对得齐 -->
             <div class="two-col">
@@ -41,7 +41,7 @@
                     这里换成同样含义的文字标签，措辞用旧版 language 里的原文。
                   -->
                   <div class="kv">
-                    <span class="kv-l">服务器状态：</span>
+                    <span class="kv-l">{{ $t("server.serverState") }}</span>
                     <el-tag :type="p.readonly.workstate === 1 ? 'success' : 'info'" size="small" effect="plain">
                       {{ workstateText(p.readonly.workstate) }}
                     </el-tag>
@@ -49,25 +49,37 @@
                 </el-col>
                 <el-col :span="12">
                   <div class="kv kv-act">
-                    <el-button type="warning" :loading="rb.busy" @click="openReboot">重启服务器</el-button>
+                    <el-button type="warning" :loading="rb.busy" @click="openReboot">{{ $t("server.restartServer") }}</el-button>
                   </div>
                 </el-col>
                 <el-col :span="12">
-                  <div class="kv"><span class="kv-l">系统连接数：</span>{{ p.readonly.currectconnectcount }}</div>
+                  <div class="kv">
+                    <span class="kv-l">{{ $t("server.connections") }}</span
+                    >{{ p.readonly.currectconnectcount }}
+                  </div>
                 </el-col>
                 <el-col :span="12">
-                  <div class="kv"><span class="kv-l">运行任务数：</span>{{ p.readonly.taskcount }}</div>
+                  <div class="kv">
+                    <span class="kv-l">{{ $t("server.runningTasks") }}</span
+                    >{{ p.readonly.taskcount }}
+                  </div>
                 </el-col>
                 <el-col :span="12">
-                  <div class="kv"><span class="kv-l">当前带宽：</span>{{ p.readonly.currentbandwidth }}</div>
+                  <div class="kv">
+                    <span class="kv-l">{{ $t("server.currentBandwidth") }}</span
+                    >{{ p.readonly.currentbandwidth }}
+                  </div>
                 </el-col>
                 <el-col :span="12">
-                  <div class="kv"><span class="kv-l">版本号：</span>{{ p.misc.version || "—" }}</div>
+                  <div class="kv">
+                    <span class="kv-l">{{ $t("server.versionNo") }}</span
+                    >{{ p.misc.version || "—" }}
+                  </div>
                 </el-col>
               </el-row>
             </div>
 
-            <el-divider content-position="center" class="wide">服务器配置</el-divider>
+            <el-divider content-position="center" class="wide">{{ $t("server.serverConfig") }}</el-divider>
 
             <!--
               备机模式下这一页**仍然可以改**。
@@ -75,7 +87,8 @@
               但主备模式的开关就在这一页上 —— 跟着一起锁死就再也切不回主服务器了。
             -->
             <el-alert v-if="readonlyMode" type="warning" :closable="false" class="mb12 two-col">
-              当前是<b>备份服务器模式</b>（<code>model = 2</code>）：其余模块只读， <b>本页照常可改</b> ——
+              {{ $t("server.currentIs") }}<b>{{ $t("server.backupMode") }}</b
+              >（<code>model = 2</code>{{ $t("server.readOnlyRest") }} <b>{{ $t("server.thisPageEditable") }}</b> ——
               要切回主服务器请到「主备服务器配置」页。
             </el-alert>
 
@@ -83,79 +96,79 @@
             <el-form :model="p" label-width="110px" class="sp-form two-col">
               <el-row :gutter="24">
                 <el-col :span="12">
-                  <el-form-item label="服务器地址" required>
+                  <el-form-item :label="$t('server.serverAddr')" required>
                     <el-input v-model="p.network.ip" />
                   </el-form-item>
                 </el-col>
                 <el-col :span="12">
-                  <el-form-item label="数据端口">
+                  <el-form-item :label="$t('server.dataPort')">
                     <el-input :model-value="p.ports.port" disabled />
                   </el-form-item>
                 </el-col>
 
                 <el-col :span="12">
-                  <el-form-item label="子网掩码" required>
+                  <el-form-item :label="$t('server.subnetMask')" required>
                     <el-input v-model="p.network.subnetmask" />
                   </el-form-item>
                 </el-col>
                 <el-col :span="12">
-                  <el-form-item label="控制端口">
+                  <el-form-item :label="$t('server.ctrlPort')">
                     <el-input :model-value="p.ports.udpport" disabled />
                   </el-form-item>
                 </el-col>
 
                 <el-col :span="12">
-                  <el-form-item label="网关地址" required>
+                  <el-form-item :label="$t('server.gateway')" required>
                     <el-input v-model="p.network.gateway" />
                   </el-form-item>
                 </el-col>
                 <el-col :span="12">
-                  <el-form-item label="数据端口2">
+                  <el-form-item :label="$t('server.dataPort2')">
                     <el-input :model-value="p.ports.dataport" disabled />
                   </el-form-item>
                 </el-col>
 
                 <el-col :span="12">
-                  <el-form-item label="最大带宽">
+                  <el-form-item :label="$t('server.maxBandwidth')">
                     <el-input :model-value="p.capacity.maxbandwidth" disabled />
                   </el-form-item>
                 </el-col>
                 <el-col :span="12">
-                  <el-form-item label="最大连接数">
+                  <el-form-item :label="$t('server.maxConnections')">
                     <el-input :model-value="p.capacity.maxhttpconnections" disabled />
                   </el-form-item>
                 </el-col>
 
                 <el-col :span="12">
-                  <el-form-item label="web端口">
+                  <el-form-item :label="$t('server.webPort')">
                     <el-input :model-value="webPort" disabled />
                   </el-form-item>
                 </el-col>
                 <el-col :span="12">
-                  <el-form-item label="离线端口">
+                  <el-form-item :label="$t('server.offlinePort')">
                     <el-input :model-value="p.ports.offlineport" disabled />
                   </el-form-item>
                 </el-col>
 
                 <el-col :span="12">
-                  <el-form-item label="sdk端口">
+                  <el-form-item :label="$t('server.sdkPort')">
                     <el-input :model-value="sdkPort" disabled />
                   </el-form-item>
                 </el-col>
               </el-row>
 
               <el-form-item class="form-actions">
-                <el-button type="primary" :loading="saving" @click="save"> 确 定 </el-button>
-                <el-button @click="load">取 消</el-button>
+                <el-button type="primary" :loading="saving" @click="save"> {{ $t("server.confirmSpaced") }} </el-button>
+                <el-button @click="load">{{ $t("server.cancelSpaced") }}</el-button>
               </el-form-item>
             </el-form>
           </template>
         </el-tab-pane>
 
         <!-- ============ 主备服务器配置 ============ -->
-        <el-tab-pane label="主备服务器配置" name="ha">
+        <el-tab-pane :label="$t('server.hostBackupConfig')" name="ha">
           <template v-if="p">
-            <el-divider content-position="center" class="wide">主备服务器配置</el-divider>
+            <el-divider content-position="center" class="wide">{{ $t("server.hostBackupConfig") }}</el-divider>
 
             <!--
               版式与字段名参照 docs/image/3.png：两列、标签右对齐、必填项带红星。
@@ -165,64 +178,64 @@
             <el-form :model="p" label-width="125px" class="sp-form two-col">
               <el-row :gutter="24">
                 <el-col :span="12">
-                  <el-form-item label="主服务器地址" required>
+                  <el-form-item :label="$t('server.primaryAddr')" required>
                     <el-input v-model="p.ha.masterip" />
                   </el-form-item>
                 </el-col>
                 <el-col :span="12">
-                  <el-form-item label="备份服务器地址" required>
+                  <el-form-item :label="$t('server.backupAddr')" required>
                     <el-input v-model="p.ha.slaveip" />
                   </el-form-item>
                 </el-col>
 
                 <el-col :span="12">
-                  <el-form-item label="主服务器名称" required>
+                  <el-form-item :label="$t('server.primaryName')" required>
                     <el-input v-model="p.ha.name" maxlength="85" />
                   </el-form-item>
                 </el-col>
                 <el-col :span="12">
-                  <el-form-item label="备份服务器名称">
+                  <el-form-item :label="$t('server.backupName')">
                     <el-input v-model="p.ha.slavename" maxlength="85" />
                   </el-form-item>
                 </el-col>
 
                 <el-col :span="12">
-                  <el-form-item label="主备模式" required>
+                  <el-form-item :label="$t('server.hostBackupMode')" required>
                     <el-radio-group v-model="p.ha.model" class="stack">
-                      <el-radio :label="1">主服务器</el-radio>
-                      <el-radio :label="2">备份服务器</el-radio>
+                      <el-radio :label="1">{{ $t("server.primaryServer") }}</el-radio>
+                      <el-radio :label="2">{{ $t("server.backupServer") }}</el-radio>
                     </el-radio-group>
                   </el-form-item>
                 </el-col>
                 <el-col :span="12">
-                  <el-form-item label="子网掩码" required>
+                  <el-form-item :label="$t('server.subnetMask')" required>
                     <el-input v-model="p.network.subnetmask" />
                   </el-form-item>
                 </el-col>
 
                 <el-col :span="12">
-                  <el-form-item label="服务开关">
+                  <el-form-item :label="$t('server.serviceSwitch')">
                     <el-switch
                       v-model="p.ha.backup"
                       :active-value="1"
                       :inactive-value="0"
-                      inactive-text="关闭"
-                      active-text="开启"
+                      :inactive-text="$t('server.off')"
+                      :active-text="$t('server.on')"
                     />
                   </el-form-item>
                 </el-col>
               </el-row>
 
               <el-form-item class="form-actions">
-                <el-button type="primary" :loading="saving" @click="save"> 确 定 </el-button>
-                <el-button @click="load">取 消</el-button>
+                <el-button type="primary" :loading="saving" @click="save"> {{ $t("server.confirmSpaced") }} </el-button>
+                <el-button @click="load">{{ $t("server.cancelSpaced") }}</el-button>
               </el-form-item>
             </el-form>
           </template>
         </el-tab-pane>
 
         <!-- ============ 服务设置 ============ -->
-        <el-tab-pane label="服务设置" name="service">
+        <el-tab-pane :label="$t('server.serviceSettings')" name="service">
           <template v-if="p">
             <!--
               字段与顺序照 :80 的「服务设置」页签（docs/image/4.png）：
@@ -242,45 +255,45 @@
                 :80 上关机那两项是灰的（旧系统界面没放开），但存储确实存在，这里放开了。
             -->
             <!-- 四个页签统一：每段内容上面都有一条居中的分隔标题（与前两页一致） -->
-            <el-divider content-position="center" class="wide">服务设置</el-divider>
+            <el-divider content-position="center" class="wide">{{ $t("server.serviceSettings") }}</el-divider>
             <el-form :model="p" label-width="110px" class="sp-form srv-form srv-form--svc">
-              <el-form-item label="噪声设置" required>
+              <el-form-item :label="$t('server.noiseSettings')" required>
                 <el-radio-group v-model="p.misc.sounddetect">
-                  <el-radio-button :value="1">启用</el-radio-button>
-                  <el-radio-button :value="0">停用</el-radio-button>
+                  <el-radio-button :value="1">{{ $t("common.enable") }}</el-radio-button>
+                  <el-radio-button :value="0">{{ $t("common.disable") }}</el-radio-button>
                 </el-radio-group>
               </el-form-item>
 
-              <el-form-item label="重启设置" required>
+              <el-form-item :label="$t('server.restartSettings')" required>
                 <el-radio-group :model-value="ar.mode === 'reboot'" @change="pickMode('reboot', $event)">
-                  <el-radio-button :value="true">启用</el-radio-button>
-                  <el-radio-button :value="false">停用</el-radio-button>
+                  <el-radio-button :value="true">{{ $t("common.enable") }}</el-radio-button>
+                  <el-radio-button :value="false">{{ $t("common.disable") }}</el-radio-button>
                 </el-radio-group>
               </el-form-item>
 
-              <el-form-item label="重启时间">
+              <el-form-item :label="$t('server.restartTime')">
                 <el-time-picker
                   v-model="ar.rebootTime"
                   value-format="HH:mm:ss"
-                  placeholder="选择重启时间"
+                  :placeholder="$t('server.pickRestartTime')"
                   :clearable="false"
                   :disabled="ar.mode !== 'reboot'"
                   class="fill"
                 />
               </el-form-item>
 
-              <el-form-item label="关机设置" required>
+              <el-form-item :label="$t('server.shutdownSettings')" required>
                 <el-radio-group :model-value="ar.mode === 'shutdown'" @change="pickMode('shutdown', $event)">
-                  <el-radio-button :value="true">启用</el-radio-button>
-                  <el-radio-button :value="false">停用</el-radio-button>
+                  <el-radio-button :value="true">{{ $t("common.enable") }}</el-radio-button>
+                  <el-radio-button :value="false">{{ $t("common.disable") }}</el-radio-button>
                 </el-radio-group>
               </el-form-item>
 
-              <el-form-item label="关机时间">
+              <el-form-item :label="$t('server.shutdownTime')">
                 <el-time-picker
                   v-model="ar.shutdownTime"
                   value-format="HH:mm:ss"
-                  placeholder="选择关机时间"
+                  :placeholder="$t('server.pickShutdownTime')"
                   :clearable="false"
                   :disabled="ar.mode !== 'shutdown'"
                   class="fill"
@@ -288,15 +301,15 @@
               </el-form-item>
 
               <el-form-item class="form-actions">
-                <el-button type="primary" :loading="saving" @click="save">提 交</el-button>
-                <el-button @click="load">重 置</el-button>
+                <el-button type="primary" :loading="saving" @click="save">{{ $t("server.submitSpaced") }}</el-button>
+                <el-button @click="load">{{ $t("server.resetSpaced") }}</el-button>
               </el-form-item>
             </el-form>
           </template>
         </el-tab-pane>
 
         <!-- ============ 版本设置 ============ -->
-        <el-tab-pane label="版本设置" name="version">
+        <el-tab-pane :label="$t('server.versionSettings')" name="version">
           <template v-if="p">
             <!--
               照 docs/image/5.png：一个「* 版本」下拉（占位「请选择版本」）+ 一个「提交」。
@@ -312,16 +325,16 @@
                 机器上换不动时（sudo 要密码），canSwitch=false，按钮直接禁掉并说明原因。
             -->
             <!-- 四个页签统一：每段内容上面都有一条居中的分隔标题（与前两页一致） -->
-            <el-divider content-position="center" class="wide">版本设置</el-divider>
+            <el-divider content-position="center" class="wide">{{ $t("server.versionSettings") }}</el-divider>
             <el-form label-width="110px" class="sp-form srv-form srv-form--ver">
-              <el-form-item label="版本" required>
-                <el-select v-model="ver.pick" placeholder="请选择版本" class="fill" clearable>
+              <el-form-item :label="$t('server.versionLabel')" required>
+                <el-select v-model="ver.pick" :placeholder="$t('server.pickVersion')" class="fill" clearable>
                   <el-option v-for="o in ver.options" :key="o.id" :label="o.name" :value="o.id" :disabled="!o.available" />
                 </el-select>
               </el-form-item>
               <el-form-item class="form-actions">
                 <el-button type="primary" :loading="ver.busy" :disabled="!ver.pick || !ver.canSwitch" @click="openSwitchVersion">
-                  提 交
+                  {{ $t("server.submitSpaced") }}
                 </el-button>
               </el-form-item>
             </el-form>
@@ -331,19 +344,19 @@
     </div>
 
     <!-- 重启服务器确认 -->
-    <el-dialog v-model="rb.visible" title="重启服务器" width="560px">
+    <el-dialog v-model="rb.visible" :title="$t('server.restartServer')" width="560px">
       <el-alert type="error" :closable="false" class="mb12">
-        <template #title>这会重启整台服务器，不是重启后台服务</template>
+        <template #title>{{ $t("server.wholeMachine") }}</template>
         <div class="alert-body">
           现网实测：指令发出后 1 秒系统就开始走关机流程，约 30 秒后服务恢复。
           期间广播完全中断，正在播放的任务会被打断。请避开上下课等打铃时段。
         </div>
       </el-alert>
-      <el-input v-model="rb.confirmText" placeholder="逐字输入：重启服务器" />
+      <el-input v-model="rb.confirmText" :placeholder="$t('server.typeToRestart')" />
       <template #footer>
-        <el-button @click="rb.visible = false">取消</el-button>
-        <el-button type="danger" :loading="rb.busy" :disabled="rb.confirmText !== '重启服务器'" @click="doReboot">
-          确认重启
+        <el-button @click="rb.visible = false">{{ $t("common.cancel") }}</el-button>
+        <el-button type="danger" :loading="rb.busy" :disabled="rb.confirmText !== $t('server.restartServer')" @click="doReboot">
+          {{ $t("server.confirmRestart") }}
         </el-button>
       </template>
     </el-dialog>
@@ -351,6 +364,7 @@
 </template>
 
 <script setup lang="ts" name="serverParam">
+import { useI18n } from "vue-i18n";
 import { computed, onMounted, reactive, ref } from "vue";
 import { ElMessage, ElMessageBox } from "element-plus";
 import {
@@ -371,7 +385,11 @@ import {
  *   workstate = 1 → start.gif，alt「服务器运行」
  * 其余取值旧版不画图（页面上那一格是空的），这里如实标出来。
  */
-const workstateText = (v: number) => (v === 1 ? "服务器运行" : v === 0 ? "服务器终止" : `未知状态 ${v}`);
+// 脚本里拼的文案用 t()；模板里的 $t 不用引入
+const { t } = useI18n();
+
+const workstateText = (v: number) =>
+  v === 1 ? t("server.serverRunning") : v === 0 ? t("server.serverStopped") : t("server.unknownState", { v });
 
 const tab = ref("basic");
 const loading = ref(false);
@@ -455,12 +473,12 @@ const save = async () => {
       mode: ar.mode,
       time: ar.mode === "shutdown" ? ar.shutdownTime : ar.rebootTime
     });
-    ElMessage.success("已保存");
+    ElMessage.success(t("common.saveSuccess"));
     if (data.requiresRestart) {
       await ElMessageBox.alert(
-        `以下改动需要额外操作才会真正生效：\n\n${data.restartReason.join("\n\n")}`,
-        "保存成功，但还需要处理",
-        { confirmButtonText: "知道了" }
+        t("server.needExtraSteps", { reasons: data.restartReason.join("\n\n") }),
+        t("server.savedButMore"),
+        { confirmButtonText: t("server.gotIt") }
       );
     }
     load();
@@ -493,11 +511,9 @@ const openSwitchVersion = async () => {
   const opt = ver.options.find(o => o.id === ver.pick);
   if (!opt) return;
   await ElMessageBox.confirm(
-    `将把后台音频引擎切换到「${opt.name}」。\n\n` +
-      "这会解开对应的版本包并重建 audioserver 容器，期间广播完全中断、" +
-      "正在播放的任务会被打断。请避开上下课等打铃时段。\n\n确定继续？",
-    "切换服务器版本",
-    { type: "warning", confirmButtonText: "确认切换", cancelButtonText: "取消" }
+    t("server.switchTo", { name: opt.name }) + "\n\n" + t("server.switchImpact") + t("server.switchImpact2"),
+    t("server.switchVersion"),
+    { type: "warning", confirmButtonText: t("server.confirmSwitch"), cancelButtonText: t("common.cancel") }
   );
   ver.busy = true;
   try {

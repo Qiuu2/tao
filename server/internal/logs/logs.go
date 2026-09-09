@@ -31,6 +31,7 @@ import (
 	"time"
 
 	"htweb/internal/audit"
+	"htweb/internal/i18n"
 	"htweb/internal/store"
 )
 
@@ -132,6 +133,11 @@ func (s *Service) List(ctx context.Context, q Query) (*ListResult, error) {
 			return nil, err
 		}
 		e.Source = guessSource(e)
+		// 动作名是**写库时就定下来的中文**（"用户登录" / "新建任务" …），
+		// 所以在读的时候翻 —— 字典正好是按中文原文查的，历史行也一并生效。
+		// 反过来在写的时候按语言存，库里就会中英混杂，
+		// 那时想按动作筛日志就得同时匹配两种写法。
+		e.Operate = i18n.TC(ctx, e.Operate)
 		out.Items = append(out.Items, e)
 	}
 	return out, rows.Err()

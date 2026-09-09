@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"htweb/internal/i18n"
 	"log"
 	"os"
 	"path/filepath"
@@ -189,7 +190,9 @@ func (r *RetentionService) save() error {
 }
 
 // Get 返回当前设置与可选项。
-func (r *RetentionService) Get() RetentionSettings {
+//
+// ctx 只为取界面语言：保留期的标签（1 个月 / 半年 …）是直接显示在下拉里的。
+func (r *RetentionService) Get(ctx context.Context) RetentionSettings {
 	r.mu.RLock()
 	opt, at, msg := r.opt, r.lastAt, r.lastMsg
 	r.mu.RUnlock()
@@ -197,13 +200,13 @@ func (r *RetentionService) Get() RetentionSettings {
 	sp := specOf(opt)
 	out := RetentionSettings{
 		Option:         sp.Option,
-		Label:          sp.Label,
+		Label:          i18n.TC(ctx, sp.Label),
 		CutoffDate:     cutoffOf(sp, time.Now()).Format("2006-01-02"),
 		LastResult:     msg,
 		TaskLogEnabled: r.task != nil && strings.TrimSpace(r.task.dir) != "",
 	}
 	for _, s := range retentionSpecs {
-		out.Choices = append(out.Choices, RetentionChoice{Value: s.Option, Label: s.Label})
+		out.Choices = append(out.Choices, RetentionChoice{Value: s.Option, Label: i18n.TC(ctx, s.Label)})
 	}
 	if !at.IsZero() {
 		out.LastRunAt = at.Format("2006-01-02 15:04:05")
@@ -244,9 +247,9 @@ func (r *RetentionService) Set(ctx context.Context, opt RetentionOption, user, i
 
 	res, perr := r.Purge(ctx, user, ip)
 	if perr != nil {
-		return r.Get(), nil, fmt.Errorf("保留期已保存，但立即清理失败（明天的定时滚动会重试）: %w", perr)
+		return r.Get(ctx), nil, fmt.Errorf("保留期已保存，但立即清理失败（明天的定时滚动会重试）: %w", perr)
 	}
-	return r.Get(), res, nil
+	return r.Get(ctx), res, nil
 }
 
 // cutoffOf 算保留边界：今天往前推 N 个自然月，取那一天的零点。

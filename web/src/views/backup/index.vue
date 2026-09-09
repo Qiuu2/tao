@@ -19,12 +19,12 @@
 <template>
   <div class="backup-page">
     <el-alert type="info" :closable="false" class="mb12">
-      <template #title>备份内容 = 数据库全部数据 + 媒体文件</template>
+      <template #title>{{ $t("backup.backupContent") }}</template>
     </el-alert>
 
     <div class="tool-bar">
-      <el-input v-model="label" placeholder="备注（可选，只用于文件名）" style="width: 240px" maxlength="40" />
-      <el-button type="primary" :icon="Plus" :loading="creating" @click="create">立即备份</el-button>
+      <el-input v-model="label" :placeholder="$t('backup.notePlaceholder')" style="width: 240px" maxlength="40" />
+      <el-button type="primary" :icon="Plus" :loading="creating" @click="create">{{ $t("backup.backupNow") }}</el-button>
 
       <!--
         上传备份包：把下载下来的、或者别的机器上备的包传回来。
@@ -32,20 +32,20 @@
           axios 拦截器，拿不到 x-access-token，也套不上统一的错误提示。
       -->
       <el-upload :show-file-list="false" :auto-upload="false" accept=".zip" :on-change="onPick" class="up">
-        <el-button :icon="Upload" :loading="uploading">上传备份包</el-button>
+        <el-button :icon="Upload" :loading="uploading">{{ $t("backup.uploadPackage") }}</el-button>
       </el-upload>
 
-      <el-button :icon="Refresh" @click="load">刷新</el-button>
+      <el-button :icon="Refresh" @click="load">{{ $t("common.refresh") }}</el-button>
       <span v-if="list.length" class="summary">共 {{ list.length }} 个备份包</span>
     </div>
 
     <el-progress v-if="uploading" :percentage="upPercent" :stroke-width="10" class="mb12" />
 
     <el-table :data="list" v-loading="loading" row-key="name">
-      <el-table-column prop="name" label="备份包" min-width="240" show-overflow-tooltip />
-      <el-table-column prop="createdAt" label="生成时间" width="170" />
-      <el-table-column prop="sizeText" label="大小" width="100" />
-      <el-table-column label="内容" width="200">
+      <el-table-column prop="name" :label="$t('backup.package')" min-width="240" show-overflow-tooltip />
+      <el-table-column prop="createdAt" :label="$t('backup.generatedAt')" width="170" />
+      <el-table-column prop="sizeText" :label="$t('common.size')" width="100" />
+      <el-table-column :label="$t('backup.content')" width="200">
         <template #default="{ row }">
           <span v-if="row.manifest">
             {{ row.manifest.tables?.length ?? 0 }} 表 / {{ row.manifest.totalRows }} 行
@@ -55,77 +55,78 @@
           <span v-else class="muted">—</span>
         </template>
       </el-table-column>
-      <el-table-column label="可恢复" width="180">
+      <el-table-column :label="$t('backup.restorable')" width="180">
         <template #default="{ row }">
-          <el-tag v-if="row.compatible" type="success" size="small">结构一致</el-tag>
-          <el-tooltip v-else :content="row.note || '不可恢复'" placement="top">
-            <el-tag type="danger" size="small">不可恢复</el-tag>
+          <el-tag v-if="row.compatible" type="success" size="small">{{ $t("backup.structureConsistent") }}</el-tag>
+          <el-tooltip v-else :content="row.note || $t('common.notRecoverable')" placement="top">
+            <el-tag type="danger" size="small">{{ $t("common.notRecoverable") }}</el-tag>
           </el-tooltip>
         </template>
       </el-table-column>
-      <el-table-column prop="manifest.createdBy" label="操作人" width="110">
+      <el-table-column prop="manifest.createdBy" :label="$t('backup.operator')" width="110">
         <template #default="{ row }">{{ row.manifest?.createdBy || "—" }}</template>
       </el-table-column>
-      <el-table-column label="操作" width="230" fixed="right">
+      <el-table-column :label="$t('common.operation')" width="230" fixed="right">
         <template #default="{ row }">
-          <el-button type="primary" link :icon="Download" @click="download(row)">下载</el-button>
+          <el-button type="primary" link :icon="Download" @click="download(row)">{{ $t("media.download") }}</el-button>
           <el-button type="warning" link :icon="RefreshLeft" :disabled="!row.compatible" @click="openRestore(row)">
-            恢复
+            {{ $t("backup.restore") }}
           </el-button>
-          <el-button type="danger" link :icon="Delete" @click="remove(row)">删除</el-button>
+          <el-button type="danger" link :icon="Delete" @click="remove(row)">{{ $t("common.delete") }}</el-button>
         </template>
       </el-table-column>
     </el-table>
 
     <!-- 恢复 -->
-    <el-dialog v-model="rst.visible" title="恢复备份" width="720px" top="5vh">
+    <el-dialog v-model="rst.visible" :title="$t('backup.restoreTitle')" width="720px" top="5vh">
       <el-alert type="error" :closable="false" class="mb12">
-        <template #title>恢复会清空数据库现有全部数据并写入备份内容</template>
-        <div class="alert-body">这是不可撤销的操作。恢复期间后台广播服务读到的数据会发生突变， 请避开上下课等打铃时段执行。</div>
+        <template #title>{{ $t("backup.restoreWipes") }}</template>
+        <div class="alert-body">{{ $t("backup.irreversible") }}</div>
       </el-alert>
 
       <el-descriptions v-if="rst.pre" :column="2" border size="small" class="mb12">
-        <el-descriptions-item label="备份包">{{ rst.pre.name }}</el-descriptions-item>
-        <el-descriptions-item label="生成时间">{{ rst.pre.manifest?.createdAt }}</el-descriptions-item>
-        <el-descriptions-item label="将清除">{{ rst.pre.willDeleteRows }} 行（当前数据）</el-descriptions-item>
-        <el-descriptions-item label="将写入">{{ rst.pre.willInsertRows }} 行（备份数据）</el-descriptions-item>
-        <el-descriptions-item label="媒体文件">{{ rst.pre.mediaFiles }} 个</el-descriptions-item>
-        <el-descriptions-item label="结构指纹">
-          <el-tag v-if="rst.pre.schemaHashSame" type="success" size="small">一致</el-tag>
-          <el-tag v-else type="danger" size="small">不一致</el-tag>
+        <el-descriptions-item :label="$t('backup.package')">{{ rst.pre.name }}</el-descriptions-item>
+        <el-descriptions-item :label="$t('backup.generatedAt')">{{ rst.pre.manifest?.createdAt }}</el-descriptions-item>
+        <el-descriptions-item :label="$t('backup.willClear')">{{ rst.pre.willDeleteRows }} 行（当前数据）</el-descriptions-item>
+        <el-descriptions-item :label="$t('backup.willWrite')">{{ rst.pre.willInsertRows }} 行（备份数据）</el-descriptions-item>
+        <el-descriptions-item :label="$t('taskCommon.mediaFile')">{{ rst.pre.mediaFiles }} 个</el-descriptions-item>
+        <el-descriptions-item :label="$t('backup.structureFingerprint')">
+          <el-tag v-if="rst.pre.schemaHashSame" type="success" size="small">{{ $t("backup.consistent") }}</el-tag>
+          <el-tag v-else type="danger" size="small">{{ $t("backup.inconsistent") }}</el-tag>
         </el-descriptions-item>
       </el-descriptions>
 
       <el-table v-if="rst.pre?.schemaDiff.length" :data="rst.pre.schemaDiff" size="small" max-height="200" class="mb12">
-        <el-table-column prop="table" label="表" width="150" />
-        <el-table-column prop="column" label="列" width="140" />
-        <el-table-column prop="issue" label="差异" width="180" />
-        <el-table-column prop="detail" label="说明" min-width="200" />
+        <el-table-column prop="table" :label="$t('backup.tables')" width="150" />
+        <el-table-column prop="column" :label="$t('backup.columns')" width="140" />
+        <el-table-column prop="issue" :label="$t('backup.diff')" width="180" />
+        <el-table-column prop="detail" :label="$t('common.description')" min-width="200" />
       </el-table>
 
       <el-form label-width="120px">
-        <el-form-item label="恢复媒体文件">
+        <el-form-item :label="$t('backup.restoreMedia')">
           <el-switch v-model="rst.restoreMedia" />
         </el-form-item>
-        <el-form-item label="先做安全备份">
+        <el-form-item :label="$t('backup.safeBackupFirst')">
           <el-switch v-model="rst.safetyBackup" />
         </el-form-item>
-        <el-form-item label="确认文本" required>
-          <el-input v-model="rst.confirmText" placeholder="请逐字输入备份包名以确认" />
+        <el-form-item :label="$t('backup.confirmText')" required>
+          <el-input v-model="rst.confirmText" :placeholder="$t('backup.typePackageName')" />
           <span class="form-tip block">
-            需要输入：<code>{{ rst.pre?.name }}</code>
+            {{ $t("backup.needInput") }}<code>{{ rst.pre?.name }}</code>
           </span>
         </el-form-item>
       </el-form>
 
       <el-alert type="warning" :closable="false">
-        恢复完成后<b>所有人的登录会话都会失效</b>，包括你自己 —— 因为用户表也被一起恢复了。
+        {{ $t("backup.afterRestore") }}<b>{{ $t("backup.allSessionsGone") }}</b
+        >{{ $t("backup.includingYou") }}
       </el-alert>
 
       <template #footer>
-        <el-button @click="rst.visible = false">取消</el-button>
+        <el-button @click="rst.visible = false">{{ $t("common.cancel") }}</el-button>
         <el-button type="danger" :loading="rst.busy" :disabled="rst.confirmText !== rst.pre?.name" @click="doRestore">
-          确认恢复
+          {{ $t("backup.confirmRestore") }}
         </el-button>
       </template>
     </el-dialog>
@@ -133,6 +134,7 @@
 </template>
 
 <script setup lang="ts" name="backupPage">
+import { useI18n } from "vue-i18n";
 import { onMounted, reactive, ref } from "vue";
 import { ElMessage, ElMessageBox } from "element-plus";
 import { Delete, Download, Plus, Refresh, RefreshLeft, Upload } from "@element-plus/icons-vue";
@@ -148,6 +150,9 @@ import {
   type BackupPrecheck
 } from "@/api/modules/backup";
 import { useUserStore } from "@/stores/modules/user";
+
+// 脚本里拼的文案用 t()；模板里的 $t 不用引入
+const { t } = useI18n();
 
 const userStore = useUserStore();
 const list = ref<BackupItem[]>([]);
@@ -172,12 +177,12 @@ const onPick = async (uf: any) => {
   if (!file || uploading.value) return;
 
   if (!/\.zip$/i.test(file.name)) {
-    return ElMessage.warning("只接受 .zip 备份包");
+    return ElMessage.warning(t("backup.onlyZip"));
   }
   // 与服务端 backup.MaxUploadBytes 保持一致
   const MAX = 512 * 1024 * 1024;
   if (file.size > MAX) {
-    return ElMessage.warning(`备份包过大：上限 ${human(MAX)}`);
+    return ElMessage.warning(t("backup.tooLarge", { max: human(MAX) }));
   }
   if (file.size === 0) {
     return ElMessage.warning("这个文件是空的");
@@ -187,7 +192,9 @@ const onPick = async (uf: any) => {
   upPercent.value = 0;
   try {
     const { data } = await uploadBackupApi(file, p => (upPercent.value = p));
-    ElMessage.success(data.renamed ? `已上传，目录里已有同名包，落地为「${data.name}」` : `已上传「${data.name}」`);
+    ElMessage.success(
+      data.renamed ? t("backup.uploadedRenamed", { name: data.name }) : t("backup.uploaded", { name: data.name })
+    );
     if (data.item && !data.item.compatible) {
       ElMessage.warning("这个包与当前数据库结构不一致，列表里会标成「不可恢复」");
     }
@@ -219,9 +226,14 @@ const create = async () => {
   try {
     const { data } = await createBackupApi(label.value);
     ElMessage.success(
-      `备份完成：${data.name}，${data.manifest.totalRows} 行数据 + ${data.manifest.media.length} 个媒体文件，耗时 ${data.elapsed}`
+      t("backup.backupDone", {
+        name: data.name,
+        rows: data.manifest.totalRows,
+        media: data.manifest.media.length,
+        elapsed: data.elapsed
+      })
     );
-    (data.skippedMediaDirs ?? []).forEach(s => ElMessage.info(`已跳过 ${s}`));
+    (data.skippedMediaDirs ?? []).forEach(s => ElMessage.info(t("backup.skipped", { n: s })));
     label.value = "";
     load();
   } finally {
@@ -236,9 +248,9 @@ const download = (row: BackupItem) => {
 };
 
 const remove = async (row: BackupItem) => {
-  await ElMessageBox.confirm(`确定删除备份包「${row.name}」？删除后无法恢复。`, "二次确认", { type: "warning" });
+  await ElMessageBox.confirm(`确定删除备份包「${row.name}」？删除后无法恢复。`, t("common.doubleConfirm"), { type: "warning" });
   await deleteBackupApi(row.name);
-  ElMessage.success("已删除");
+  ElMessage.success(t("common.deleted"));
   load();
 };
 
@@ -264,9 +276,9 @@ const openRestore = async (row: BackupItem) => {
 
 const doRestore = async () => {
   if (!rst.pre) return;
-  await ElMessageBox.confirm("最后确认：这会清空数据库现有全部数据并写入备份内容，不可撤销。", "危险操作", {
+  await ElMessageBox.confirm("最后确认：这会清空数据库现有全部数据并写入备份内容，不可撤销。", t("backup.dangerous"), {
     type: "error",
-    confirmButtonText: "我确认恢复"
+    confirmButtonText: t("backup.iConfirmRestore")
   });
   rst.busy = true;
   try {
@@ -277,19 +289,19 @@ const doRestore = async () => {
       restoreMedia: rst.restoreMedia
     });
     rst.visible = false;
-    let msg = `恢复完成：${data.tablesRestored} 张表，清除 ${data.rowsDeleted} 行、写入 ${data.rowsInserted} 行`;
+    let msg = t("backup.restoreDone", { tables: data.tablesRestored, deleted: data.rowsDeleted, inserted: data.rowsInserted });
     if (data.mediaRestored) msg += `，媒体 ${data.mediaRestored} 个`;
     if (data.safetyBackup) msg += `；安全备份 ${data.safetyBackup}`;
     ElMessage.success(msg);
     if (data.mediaFailed?.length) {
-      ElMessage.warning(`${data.mediaFailed.length} 个媒体文件恢复失败：${data.mediaFailed.join("、")}`);
+      ElMessage.warning(t("backup.mediaFailed", { n: data.mediaFailed.length, names: data.mediaFailed.join("、") }));
     }
     // 会话已在服务端全部失效，这里直接引导重新登录。
     // 顺带把「后台服务还没加载新数据」这件事讲清楚 ——
     // 让它自动生效的那条报文实测是整机重启，不能替用户按下去。
     const hint = data.backendNeedsRestart ? `\n\n${data.restartHint}` : "";
     await ElMessageBox.alert(`数据已恢复，所有会话已失效，请重新登录。${hint}`, "请重新登录", {
-      confirmButtonText: "去登录"
+      confirmButtonText: t("backup.goSignIn")
     });
     userStore.setToken("");
     window.location.href = "/#/login";

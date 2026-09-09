@@ -215,7 +215,7 @@ func (a *app) handleTaskLogDelete(w http.ResponseWriter, r *http.Request) {
 // 不再单独给一个「立即滚动」按钮。
 
 func (a *app) handleLogRetentionGet(w http.ResponseWriter, r *http.Request) {
-	httpx.OK(w, a.logKeep.Get())
+	httpx.OK(w, a.logKeep.Get(r.Context()))
 }
 
 func (a *app) handleLogRetentionSet(w http.ResponseWriter, r *http.Request) {
