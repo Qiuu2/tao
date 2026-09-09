@@ -34,7 +34,7 @@
       <el-input
         v-if="searchable"
         v-model="keyword"
-        placeholder="搜索终端名称"
+        :placeholder="$t('term.searchTerminalName')"
         clearable
         size="small"
         :prefix-icon="Search"
@@ -42,8 +42,8 @@
       />
       <span v-else class="tt-spacer"></span>
       <template v-if="multiple">
-        <el-button size="small" link type="primary" @click="checkAll(true)">全选</el-button>
-        <el-button size="small" link @click="checkAll(false)">清空</el-button>
+        <el-button size="small" link type="primary" @click="checkAll(true)">{{ $t("common.selectAll") }}</el-button>
+        <el-button size="small" link @click="checkAll(false)">{{ $t("common.clear") }}</el-button>
       </template>
     </div>
 
@@ -59,7 +59,7 @@
       :expand-on-click-node="false"
       :highlight-current="!multiple"
       :default-expanded-keys="expandedKeys"
-      :empty-text="loading ? '加载中…' : '没有可选的终端'"
+      :empty-text="loading ? $t('common.loadingShort') : $t('common.noSelectableTerminal')"
       @check="emitChecked"
       @node-click="onNodeClick"
     >
@@ -83,8 +83,8 @@
             >
               {{ zoneSummary(data) }}
             </el-button>
-            <el-tag v-if="data.netstate === 1" type="success" size="small" effect="plain">在线</el-tag>
-            <el-tag v-else type="info" size="small" effect="plain">离线</el-tag>
+            <el-tag v-if="data.netstate === 1" type="success" size="small" effect="plain">{{ $t("common.online") }}</el-tag>
+            <el-tag v-else type="info" size="small" effect="plain">{{ $t("common.offline") }}</el-tag>
             <span v-if="data.sub" class="tt-sub">{{ data.sub }}</span>
           </span>
           <span v-else class="tt-count">{{ data.children?.length ?? 0 }} 台</span>
@@ -92,7 +92,7 @@
       </template>
     </el-tree>
 
-    <div v-if="multiple" class="tt-foot">已选 {{ (modelValue as number[])?.length || 0 }} 台</div>
+    <div v-if="multiple" class="tt-foot">{{ $t("common.selectedN", { n: (modelValue as number[])?.length || 0 }) }}</div>
 
     <!--
       分区勾选弹窗。旧版是点终端时在树旁边浮出来的一小块（div#lead），
@@ -101,22 +101,23 @@
     -->
     <el-dialog v-model="zone.visible" :title="zone.title" width="420px" append-to-body>
       <div class="tt-zone-bar">
-        <el-button size="small" link type="primary" @click="zoneAll(true)">全选</el-button>
-        <el-button size="small" link @click="zoneAll(false)">清空</el-button>
+        <el-button size="small" link type="primary" @click="zoneAll(true)">{{ $t("common.selectAll") }}</el-button>
+        <el-button size="small" link @click="zoneAll(false)">{{ $t("common.clear") }}</el-button>
       </div>
       <el-checkbox-group v-model="zone.checked" class="tt-zone-group">
         <el-checkbox v-for="(label, i) in zone.labels" :key="i" :value="i">{{ label }}</el-checkbox>
       </el-checkbox-group>
-      <div class="tt-zone-note">不勾任何一项等于这台终端不参与播放，保存前请至少留一个分区。</div>
+      <div class="tt-zone-note">{{ $t("common.atLeastOneZone") }}</div>
       <template #footer>
-        <el-button @click="zone.visible = false">取消</el-button>
-        <el-button type="primary" @click="submitZone">确定</el-button>
+        <el-button @click="zone.visible = false">{{ $t("common.cancel") }}</el-button>
+        <el-button type="primary" @click="submitZone">{{ $t("common.confirm") }}</el-button>
       </template>
     </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts" name="TerminalTree">
+import { useI18n } from "vue-i18n";
 import { Search } from "@element-plus/icons-vue";
 import { computed, nextTick, onMounted, reactive, ref, watch } from "vue";
 
@@ -142,24 +143,22 @@ interface TermNode {
  * zone_1..zone_6 是分区一~六，zone_7/zone_8 是**电源一 / 电源二**，
  * zone_9..zone_16 又回到分区九~十六。第 7、8 位不是分区，别顺手改成「分区七/八」。
  */
-const ZONE_LABELS = [
-  "分区一",
-  "分区二",
-  "分区三",
-  "分区四",
-  "分区五",
-  "分区六",
-  "电源一",
-  "电源二",
-  "分区九",
-  "分区十",
-  "分区十一",
-  "分区十二",
-  "分区十三",
-  "分区十四",
-  "分区十五",
-  "分区十六"
-];
+// 脚本里拼的文案用 t()；模板里的 $t 不用引入
+const { t, locale } = useI18n();
+// 有几处循环里的临时变量就叫 t（一台终端），会把上面这个 t 遮住。
+// 起个别名比给循环变量改名安全 —— 改名要动一整段，遮蔽只在那几行里发生。
+const i18nT = t;
+
+const ZONE_LABELS = computed(() => {
+  // 第 7、8 位是电源不是分区（旧版 language/chinese.php 的 zone_7 / zone_8
+  // 就写着「电源一 / 电源二」），别顺手排成「分区七 / 分区八」。
+  const zh = ["一", "二", "三", "四", "五", "六", "", "", "九", "十", "十一", "十二", "十三", "十四", "十五", "十六"];
+  const isEn = locale.value === "en";
+  return zh.map((w, i) => {
+    if (i === 6 || i === 7) return t("common.powerBit", { n: isEn ? i - 5 : i === 6 ? "一" : "二" });
+    return t("common.zoneBit", { n: isEn ? i + 1 : w });
+  });
+});
 
 /** terminaloftask.area 是 varchar(16)，旧版勾选后补 0 补满 16 位 */
 const AREA_LEN = 16;
@@ -203,8 +202,10 @@ const props = withDefaults(
     loading: false,
     groupField: "groupName",
     groupIdField: "groupId",
-    // 措辞照 ok112：language/chinese.php 的 No_group_terminal = "无分区终端"
-    ungroupedLabel: "无分区终端",
+    // ⚠ 这里**不能**写 t("…")：defineProps 的默认值会被提升到 setup() 外面，
+    // 引用不到 setup 里的局部变量（Vue 的硬限制，vue-tsc 不报、构建才报）。
+    // 留空串，取值的地方兜底成翻译（措辞照 ok112 的 No_group_terminal）。
+    ungroupedLabel: "",
     height: "300px",
     searchable: true
   }
@@ -263,7 +264,7 @@ const normalize = (t: any) => ({
  */
 const cleanGroup = (v: any) => {
   const s = String(v ?? "").trim();
-  return s === "(未分区)" || s === "（未分区）" ? "" : s;
+  return s === t("common.noZone") || s === t("common.noZone2") ? "" : s;
 };
 
 /*
@@ -290,7 +291,7 @@ const nodes = computed<TermNode[]>(() => {
   const byName = new Map<string, TermNode>();
 
   for (const g of groups.value) {
-    const node: TermNode = { key: `g:${g.id}`, label: g.name || `分区 ${g.id}`, children: [] };
+    const node: TermNode = { key: `g:${g.id}`, label: g.name || t("common.zoneNo", { id: g.id }), children: [] };
     list.push(node);
     byId.set(Number(g.id), node);
     if (g.name) byName.set(g.name, node);
@@ -300,7 +301,11 @@ const nodes = computed<TermNode[]>(() => {
   // 与 ok112 略有出入：它在没有无分区终端时不输出这个节点。
   // 保留它是为了让「一台都没归位」和「归位完了」两种状态在界面上长得一样，
   // 不至于树的行数忽然变化。
-  const ungrouped: TermNode = { key: "g:0", label: props.ungroupedLabel, children: [] };
+  const ungrouped: TermNode = {
+    key: "g:0",
+    label: props.ungroupedLabel || t("common.noZoneTerminals"),
+    children: []
+  };
 
   for (const raw of props.terminals ?? []) {
     const t = normalize(raw);
@@ -322,7 +327,7 @@ const nodes = computed<TermNode[]>(() => {
     const sub = t.typeName;
     bucket.children!.push({
       key: `t:${t.id}`,
-      label: t.name || `终端 ${t.id}`,
+      label: t.name || i18nT("common.terminalNo", { id: t.id }),
       terminalId: t.id,
       netstate: t.netstate,
       sub,
@@ -428,18 +433,18 @@ const zoneSummary = (data: TermNode) => {
   const n = Math.min(data.switchCount ?? 0, AREA_LEN);
   const mask = maskOf(data);
   const on: string[] = [];
-  for (let i = 0; i < n; i++) if (mask[i] === "1") on.push(ZONE_LABELS[i]);
-  if (on.length === 0) return "分区：未选";
-  if (on.length === n) return "分区：全部";
-  return `分区：${on.join("、")}`;
+  for (let i = 0; i < n; i++) if (mask[i] === "1") on.push(ZONE_LABELS.value[i]);
+  if (on.length === 0) return t("common.zoneNone");
+  if (on.length === n) return t("common.zoneAll");
+  return t("common.zoneSome", { list: on.join("、") });
 };
 
 const openZone = (data: TermNode) => {
   const n = Math.min(data.switchCount ?? 0, AREA_LEN);
   const mask = maskOf(data);
   zone.terminalId = data.terminalId as number;
-  zone.title = `${data.label} · 分区选择`;
-  zone.labels = ZONE_LABELS.slice(0, n);
+  zone.title = t("common.zoneSelect", { name: data.label });
+  zone.labels = ZONE_LABELS.value.slice(0, n);
   zone.checked = [];
   for (let i = 0; i < n; i++) if (mask[i] === "1") zone.checked.push(i);
   zone.visible = true;

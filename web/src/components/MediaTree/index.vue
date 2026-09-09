@@ -23,8 +23,15 @@
 <template>
   <div class="mt-wrap">
     <div class="mt-bar">
-      <el-input v-model="keyword" placeholder="搜索媒体名称" clearable size="small" :prefix-icon="Search" @input="onSearch" />
-      <el-button size="small" link @click="clearAll">清空</el-button>
+      <el-input
+        v-model="keyword"
+        :placeholder="$t('common.searchMediaName')"
+        clearable
+        size="small"
+        :prefix-icon="Search"
+        @input="onSearch"
+      />
+      <el-button size="small" link @click="clearAll">{{ $t("common.clear") }}</el-button>
     </div>
 
     <el-tree
@@ -57,6 +64,7 @@
 </template>
 
 <script setup lang="ts" name="MediaTree">
+import { useI18n } from "vue-i18n";
 import { Folder, Search } from "@element-plus/icons-vue";
 import { nextTick, onMounted, ref, watch } from "vue";
 
@@ -71,6 +79,9 @@ interface MediaNode {
   mediaCount?: number;
   children?: MediaNode[];
 }
+
+// 脚本里拼的文案用 t()；模板里的 $t 不用引入
+const { t } = useI18n();
 
 const props = withDefaults(
   defineProps<{

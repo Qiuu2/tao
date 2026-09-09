@@ -94,7 +94,7 @@
         <div class="table-empty">
           <slot name="empty">
             <img src="@/assets/images/notData.png" alt="notData" />
-            <div>暂无数据</div>
+            <div>{{ $t("common.noData") }}</div>
           </slot>
         </div>
       </template>

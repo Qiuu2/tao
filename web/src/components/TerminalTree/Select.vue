@@ -32,6 +32,7 @@
 </template>
 
 <script setup lang="ts" name="TerminalTreeSelect">
+import { useI18n } from "vue-i18n";
 import { computed, onMounted, ref } from "vue";
 
 import { loadZones, type ZoneNode } from "./zones";
@@ -44,6 +45,9 @@ interface Node {
   disabled?: boolean;
   children?: Node[];
 }
+
+// 脚本里拼的文案用 t()；模板里的 $t 不用引入
+const { t } = useI18n();
 
 const props = withDefaults(
   defineProps<{
@@ -70,7 +74,8 @@ const props = withDefaults(
     groupField: "groupName",
     groupIdField: "groupId",
     // 措辞照 ok112：language/chinese.php 的 No_group_terminal = "无分区终端"
-    ungroupedLabel: "无分区终端"
+    // 同 index.vue：defineProps 的默认值取不到 setup 里的 t，留空串在取值处兜底
+    ungroupedLabel: ""
   }
 );
 
@@ -121,7 +126,12 @@ const nodes = computed<Node[]>(() => {
     if (g.name) byName.set(g.name, node);
   }
 
-  const ungrouped: Node = { key: "g:0", label: props.ungroupedLabel, disabled: true, children: [] };
+  const ungrouped: Node = {
+    key: "g:0",
+    label: props.ungroupedLabel || t("common.noZoneTerminals"),
+    disabled: true,
+    children: []
+  };
 
   for (const raw of props.terminals ?? []) {
     const t = normalize(raw);

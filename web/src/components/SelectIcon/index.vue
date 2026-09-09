@@ -14,7 +14,7 @@
       </template>
     </el-input>
     <el-dialog v-model="dialogVisible" :title="placeholder" top="50px" width="66%">
-      <el-input v-model="inputValue" placeholder="搜索图标" size="large" :prefix-icon="Icons.Search" />
+      <el-input v-model="inputValue" :placeholder="$t('common.searchIcon')" size="large" :prefix-icon="Icons.Search" />
       <el-scrollbar v-if="Object.keys(iconsList).length">
         <div class="icon-list">
           <div v-for="item in iconsList" :key="item" class="icon-item" @click="selectIcon(item)">
@@ -23,12 +23,13 @@
           </div>
         </div>
       </el-scrollbar>
-      <el-empty v-else description="未搜索到您要找的图标~" />
+      <el-empty v-else :description="$t('common.iconNotFound')" />
     </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts" name="SelectIcon">
+import { useI18n } from "vue-i18n";
 import * as Icons from "@element-plus/icons-vue";
 import { computed, ref } from "vue";
 
@@ -39,11 +40,14 @@ interface SelectIconProps {
   placeholder?: string;
 }
 
+// 脚本里拼的文案用 t()；模板里的 $t 不用引入
+const { t } = useI18n();
+
 const props = withDefaults(defineProps<SelectIconProps>(), {
   iconValue: "",
-  title: "请选择图标",
+  title: t("common.pickIcon"),
   clearable: true,
-  placeholder: "请选择图标"
+  placeholder: t("common.pickIcon")
 });
 
 // 重新接收一下，防止打包后 clearable 报错

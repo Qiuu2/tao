@@ -25,6 +25,7 @@ import (
 	"strings"
 
 	"htweb/internal/auth"
+	"htweb/internal/i18n"
 	"htweb/internal/store"
 )
 
@@ -258,6 +259,8 @@ func (s *Service) List(ctx context.Context, u *auth.User, q ListQuery) (*ListRes
 			&isdecode, &isencode, &isLCD, &isspeech, &shortkeys, &switches); err != nil {
 			return nil, fmt.Errorf("扫描终端行: %w", err)
 		}
+		// 型号是产品词汇（不是用户起的名字），跟着界面语言走
+		it.TypeName = i18n.TC(ctx, it.TypeName)
 		it.CanDecode, it.CanEncode = isdecode == 1, isencode == 1
 		// 按 ok112 的 get_terminal_type() 规则算出这台终端支持哪些批量操作，
 		// 界面据此把菜单里不适用的项置灰。规则见 caps.go。
@@ -335,14 +338,14 @@ func (s *Service) fillGroupNames(ctx context.Context, items []Item, ids map[int6
 	}
 	for i := range items {
 		if items[i].GroupID == 0 {
-			items[i].GroupName = "(未分区)"
+			items[i].GroupName = i18n.TC(ctx, "(未分区)")
 			continue
 		}
 		if n, ok := names[items[i].GroupID]; ok {
 			items[i].GroupName = n
 		} else {
 			// terminalofgroup 指向了已不存在的分区，旧数据里确实有
-			items[i].GroupName = "(分区已删除)"
+			items[i].GroupName = i18n.TC(ctx, "(分区已删除)")
 		}
 	}
 	return nil
@@ -421,9 +424,11 @@ func (s *Service) GroupTree(ctx context.Context, u *auth.User) ([]GroupNode, err
 	}
 	defer rs.Close()
 
+	// 这两个是**虚拟节点**，不是用户建的分区 —— 名字是产品词汇，要跟着界面语言走。
+	// 下面循环里那些真分区的名字是用户起的，一律不翻。
 	out := []GroupNode{
-		{ID: GroupAll, Name: "全部终端", Virtual: true, Count: counts[GroupAll]},
-		{ID: GroupUnassigned, Name: "未分区终端", Virtual: true, Count: counts[GroupUnassigned]},
+		{ID: GroupAll, Name: i18n.TC(ctx, "全部终端"), Virtual: true, Count: counts[GroupAll]},
+		{ID: GroupUnassigned, Name: i18n.TC(ctx, "未分区终端"), Virtual: true, Count: counts[GroupUnassigned]},
 	}
 	for rs.Next() {
 		var n GroupNode

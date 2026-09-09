@@ -23,6 +23,7 @@
 </template>
 
 <script setup lang="ts" name="SearchFormItem">
+import { useI18n } from "vue-i18n";
 import { computed, inject, ref } from "vue";
 
 import { ColumnProps } from "@/components/ProTable/interface";
@@ -32,6 +33,9 @@ interface SearchFormItem {
   column: ColumnProps;
   searchParam: { [key: string]: any };
 }
+// 脚本里拼的文案用 t()；模板里的 $t 不用引入
+const { t } = useI18n();
+
 const props = defineProps<SearchFormItem>();
 
 // Re receive SearchParam
@@ -80,12 +84,13 @@ const placeholder = computed(() => {
   const search = props.column.search;
   if (["datetimerange", "daterange", "monthrange"].includes(search?.props?.type) || search?.props?.isRange) {
     return {
-      rangeSeparator: search?.props?.rangeSeparator ?? "至",
-      startPlaceholder: search?.props?.startPlaceholder ?? "开始时间",
-      endPlaceholder: search?.props?.endPlaceholder ?? "结束时间"
+      rangeSeparator: search?.props?.rangeSeparator ?? t("common.to"),
+      startPlaceholder: search?.props?.startPlaceholder ?? t("common.startTimeShort"),
+      endPlaceholder: search?.props?.endPlaceholder ?? t("common.endTimeShort")
     };
   }
-  const placeholder = search?.props?.placeholder ?? (search?.el?.includes("input") ? "请输入" : "请选择");
+  const placeholder =
+    search?.props?.placeholder ?? (search?.el?.includes("input") ? t("common.pleaseInput") : t("common.pleaseSelect"));
   return { placeholder };
 });
 

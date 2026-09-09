@@ -15,7 +15,7 @@
   <div class="terminal-page">
     <!-- 左：分区树 -->
     <div class="group-panel">
-      <div class="group-title">终端分区</div>
+      <div class="group-title">{{ $t("terminalCommon.zone") }}</div>
       <el-scrollbar class="group-scroll">
         <div
           v-for="g in groups"
@@ -69,7 +69,7 @@
                 @command="cmd => onBatchCmd(cmd, scope.selectedListIds)"
               >
                 <el-button :disabled="!scope.isSelected">
-                  批量操作{{ scope.selectedListIds.length ? `(${scope.selectedListIds.length})` : "" }}
+                  {{ $t("term.batchOps") }}{{ scope.selectedListIds.length ? `(${scope.selectedListIds.length})` : "" }}
                   <el-icon class="el-icon--right"><ArrowDown /></el-icon>
                 </el-button>
                 <!--
@@ -105,34 +105,42 @@
 
         <template #netstate="scope">
           <el-tag :type="scope.row.netstate === 1 ? 'success' : 'info'" size="small">
-            {{ scope.row.netstate === 1 ? "在线" : "离线" }}
+            {{ scope.row.netstate === 1 ? $t("common.online") : $t("common.offline") }}
           </el-tag>
         </template>
 
         <template #devicestate="scope">
           <el-tag :type="scope.row.devicestate === 1 ? 'success' : 'info'" size="small" effect="plain">
-            {{ scope.row.devicestate === 1 ? "已启动" : "已停止" }}
+            {{ scope.row.devicestate === 1 ? $t("common.started") : $t("common.stopped") }}
           </el-tag>
         </template>
 
         <template #taskstate="scope">
           <el-tag :type="scope.row.taskstate === 1 ? 'warning' : 'info'" size="small" effect="plain">
-            {{ scope.row.taskstate === 1 ? "播放中" : "空闲" }}
+            {{ scope.row.taskstate === 1 ? $t("terminalCommon.playing") : $t("terminalCommon.idle") }}
           </el-tag>
         </template>
 
         <!-- 对讲 / 急救 / 录音 / 发言 四列，:80 是一列一个开关状态 -->
         <template #isspeech="scope">
-          <span :class="scope.row.isspeech === 1 ? 'on' : 'off'">{{ scope.row.isspeech === 1 ? "开" : "关" }}</span>
+          <span :class="scope.row.isspeech === 1 ? 'on' : 'off'">{{
+            scope.row.isspeech === 1 ? $t("common.on") : $t("common.off")
+          }}</span>
         </template>
         <template #instancy="scope">
-          <span :class="scope.row.instancy === 1 ? 'on' : 'off'">{{ scope.row.instancy === 1 ? "开" : "关" }}</span>
+          <span :class="scope.row.instancy === 1 ? 'on' : 'off'">{{
+            scope.row.instancy === 1 ? $t("common.on") : $t("common.off")
+          }}</span>
         </template>
         <template #isrecord="scope">
-          <span :class="scope.row.isrecord === 1 ? 'on' : 'off'">{{ scope.row.isrecord === 1 ? "开" : "关" }}</span>
+          <span :class="scope.row.isrecord === 1 ? 'on' : 'off'">{{
+            scope.row.isrecord === 1 ? $t("common.on") : $t("common.off")
+          }}</span>
         </template>
         <template #issponsor="scope">
-          <span :class="scope.row.issponsor === 1 ? 'on' : 'off'">{{ scope.row.issponsor === 1 ? "开" : "关" }}</span>
+          <span :class="scope.row.issponsor === 1 ? 'on' : 'off'">{{
+            scope.row.issponsor === 1 ? $t("common.on") : $t("common.off")
+          }}</span>
         </template>
 
         <!--
@@ -141,12 +149,12 @@
         -->
         <template #lopencircuit="scope">
           <span :class="scope.row.lopencircuit === 1 ? 'bad' : 'ok'">
-            {{ scope.row.lopencircuit === 1 ? "开路" : "正常" }}
+            {{ scope.row.lopencircuit === 1 ? $t("common.openCircuit") : $t("common.normal") }}
           </span>
         </template>
         <template #ropencircuit="scope">
           <span :class="scope.row.ropencircuit === 1 ? 'bad' : 'ok'">
-            {{ scope.row.ropencircuit === 1 ? "开路" : "正常" }}
+            {{ scope.row.ropencircuit === 1 ? $t("common.openCircuit") : $t("common.normal") }}
           </span>
         </template>
 
@@ -176,32 +184,32 @@
             link
             :icon="Link"
             :disabled="!scope.row.online"
-            :title="scope.row.online ? scope.row.webUrl : '终端已断开，无法打开其 Web 页'"
+            :title="scope.row.online ? scope.row.webUrl : $t('term.terminalDisconnectedWeb')"
             @click="browse(scope.row)"
           >
-            浏览
+            {{ $t("term.browse") }}
           </el-button>
         </template>
       </ProTable>
     </div>
 
     <!-- 音量 -->
-    <el-dialog v-model="vol.visible" title="设置音量" width="440px">
+    <el-dialog v-model="vol.visible" :title="$t('terminalCommon.setVolume')" width="440px">
       <p class="dlg-note">将对选中的 {{ vol.ids.length }} 台终端生效</p>
       <el-slider v-model="vol.value" :min="0" :max="100" show-input />
       <template #footer>
-        <el-button @click="vol.visible = false">取消</el-button>
-        <el-button type="primary" :loading="vol.saving" @click="submitVolume">下发</el-button>
+        <el-button @click="vol.visible = false">{{ $t("common.cancel") }}</el-button>
+        <el-button type="primary" :loading="vol.saving" @click="submitVolume">{{ $t("term.send") }}</el-button>
       </template>
     </el-dialog>
 
     <!-- 终端密码 -->
-    <el-dialog v-model="pwd.visible" title="设置终端密码" width="460px">
+    <el-dialog v-model="pwd.visible" :title="$t('term.setTerminalPassword')" width="460px">
       <p class="dlg-note">将对选中的 {{ pwd.ids.length }} 台终端下发</p>
-      <el-input v-model="pwd.value" type="password" show-password maxlength="32" placeholder="1 ~ 32 个字符" />
+      <el-input v-model="pwd.value" type="password" show-password maxlength="32" :placeholder="$t('term.chars1to32')" />
       <template #footer>
-        <el-button @click="pwd.visible = false">取消</el-button>
-        <el-button type="primary" :loading="pwd.saving" @click="submitPassword">下发</el-button>
+        <el-button @click="pwd.visible = false">{{ $t("common.cancel") }}</el-button>
+        <el-button type="primary" :loading="pwd.saving" @click="submitPassword">{{ $t("term.send") }}</el-button>
       </template>
     </el-dialog>
 
@@ -218,17 +226,17 @@
       ⚠ 只有最后一项做了合并：ok112 是跳到 displayterminal.php 去看目标终端，
         这里目标本来就在列表里，再跳一次页只是多一步。动作本身没有少。
     -->
-    <el-dialog v-model="sk.visible" :title="`快捷键 · ${sk.name}`" width="820px" top="8vh">
+    <el-dialog v-model="sk.visible" :title="$t('term.shortcutKeyOf', { name: sk.name })" width="820px" top="8vh">
       <el-alert type="info" :closable="false" show-icon class="mb12">
-        在这台终端上按下某个键，去寻呼下面列出的目标终端。
+        {{ $t("term.keyPagesTargets") }}
       </el-alert>
       <el-table :data="sk.rows" size="small" border max-height="46vh">
-        <el-table-column type="index" label="序号" width="60" align="center" />
-        <el-table-column prop="name" label="快捷键名称" min-width="130" show-overflow-tooltip />
-        <el-table-column prop="keyLabel" label="快捷键" width="110" />
-        <el-table-column label="映射终端" min-width="230">
+        <el-table-column type="index" :label="$t('common.index')" width="60" align="center" />
+        <el-table-column prop="name" :label="$t('term.shortcutKeyName')" min-width="130" show-overflow-tooltip />
+        <el-table-column prop="keyLabel" :label="$t('term.shortcutKey')" width="110" />
+        <el-table-column :label="$t('term.mappedTerminal')" min-width="230">
           <template #default="s">
-            <span v-if="!s.row.targets.length" class="muted">未指定</span>
+            <span v-if="!s.row.targets.length" class="muted">{{ $t("term.unspecified") }}</span>
             <el-tag
               v-for="t in s.row.targets"
               :key="t.terminalId"
@@ -241,18 +249,24 @@
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="120" align="center">
+        <el-table-column :label="$t('common.operation')" width="120" align="center">
           <template #default="s">
-            <el-button type="primary" link :disabled="!canControl" @click="openShortcutEdit(s.row)">修改</el-button>
-            <el-button type="danger" link :disabled="!canControl" @click="removeShortcut(s.row)">删除</el-button>
+            <el-button type="primary" link :disabled="!canControl" @click="openShortcutEdit(s.row)">{{
+              $t("common.modify")
+            }}</el-button>
+            <el-button type="danger" link :disabled="!canControl" @click="removeShortcut(s.row)">{{
+              $t("common.delete")
+            }}</el-button>
           </template>
         </el-table-column>
       </el-table>
-      <p v-if="!sk.rows.length" class="dlg-note">这台终端还没有配置快捷键。</p>
+      <p v-if="!sk.rows.length" class="dlg-note">{{ $t("term.noShortcutKeyYet") }}</p>
       <template #footer>
         <div class="dlg-foot">
-          <el-button type="primary" :disabled="!canControl" @click="openShortcutEdit(null)">设置快捷键</el-button>
-          <el-button @click="sk.visible = false">关闭</el-button>
+          <el-button type="primary" :disabled="!canControl" @click="openShortcutEdit(null)">{{
+            $t("term.setShortcutKey")
+          }}</el-button>
+          <el-button @click="sk.visible = false">{{ $t("common.close") }}</el-button>
         </div>
       </template>
     </el-dialog>
@@ -267,29 +281,35 @@
         （任务页也是写死默认值），这里保持一致，用服务端默认值。
         要做 area 编辑就该三处一起做，只在这一个对话框里冒出来反而更乱。
     -->
-    <el-dialog v-model="skEdit.visible" :title="skEdit.id ? '修改快捷键' : '设置快捷键'" width="620px" top="8vh" append-to-body>
+    <el-dialog
+      v-model="skEdit.visible"
+      :title="skEdit.id ? $t('term.editShortcutKey') : $t('term.setShortcutKey')"
+      width="620px"
+      top="8vh"
+      append-to-body
+    >
       <el-form :model="skEdit" label-width="100px">
-        <el-form-item label="快捷键名称" required>
-          <el-input v-model="skEdit.name" maxlength="45" show-word-limit placeholder="例如：呼叫A栋一层" />
+        <el-form-item :label="$t('term.shortcutKeyName')" required>
+          <el-input v-model="skEdit.name" maxlength="45" show-word-limit :placeholder="$t('term.egCallFloor')" />
         </el-form-item>
-        <el-form-item label="快捷键" required>
-          <el-select v-model="skEdit.key" placeholder="选择键值" class="fill">
+        <el-form-item :label="$t('term.shortcutKey')" required>
+          <el-select v-model="skEdit.key" :placeholder="$t('term.pickKeyValue')" class="fill">
             <el-option v-for="k in skEdit.keyOptions" :key="k.value" :label="k.label" :value="k.value" />
           </el-select>
         </el-form-item>
-        <el-form-item label="映射终端">
+        <el-form-item :label="$t('term.mappedTerminal')">
           <TerminalTree v-model="skEdit.targetIds" :terminals="skEdit.candidates" :loading="skEdit.loading" height="260px" />
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="skEdit.visible = false">取消</el-button>
+        <el-button @click="skEdit.visible = false">{{ $t("common.cancel") }}</el-button>
         <el-button
           type="primary"
           :disabled="!skEdit.name || skEdit.key === undefined"
           :loading="skEdit.saving"
           @click="submitShortcutEdit"
         >
-          确定
+          {{ $t("common.confirm") }}
         </el-button>
       </template>
     </el-dialog>
@@ -308,44 +328,45 @@
         列也照 view_quickplay_from.html：
         任务名称 / 时长 / 优先级 / 音量 / 快捷键 / 终端名称 / 任务ID。
     -->
-    <el-dialog v-model="qt.visible" :title="`快捷任务 · ${qt.name}`" width="900px" top="7vh">
+    <el-dialog v-model="qt.visible" :title="$t('term.quickTaskOf', { name: qt.name })" width="900px" top="7vh">
       <el-alert type="info" :closable="false" show-icon class="mb12">
-        在这台终端上按下某个键，执行一条<b>专属于这台终端</b>的任务。任务在这里新建，不是从已有任务里挑。
+        {{ $t("term.keyRunsTask") }}<b>{{ $t("term.exclusiveToTerminal") }}</b
+        >{{ $t("term.taskCreatedHere") }}
       </el-alert>
       <el-table :data="qt.rows" size="small" border max-height="42vh" @selection-change="onQtSelect">
         <el-table-column type="selection" width="44" />
-        <el-table-column prop="taskName" label="任务名称" min-width="140" show-overflow-tooltip />
-        <el-table-column label="任务时长" width="110">
+        <el-table-column prop="taskName" :label="$t('taskCommon.taskName')" min-width="140" show-overflow-tooltip />
+        <el-table-column :label="$t('term.taskLength')" width="110">
           <template #default="s">{{ quickLengthText(s.row) }}</template>
         </el-table-column>
-        <el-table-column prop="priority" label="优先级" width="80" align="center" />
-        <el-table-column prop="volume" label="音量" width="70" align="center" />
-        <el-table-column prop="keyLabel" label="快捷键" width="100" />
-        <el-table-column label="类型" width="140">
+        <el-table-column prop="priority" :label="$t('term.priorityLabel')" width="80" align="center" />
+        <el-table-column prop="volume" :label="$t('common.volume')" width="70" align="center" />
+        <el-table-column prop="keyLabel" :label="$t('term.shortcutKey')" width="100" />
+        <el-table-column :label="$t('term.type')" width="140">
           <template #default="s">
             <el-tag size="small" effect="plain" :type="s.row.taskType === 20 ? 'info' : 'warning'">
               {{ s.row.typeText }}
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="terminalName" label="终端名称" min-width="120" show-overflow-tooltip />
-        <el-table-column prop="taskId" label="任务ID" width="90" align="center" />
+        <el-table-column prop="terminalName" :label="$t('terminalCommon.terminalName')" min-width="120" show-overflow-tooltip />
+        <el-table-column prop="taskId" :label="$t('term.taskId')" width="90" align="center" />
       </el-table>
-      <p v-if="!qt.rows.length" class="dlg-note">这台终端还没有快捷任务。</p>
+      <p v-if="!qt.rows.length" class="dlg-note">{{ $t("term.noQuickTaskYet") }}</p>
       <template #footer>
         <div class="dlg-foot">
-          <el-button type="primary" :disabled="!canControl" @click="openQuickEdit(null)">添加快捷任务</el-button>
+          <el-button type="primary" :disabled="!canControl" @click="openQuickEdit(null)">{{ $t("term.addQuickTask") }}</el-button>
           <el-button
             :disabled="!canControl || qt.selected.length !== 1"
-            :title="qt.selected.length !== 1 ? '修改时只能选中一条' : ''"
+            :title="qt.selected.length !== 1 ? $t('term.onlyOneToEdit') : ''"
             @click="openQuickEditSelected"
           >
-            修改快捷任务
+            {{ $t("term.editQuickTask") }}
           </el-button>
           <el-button type="danger" :disabled="!canControl || !qt.selected.length" @click="removeQuickTasks">
             删除快捷任务{{ qt.selected.length ? `（${qt.selected.length}）` : "" }}
           </el-button>
-          <el-button @click="qt.visible = false">关闭</el-button>
+          <el-button @click="qt.visible = false">{{ $t("common.close") }}</el-button>
         </div>
       </template>
     </el-dialog>
@@ -360,7 +381,7 @@
     -->
     <el-dialog
       v-model="qtEdit.visible"
-      :title="qtEdit.taskId ? '修改快捷任务' : '添加快捷任务'"
+      :title="qtEdit.taskId ? $t('term.editQuickTask') : $t('term.addQuickTask')"
       width="980px"
       top="6vh"
       append-to-body
@@ -371,20 +392,20 @@
           右列是「怎么放」（随机、发送模式、音量）。旧版是个 table 布局，
           同样把成对的属性摆在一行里。
         -->
-        <el-form-item label="任务名称" required>
-          <el-input v-model="qtEdit.taskName" maxlength="8" show-word-limit placeholder="最多 8 个字" />
+        <el-form-item :label="$t('taskCommon.taskName')" required>
+          <el-input v-model="qtEdit.taskName" maxlength="8" show-word-limit :placeholder="$t('term.atMost8')" />
         </el-form-item>
 
         <el-row :gutter="16">
           <el-col :span="12">
-            <el-form-item label="快捷键" required>
-              <el-select v-model="qtEdit.key" placeholder="选择键值" class="fill">
+            <el-form-item :label="$t('term.shortcutKey')" required>
+              <el-select v-model="qtEdit.key" :placeholder="$t('term.pickKeyValue')" class="fill">
                 <el-option v-for="k in qtEdit.keyOptions" :key="k.value" :label="k.label" :value="k.value" />
               </el-select>
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="随机播放">
+            <el-form-item :label="$t('term.randomPlay')">
               <el-checkbox v-model="qtEdit.isRandom" />
             </el-form-item>
           </el-col>
@@ -392,7 +413,7 @@
 
         <el-row :gutter="16">
           <el-col :span="12">
-            <el-form-item label="优先级">
+            <el-form-item :label="$t('term.priorityLabel')">
               <!-- 旧版是下拉，从当前用户组的 level 起到 109 -->
               <el-select v-model="qtEdit.priority" class="fill">
                 <el-option v-for="p in priorityOptions" :key="p" :label="p" :value="p" />
@@ -400,19 +421,19 @@
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="发送模式">
+            <el-form-item :label="$t('taskCommon.sendMode')">
               <el-select v-model="qtEdit.dataSendMode" class="fill">
-                <el-option label="单播" :value="0" />
-                <el-option label="多播" :value="1" />
+                <el-option :label="$t('taskCommon.unicast')" :value="0" />
+                <el-option :label="$t('term.multicast')" :value="1" />
               </el-select>
             </el-form-item>
           </el-col>
         </el-row>
 
-        <el-form-item label="播放时长" required>
+        <el-form-item :label="$t('taskCommon.playLength')" required>
           <el-radio-group v-model="qtEdit.timeLengthType">
-            <el-radio :value="1">时长</el-radio>
-            <el-radio :value="2">循环次数</el-radio>
+            <el-radio :value="1">{{ $t("common.duration") }}</el-radio>
+            <el-radio :value="2">{{ $t("taskCommon.loopTimes") }}</el-radio>
           </el-radio-group>
         </el-form-item>
         <el-form-item v-if="qtEdit.timeLengthType === 1" label=" ">
@@ -421,35 +442,35 @@
             <el-select v-model="qtEdit.hour" class="qt-hms-sel">
               <el-option v-for="h in 24" :key="h - 1" :label="h - 1" :value="h - 1" />
             </el-select>
-            <span>时</span>
+            <span>{{ $t("term.hour") }}</span>
             <el-select v-model="qtEdit.minute" class="qt-hms-sel">
               <el-option v-for="m in 60" :key="m - 1" :label="m - 1" :value="m - 1" />
             </el-select>
-            <span>分</span>
+            <span>{{ $t("term.minute") }}</span>
             <el-select v-model="qtEdit.second" class="qt-hms-sel">
               <el-option v-for="sc in 60" :key="sc - 1" :label="sc - 1" :value="sc - 1" />
             </el-select>
-            <span>秒</span>
+            <span>{{ $t("common.seconds") }}</span>
           </div>
         </el-form-item>
         <el-form-item v-else label=" ">
           <el-input-number v-model="qtEdit.circleTime" :min="1" :max="999" />
-          <span class="dlg-note inline">次</span>
+          <span class="dlg-note inline">{{ $t("term.times") }}</span>
         </el-form-item>
 
-        <el-form-item label="音量">
+        <el-form-item :label="$t('common.volume')">
           <el-slider v-model="qtEdit.volume" :min="0" :max="100" show-input />
         </el-form-item>
-        <el-form-item label="播放方式">
+        <el-form-item :label="$t('term.playMode')">
           <!-- 旧版把 TTS 与 LED 两个开关并排放在这里 -->
-          <el-checkbox v-model="qtEdit.ttsOn">文字播报</el-checkbox>
-          <el-checkbox v-model="qtEdit.ledOn" class="ml12">LED 播放</el-checkbox>
+          <el-checkbox v-model="qtEdit.ttsOn">{{ $t("term.ttsPlay") }}</el-checkbox>
+          <el-checkbox v-model="qtEdit.ledOn" class="ml12">{{ $t("term.ledPlay") }}</el-checkbox>
         </el-form-item>
 
         <!-- LED 字幕在媒体之前，与旧版一致 -->
         <template v-if="qtEdit.ledOn">
-          <el-divider content-position="left">LED 字幕</el-divider>
-          <el-form-item label="上屏文字" required>
+          <el-divider content-position="left">{{ $t("term.ledSubtitle") }}</el-divider>
+          <el-form-item :label="$t('term.ledText')" required>
             <!-- 多行只是为了长句子好读好改；存库时换行会被去掉（旧版 do.php 也是这么处理的） -->
             <el-input
               v-model="qtEdit.ledText"
@@ -457,46 +478,46 @@
               :rows="3"
               maxlength="120"
               show-word-limit
-              placeholder="要在 LED 屏上滚动的文字"
+              :placeholder="$t('term.ledScrollText')"
             />
           </el-form-item>
-          <el-form-item label="LED速度">
+          <el-form-item :label="$t('term.ledSpeed')">
             <el-select v-model="qtEdit.ledSpeed" style="width: 110px">
-              <el-option v-for="n in [0, 1, 2, 3, 4, 5]" :key="n" :label="`${n} 级`" :value="n" />
+              <el-option v-for="n in [0, 1, 2, 3, 4, 5]" :key="n" :label="$t('term.levelN', { n })" :value="n" />
             </el-select>
             <!-- 旧版没有这个输入框，写库时把 speed 写死成 5；这里可选，默认 0 级 -->
-            <span class="form-tip">0 ~ 5 级</span>
+            <span class="form-tip">{{ $t("term.levels0to5") }}</span>
           </el-form-item>
         </template>
 
         <!-- 文字播报时没有媒体可选，这一段整体让位给播报设置 -->
         <template v-if="qtEdit.ttsOn">
-          <el-divider content-position="left">播报内容</el-divider>
-          <el-form-item label="播报文字" required>
+          <el-divider content-position="left">{{ $t("term.speakText") }}</el-divider>
+          <el-form-item :label="$t('term.speakTextLabel')" required>
             <el-input v-model="qtEdit.ttsText" type="textarea" :rows="3" maxlength="500" show-word-limit />
           </el-form-item>
           <el-row :gutter="16">
             <el-col :span="12">
-              <el-form-item label="音源" required>
+              <el-form-item :label="$t('term.audioSource')" required>
                 <el-select v-model="qtEdit.ttsSource" class="fill">
                   <el-option v-for="a in qtEdit.audioSources" :key="a.id" :label="a.name" :value="a.isServer ? 0 : a.id" />
                 </el-select>
               </el-form-item>
             </el-col>
             <el-col :span="12">
-              <el-form-item label="语速">
+              <el-form-item :label="$t('term.speechRate')">
                 <el-select v-model="qtEdit.ttsSpeed" class="qt-narrow">
                   <el-option v-for="sp in 10" :key="sp" :label="sp" :value="sp" />
                 </el-select>
                 <el-radio-group v-model="qtEdit.ttsMale" class="ml12">
-                  <el-radio :value="0">女声</el-radio>
-                  <el-radio :value="1">男声</el-radio>
+                  <el-radio :value="0">{{ $t("term.female") }}</el-radio>
+                  <el-radio :value="1">{{ $t("term.male") }}</el-radio>
                 </el-radio-group>
               </el-form-item>
             </el-col>
           </el-row>
-          <el-divider content-position="left">目标终端</el-divider>
-          <el-form-item label="播放到" required>
+          <el-divider content-position="left">{{ $t("term.targetTerminal") }}</el-divider>
+          <el-form-item :label="$t('term.playTo')" required>
             <TerminalTree v-model="qtEdit.terminalIds" :terminals="qtEdit.candidates" :loading="qtEdit.loading" height="240px" />
           </el-form-item>
         </template>
@@ -506,18 +527,18 @@
           753/754 两个 <td> 就是这么摆的（Media_File_List | Terminal_list）。
         -->
         <template v-else>
-          <el-divider content-position="left">播放内容与目标</el-divider>
+          <el-divider content-position="left">{{ $t("term.playContentAndTarget") }}</el-divider>
           <!--
             这两列不套 el-form-item —— 表单的 label 是竖排在左侧的，
             两棵树各自已经有标题，再套一层会出现两个重复的竖排标签。
           -->
           <el-row :gutter="16" class="qt-cols">
             <el-col :span="12">
-              <div class="qt-col-title">媒体文件</div>
+              <div class="qt-col-title">{{ $t("taskCommon.mediaFile") }}</div>
               <MediaTree v-model="qtEdit.mediaIds" :selected-names="qtEdit.selectedMedia" height="260px" />
             </el-col>
             <el-col :span="12">
-              <div class="qt-col-title">目标终端</div>
+              <div class="qt-col-title">{{ $t("term.targetTerminal") }}</div>
               <TerminalTree
                 v-model="qtEdit.terminalIds"
                 :terminals="qtEdit.candidates"
@@ -529,8 +550,8 @@
         </template>
       </el-form>
       <template #footer>
-        <el-button @click="qtEdit.visible = false">取消</el-button>
-        <el-button type="primary" :loading="qtEdit.saving" @click="submitQuickEdit">确定</el-button>
+        <el-button @click="qtEdit.visible = false">{{ $t("common.cancel") }}</el-button>
+        <el-button type="primary" :loading="qtEdit.saving" @click="submitQuickEdit">{{ $t("common.confirm") }}</el-button>
       </template>
     </el-dialog>
 
@@ -549,15 +570,19 @@
     <el-dialog v-model="cg.visible" :title="`${cg.title} · ${cg.name}`" width="760px" top="8vh">
       <el-alert :type="cg.list.length ? 'warning' : 'info'" :closable="false" show-icon class="mb12">
         <template v-if="cg.list.length">
-          这台终端只能寻呼下列分区里的终端。<b>把分区全部删掉</b>即回到「可寻呼所有在线终端」。
+          {{ $t("term.onlyPageTheseZones") }}<b>{{ $t("term.deleteAllZonesBack") }}</b
+          >{{ $t("term.backToPageAll") }}
         </template>
-        <template v-else> 当前一个寻呼分区都没有，这台终端可以寻呼<b>所有在线终端</b>。添加分区后即变为白名单。 </template>
+        <template v-else>
+          {{ $t("term.noZoneMeansAll") }}<b>{{ $t("term.allOnlineTerminals") }}</b
+          >{{ $t("term.addZoneMakesWhitelist") }}
+        </template>
       </el-alert>
 
       <div class="st-bar">
         <el-input
           v-model="cg.keyword"
-          placeholder="搜索分区名称"
+          :placeholder="$t('term.searchZoneName')"
           clearable
           size="small"
           :prefix-icon="Search"
@@ -577,26 +602,28 @@
         @selection-change="rows => (cg.checked = rows.map((r: any) => r.id))"
       >
         <el-table-column type="selection" width="44" />
-        <el-table-column type="index" label="序号" width="64" align="center" />
-        <el-table-column prop="name" label="分区名称" min-width="220" show-overflow-tooltip />
-        <el-table-column label="终端数" width="90" align="center">
+        <el-table-column type="index" :label="$t('common.index')" width="64" align="center" />
+        <el-table-column prop="name" :label="$t('terminalCommon.zoneName')" min-width="220" show-overflow-tooltip />
+        <el-table-column :label="$t('term.terminalCount')" width="90" align="center">
           <template #default="{ row }">{{ row.memberCount }}</template>
         </el-table-column>
-        <el-table-column label="操作" width="180" align="center">
+        <el-table-column :label="$t('common.operation')" width="180" align="center">
           <template #default="{ row }">
-            <el-button link type="primary" @click="openCallGroupView(row)">浏览终端</el-button>
-            <el-button link type="primary" @click="openCallGroupEdit(row)">修改</el-button>
+            <el-button link type="primary" @click="openCallGroupView(row)">{{ $t("term.browseTerminals") }}</el-button>
+            <el-button link type="primary" @click="openCallGroupEdit(row)">{{ $t("common.modify") }}</el-button>
           </template>
         </el-table-column>
-        <template #empty><span class="dlg-note">还没有寻呼分区</span></template>
+        <template #empty
+          ><span class="dlg-note">{{ $t("term.noPagingZone") }}</span></template
+        >
       </el-table>
 
       <template #footer>
-        <el-button @click="cg.visible = false">关闭</el-button>
+        <el-button @click="cg.visible = false">{{ $t("common.close") }}</el-button>
         <el-button :disabled="!cg.checked.length" :loading="cg.deleting" @click="deleteCallGroups">
           删除分区{{ cg.checked.length ? `（${cg.checked.length}）` : "" }}
         </el-button>
-        <el-button type="primary" @click="openCallGroupEdit(null)">添加分区</el-button>
+        <el-button type="primary" @click="openCallGroupEdit(null)">{{ $t("term.addZone") }}</el-button>
       </template>
     </el-dialog>
 
@@ -606,10 +633,10 @@
       终端（terminaloffolder）。底部动作照 dirarea_terminal.html：
       创建目录 / 修改目录 / 删除目录 / 添加终端 / 移出选中终端。
     -->
-    <el-dialog v-model="fm.visible" :title="`授权终端 · ${fm.name}`" width="1000px" top="6vh">
+    <el-dialog v-model="fm.visible" :title="$t('term.authTerminalOf', { name: fm.name })" width="1000px" top="6vh">
       <div class="fm-body">
         <div class="fm-side">
-          <div class="fm-side-title">目录</div>
+          <div class="fm-side-title">{{ $t("term.folder") }}</div>
           <el-tree
             v-loading="fm.loading"
             class="fm-tree"
@@ -630,14 +657,14 @@
               </span>
             </template>
           </el-tree>
-          <p v-if="!fm.loading && !fm.tree.length" class="dlg-note fm-empty">还没有目录，点「创建目录」新建一个</p>
+          <p v-if="!fm.loading && !fm.tree.length" class="dlg-note fm-empty">{{ $t("term.noFolderYet") }}</p>
         </div>
 
         <div class="fm-main">
           <div class="st-bar">
             <el-input
               v-model="fm.keyword"
-              placeholder="搜索终端名称"
+              :placeholder="$t('term.searchTerminalName')"
               clearable
               size="small"
               :prefix-icon="Search"
@@ -654,20 +681,25 @@
             @selection-change="rows => (fm.checked = rows.map((r: any) => r.id))"
           >
             <el-table-column type="selection" width="44" />
-            <el-table-column prop="terminalname" label="终端名称" min-width="130" show-overflow-tooltip />
-            <el-table-column prop="typeName" label="终端类型" min-width="100" show-overflow-tooltip />
-            <el-table-column label="任务状态" width="100" align="center">
+            <el-table-column
+              prop="terminalname"
+              :label="$t('terminalCommon.terminalName')"
+              min-width="130"
+              show-overflow-tooltip
+            />
+            <el-table-column prop="typeName" :label="$t('terminalCommon.terminalType')" min-width="100" show-overflow-tooltip />
+            <el-table-column :label="$t('term.taskState')" width="100" align="center">
               <template #default="{ row }">{{ taskStateText(row.netstate, row.taskstate) }}</template>
             </el-table-column>
-            <el-table-column label="网络状态" width="94" align="center">
+            <el-table-column :label="$t('terminalCommon.netState')" width="94" align="center">
               <template #default="{ row }">
                 <el-tag :type="row.netstate === 1 ? 'success' : 'info'" size="small" effect="plain">
                   {{ netStateText(row.netstate) }}
                 </el-tag>
               </template>
             </el-table-column>
-            <el-table-column prop="ip" label="IP地址" width="126" />
-            <el-table-column prop="volume" label="音量" width="70" align="center" />
+            <el-table-column prop="ip" :label="$t('common.ipAddress')" width="126" />
+            <el-table-column prop="volume" :label="$t('common.volume')" width="70" align="center" />
             <template #empty>
               <span class="dlg-note">{{ fm.folderId ? "这个目录里还没有终端" : "请先在左边选一个目录" }}</span>
             </template>
@@ -676,36 +708,36 @@
       </div>
 
       <template #footer>
-        <el-button @click="fm.visible = false">关闭</el-button>
-        <el-button :disabled="!fm.folderId" @click="openFolderEdit('rename')">修改目录</el-button>
-        <el-button :disabled="!fm.folderId || fm.isRoot" @click="deleteFolder">删除目录</el-button>
+        <el-button @click="fm.visible = false">{{ $t("common.close") }}</el-button>
+        <el-button :disabled="!fm.folderId" @click="openFolderEdit('rename')">{{ $t("term.editFolder") }}</el-button>
+        <el-button :disabled="!fm.folderId || fm.isRoot" @click="deleteFolder">{{ $t("taskCommon.deleteFolder") }}</el-button>
         <el-button :disabled="!fm.checked.length" :loading="fm.saving" @click="removeFolderTerminals">
           移出终端{{ fm.checked.length ? `（${fm.checked.length}）` : "" }}
         </el-button>
-        <el-button :disabled="!fm.folderId" @click="openFolderPicker">添加终端</el-button>
-        <el-button type="primary" @click="openFolderEdit('create')">创建目录</el-button>
+        <el-button :disabled="!fm.folderId" @click="openFolderPicker">{{ $t("term.addTerminal") }}</el-button>
+        <el-button type="primary" @click="openFolderEdit('create')">{{ $t("term.createFolder") }}</el-button>
       </template>
     </el-dialog>
 
     <!-- 子页：创建 / 修改目录（ok112 的 dirareaadd.php / dirareamodify.php） -->
     <el-dialog
       v-model="fe.visible"
-      :title="fe.mode === 'create' ? '创建目录' : '修改目录'"
+      :title="fe.mode === 'create' ? $t('term.createFolder') : $t('term.editFolder')"
       width="440px"
       top="16vh"
       append-to-body
     >
       <el-form label-width="90px">
-        <el-form-item v-if="fe.mode === 'create'" label="上级目录">
+        <el-form-item v-if="fe.mode === 'create'" :label="$t('term.parentFolder')">
           <span class="dlg-note">{{ fm.folderName || "根目录" }}</span>
         </el-form-item>
-        <el-form-item label="目录名称" required>
-          <el-input v-model="fe.name" maxlength="32" show-word-limit placeholder="仅数字 / 字母 / 汉字" />
+        <el-form-item :label="$t('term.folderName')" required>
+          <el-input v-model="fe.name" maxlength="32" show-word-limit :placeholder="$t('term.digitsLettersHanzi')" />
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="fe.visible = false">取消</el-button>
-        <el-button type="primary" :loading="fe.saving" @click="submitFolder">确定</el-button>
+        <el-button @click="fe.visible = false">{{ $t("common.cancel") }}</el-button>
+        <el-button type="primary" :loading="fe.saving" @click="submitFolder">{{ $t("common.confirm") }}</el-button>
       </template>
     </el-dialog>
 
@@ -717,11 +749,17 @@
         配一排复选框，列是 终端名称/终端类型/任务状态/网络状态/设备状态/
         IP地址/音量，可按名称或 IP 搜 —— 整页没有「分区」这个概念。
     -->
-    <el-dialog v-model="fp.visible" :title="`添加终端到「${fm.folderName}」`" width="880px" top="8vh" append-to-body>
+    <el-dialog
+      v-model="fp.visible"
+      :title="$t('term.addTerminalTo', { name: fm.folderName })"
+      width="880px"
+      top="8vh"
+      append-to-body
+    >
       <div class="st-bar">
         <el-input
           v-model="fp.keyword"
-          placeholder="搜索终端名称或 IP"
+          :placeholder="$t('term.searchTerminalNameOrIp')"
           clearable
           size="small"
           :prefix-icon="Search"
@@ -737,27 +775,29 @@
         @selection-change="rows => (fp.ids = rows.map((r: any) => r.id))"
       >
         <el-table-column type="selection" width="44" />
-        <el-table-column prop="terminalname" label="终端名称" min-width="130" show-overflow-tooltip />
-        <el-table-column prop="typeName" label="终端类型" min-width="100" show-overflow-tooltip />
-        <el-table-column label="任务状态" width="100" align="center">
+        <el-table-column prop="terminalname" :label="$t('terminalCommon.terminalName')" min-width="130" show-overflow-tooltip />
+        <el-table-column prop="typeName" :label="$t('terminalCommon.terminalType')" min-width="100" show-overflow-tooltip />
+        <el-table-column :label="$t('term.taskState')" width="100" align="center">
           <template #default="{ row }">{{ taskStateText(row.netstate, row.taskstate) }}</template>
         </el-table-column>
-        <el-table-column label="网络状态" width="94" align="center">
+        <el-table-column :label="$t('terminalCommon.netState')" width="94" align="center">
           <template #default="{ row }">
             <el-tag :type="row.netstate === 1 ? 'success' : 'info'" size="small" effect="plain">
               {{ netStateText(row.netstate) }}
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="设备状态" width="94" align="center">
+        <el-table-column :label="$t('terminalCommon.deviceState')" width="94" align="center">
           <template #default="{ row }">{{ deviceStateText(row.netstate, row.devicestate) }}</template>
         </el-table-column>
-        <el-table-column prop="ip" label="IP地址" width="126" />
-        <el-table-column prop="volume" label="音量" width="70" align="center" />
-        <template #empty><span class="dlg-note">没有可加入的终端了</span></template>
+        <el-table-column prop="ip" :label="$t('common.ipAddress')" width="126" />
+        <el-table-column prop="volume" :label="$t('common.volume')" width="70" align="center" />
+        <template #empty
+          ><span class="dlg-note">{{ $t("term.noTerminalsLeft") }}</span></template
+        >
       </el-table>
       <template #footer>
-        <el-button @click="fp.visible = false">取消</el-button>
+        <el-button @click="fp.visible = false">{{ $t("common.cancel") }}</el-button>
         <el-button type="primary" :disabled="!fp.ids.length" :loading="fp.saving" @click="submitFolderTerminals">
           添加{{ fp.ids.length ? `（${fp.ids.length}）` : "" }}
         </el-button>
@@ -771,16 +811,16 @@
     -->
     <el-dialog
       v-model="cgEdit.visible"
-      :title="cgEdit.id ? '修改寻呼分区' : '添加寻呼分区'"
+      :title="cgEdit.id ? $t('term.editPagingZone') : $t('term.addPagingZone')"
       width="620px"
       top="10vh"
       append-to-body
     >
       <el-form label-width="110px">
-        <el-form-item label="分区名称" required>
-          <el-input v-model="cgEdit.name" maxlength="32" show-word-limit placeholder="仅数字 / 字母 / 汉字" />
+        <el-form-item :label="$t('terminalCommon.zoneName')" required>
+          <el-input v-model="cgEdit.name" maxlength="32" show-word-limit :placeholder="$t('term.digitsLettersHanzi')" />
         </el-form-item>
-        <el-form-item label="选择分区终端" required>
+        <el-form-item :label="$t('term.pickZoneTerminals')" required>
           <!--
             ok112 这里是 dhtmlxtree：分区 → 终端，外加「无分区终端」。
             候选范围由后端按 get_terminal_type(3) 过好（isdecode=1 且排除
@@ -796,8 +836,8 @@
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="cgEdit.visible = false">取消</el-button>
-        <el-button type="primary" :loading="cgEdit.saving" @click="submitCallGroup">确定</el-button>
+        <el-button @click="cgEdit.visible = false">{{ $t("common.cancel") }}</el-button>
+        <el-button type="primary" :loading="cgEdit.saving" @click="submitCallGroup">{{ $t("common.confirm") }}</el-button>
       </template>
     </el-dialog>
 
@@ -806,35 +846,43 @@
       列与旧版逐列对齐：序号 / 终端名称 / 终端类型 / 网络状态 / 设备状态 /
       任务状态 / IP地址 / 音量。
     -->
-    <el-dialog v-model="cgView.visible" :title="`浏览终端 · ${cgView.name}`" width="900px" top="10vh" append-to-body>
+    <el-dialog
+      v-model="cgView.visible"
+      :title="$t('term.browseTerminalOf', { name: cgView.name })"
+      width="900px"
+      top="10vh"
+      append-to-body
+    >
       <el-table v-loading="cgView.loading" :data="cgView.members" size="small" max-height="420">
-        <el-table-column type="index" label="序号" width="64" align="center" />
-        <el-table-column prop="name" label="终端名称" min-width="140" show-overflow-tooltip>
+        <el-table-column type="index" :label="$t('common.index')" width="64" align="center" />
+        <el-table-column prop="name" :label="$t('terminalCommon.terminalName')" min-width="140" show-overflow-tooltip>
           <template #default="{ row }">
             <span v-if="row.missing" class="bad">#{{ row.id }}（终端已删除）</span>
             <span v-else>{{ row.name }}</span>
           </template>
         </el-table-column>
-        <el-table-column prop="typeName" label="终端类型" min-width="110" show-overflow-tooltip />
-        <el-table-column label="网络状态" width="94" align="center">
+        <el-table-column prop="typeName" :label="$t('terminalCommon.terminalType')" min-width="110" show-overflow-tooltip />
+        <el-table-column :label="$t('terminalCommon.netState')" width="94" align="center">
           <template #default="{ row }">
             <el-tag :type="row.netstate === 1 ? 'success' : 'info'" size="small" effect="plain">
               {{ netStateText(row.netstate) }}
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="设备状态" width="94" align="center">
+        <el-table-column :label="$t('terminalCommon.deviceState')" width="94" align="center">
           <template #default="{ row }">{{ deviceStateText(row.netstate, row.devicestate) }}</template>
         </el-table-column>
-        <el-table-column label="任务状态" width="110" align="center">
+        <el-table-column :label="$t('term.taskState')" width="110" align="center">
           <template #default="{ row }">{{ taskStateText(row.netstate, row.taskstate) }}</template>
         </el-table-column>
-        <el-table-column prop="ip" label="IP地址" width="130" />
-        <el-table-column prop="volume" label="音量" width="72" align="center" />
-        <template #empty><span class="dlg-note">这个分区里还没有终端</span></template>
+        <el-table-column prop="ip" :label="$t('common.ipAddress')" width="130" />
+        <el-table-column prop="volume" :label="$t('common.volume')" width="72" align="center" />
+        <template #empty
+          ><span class="dlg-note">{{ $t("term.zoneEmpty") }}</span></template
+        >
       </el-table>
       <template #footer>
-        <el-button @click="cgView.visible = false">关闭</el-button>
+        <el-button @click="cgView.visible = false">{{ $t("common.close") }}</el-button>
       </template>
     </el-dialog>
 
@@ -842,17 +890,26 @@
       终端替换（ok112 的 getterminalid.php）。
       现场换了新硬件，让它接管旧记录的 ID，旧 ID 上的任务 / 分区 / 快捷键绑定就继续生效。
     -->
-    <el-dialog v-model="rp.visible" title="终端替换" width="560px">
+    <el-dialog v-model="rp.visible" :title="$t('term.terminalReplace')" width="560px">
       <el-alert type="warning" :closable="false" show-icon class="mb12">
-        把 <b>{{ rp.name }} · 当前 ID {{ rp.sourceId }}</b> 的编号改成下面填写的目标 ID。
+        {{ $t("term.putSelected") }} <b>{{ rp.name }} · 当前 ID {{ rp.sourceId }}</b> {{ $t("term.renameIdTo") }}
         <br />
-        目标 ID 若已被占用，要求两台<b>型号相同</b>且目标<b>处于离线</b>；原记录会被删除，
-        它的任务、分区、快捷键绑定由这台终端接管。
+        {{ $t("term.targetIdTaken") }}<b>{{ $t("term.sameModel") }}</b
+        >{{ $t("term.andTarget") }}<b>{{ $t("term.isOffline") }}</b
+        >{{ $t("term.sourceRecordDeletedText") }}
       </el-alert>
-      <el-input-number v-model="rp.targetId" :min="1" :controls="false" placeholder="目标终端 ID" style="width: 100%" />
+      <el-input-number
+        v-model="rp.targetId"
+        :min="1"
+        :controls="false"
+        :placeholder="$t('term.targetTerminalId')"
+        style="width: 100%"
+      />
       <template #footer>
-        <el-button @click="rp.visible = false">取消</el-button>
-        <el-button type="primary" :disabled="!rp.targetId" :loading="rp.saving" @click="submitReplace">替换</el-button>
+        <el-button @click="rp.visible = false">{{ $t("common.cancel") }}</el-button>
+        <el-button type="primary" :disabled="!rp.targetId" :loading="rp.saving" @click="submitReplace">{{
+          $t("term.replace")
+        }}</el-button>
       </template>
     </el-dialog>
 
@@ -861,9 +918,9 @@
       把选中的这些终端，补加到选中的那些任务的下发列表里。
       ⚠ 手册说它是「把一个任务的配置同步到其他任务」，与代码完全不符，以代码为准。
     -->
-    <el-dialog v-model="st.visible" title="增补终端到任务" width="680px" top="8vh">
+    <el-dialog v-model="st.visible" :title="$t('term.appendToTasks')" width="680px" top="8vh">
       <el-alert type="info" :closable="false" show-icon class="mb12">
-        把选中的 <b>{{ st.ids.length }}</b> 台终端补加到下列任务的下发列表里。已在列表中的不会重复添加。
+        {{ $t("term.putSelectedIds") }} <b>{{ st.ids.length }}</b> {{ $t("term.appendToTaskList") }}
       </el-alert>
       <!--
         任务按类别分支，与 ok112 的 set_synch_task.php 一一对应：作息方案
@@ -874,13 +931,13 @@
       <div class="st-bar">
         <el-input
           v-model="st.keyword"
-          placeholder="搜索任务名称"
+          :placeholder="$t('term.searchTaskName')"
           clearable
           size="small"
           :prefix-icon="Search"
           @input="onSyncSearch"
         />
-        <el-button size="small" link @click="clearSyncTasks">清空</el-button>
+        <el-button size="small" link @click="clearSyncTasks">{{ $t("common.clear") }}</el-button>
       </div>
       <el-tree
         ref="stTreeRef"
@@ -903,10 +960,10 @@
           </span>
         </template>
       </el-tree>
-      <el-empty v-if="!st.loading && !st.tree.length" description="没有可增补的任务" :image-size="72" />
+      <el-empty v-if="!st.loading && !st.tree.length" :description="$t('term.noTaskToAppend')" :image-size="72" />
       <p class="dlg-note st-sum">已选 {{ st.taskIds.length }} 个任务</p>
       <template #footer>
-        <el-button @click="st.visible = false">取消</el-button>
+        <el-button @click="st.visible = false">{{ $t("common.cancel") }}</el-button>
         <el-button type="primary" :disabled="!st.taskIds.length" :loading="st.saving" @click="submitSyncTerminals">
           增补{{ st.taskIds.length ? `（${st.taskIds.length}）` : "" }}
         </el-button>
@@ -914,14 +971,15 @@
     </el-dialog>
 
     <!-- 删除确认 -->
-    <el-dialog v-model="del.visible" title="删除终端" width="720px" top="6vh">
+    <el-dialog v-model="del.visible" :title="$t('term.deleteTerminal')" width="720px" top="6vh">
       <el-alert type="error" :closable="false" show-icon class="mb12">
-        删除终端会清理它在全系统的关联数据，且<b>不可恢复</b>。
+        {{ $t("term.deleteTerminalCleansAll") }}<b>{{ $t("common.notRecoverable") }}</b
+        >。
       </el-alert>
 
       <el-table v-if="del.preview?.deletable.length" :data="del.preview.deletable" size="small" max-height="320">
-        <el-table-column prop="terminalname" label="终端" min-width="130" />
-        <el-table-column label="影响面" min-width="380">
+        <el-table-column prop="terminalname" :label="$t('terminalCommon.terminal')" min-width="130" />
+        <el-table-column :label="$t('common.impact')" min-width="380">
           <template #default="{ row }">
             <div class="impact">
               <el-tag v-if="row.impact?.tasks" type="danger" size="small" class="mr4"> 关联任务 {{ row.impact?.tasks }} </el-tag>
@@ -944,12 +1002,12 @@
       </el-table>
 
       <el-alert v-if="del.preview?.skipped.length" type="warning" :closable="false" class="mt12">
-        以下终端不会被删除：
+        {{ $t("term.theseKept") }}
         <span v-for="s in del.preview.skipped" :key="s.id">{{ s.name || s.id }}（{{ s.detail }}）</span>
       </el-alert>
 
       <template #footer>
-        <el-button @click="del.visible = false">取消</el-button>
+        <el-button @click="del.visible = false">{{ $t("common.cancel") }}</el-button>
         <el-button type="danger" :loading="del.saving" :disabled="!del.preview?.deletable.length" @click="submitDelete">
           确认删除 {{ del.preview?.deletable.length || 0 }} 台
         </el-button>
@@ -959,6 +1017,7 @@
 </template>
 
 <script setup lang="ts" name="terminalManage">
+import { useI18n } from "vue-i18n";
 import { ArrowDown, Folder, Link, Menu, Search } from "@element-plus/icons-vue";
 import { ElMessage, ElMessageBox } from "element-plus";
 import { computed, onMounted, reactive, ref, watch } from "vue";
@@ -1030,6 +1089,9 @@ import { useAuthStore } from "@/stores/modules/auth";
 import { useUserStore } from "@/stores/modules/user";
 import type { ColumnProps, ProTableInstance } from "@/components/ProTable/interface";
 
+// 脚本里拼的文案用 t()；模板里的 $t 不用引入
+const { t } = useI18n();
+
 const authStore = useAuthStore();
 // 优先级下拉的下限取自登录用户所在用户组的 level（见 priorityOptions）
 const userStore = useUserStore();
@@ -1075,42 +1137,42 @@ const onSortChange = ({ prop, order }: { prop: string; order: string | null }) =
 // 这一列就是唯一的出处。列设置里可以关掉，关掉之后也会被记住（utils/tablePrefs.ts）。
 const columns = reactive<ColumnProps<TerminalRow>[]>([
   { type: "selection", fixed: "left", width: 50 },
-  { prop: "id", label: "编号", width: 70, sortable: "custom" },
+  { prop: "id", label: t("common.id"), width: 70, sortable: "custom" },
   {
     prop: "terminalname",
-    label: "终端名称",
+    label: t("terminalCommon.terminalName"),
     minWidth: 160,
     sortable: "custom",
-    search: { el: "input", props: { placeholder: "设备名称查找" } }
+    search: { el: "input", props: { placeholder: t("term.findByName") } }
   },
-  { prop: "groupName", label: "所属分区", width: 120, showOverflowTooltip: true },
-  { prop: "typeName", label: "终端类型", width: 130 },
-  { prop: "taskstate", label: "任务状态", width: 100, sortable: "custom" },
-  { prop: "netstate", label: "网络状态", width: 100, sortable: "custom" },
-  { prop: "devicestate", label: "设备状态", width: 100, sortable: "custom" },
-  { prop: "ip", label: "IP地址", width: 130, sortable: "custom" },
-  { prop: "volume", label: "音量", width: 80, sortable: "custom" },
-  { prop: "isspeech", label: "对讲", width: 70 },
-  { prop: "instancy", label: "急救", width: 70 },
-  { prop: "isrecord", label: "录音", width: 70 },
-  { prop: "issponsor", label: "发言", width: 70 },
-  { prop: "lopencircuit", label: "左声道开路", width: 110 },
-  { prop: "ropencircuit", label: "右声道开路", width: 110 },
-  { prop: "temperature", label: "温度(℃)", width: 95 },
-  { prop: "humidity", label: "湿度(RH)", width: 95 },
-  { prop: "operation", label: "操作", fixed: "right", width: 140 }
+  { prop: "groupName", label: t("term.myZone"), width: 120, showOverflowTooltip: true },
+  { prop: "typeName", label: t("terminalCommon.terminalType"), width: 130 },
+  { prop: "taskstate", label: t("term.taskStateLabel"), width: 100, sortable: "custom" },
+  { prop: "netstate", label: t("terminalCommon.netState"), width: 100, sortable: "custom" },
+  { prop: "devicestate", label: t("terminalCommon.deviceState"), width: 100, sortable: "custom" },
+  { prop: "ip", label: t("common.ipAddress"), width: 130, sortable: "custom" },
+  { prop: "volume", label: t("common.volume"), width: 80, sortable: "custom" },
+  { prop: "isspeech", label: t("term.intercom"), width: 70 },
+  { prop: "instancy", label: t("term.emergency"), width: 70 },
+  { prop: "isrecord", label: t("term.recording"), width: 70 },
+  { prop: "issponsor", label: t("term.speak"), width: 70 },
+  { prop: "lopencircuit", label: t("term.leftChannelOpen"), width: 110 },
+  { prop: "ropencircuit", label: t("term.rightChannelOpen"), width: 110 },
+  { prop: "temperature", label: t("term.temperature"), width: 95 },
+  { prop: "humidity", label: t("term.humidity"), width: 95 },
+  { prop: "operation", label: t("common.operation"), fixed: "right", width: 140 }
 ]);
 
 // 页签的取值由服务端 categoryCond() 解释；key 是空串时不过滤。
 const typeTabs = [
-  { key: "", label: "全部" },
-  { key: "decode", label: "解码终端" },
-  { key: "encode", label: "采集终端" },
-  { key: "mic", label: "话筒" },
-  { key: "remote", label: "遥控终端" },
-  { key: "alarm", label: "报警终端" },
-  { key: "speech", label: "对讲终端" },
-  { key: "ext", label: "扩展设备" }
+  { key: "", label: t("common.all") },
+  { key: "decode", label: t("term.decoderTerminal") },
+  { key: "encode", label: t("term.captureTerminal") },
+  { key: "mic", label: t("term.microphone") },
+  { key: "remote", label: t("term.remoteTerminal") },
+  { key: "alarm", label: t("term.alarmTerminal") },
+  { key: "speech", label: t("term.intercomTerminal") },
+  { key: "ext", label: t("term.extDevice") }
 ];
 
 const dataCallback = (data: any) => {
@@ -1131,7 +1193,7 @@ const selectGroup = (id: number) => {
 };
 
 const browse = (row: TerminalRow) => {
-  if (!row.online) return ElMessage.warning("终端已断开");
+  if (!row.online) return ElMessage.warning(t("term.terminalDisconnected"));
   window.open(row.webUrl, "_blank");
 };
 
@@ -1142,10 +1204,10 @@ const browse = (row: TerminalRow) => {
 const reportOp = (res: OpResult, action: string) => {
   const okCount = res.succeeded.length;
   if (!res.skipped.length) {
-    ElMessage.success(`${action}成功，共 ${okCount} 台`);
+    ElMessage.success(t("term.batchDone", { action, ok: okCount }));
   } else {
     const detail = res.skipped.map(s => `${s.name || s.id}：${s.detail}`).join("；");
-    ElMessageBox.alert(detail, `${action}完成：成功 ${okCount} 台，跳过 ${res.skipped.length} 台`, {
+    ElMessageBox.alert(detail, t("term.batchDoneWithSkip", { action, ok: okCount, skip: res.skipped.length }), {
       type: okCount ? "warning" : "error"
     });
   }
@@ -1155,9 +1217,9 @@ const reportOp = (res: OpResult, action: string) => {
 
 const running = async (raw: (string | number)[], start: boolean) => {
   const ids = toIds(raw);
-  if (!ids.length) return ElMessage.warning("请先勾选终端");
+  if (!ids.length) return ElMessage.warning(t("terminalCommon.pickTerminalFirst"));
   const { data } = await setTerminalRunningApi(ids, start);
-  reportOp(data, start ? "启动" : "停止");
+  reportOp(data, start ? t("term.start") : t("taskCommon.stop"));
 };
 
 /** 「批量操作」下拉的总入口：按 command 分派到原来那几个函数 */
@@ -1201,30 +1263,30 @@ interface BatchItem {
 }
 
 const batchItems: BatchItem[] = [
-  { cmd: "enable", label: "启用终端", ready: true },
-  { cmd: "disable", label: "停用终端", ready: true },
-  { cmd: "speech:1", label: "启用对讲", ready: true, cap: "speech" },
-  { cmd: "speech:0", label: "关闭对讲", ready: true, cap: "speech" },
-  { cmd: "reregister", label: "重新注册", ready: true },
-  { cmd: "view-shortcut", label: "查看快捷键", single: true, ready: true, cap: "shortcut" },
-  { cmd: "del-shortcut", label: "删除快捷键", single: true, ready: true, cap: "shortcut" },
+  { cmd: "enable", label: t("term.startTerminal"), ready: true },
+  { cmd: "disable", label: t("term.stopTerminal"), ready: true },
+  { cmd: "speech:1", label: t("term.startIntercom"), ready: true, cap: "speech" },
+  { cmd: "speech:0", label: t("term.closeIntercom"), ready: true, cap: "speech" },
+  { cmd: "reregister", label: t("term.reregister"), ready: true },
+  { cmd: "view-shortcut", label: t("term.viewShortcutKeys"), single: true, ready: true, cap: "shortcut" },
+  { cmd: "del-shortcut", label: t("term.deleteShortcutKey"), single: true, ready: true, cap: "shortcut" },
   { cmd: "quick-task", label: "快捷任务", single: true, ready: true, cap: "quickTask" },
-  { cmd: "password", label: "设置终端密码", single: true, ready: true, cap: "password" },
-  { cmd: "instancy:1", label: "设置急救", ready: true, cap: "instancy" },
-  { cmd: "instancy:0", label: "取消急救", ready: true, cap: "instancy" },
-  { cmd: "record:1", label: "启用录音", ready: true },
-  { cmd: "record:0", label: "停用录音", ready: true },
-  { cmd: "volume", label: "调整音量", ready: true },
-  { cmd: "auth-paging", label: "授权寻呼", single: true, ready: true, cap: "authPaging" },
-  { cmd: "replace", label: "终端替换", single: true, ready: true },
+  { cmd: "password", label: t("term.setTerminalPassword"), single: true, ready: true, cap: "password" },
+  { cmd: "instancy:1", label: t("term.setEmergency"), ready: true, cap: "instancy" },
+  { cmd: "instancy:0", label: t("term.cancelEmergency"), ready: true, cap: "instancy" },
+  { cmd: "record:1", label: t("term.startRecord"), ready: true },
+  { cmd: "record:0", label: t("term.stopRecord"), ready: true },
+  { cmd: "volume", label: t("terminalCommon.adjustVolume"), ready: true },
+  { cmd: "auth-paging", label: t("term.authPaging"), single: true, ready: true, cap: "authPaging" },
+  { cmd: "replace", label: t("term.terminalReplace"), single: true, ready: true },
   // ⚠ 增补终端在 ok112 里是**多选**（set_synchtask 用的是 getCheckboxItem，
   //   拿的是整串勾选 id），不是单选。菜单原先标了 single，是照 :80 的字段抄的，
   //   与 ok112 实际行为不符 —— 以 ok112 为准。
-  { cmd: "add-terminal", label: "增补终端", ready: true },
+  { cmd: "add-terminal", label: t("term.appendTerminals"), ready: true },
   // ⚠ 发言与对讲判据不同：对讲要 isdecode 与 isencode **都**为 1，
   //   发言只要不是两个都为 0。所以这里是 sponsor 不是 speech。
-  { cmd: "sponsor:1", label: "启用发言", ready: true, cap: "sponsor" },
-  { cmd: "sponsor:0", label: "停用发言", ready: true, cap: "sponsor" },
+  { cmd: "sponsor:1", label: t("term.startSpeak"), ready: true, cap: "sponsor" },
+  { cmd: "sponsor:0", label: t("term.stopSpeak"), ready: true, cap: "sponsor" },
   // ⚠ 「自动寻检」和原先单列的「线路检测」是**同一个功能**：
   //   ok112 的 check_state() 走 do.php?act=check_circuit_state，
   //   最终发的是 send_socket_circuit("terminal", 27, ids)；
@@ -1232,9 +1294,9 @@ const batchItems: BatchItem[] = [
   //   caps 里 AutoCheck 与 Circuit 的判据同样都是 anyCodec。
   //   原来把它们当成两项，于是菜单里一项能用、一项永远置灰。
   //   这里合并成 ok112 的叫法「自动寻检」，多出来的那条已删除。
-  { cmd: "autocheck", label: "自动寻检", ready: true, cap: "autoCheck" },
-  { cmd: "synctime", label: "同步时间", ready: true },
-  { cmd: "auth-terminal", label: "授权终端", single: true, ready: true, cap: "authPaging" }
+  { cmd: "autocheck", label: t("term.autoScan"), ready: true, cap: "autoCheck" },
+  { cmd: "synctime", label: t("term.syncTime"), ready: true },
+  { cmd: "auth-terminal", label: t("term.authTerminal"), single: true, ready: true, cap: "authPaging" }
 ];
 
 /** 选中的那几台终端（从当前页数据里取，不额外发请求） */
@@ -1278,16 +1340,16 @@ const onBatchCmd = (cmd: string, raw: (string | number)[]) => {
 
 const onToggleCmd = async (cmd: string, raw: (string | number)[]) => {
   const ids = toIds(raw);
-  if (!ids.length) return ElMessage.warning("请先勾选终端");
+  if (!ids.length) return ElMessage.warning(t("terminalCommon.pickTerminalFirst"));
   const [key, on] = cmd.split(":");
   const { data } = await setTerminalToggleApi(ids, key as ToggleKey, on === "1");
-  const label = batchItems.find(t => t.cmd === cmd)?.label ?? "设置";
+  const label = batchItems.find(t => t.cmd === cmd)?.label ?? t("term.settings");
   reportOp(data, label);
 };
 
 const onMoreCmd = async (cmd: string, raw: (string | number)[]) => {
   const ids = toIds(raw);
-  if (!ids.length) return ElMessage.warning("请先勾选终端");
+  if (!ids.length) return ElMessage.warning(t("terminalCommon.pickTerminalFirst"));
   if (cmd === "password") {
     pwd.ids = [...ids];
     pwd.value = "";
@@ -1297,12 +1359,12 @@ const onMoreCmd = async (cmd: string, raw: (string | number)[]) => {
   // 「自动寻检」就是 ok112 的 check_state()，下发的是线路检测报文（state 27）
   if (cmd === "autocheck") {
     const { data } = await checkTerminalCircuitApi(ids);
-    return reportOp(data, "自动寻检指令下发");
+    return reportOp(data, t("term.autoScanSent"));
   }
   if (cmd === "view-shortcut") return openShortcut(ids[0]);
   if (cmd === "del-shortcut") return clearShortcuts(ids[0]);
   if (cmd === "quick-task") return openQuickTask(ids[0]);
-  if (cmd === "auth-paging") return openCallGroup(ids[0], "授权寻呼");
+  if (cmd === "auth-paging") return openCallGroup(ids[0], t("term.authPaging"));
   // ⚠ 授权终端**直接进目录管理**，不经过寻呼分区列表。
   //   ok112 terminalmanager.html 里 flag=2 那行
   //   `view_terminal_call_group.php?...&flag=2` 是注释掉的，实际跳的是
@@ -1311,7 +1373,7 @@ const onMoreCmd = async (cmd: string, raw: (string | number)[]) => {
   if (cmd === "replace") return openReplace(ids[0]);
   if (cmd === "add-terminal") return openSyncTerminals(ids);
   const { data } = await syncTerminalTimeApi(ids);
-  reportOp(data, "时间同步指令下发");
+  reportOp(data, t("term.syncTimeSent"));
 };
 
 /* ─────────────── 快捷键：查看 + 删除 ───────────────
@@ -1345,9 +1407,11 @@ const refreshShortcuts = async () => {
 
 /** 列表内每行的「删除」—— 对应 ok112 的 del_terminal_shotcut(id)，只删这一条 */
 const removeShortcut = async (row: ShortcutKey) => {
-  await ElMessageBox.confirm(`确定删除快捷键「${row.name}」（键 ${row.keyLabel}）？`, "删除快捷键", { type: "warning" });
+  await ElMessageBox.confirm(t("term.confirmDeleteKey", { name: row.name, key: row.keyLabel }), t("term.deleteShortcutKey"), {
+    type: "warning"
+  });
   const { data } = await deleteShortcutKeysApi([row.id]);
-  ElMessage.success(`已删除 ${data.deleted} 个快捷键`);
+  ElMessage.success(t("term.deletedKeys", { n: data.deleted }));
   await refreshShortcuts();
   proTableRef.value?.getTableList();
 };
@@ -1363,12 +1427,12 @@ const clearShortcuts = async (id: number) => {
   const row = selectedRows([id])[0];
   const name = row?.terminalname ?? `#${id}`;
   const { data: list } = await getShortcutKeysApi(id);
-  if (!list.length) return ElMessage.info(`终端「${name}」没有配置快捷键`);
-  await ElMessageBox.confirm(`将清空终端「${name}」的全部 ${list.length} 个快捷键，且不可恢复。确定继续？`, "删除快捷键", {
+  if (!list.length) return ElMessage.info(t("term.noKeysOnTerminal", { name }));
+  await ElMessageBox.confirm(t("term.confirmClearKeys", { name, n: list.length }), t("term.deleteShortcutKey"), {
     type: "warning"
   });
   const { data } = await deleteShortcutKeysApi(list.map(k => k.id));
-  ElMessage.success(`已删除 ${data.deleted} 个快捷键`);
+  ElMessage.success(t("term.deletedKeys", { n: data.deleted }));
   proTableRef.value?.getTableList();
 };
 
@@ -1421,10 +1485,10 @@ const submitShortcutEdit = async () => {
     };
     if (skEdit.id) {
       await updateShortcutKeyApi(skEdit.id, payload);
-      ElMessage.success("已修改");
+      ElMessage.success(t("term.modified"));
     } else {
       await createShortcutKeyApi(sk.id, payload);
-      ElMessage.success("已添加");
+      ElMessage.success(t("dash.added"));
     }
     skEdit.visible = false;
     await refreshShortcuts();
@@ -1451,11 +1515,17 @@ const qt = reactive({
 
 /** 列表里「任务时长」那一列：类型 1 是秒数拆成时分秒，类型 2 是循环次数 */
 const quickLengthText = (row: QuickTask) => {
-  if (row.timeLengthType === 2) return `${row.timeLength} 次`;
+  if (row.timeLengthType === 2) return t("term.loopUnit", { n: row.timeLength });
   const h = Math.floor(row.timeLength / 3600);
   const m = Math.floor((row.timeLength % 3600) / 60);
   const sec = row.timeLength % 60;
-  return [h ? `${h}时` : "", m ? `${m}分` : "", sec ? `${sec}秒` : ""].join("") || "0秒";
+  return (
+    [
+      h ? t("term.hourUnit", { n: h }) : "",
+      m ? t("term.minuteUnit", { n: m }) : "",
+      sec ? t("term.secondUnit", { n: sec }) : ""
+    ].join("") || t("term.zeroSeconds")
+  );
 };
 
 const openQuickTask = async (id: number) => {
@@ -1481,13 +1551,11 @@ const refreshQuickTasks = async () => {
 /** 底部「删除快捷任务」—— ok112 的 del_terminal_shotcut()，可多选 */
 const removeQuickTasks = async () => {
   if (!qt.selected.length) return;
-  await ElMessageBox.confirm(
-    `将删除选中的 ${qt.selected.length} 条快捷任务，连同它们的媒体、目标终端与按键绑定，且不可恢复。确定继续？`,
-    "删除快捷任务",
-    { type: "warning" }
-  );
+  await ElMessageBox.confirm(t("term.confirmDeleteQuickTasks", { n: qt.selected.length }), t("term.deleteQuickTask"), {
+    type: "warning"
+  });
   const { data } = await deleteQuickTasksApi(qt.id, qt.selected);
-  ElMessage.success(`已删除 ${data.deleted} 条快捷任务`);
+  ElMessage.success(t("term.deletedQuickTasks", { n: data.deleted }));
   await refreshQuickTasks();
 };
 
@@ -1584,20 +1652,20 @@ const openQuickEdit = async (detail: QuickTaskDetail | null) => {
 
 /** 底部「修改快捷任务」—— ok112 的 setshotcut(2)，限恰好选一条 */
 const openQuickEditSelected = async () => {
-  if (qt.selected.length !== 1) return ElMessage.warning("修改时只能选中一条快捷任务");
+  if (qt.selected.length !== 1) return ElMessage.warning(t("term.onlyOneQuickTask"));
   const { data } = await getQuickTaskDetailApi(qt.id, qt.selected[0]);
   await openQuickEdit(data);
 };
 
 const submitQuickEdit = async () => {
-  if (!qtEdit.taskName.trim()) return ElMessage.warning("请填写任务名称");
-  if (qtEdit.key === undefined) return ElMessage.warning("请选择快捷键");
+  if (!qtEdit.taskName.trim()) return ElMessage.warning(t("term.taskNameRequired"));
+  if (qtEdit.key === undefined) return ElMessage.warning(t("term.pickShortcutKey"));
   const timeLength = qtEdit.timeLengthType === 2 ? qtEdit.circleTime : qtEdit.hour * 3600 + qtEdit.minute * 60 + qtEdit.second;
-  if (timeLength <= 0) return ElMessage.warning("播放时长必须大于 0");
-  if (qtEdit.ttsOn && !qtEdit.ttsText.trim()) return ElMessage.warning("请填写播报内容");
-  if (qtEdit.ledOn && !qtEdit.ledText.trim()) return ElMessage.warning("请填写 LED 上屏文字");
-  if (!qtEdit.ttsOn && !qtEdit.mediaIds.length) return ElMessage.warning("请选择要播放的媒体文件");
-  if (!qtEdit.terminalIds.length) return ElMessage.warning("请选择要播放到哪些终端");
+  if (timeLength <= 0) return ElMessage.warning(t("term.playLengthPositive"));
+  if (qtEdit.ttsOn && !qtEdit.ttsText.trim()) return ElMessage.warning(t("term.speakTextRequired"));
+  if (qtEdit.ledOn && !qtEdit.ledText.trim()) return ElMessage.warning(t("term.ledTextRequired"));
+  if (!qtEdit.ttsOn && !qtEdit.mediaIds.length) return ElMessage.warning(t("term.pickMediaToPlay"));
+  if (!qtEdit.terminalIds.length) return ElMessage.warning(t("term.pickPlayTargets"));
 
   const form: QuickTaskForm = {
     taskName: qtEdit.taskName.trim(),
@@ -1622,10 +1690,10 @@ const submitQuickEdit = async () => {
   try {
     if (qtEdit.taskId) {
       await updateQuickTaskApi(qt.id, qtEdit.taskId, form);
-      ElMessage.success("已修改");
+      ElMessage.success(t("term.modified"));
     } else {
       await createQuickTaskApi(qt.id, form);
-      ElMessage.success("已添加");
+      ElMessage.success(t("dash.added"));
     }
     qtEdit.visible = false;
     await refreshQuickTasks();
@@ -1655,32 +1723,32 @@ const submitQuickEdit = async () => {
 /* ok112 view_terminal_call.html 里那三列的状态文案，逐条照搬。
    ⚠ 设备状态和任务状态都先看 netstate：断网时不管库里存的是什么，
      一律显示「断开」——旧版就是这么判的，库里的状态是上次在线时留下的。*/
-const netStateText = (net: number) => (net === 1 ? "已连接" : "断开");
+const netStateText = (net: number) => (net === 1 ? t("term.connected") : t("term.disconnect"));
 
 const deviceStateText = (net: number, dev: number) => {
-  if (net !== 1) return "断开";
-  return dev === 1 ? "运行" : "空闲";
+  if (net !== 1) return t("term.disconnect");
+  return dev === 1 ? t("term.running") : t("terminalCommon.idle");
 };
 
 const TASK_STATE_TEXT = [
-  "准备就绪", // 0
-  "定时播放", // 1
-  "正在对讲", // 2
-  "点播", // 3
-  "选播", // 4
-  "寻呼", // 5
-  "准备对讲", // 6
-  "本地扩音", // 7
-  "USB 播放", // 8
-  "请求对讲", // 9
-  "被请求对讲", // 10
-  "播放寻呼", // 11
-  "定时播放" // 12（旧版 12 与 1 同文案）
+  t("term.ready"), // 0
+  t("term.timedPlay"), // 1
+  t("term.inIntercom"), // 2
+  t("term.onDemand"), // 3
+  t("term.selectivePlay"), // 4
+  t("term.paging"), // 5
+  t("term.readyIntercom"), // 6
+  t("term.localAmp"), // 7
+  t("term.usbPlay"), // 8
+  t("term.requestIntercom"), // 9
+  t("term.intercomRequested"), // 10
+  t("term.playPaging"), // 11
+  t("term.timedPlay") // 12（旧版 12 与 1 同文案）
 ];
 
 const taskStateText = (net: number, task: number) => {
-  if (net !== 1) return "断开";
-  return TASK_STATE_TEXT[task] ?? `状态 ${task}`;
+  if (net !== 1) return t("term.disconnect");
+  return TASK_STATE_TEXT[task] ?? t("term.stateOf", { name: task });
 };
 
 /* ---- 主页：分区列表 ---- */
@@ -1691,7 +1759,7 @@ const cg = reactive({
   deleting: false,
   id: 0,
   name: "",
-  title: "授权寻呼",
+  title: t("term.authPaging"),
   keyword: "",
   orderBy: "",
   list: [] as CallGroup[],
@@ -1728,15 +1796,15 @@ const deleteCallGroups = async () => {
   if (!cg.checked.length) return;
   const names = cg.list.filter(g => cg.checked.includes(g.id)).map(g => g.name);
   await ElMessageBox.confirm(
-    `确定删除 ${names.length} 个寻呼分区（${names.join("、")}）？` +
-      (names.length === cg.list.length ? "\n删光后这台终端将恢复为「可寻呼所有在线终端」。" : ""),
-    "删除分区",
+    t("term.confirmDeleteZones", { n: names.length, names: names.join("、") }) +
+      (names.length === cg.list.length ? "\n" + t("term.clearAllZonesNote") : ""),
+    t("term.deleteZone"),
     { type: "warning" }
   );
   cg.deleting = true;
   try {
     const { data } = await deleteCallGroupsApi(cg.id, cg.checked);
-    ElMessage.success(`已删除 ${data.deleted} 个寻呼分区`);
+    ElMessage.success(t("term.deletedZones", { n: data.deleted }));
     await loadCallGroups();
   } finally {
     cg.deleting = false;
@@ -1778,15 +1846,15 @@ const openCallGroupEdit = async (row: CallGroup | null) => {
 
 const submitCallGroup = async () => {
   const name = cgEdit.name.trim();
-  if (!name) return ElMessage.warning("请填写分区名称");
+  if (!name) return ElMessage.warning(t("term.zoneNameRequired2"));
   // ok112 的 checkform() 用 isChinaOrNumbOrLett 拦，这里同样的口径
-  if (!/^[\u4e00-\u9fa5A-Za-z0-9]+$/.test(name)) return ElMessage.warning("分区名称仅能由数字 / 字母 / 汉字组成");
-  if (!cgEdit.terminalIds.length) return ElMessage.warning("请至少选择一台终端");
+  if (!/^[\u4e00-\u9fa5A-Za-z0-9]+$/.test(name)) return ElMessage.warning(t("term.zoneNameCharset"));
+  if (!cgEdit.terminalIds.length) return ElMessage.warning(t("term.pickAtLeastOneTerminal"));
 
   cgEdit.saving = true;
   try {
     await saveCallGroupApi(cg.id, cgEdit.id, name, cgEdit.terminalIds);
-    ElMessage.success(cgEdit.id ? "已修改寻呼分区" : "已添加寻呼分区");
+    ElMessage.success(cgEdit.id ? t("term.zoneUpdated") : t("term.zoneAdded"));
     cgEdit.visible = false;
     await loadCallGroups();
   } finally {
@@ -1890,13 +1958,17 @@ const openFolderManager = async (id: number) => {
 
 const removeFolderTerminals = async () => {
   if (!fm.checked.length) return;
-  await ElMessageBox.confirm(`确定把选中的 ${fm.checked.length} 台终端移出「${fm.folderName}」？`, "移出目录", {
-    type: "warning"
-  });
+  await ElMessageBox.confirm(
+    t("term.confirmRemoveFromFolder", { n: fm.checked.length, name: fm.folderName }),
+    t("term.moveOutFolder"),
+    {
+      type: "warning"
+    }
+  );
   fm.saving = true;
   try {
     const { data } = await removeFolderTerminalsApi(fm.id, fm.folderId, fm.checked);
-    ElMessage.success(`已移出 ${data.affected} 台终端`);
+    ElMessage.success(t("term.removedTerminals", { n: data.affected }));
     await loadFolderTree();
   } finally {
     fm.saving = false;
@@ -1904,13 +1976,11 @@ const removeFolderTerminals = async () => {
 };
 
 const deleteFolder = async () => {
-  await ElMessageBox.confirm(
-    `确定删除目录「${fm.folderName}」？它下面的子目录、以及这些目录里的终端归属会一并清掉（终端本身不受影响）。`,
-    "删除目录",
-    { type: "warning" }
-  );
+  await ElMessageBox.confirm(t("term.confirmDeleteFolder", { name: fm.folderName }), t("taskCommon.deleteFolder"), {
+    type: "warning"
+  });
   const { data } = await deleteTerminalFolderApi(fm.id, fm.folderId);
-  ElMessage.success(`已删除 ${data.deleted} 个目录`);
+  ElMessage.success(t("term.deletedFolders", { n: data.deleted }));
   fm.folderId = 0;
   await loadFolderTree();
 };
@@ -1926,13 +1996,13 @@ const openFolderEdit = (mode: "create" | "rename") => {
 
 const submitFolder = async () => {
   const name = fe.name.trim();
-  if (!name) return ElMessage.warning("请填写目录名称");
-  if (!/^[\u4e00-\u9fa5A-Za-z0-9]+$/.test(name)) return ElMessage.warning("目录名称仅能由数字 / 字母 / 汉字组成");
+  if (!name) return ElMessage.warning(t("term.folderNameRequired"));
+  if (!/^[\u4e00-\u9fa5A-Za-z0-9]+$/.test(name)) return ElMessage.warning(t("term.folderNameCharset"));
   fe.saving = true;
   try {
     // 创建时挂在当前选中的目录下；一个目录都还没有时传 0，后端会先补出根目录
     await saveTerminalFolderApi(fm.id, fe.mode === "rename" ? fm.folderId : 0, fe.mode === "create" ? fm.folderId : 0, name);
-    ElMessage.success(fe.mode === "rename" ? "已修改目录" : "已创建目录");
+    ElMessage.success(fe.mode === "rename" ? t("term.folderUpdated") : t("term.folderCreated"));
     fe.visible = false;
     await loadFolderTree();
   } finally {
@@ -1973,7 +2043,7 @@ const submitFolderTerminals = async () => {
   fp.saving = true;
   try {
     const { data } = await addFolderTerminalsApi(fm.id, fm.folderId, fp.ids);
-    ElMessage.success(`已添加 ${data.affected} 台终端`);
+    ElMessage.success(t("term.addedTerminals", { n: data.affected }));
     fp.visible = false;
     await loadFolderTree();
   } finally {
@@ -2022,8 +2092,8 @@ const openReplace = (id: number) => {
 const submitReplace = async () => {
   if (!rp.targetId) return;
   await ElMessageBox.confirm(
-    `确定把「${rp.name}」的 ID 从 ${rp.sourceId} 改为 ${rp.targetId}？若目标 ID 已被占用，原记录将被删除。`,
-    "终端替换",
+    t("term.confirmRenumber", { name: rp.name, from: rp.sourceId, to: rp.targetId }),
+    t("term.terminalReplace"),
     { type: "warning" }
   );
   rp.saving = true;
@@ -2031,8 +2101,8 @@ const submitReplace = async () => {
     const { data } = await replaceTerminalApi(rp.sourceId, rp.targetId);
     ElMessage.success(
       data.mode === "takeover"
-        ? `已顶替「${data.targetName}」，接管其绑定；清理源终端关联 ${data.affected} 条`
-        : `已改号为 ${data.targetId}，迁移关联 ${data.affected} 条`
+        ? t("term.replacedTerminal", { name: data.targetName, n: data.affected })
+        : t("term.renumbered", { id: data.targetId, n: data.affected })
     );
     rp.visible = false;
     proTableRef.value?.getTableList();
@@ -2082,10 +2152,10 @@ const submitReplace = async () => {
 
 /** 走 typed-tasks 的四支，顺序照 ok112（LED 是新增的，排最后） */
 const SYNC_TYPED: { kind: TypedKind; label: string }[] = [
-  { kind: "collect", label: "采播管理" },
-  { kind: "tts", label: "文字语音" },
-  { kind: "amplifier", label: "终端功放" },
-  { kind: "led", label: "LED 播放" }
+  { kind: "collect", label: t("menu.collect") },
+  { kind: "tts", label: t("menu.tts") },
+  { kind: "amplifier", label: t("menu.amplifier") },
+  { kind: "led", label: t("term.ledPlay") }
 ];
 interface SyncNode {
   key: string;
@@ -2141,8 +2211,8 @@ const loadSyncTree = async () => {
     });
 
     const groups: SyncNode[] = [
-      { key: "g:bell", label: "作息方案", count: planNodes.reduce((n, p) => n + (p.count ?? 0), 0), children: planNodes },
-      { key: "g:file", label: "文件广播", count: fileNodes.length, children: fileNodes },
+      { key: "g:bell", label: t("menu.bell"), count: planNodes.reduce((n, p) => n + (p.count ?? 0), 0), children: planNodes },
+      { key: "g:file", label: t("menu.task"), count: fileNodes.length, children: fileNodes },
       ...SYNC_TYPED.map((g, i) => {
         const list = (typed[i]?.data.list ?? []) as { taskId: number; taskName: string }[];
         return {
@@ -2200,9 +2270,9 @@ const submitSyncTerminals = async () => {
     const { data } = await syncTaskTerminalsApi(st.taskIds, st.ids);
     const blocked = data.blocked ?? [];
     if (blocked.length) {
-      ElMessage.warning(`增补 ${data.added} 条关联；${blocked.length} 个任务被跳过：${blocked[0].detail}`);
+      ElMessage.warning(t("term.appendedWithSkips", { n: data.added, blocked: blocked.length, detail: blocked[0].detail }));
     } else {
-      ElMessage.success(`已增补 ${data.added} 条终端关联`);
+      ElMessage.success(t("term.appendedLinks", { n: data.added }));
     }
     st.visible = false;
   } finally {
@@ -2214,7 +2284,7 @@ const submitSyncTerminals = async () => {
 const vol = reactive({ visible: false, saving: false, ids: [] as number[], value: 50 });
 const openVolume = (raw: (string | number)[]) => {
   const ids = toIds(raw);
-  if (!ids.length) return ElMessage.warning("请先勾选终端");
+  if (!ids.length) return ElMessage.warning(t("terminalCommon.pickTerminalFirst"));
   vol.ids = ids;
   vol.value = 50;
   vol.visible = true;
@@ -2224,7 +2294,7 @@ const submitVolume = async () => {
   try {
     const { data } = await setTerminalVolumeApi(vol.ids, vol.value);
     vol.visible = false;
-    reportOp(data, "音量下发");
+    reportOp(data, t("term.pushVolume"));
   } finally {
     vol.saving = false;
   }
@@ -2237,7 +2307,7 @@ const submitPassword = async () => {
   try {
     const { data } = await setTerminalPasswordApi(pwd.ids, pwd.value);
     pwd.visible = false;
-    reportOp(data, "密码下发");
+    reportOp(data, t("term.pushPassword"));
   } finally {
     pwd.saving = false;
   }
@@ -2266,7 +2336,7 @@ const del = reactive({ visible: false, saving: false, ids: [] as number[], previ
 */
 const openReRegister = async (raw: (string | number)[]) => {
   const ids = toIds(raw);
-  if (!ids.length) return ElMessage.warning("请先勾选终端");
+  if (!ids.length) return ElMessage.warning(t("terminalCommon.pickTerminalFirst"));
 
   // 离线台数直接从当前列表数据里数，不额外发请求
   const rows = (proTableRef.value?.tableData ?? []) as TerminalRow[];
@@ -2274,21 +2344,24 @@ const openReRegister = async (raw: (string | number)[]) => {
   const offline = picked.filter(r => r.netstate !== 1);
 
   await ElMessageBox.confirm(
-    `将对选中的 ${ids.length} 台终端执行重新注册。\n\n` +
-      "⚠ 它的实际动作是**删除终端记录**：在线设备会自动重新注册回来（但会拿到新的终端 ID），" +
-      "离线设备删掉就没有了。\n\n" +
+    t("term.confirmReregisterN", { n: ids.length }) +
+      "\n\n" +
+      t("term.reregisterWhatItDoes") +
+      t("term.offlineGoneForever") +
+      "\n\n" +
       (offline.length
-        ? `选中的终端里有 ${offline.length} 台当前离线，会直接丢失：\n` +
+        ? t("term.someOffline", { n: offline.length }) +
+          "\n" +
           offline
             .slice(0, 10)
-            .map(r => "  · " + (r.terminalname || `终端 ${r.id}`))
+            .map(r => "  · " + (r.terminalname || t("term.terminalNo", { id: r.id })))
             .join("\n") +
-          (offline.length > 10 ? `\n  · …另有 ${offline.length - 10} 台` : "") +
+          (offline.length > 10 ? "\n  · " + t("term.andMore", { n: offline.length - 10 }) : "") +
           "\n\n"
-        : "选中的终端当前全部在线。\n\n") +
-      "另外：重新注册后，原来在这些终端上执行的任务不再执行，需要到任务里重新指定终端。",
-    "重新注册",
-    { type: "warning", confirmButtonText: "确认重新注册", cancelButtonText: "取消" }
+        : t("term.allSelectedOnline") + "\n\n") +
+      t("term.reregisterNote"),
+    t("term.reregister"),
+    { type: "warning", confirmButtonText: t("term.confirmReregister"), cancelButtonText: t("common.cancel") }
   );
 
   // 复用删除那条链路：它已经处理好空分区回收、专属任务清理等连带影响
@@ -2304,10 +2377,10 @@ const submitDelete = async () => {
     const { data } = await deleteTerminalsApi(del.preview!.deletable.map(d => d.id));
     del.visible = false;
     const extra: string[] = [];
-    if (data.deletedGroups.length) extra.push(`回收空分区 ${data.deletedGroups.length} 个`);
-    if (data.deletedCallGroups.length) extra.push(`回收空呼叫组 ${data.deletedCallGroups.length} 个`);
-    if (data.affectedTasks) extra.push(`删除专属任务 ${data.affectedTasks} 条`);
-    ElMessage.success(`已删除 ${data.deleted.length} 台终端${extra.length ? "，" + extra.join("，") : ""}`);
+    if (data.deletedGroups.length) extra.push(t("term.reclaimedZones", { n: data.deletedGroups.length }));
+    if (data.deletedCallGroups.length) extra.push(t("term.reclaimedCallGroups", { n: data.deletedCallGroups.length }));
+    if (data.affectedTasks) extra.push(t("term.deletedExclusiveTasks", { n: data.affectedTasks }));
+    ElMessage.success(t("term.deletedTerminals", { n: data.deleted.length, extra: extra.length ? "，" + extra.join("，") : "" }));
     refresh();
     loadGroups();
   } finally {
