@@ -673,7 +673,9 @@ func (s *Service) validateTerminals(ctx context.Context, u *auth.User, terms []t
 			return fmt.Errorf("终端清单里有未绑定给你的终端")
 		}
 	}
-	return nil
+	// 分区号由服务端统一算（与文件广播任务同一个函数）——
+	// 调用方填不填、填得对不对，都不影响结果。理由见 task.FillGroupIDs。
+	return task.FillGroupIDs(ctx, s.db, terms)
 }
 
 // ---------- 写 ----------

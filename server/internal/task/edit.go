@@ -407,7 +407,7 @@ func (s *Service) validateTerminals(ctx context.Context, u *auth.User, in *Input
 			return fmt.Errorf("终端清单里有未绑定给你的终端")
 		}
 	}
-	return nil
+	return FillGroupIDs(ctx, s.db, in.Terminals)
 }
 
 // Create 新建任务。
