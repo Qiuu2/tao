@@ -31,6 +31,18 @@ function blankComments(t) {
 }
 
 const clean = blankComments(raw);
+
+// 标了 i18n-ignore 的行不算「漏翻」。
+//
+// 有些中文**必须**留着：AI 助手的例句是发给 NLU 的原话，NLU 只认中文，
+// 翻成英文点一下就是一句它听不懂的话。这类地方标一行，
+// 免得每次跑检查都要人重新判断一次「这条到底该不该翻」。
+const ignoredLines = new Set();
+raw.split("\n").forEach((line, i) => {
+  if (line.includes("i18n-ignore")) ignoredLines.add(i);
+});
+const lineOf = idx => raw.slice(0, idx).split("\n").length - 1;
+const ignored = idx => ignoredLines.has(lineOf(idx));
 const tplStart = clean.indexOf("<template>");
 const tplEnd = clean.lastIndexOf("</template>");
 const inTemplate = i => tplStart >= 0 && i > tplStart && i < tplEnd;
@@ -44,17 +56,17 @@ const out = { text: new Set(), attr: new Set(), js: new Set() };
 // 要求同一行的话整段都会漏掉，而漏掉的表现是页面上留一句中文。
 for (const m of clean.matchAll(/>([^<>]*)</g)) {
   const v = m[1].trim();
-  if (v && CJK.test(v) && !v.includes("{{") && inTemplate(m.index)) out.text.add(v);
+  if (v && CJK.test(v) && !v.includes("{{") && inTemplate(m.index) && !ignored(m.index)) out.text.add(v);
 }
 // 属性值
 for (const m of clean.matchAll(/\s([a-zA-Z-:@][\w:.-]*)="([^"\n]*)"/g)) {
   const v = m[2].trim();
-  if (v && CJK.test(v) && inTemplate(m.index)) out.attr.add(`${m[1]}=${v}`);
+  if (v && CJK.test(v) && inTemplate(m.index) && !ignored(m.index)) out.attr.add(`${m[1]}=${v}`);
 }
 // 字符串字面量（模板里的属性已经在上面收过，这里只收模板之外的）
 for (const m of clean.matchAll(/"([^"\n]*)"|'([^'\n]*)'|`([^`]*)`/g)) {
   const v = (m[1] ?? m[2] ?? m[3] ?? "").trim();
-  if (v && CJK.test(v) && !inTemplate(m.index)) out.js.add(v);
+  if (v && CJK.test(v) && !inTemplate(m.index) && !ignored(m.index)) out.js.add(v);
 }
 
 for (const [k, set] of Object.entries(out)) {

@@ -21,7 +21,7 @@
 <template>
   <div class="ai-assistant-root">
     <!-- 收起时的悬浮球 -->
-    <button v-if="ready && collapsed" type="button" class="ai-ball" title="打开 AI 助手" @click="collapsed = false">
+    <button v-if="ready && collapsed" type="button" class="ai-ball" :title='$t("ai.open")' @click="collapsed = false">
       <el-icon><Microphone /></el-icon>
     </button>
 
@@ -29,17 +29,17 @@
       <div class="ai-header" @mousedown.prevent="startDrag">
         <div class="title">
           <el-icon><Microphone /></el-icon>
-          <span>AI 助手</span>
-          <el-tag v-if="!status.nluReady" size="small" type="warning" effect="plain">离线</el-tag>
+          <span>{{ $t("ai.title") }}</span>
+          <el-tag v-if="!status.nluReady" size="small" type="warning" effect="plain">{{ $t("ai.offline") }}</el-tag>
         </div>
         <div class="actions" @mousedown.stop>
-          <el-tooltip content="指令历史" placement="top">
+          <el-tooltip :content='$t("ai.history")' placement="top">
             <el-button link :icon="Document" @click.stop="openHistory" />
           </el-tooltip>
-          <el-tooltip content="换个新会话" placement="top">
+          <el-tooltip :content='$t("ai.newSession")' placement="top">
             <el-button link :icon="Refresh" @click.stop="onReset" />
           </el-tooltip>
-          <el-tooltip content="收起为悬浮球" placement="top">
+          <el-tooltip :content='$t("ai.collapse")' placement="top">
             <el-button link :icon="Minus" @click.stop="collapsed = true" />
           </el-tooltip>
         </div>
@@ -47,20 +47,27 @@
 
       <!-- NLU 不可用时把原因说清楚，别让用户对着一个不回话的框子发呆 -->
       <el-alert v-if="!status.nluReady" type="warning" :closable="false" show-icon class="ai-offline">
-        <template #title>语音理解服务暂时连不上，这时候我听不懂话。</template>
+        <template #title>{{ $t("ai.offlineTitle") }}</template>
         <div v-if="status.reason" class="ai-offline-reason">{{ status.reason }}</div>
       </el-alert>
 
       <div ref="chatBoxRef" class="chat-box">
         <div v-if="!lines.length" class="placeholder">
-          <p>试着对我说：</p>
+          <p>{{ $t("ai.trySaying") }}</p>
+          <!--
+            例句一律保持中文，英文界面下也不翻 —— NLU 只认中文，
+            翻成英文的话点一下发出去的是它听不懂的话，比不给例句更糟。
+            回话同理：那套措辞是按 SHA1 从中文变体池里稳定挑的（见 reply.go），
+            换语言等于重做一套。所以两种语言下都明说这件事，别让人以为是坏了。
+          -->
+          <p class="sample-note">{{ $t("ai.chineseOnly") }}</p>
           <button v-for="s in samples" :key="s" type="button" class="sample" @click="useSample(s)">{{ s }}</button>
         </div>
 
         <div v-for="msg in lines" :key="msg.id" :class="['chat-line', msg.role]">
           <div :class="['bubble', { warning: msg.warning, pending: msg.pending }]">
             <div v-if="msg.pending" class="thinking">
-              <span>正在想</span>
+              <span>{{ $t("ai.thinking") }}</span>
               <span class="dots"><i /><i /><i /></span>
             </div>
             <div v-else class="text">{{ msg.text }}</div>
@@ -81,14 +88,15 @@
             </div>
 
             <div v-if="msg.undo" class="undo">
-              <el-button size="small" type="warning" plain :disabled="loading" @click="send('停止播放')">
-                停止「{{ msg.undo.summary || "刚才那个" }}」
+              <!-- 这句是发给 NLU 的原话，不能翻 —— NLU 只认中文 -->
+              <el-button size="small" type="warning" plain :disabled="loading" @click="send('停止播放')"><!-- i18n-ignore -->
+                {{ $t("ai.stopThat", { what: msg.undo.summary || $t("ai.thatOne") }) }}
               </el-button>
             </div>
 
             <!-- 诊断默认折叠：真实原因是给运维看的，不糊到用户脸上 -->
             <details v-if="msg.diagnostics?.length" class="diag">
-              <summary>出错详情（给管理员看）</summary>
+              <summary>{{ $t("ai.errorDetail") }}</summary>
               <pre v-for="(d, i) in msg.diagnostics" :key="i">{{ formatDiag(d) }}</pre>
             </details>
           </div>
@@ -103,12 +111,12 @@
           :rows="2"
           resize="none"
           :disabled="!status.nluReady"
-          placeholder="说一句话，比如「今天有哪些任务」"
+          :placeholder='$t("ai.inputPlaceholder")'
           @keydown.enter.exact.prevent="onSend"
         />
         <div class="ai-actions">
-          <span class="hint">回车发送 · Shift+回车换行</span>
-          <el-button size="small" :disabled="!command.trim()" @click="command = ''">清空</el-button>
+          <span class="hint">{{ $t("ai.sendHint") }}</span>
+          <el-button size="small" :disabled="!command.trim()" @click="command = ''">{{ $t("ai.clear") }}</el-button>
           <el-button
             size="small"
             type="primary"
@@ -116,18 +124,18 @@
             :disabled="!status.nluReady || !command.trim()"
             @click="onSend"
           >
-            发送
+            {{ $t("ai.send") }}
           </el-button>
         </div>
       </div>
     </div>
 
-    <el-drawer v-model="historyOpen" title="指令历史" size="420px" :append-to-body="true">
+    <el-drawer v-model="historyOpen" :title='$t("ai.history")' size="420px" :append-to-body="true">
       <div class="history-toolbar">
         <span class="history-count">共 {{ history.length }} 条</span>
-        <el-button size="small" :disabled="!history.length" @click="onClearHistory">清空</el-button>
+        <el-button size="small" :disabled="!history.length" @click="onClearHistory">{{ $t("ai.clear") }}</el-button>
       </div>
-      <el-empty v-if="!history.length" description="还没有记录" />
+      <el-empty v-if="!history.length" :description='$t("ai.noHistory")' />
       <div v-for="h in history" :key="h.id" :class="['history-item', h.role]">
         <div class="history-head">
           <span class="role">{{ h.role === "user" ? "我" : "小电" }}</span>
@@ -141,6 +149,7 @@
 </template>
 
 <script setup lang="ts" name="AiAssistant">
+import { useI18n } from "vue-i18n";
 import { Document, Microphone, Minus, Refresh } from "@element-plus/icons-vue";
 import { ElMessage, ElMessageBox } from "element-plus";
 import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref } from "vue";
@@ -155,6 +164,9 @@ import {
 
 import { useAssistantChat } from "./useAssistantChat";
 
+// 脚本里拼的文案用 t()；模板里的 $t 不用引入
+const { t } = useI18n();
+
 const { lines, loading, send: sendText, reset } = useAssistantChat();
 
 const collapsed = ref(true);
@@ -167,7 +179,13 @@ const status = reactive<AssistantStatus>({ enabled: false, nluReady: false, nluU
 /** 助手整个功能关掉时连球都不出现 —— 摆一个点了没反应的球比没有更糟 */
 const ready = computed(() => status.enabled);
 
-const samples = ["今天有哪些任务", "把A101教室音箱的音量调到 60", "取消明天早读预备铃", "停用方案春季作息"];
+// 例句一律是中文，英文界面下也不翻。
+//
+// 它们不是文案，是**点一下就原样发出去的指令**，而 NLU 只认中文 ——
+// 翻成英文的话，点一下发出去的是一句它听不懂的话，比不给例句更糟。
+// 英文界面上会多一句 ai.chineseOnly 把这件事说明白。
+// prettier-ignore
+const samples = ["今天有哪些任务", "把A101教室音箱的音量调到 60", "取消明天早读预备铃", "停用方案春季作息"]; // i18n-ignore
 
 function scrollToBottom() {
   const el = chatBoxRef.value;
@@ -219,10 +237,10 @@ async function openHistory() {
 }
 
 async function onClearHistory() {
-  await ElMessageBox.confirm("清空之后就找不回来了，确定吗？", "清空指令历史", { type: "warning" });
+  await ElMessageBox.confirm(t("ai.clearConfirm"), t("ai.clearHistory"), { type: "warning" });
   await clearAssistantHistoryApi();
   history.value = [];
-  ElMessage.success("已清空");
+  ElMessage.success(t("ai.cleared"));
 }
 
 // ---------- 拖动 ----------
@@ -363,6 +381,12 @@ onMounted(async () => {
   align-items: flex-start;
   font-size: 13px;
   color: var(--el-text-color-secondary);
+  .sample-note {
+    margin: -2px 0 2px;
+    font-size: 12px;
+    line-height: 1.5;
+    color: var(--el-text-color-placeholder);
+  }
   .sample {
     padding: 4px 10px;
     font-size: 12px;

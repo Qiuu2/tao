@@ -75,15 +75,23 @@ const perFile = [];
 let total = 0;
 const uniq = new Set();
 for (const p of files) {
-  const t = stripComments(readFileSync(p, "utf8"));
+  const raw = readFileSync(p, "utf8");
+  const t = stripComments(raw);
+  // 标了 i18n-ignore 的行不算漏翻 —— 有些中文必须留着，
+  // 比如 AI 助手的例句：它是发给 NLU 的原话，而 NLU 只认中文。
+  const ignoredLines = new Set();
+  raw.split("\n").forEach((line, i) => {
+    if (line.includes("i18n-ignore")) ignoredLines.add(i);
+  });
+  const ignored = idx => ignoredLines.has(t.slice(0, idx).split("\n").length - 1);
   const hits = [];
   for (const m of t.matchAll(/"([^"\n]*)"|'([^'\n]*)'|`([^`]*)`/g)) {
     const v = (m[1] ?? m[2] ?? m[3] ?? "").trim();
-    if (v && CJK.test(v)) hits.push(v);
+    if (v && CJK.test(v) && !ignored(m.index)) hits.push(v);
   }
   for (const m of t.matchAll(/>([^<>{}\n]*)</g)) {
     const v = m[1].trim();
-    if (v && CJK.test(v)) hits.push(v);
+    if (v && CJK.test(v) && !ignored(m.index)) hits.push(v);
   }
   if (hits.length) {
     perFile.push([p.replace(SRC + "/", ""), hits.length]);
