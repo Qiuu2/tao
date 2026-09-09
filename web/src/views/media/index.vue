@@ -16,11 +16,23 @@
       <div class="tree-header">
         <span class="tree-title">{{ treeData?.rootName || "文件管理" }}</span>
         <span>
-          <el-button link :icon="Plus" title="在选中目录下新建" :disabled="!canCreateUnderCurrent" @click="openCreate" />
-          <el-button link :icon="Refresh" :loading="treeLoading" title="刷新" @click="loadTree" />
+          <el-button
+            link
+            :icon="Plus"
+            :title="$t('media.newUnderFolder')"
+            :disabled="!canCreateUnderCurrent"
+            @click="openCreate"
+          />
+          <el-button link :icon="Refresh" :loading="treeLoading" :title="$t('common.refresh')" @click="loadTree" />
         </span>
       </div>
-      <el-input v-model="treeFilter" placeholder="筛选目录" clearable :prefix-icon="Search" class="tree-filter" />
+      <el-input
+        v-model="treeFilter"
+        :placeholder="$t('media.filterFolder')"
+        clearable
+        :prefix-icon="Search"
+        class="tree-filter"
+      />
       <el-scrollbar class="tree-scroll">
         <el-tree
           ref="treeRef"
@@ -37,8 +49,8 @@
             <span class="tree-node" @contextmenu.prevent="openContextMenu($event, data)">
               <el-icon><FolderOpened /></el-icon>
               <span class="node-name" :title="data.name">{{ data.name }}</span>
-              <el-tag v-if="data.system" size="small" type="info" effect="plain">系统</el-tag>
-              <el-tag v-else-if="!data.shared" size="small" type="warning" effect="plain">私有</el-tag>
+              <el-tag v-if="data.system" size="small" type="info" effect="plain">{{ $t("media.systemLabel") }}</el-tag>
+              <el-tag v-else-if="!data.shared" size="small" type="warning" effect="plain">{{ $t("media.privateLabel") }}</el-tag>
               <span v-if="data.mediaCount > 0" class="node-count">{{ data.mediaCount }}</span>
             </span>
           </template>
@@ -47,7 +59,7 @@
         <!-- 游离目录：parentid 指向已不存在的父级。旧版会让它们彻底消失 -->
         <div v-if="treeData?.orphans?.length" class="orphan-block">
           <el-divider content-position="left">
-            <span class="orphan-title">游离目录（父级已删除）</span>
+            <span class="orphan-title">{{ $t("media.orphanFolder") }}</span>
           </el-divider>
           <el-tree
             :data="treeData.orphans"
@@ -67,7 +79,7 @@
           </el-tree>
         </div>
       </el-scrollbar>
-      <div class="tree-tip">右键目录可新建 / 重命名 / 删除</div>
+      <div class="tree-tip">{{ $t("media.rightClickFolder") }}</div>
     </div>
 
     <!-- 右：媒体列表 -->
@@ -86,13 +98,13 @@
             <div class="table-header-info">
               <template v-if="folderInfo">
                 <span class="cur-folder">{{ folderInfo.name }}</span>
-                <el-tag size="small" effect="plain">合计 {{ folderInfo.totalSizeText }}</el-tag>
+                <el-tag size="small" effect="plain">{{ $t("common.totalSize", { size: folderInfo.totalSizeText }) }}</el-tag>
                 <el-tag v-if="folderInfo.isRecordLibrary" size="small" type="warning" effect="plain">
-                  录音库：仅可试听 / 下载 / 删除
+                  {{ $t("media.recordLibNote") }}
                 </el-tag>
                 <el-tag v-if="scopeNote" size="small" type="info" effect="plain">{{ scopeNote }}</el-tag>
               </template>
-              <span v-else class="cur-folder muted">请选择左侧目录</span>
+              <span v-else class="cur-folder muted">{{ $t("media.pickLeftFolder") }}</span>
             </div>
             <div class="table-header-ops">
               <el-button
@@ -102,14 +114,14 @@
                 :title="uploadDisabledReason"
                 @click="uploadVisible = true"
               >
-                添加媒体
+                {{ $t("media.addMedia") }}
               </el-button>
               <!-- 未勾选时禁用。旧版此时的行为是清空整个目录，误点即灾难 -->
               <el-button
                 type="danger"
                 :icon="Delete"
                 :disabled="!scope.isSelected"
-                title="删除选中的媒体"
+                :title="$t('media.deleteSelected')"
                 @click="onDeleteMedia(scope.selectedListIds)"
               >
                 删除{{ scope.selectedListIds.length ? `(${scope.selectedListIds.length})` : "" }}
@@ -121,15 +133,15 @@
                 :disabled="!folderInfo || folderInfo.totalSizeKB === 0"
                 @click="openClear"
               >
-                清空目录
+                {{ $t("media.clearFolderBtn") }}
               </el-button>
             </div>
           </div>
         </template>
 
         <template #operation="scope">
-          <el-button type="primary" link :icon="VideoPlay" @click="onPreview(scope.row)">试听</el-button>
-          <el-button type="primary" link :icon="Download" @click="onDownload(scope.row)">下载</el-button>
+          <el-button type="primary" link :icon="VideoPlay" @click="onPreview(scope.row)">{{ $t("media.preview") }}</el-button>
+          <el-button type="primary" link :icon="Download" @click="onDownload(scope.row)">{{ $t("media.download") }}</el-button>
         </template>
       </ProTable>
     </div>
@@ -137,27 +149,31 @@
     <!-- 右键菜单 -->
     <div v-show="ctx.visible" class="ctx-menu" :style="{ left: ctx.x + 'px', top: ctx.y + 'px' }">
       <div :class="['ctx-item', { disabled: !ctx.node?.canCreateChild }]" @click="ctx.node?.canCreateChild && openCreate()">
-        <el-icon><Plus /></el-icon> 新建子目录
-        <span v-if="ctx.node && !ctx.node.canCreateChild" class="ctx-why">已达 3 层上限</span>
+        <el-icon><Plus /></el-icon> {{ $t("media.newSub") }}
+        <span v-if="ctx.node && !ctx.node.canCreateChild" class="ctx-why">{{ $t("media.depthReached") }}</span>
       </div>
       <div :class="['ctx-item', { disabled: !ctx.node?.canModify }]" @click="ctx.node?.canModify && openEdit()">
-        <el-icon><EditPen /></el-icon> 重命名 / 共享设置
-        <span v-if="ctx.node?.system" class="ctx-why">系统预置</span>
+        <el-icon><EditPen /></el-icon> {{ $t("media.renameShare") }}
+        <span v-if="ctx.node?.system" class="ctx-why">{{ $t("media.systemPreset") }}</span>
       </div>
       <div :class="['ctx-item danger', { disabled: !ctx.node?.canDelete }]" @click="ctx.node?.canDelete && onDeleteFolder()">
-        <el-icon><Delete /></el-icon> 删除目录
-        <span v-if="ctx.node?.system" class="ctx-why">系统预置</span>
+        <el-icon><Delete /></el-icon> {{ $t("taskCommon.deleteFolder") }}
+        <span v-if="ctx.node?.system" class="ctx-why">{{ $t("media.systemPreset") }}</span>
       </div>
     </div>
 
     <!-- 新建 / 编辑目录 -->
-    <el-dialog v-model="folderDlg.visible" :title="folderDlg.isEdit ? '修改文件夹' : '新建文件夹'" width="440px">
+    <el-dialog
+      v-model="folderDlg.visible"
+      :title="folderDlg.isEdit ? $t('media.editFolder') : $t('media.newFolder')"
+      width="440px"
+    >
       <el-form label-width="90px">
-        <el-form-item v-if="!folderDlg.isEdit" label="上级目录">
+        <el-form-item v-if="!folderDlg.isEdit" :label="$t('media.parentFolder')">
           <el-input :model-value="folderDlg.parentName" disabled />
         </el-form-item>
-        <el-form-item label="名称" required>
-          <el-input v-model="folderDlg.name" maxlength="60" show-word-limit placeholder="请输入文件夹名称" />
+        <el-form-item :label="$t('common.name')" required>
+          <el-input v-model="folderDlg.name" maxlength="60" show-word-limit :placeholder="$t('media.folderNamePlaceholder')" />
         </el-form-item>
         <!--
           「是否共享」只在**修改**时给 —— 右键菜单那一项本来就叫「重命名 / 共享设置」。
@@ -165,37 +181,46 @@
           未勾选就是 0，新目录默认私有；建的时候还没内容，共享与否没什么可决定的，
           需要共享再进「修改」改一次。
         -->
-        <el-form-item v-if="folderDlg.isEdit" label="是否共享">
-          <el-switch v-model="folderDlg.shared" active-text="共享（全员可见）" inactive-text="私有（仅自己可见）" />
+        <el-form-item v-if="folderDlg.isEdit" :label="$t('media.isShared')">
+          <el-switch v-model="folderDlg.shared" :active-text="$t('media.shared')" :inactive-text="$t('media.private')" />
         </el-form-item>
       </el-form>
       <div v-if="folderDlg.isEdit" class="dlg-tip">
-        共享目录全员可见；私有目录仅创建者可见。<br />
-        注意：目录内的媒体仍按「仅显示我上传的」过滤，共享的是目录本身。
+        {{ $t("media.sharedVisibility") }}<br />
+        {{ $t("media.filterNote") }}
       </div>
-      <div v-else class="dlg-tip">新目录默认<b>私有</b>（仅自己可见）。需要共享的话，建好后右键「重命名 / 共享设置」再改。</div>
+      <div v-else class="dlg-tip">
+        {{ $t("media.newFolderDefault") }}<b>{{ $t("media.privateLabel") }}</b
+        >{{ $t("media.onlyMe") }}
+      </div>
       <template #footer>
-        <el-button @click="folderDlg.visible = false">取消</el-button>
-        <el-button type="primary" :loading="folderDlg.loading" @click="submitFolder">确定</el-button>
+        <el-button @click="folderDlg.visible = false">{{ $t("common.cancel") }}</el-button>
+        <el-button type="primary" :loading="folderDlg.loading" @click="submitFolder">{{ $t("common.confirm") }}</el-button>
       </template>
     </el-dialog>
 
     <!-- 删除影响面预览 -->
     <el-dialog v-model="delDlg.visible" :title="delDlg.title" width="560px">
       <div v-if="delDlg.deletable.length">
-        <el-alert type="warning" :closable="false" show-icon class="mb10"> 以下内容将被<b>永久删除</b>，且不可恢复： </el-alert>
+        <el-alert type="warning" :closable="false" show-icon class="mb10">
+          {{ $t("media.willBe") }}<b>{{ $t("media.permanentDelete") }}</b
+          >{{ $t("media.notRecoverableColon") }}
+        </el-alert>
         <el-table :data="delDlg.deletable" size="small" border max-height="240">
-          <el-table-column prop="name" label="名称" />
-          <el-table-column v-if="delDlg.kind === 'folder'" label="影响范围" width="200">
+          <el-table-column prop="name" :label="$t('common.name')" />
+          <el-table-column v-if="delDlg.kind === 'folder'" :label="$t('media.impactScope')" width="200">
             <template #default="s"> 子目录 {{ s.row.descendantFolders }} 个 · 媒体 {{ s.row.mediaCount }} 个 </template>
           </el-table-column>
         </el-table>
       </div>
       <div v-if="delDlg.blocked.length" class="mt10">
-        <el-alert type="error" :closable="false" show-icon class="mb10"> 以下内容<b>无法删除</b>： </el-alert>
+        <el-alert type="error" :closable="false" show-icon class="mb10">
+          {{ $t("media.following") }}<b>{{ $t("media.cannotDelete") }}</b
+          >：
+        </el-alert>
         <el-table :data="delDlg.blocked" size="small" border max-height="200">
-          <el-table-column prop="name" label="名称" />
-          <el-table-column label="原因">
+          <el-table-column prop="name" :label="$t('common.name')" />
+          <el-table-column :label="$t('media.reason')">
             <template #default="s">
               {{ blockReasonText(s.row.reason) }}
               <span v-if="s.row.refName">（{{ s.row.refName }}）</span>
@@ -204,47 +229,48 @@
           </el-table-column>
         </el-table>
       </div>
-      <div v-if="!delDlg.deletable.length && !delDlg.blocked.length" class="muted">没有可处理的对象。</div>
+      <div v-if="!delDlg.deletable.length && !delDlg.blocked.length" class="muted">{{ $t("media.nothingToDo") }}</div>
       <template #footer>
-        <el-button @click="delDlg.visible = false">取消</el-button>
+        <el-button @click="delDlg.visible = false">{{ $t("common.cancel") }}</el-button>
         <el-button type="danger" :disabled="!delDlg.deletable.length" :loading="delDlg.loading" @click="confirmDelete">
-          确认删除
+          {{ $t("common.confirmDelete") }}
         </el-button>
       </template>
     </el-dialog>
 
     <!-- 清空目录（高危，需输入目录名） -->
-    <el-dialog v-model="clearDlg.visible" title="清空目录内的全部媒体" width="480px">
+    <el-dialog v-model="clearDlg.visible" :title="$t('media.clearFolder')" width="480px">
       <el-alert type="error" :closable="false" show-icon class="mb10">
-        此操作会删除「{{ folderInfo?.name }}」下的<b>全部媒体及其物理文件</b>，不可恢复。<br />
-        正被任务、快捷键、报警映射或打铃条目引用的媒体会被自动跳过。
+        此操作会删除「{{ folderInfo?.name }}」下的<b>{{ $t("media.allMediaAndFiles") }}</b
+        >{{ $t("media.notRecoverableComma") }}<br />
+        {{ $t("media.skipReferenced") }}
       </el-alert>
       <el-form label-width="110px">
-        <el-form-item label="请输入目录名">
+        <el-form-item :label="$t('media.folderNamePrompt')">
           <el-input v-model="clearDlg.confirmText" :placeholder="folderInfo?.name" />
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="clearDlg.visible = false">取消</el-button>
+        <el-button @click="clearDlg.visible = false">{{ $t("common.cancel") }}</el-button>
         <el-button
           type="danger"
           :disabled="clearDlg.confirmText !== folderInfo?.name"
           :loading="clearDlg.loading"
           @click="confirmClear"
         >
-          我确认清空
+          {{ $t("media.confirmClear") }}
         </el-button>
       </template>
     </el-dialog>
 
     <!-- 添加媒体：表单项与按钮照 :80 的「添加媒体」弹窗（所属文件夹 / 媒体文件） -->
-    <el-drawer v-model="uploadVisible" title="添加媒体" size="480px" @close="uploadResults = []">
+    <el-drawer v-model="uploadVisible" :title="$t('media.addMedia')" size="480px" @close="uploadResults = []">
       <el-form label-width="90px">
-        <el-form-item label="所属文件夹">
+        <el-form-item :label="$t('media.belongFolder')">
           <!-- 目录在左树里选，这里只读回显，避免两处可改导致传到别的目录去 -->
           <el-input :model-value="folderInfo?.name ?? ''" readonly />
         </el-form-item>
-        <el-form-item label="媒体文件">
+        <el-form-item :label="$t('taskCommon.mediaFile')">
           <el-upload
             ref="uploadRef"
             drag
@@ -257,20 +283,23 @@
             class="fill"
           >
             <el-icon class="el-icon--upload"><UploadFilled /></el-icon>
-            <div class="el-upload__text">拖拽文件到此处，或<em>选择文件</em></div>
+            <div class="el-upload__text">
+              {{ $t("media.dragHere") }}<em>{{ $t("media.pickFile") }}</em>
+            </div>
           </el-upload>
         </el-form-item>
       </el-form>
 
       <el-alert type="info" :closable="false" show-icon class="mb10">
-        支持 mp3 / wav，单文件不超过 300MB。<br />
-        上传的 MP3 码率各不相同（32k 到 320k 都有），服务端会先认文件头确认格式， 再统一转成 <b>128kbps 立体声</b>（提示音目录
-        16000Hz，其余 44100Hz）， 并在尾部追加 2 秒静音（沿用原系统约定）。<br />
-        同名文件将<b>覆盖</b>原有媒体。
+        {{ $t("media.uploadLimit") }}<br />
+        {{ $t("media.bitrateNote") }} <b>{{ $t("media.bitrateTarget") }}</b
+        >{{ $t("media.sampleRateNote") }}<br />
+        {{ $t("media.sameNameWill") }}<b>{{ $t("media.overwrite") }}</b
+        >{{ $t("media.existingMedia") }}
       </el-alert>
 
       <div class="mt10">
-        <el-button :disabled="uploading" @click="uploadVisible = false">取消</el-button>
+        <el-button :disabled="uploading" @click="uploadVisible = false">{{ $t("common.cancel") }}</el-button>
         <el-button type="primary" :loading="uploading" :disabled="!fileList.length" @click="doUpload">
           确定{{ fileList.length ? `（${fileList.length} 个）` : "" }}
         </el-button>
@@ -292,14 +321,14 @@
       </div>
 
       <div v-if="uploadResults.length" class="mt10">
-        <el-divider content-position="left">上传结果</el-divider>
+        <el-divider content-position="left">{{ $t("media.uploadResult") }}</el-divider>
         <el-table :data="uploadResults" size="small" border>
-          <el-table-column prop="fileName" label="文件" min-width="120" show-overflow-tooltip />
-          <el-table-column label="结果" width="80" align="center">
+          <el-table-column prop="fileName" :label="$t('media.file')" min-width="120" show-overflow-tooltip />
+          <el-table-column :label="$t('media.result')" width="80" align="center">
             <template #default="s">
-              <el-tag v-if="s.row.status === 'created'" type="success" size="small">新增</el-tag>
-              <el-tag v-else-if="s.row.status === 'overwritten'" type="warning" size="small">覆盖</el-tag>
-              <el-tag v-else type="danger" size="small">失败</el-tag>
+              <el-tag v-if="s.row.status === 'created'" type="success" size="small">{{ $t("common.create") }}</el-tag>
+              <el-tag v-else-if="s.row.status === 'overwritten'" type="warning" size="small">{{ $t("media.overwrite") }}</el-tag>
+              <el-tag v-else type="danger" size="small">{{ $t("media.failed") }}</el-tag>
             </template>
           </el-table-column>
           <!--
@@ -307,7 +336,7 @@
             「我这个 320k 单声道的文件，进来之后变成了 128k 立体声」。
             失败的行这里改放原因，比缩在 tooltip 里靠谱。
           -->
-          <el-table-column label="转换" min-width="200">
+          <el-table-column :label="$t('media.convert')" min-width="200">
             <template #default="s">
               <span v-if="s.row.status === 'failed'" class="up-bad">{{ s.row.message }}</span>
               <span v-else class="up-fmt">
@@ -332,6 +361,7 @@
 </template>
 
 <script setup lang="tsx" name="mediaManage">
+import { useI18n } from "vue-i18n";
 import {
   Delete,
   DeleteFilled,
@@ -370,6 +400,9 @@ import ProTable from "@/components/ProTable/index.vue";
 import { ColumnProps } from "@/components/ProTable/interface";
 import { useUserStore } from "@/stores/modules/user";
 
+// 脚本里拼的文案用 t()；模板里的 $t 不用引入
+const { t } = useI18n();
+
 const userStore = useUserStore();
 
 const treeRef = ref();
@@ -395,9 +428,9 @@ const initParam = reactive({ folderId: 0 });
 
 const canCreateUnderCurrent = computed(() => !!currentNode.value?.canCreateChild);
 const uploadDisabledReason = computed(() => {
-  if (!folderInfo.value) return "请先选择目录";
-  if (folderInfo.value.isRecordLibrary) return "录音媒体库不允许上传";
-  if (!folderInfo.value.canUpload) return "无媒体权限，或服务器处于备机只读模式";
+  if (!folderInfo.value) return t("media.pickFolder");
+  if (folderInfo.value.isRecordLibrary) return t("media.recordNoUpload");
+  if (!folderInfo.value.canUpload) return t("media.noPermissionOrStandby");
   return "";
 });
 
@@ -405,19 +438,23 @@ const columns = reactive<ColumnProps<MediaItem>[]>([
   { type: "selection", fixed: "left", width: 55 },
   // 列名严格照 :80（页面规格.txt「文件管理」）：媒体名称 | 媒体大小 | 媒体类型 | 媒体比特率 | 播放时长 | 操作。
   // ID 列 :80 没有，这里也去掉 —— 需要 id 的地方（试听/下载/删除）都走行对象，不靠肉眼抄。
-  { prop: "name", label: "媒体名称", search: { el: "input", key: "keyword", props: { placeholder: "请输入媒体名称" } } },
-  { prop: "sizeText", label: "媒体大小", width: 110 },
+  {
+    prop: "name",
+    label: t("taskCommon.mediaName"),
+    search: { el: "input", key: "keyword", props: { placeholder: t("media.mediaNameRequired") } }
+  },
+  { prop: "sizeText", label: t("taskCommon.mediaSize"), width: 110 },
   // 旧版的搜索是一个「选择类型…」下拉 +一个关键字框，可选「媒体名称 / 媒体类型」。
   // 这里做成两个并列的搜索框，两路条件可以同时生效，比旧版那个二选一好用。
   {
     prop: "typeid",
-    label: "媒体类型",
+    label: t("media.mediaType"),
     width: 100,
-    search: { el: "input", key: "typeid", props: { placeholder: "如 mp3 / wav" } }
+    search: { el: "input", key: "typeid", props: { placeholder: t("media.egMp3Wav") } }
   },
-  { prop: "bitrateText", label: "媒体比特率", width: 120 },
-  { prop: "timelengthText", label: "播放时长", width: 120 },
-  { prop: "operation", label: "操作", width: 170, fixed: "right" }
+  { prop: "bitrateText", label: t("media.bitrate"), width: 120 },
+  { prop: "timelengthText", label: t("taskCommon.playLength"), width: 120 },
+  { prop: "operation", label: t("common.operation"), width: 170, fixed: "right" }
 ]);
 
 const getMediaList = (params: any) => {
@@ -529,8 +566,8 @@ const folderDlg = reactive({
 
 const openCreate = () => {
   const parent = ctx.node ?? currentNode.value;
-  if (!parent) return ElMessage.warning("请先选择上级目录");
-  if (!parent.canCreateChild) return ElMessage.warning("该目录已达 3 层上限，不能再建子目录");
+  if (!parent) return ElMessage.warning(t("media.pickParentFolder"));
+  if (!parent.canCreateChild) return ElMessage.warning(t("media.depthLimit"));
   Object.assign(folderDlg, {
     visible: true,
     isEdit: false,
@@ -560,17 +597,17 @@ const openEdit = () => {
 
 const submitFolder = async () => {
   const name = folderDlg.name.trim();
-  if (!name) return ElMessage.warning("请输入文件夹名称");
+  if (!name) return ElMessage.warning(t("media.folderNameRequired"));
   folderDlg.loading = true;
   try {
     if (folderDlg.isEdit) {
       await updateFolderApi(folderDlg.id, { name, shared: folderDlg.shared });
-      ElMessage.success("修改成功");
+      ElMessage.success(t("common.updateSuccess"));
     } else {
       const parent = currentNode.value!;
       // 新建不问共享，一律私有（与 ok112 未勾选时的取值一致）
       await createFolderApi({ name, parentId: parent.id, shared: false });
-      ElMessage.success("创建成功");
+      ElMessage.success(t("common.createSuccess"));
     }
     folderDlg.visible = false;
     await loadTree();
@@ -599,7 +636,7 @@ const onDeleteFolder = async () => {
   Object.assign(delDlg, {
     visible: true,
     kind: "folder",
-    title: "删除文件夹",
+    title: t("media.deleteFolderTitle"),
     deletable: data.deletable ?? [],
     blocked: data.blocked ?? [],
     ids: (data.deletable ?? []).map(d => d.id),
@@ -610,12 +647,12 @@ const onDeleteFolder = async () => {
 // ProTable 的 selectedListIds 是 string[]，这里统一转成数字再发给后端
 const onDeleteMedia = async (rawIds: (string | number)[]) => {
   const ids = (rawIds ?? []).map(Number).filter(n => Number.isFinite(n) && n > 0);
-  if (!ids.length) return ElMessage.warning("请先勾选要删除的媒体");
+  if (!ids.length) return ElMessage.warning(t("media.pickMediaToDelete"));
   const { data } = await previewDeleteMediaApi(ids);
   Object.assign(delDlg, {
     visible: true,
     kind: "media",
-    title: "删除媒体",
+    title: t("media.deleteMedia"),
     deletable: data.deletable ?? [],
     blocked: data.blocked ?? [],
     ids: (data.deletable ?? []).map(d => d.id),
@@ -629,15 +666,22 @@ const confirmDelete = async () => {
     if (delDlg.kind === "folder") {
       const { data } = await deleteFolderApi(delDlg.ids);
       ElNotification({
-        title: "删除完成",
-        message: `已删除 ${data.deletedFolders?.length ?? 0} 个目录、${data.deletedMediaCount ?? 0} 个媒体`,
+        title: t("common.deleteDone"),
+        message: t("media.deletedFoldersAndMedia", {
+          folders: data.deletedFolders?.length ?? 0,
+          media: data.deletedMediaCount ?? 0
+        }),
         type: "success"
       });
       currentFolderId.value = 0;
       await loadTree();
     } else {
       const { data } = await deleteMediaApi(delDlg.ids);
-      ElNotification({ title: "删除完成", message: `已删除 ${data.deletedCount ?? 0} 个媒体`, type: "success" });
+      ElNotification({
+        title: t("common.deleteDone"),
+        message: t("media.deletedMedia", { n: data.deletedCount ?? 0 }),
+        type: "success"
+      });
       refreshTable();
       await loadTree();
     }
@@ -658,8 +702,10 @@ const confirmClear = async () => {
   try {
     const { data } = await clearFolderMediaApi(folderInfo.value.id, clearDlg.confirmText);
     ElNotification({
-      title: "清空完成",
-      message: `已删除 ${data.deletedCount ?? 0} 个媒体${data.blocked?.length ? `，${data.blocked.length} 个因被引用而跳过` : ""}`,
+      title: t("media.clearDone"),
+      message: data.blocked?.length
+        ? t("media.deletedMediaWithSkip", { n: data.deletedCount ?? 0, skipped: data.blocked.length })
+        : t("media.deletedMedia", { n: data.deletedCount ?? 0 }),
       type: "success"
     });
     clearDlg.visible = false;
@@ -701,7 +747,7 @@ const fmtBytes = (n: number) => {
 };
 
 const progressText = computed(() => {
-  if (progress.phase === "transcoding") return "文件已传完，服务器转码中…";
+  if (progress.phase === "transcoding") return t("media.transcoding");
   if (progress.phase === "uploading" && progress.total) {
     return `${fmtBytes(progress.loaded)} / ${fmtBytes(progress.total)}`;
   }
@@ -739,23 +785,23 @@ const doUpload = async () => {
         try {
           resolve(JSON.parse(xhr.responseText));
         } catch {
-          reject(new Error(`服务器返回了无法解析的内容（HTTP ${xhr.status}）`));
+          reject(new Error(t("media.unparsableResponse", { status: xhr.status })));
         }
       };
-      xhr.onerror = () => reject(new Error("网络错误"));
-      xhr.ontimeout = () => reject(new Error("上传超时"));
+      xhr.onerror = () => reject(new Error(t("media.networkError")));
+      xhr.ontimeout = () => reject(new Error(t("media.uploadTimeout")));
       xhr.send(form);
     });
 
     if (json.code !== 200) {
-      ElMessage.error(json.msg || "上传失败");
+      ElMessage.error(json.msg || t("media.uploadFailed"));
       return;
     }
     uploadResults.value = json.data.results ?? [];
     const ok = uploadResults.value.filter(r => r.status !== "failed").length;
     ElNotification({
-      title: "上传完成",
-      message: `成功 ${ok} 个，失败 ${uploadResults.value.length - ok} 个`,
+      title: t("media.uploadDone"),
+      message: t("media.uploadSummary", { ok, fail: uploadResults.value.length - ok }),
       type: ok ? "success" : "warning"
     });
     fileList.value = [];
@@ -763,7 +809,7 @@ const doUpload = async () => {
     refreshTable();
     await loadTree();
   } catch (e: any) {
-    ElMessage.error("上传失败：" + (e?.message ?? e));
+    ElMessage.error(t("media.uploadFailedColon") + (e?.message ?? e));
   } finally {
     uploading.value = false;
     progress.phase = "";
@@ -785,7 +831,7 @@ const stopAudio = () => {
 };
 
 const onDownload = (row: MediaItem) => {
-  if (!row.downloadUrl) return ElMessage.warning("该媒体没有可下载的文件");
+  if (!row.downloadUrl) return ElMessage.warning(t("media.noDownloadable"));
   window.open(withToken(row.downloadUrl), "_blank");
 };
 

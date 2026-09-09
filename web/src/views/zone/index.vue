@@ -28,9 +28,9 @@
         <div class="header-bar">
           <!-- 按钮对齐 :80（页面规格.txt「终端分区」）：添加 / 删除 -->
           <div class="header-left">
-            <el-button type="primary" :disabled="!canEdit" @click="openCreate">添加</el-button>
+            <el-button type="primary" :disabled="!canEdit" @click="openCreate">{{ $t("common.add") }}</el-button>
             <el-button type="danger" :disabled="!canEdit || !scope.isSelected" @click="openDelete(scope.selectedListIds)">
-              删除
+              {{ $t("common.delete") }}
             </el-button>
           </div>
           <div class="header-right">
@@ -40,13 +40,15 @@
       </template>
 
       <template #terminalCount="scope">
-        <el-tag v-if="scope.row.terminalCount" size="small" effect="plain">{{ scope.row.terminalCount }} 台</el-tag>
-        <span v-else class="muted">空分区</span>
+        <el-tag v-if="scope.row.terminalCount" size="small" effect="plain">{{
+          $t("common.nTerminals", { n: scope.row.terminalCount })
+        }}</el-tag>
+        <span v-else class="muted">{{ $t("zone.emptyZone") }}</span>
       </template>
 
       <template #operation="scope">
         <el-button type="primary" link :icon="EditPen" :disabled="!canEdit || !scope.row.canModify" @click="openEdit(scope.row)">
-          修改
+          {{ $t("common.modify") }}
         </el-button>
         <el-button
           type="danger"
@@ -55,7 +57,7 @@
           :disabled="!canEdit || !scope.row.canModify"
           @click="openDelete([scope.row.id])"
         >
-          删除
+          {{ $t("common.delete") }}
         </el-button>
       </template>
     </ProTable>
@@ -64,13 +66,13 @@
     <el-dialog v-model="dlg.visible" :title="dlg.title" width="720px" top="6vh">
       <el-form :model="dlg.form" label-width="100px">
         <!-- 表单项与占位符照 :80 的「添加」弹窗：分区名称 / 描述 / 分区终端 -->
-        <el-form-item label="分区名称" required>
-          <el-input v-model="dlg.form.name" maxlength="60" show-word-limit placeholder="请输入分区名称" />
+        <el-form-item :label="$t('terminalCommon.zoneName')" required>
+          <el-input v-model="dlg.form.name" maxlength="60" show-word-limit :placeholder="$t('terminalCommon.zoneNameRequired')" />
         </el-form-item>
-        <el-form-item label="描述">
-          <el-input v-model="dlg.form.info" maxlength="60" show-word-limit placeholder="请输入描述" />
+        <el-form-item :label="$t('common.description')">
+          <el-input v-model="dlg.form.info" maxlength="60" show-word-limit :placeholder="$t('zone.descPlaceholder')" />
         </el-form-item>
-        <el-form-item label="分区终端">
+        <el-form-item :label="$t('terminalCommon.zoneTerminals')">
           <!--
             ⚠ 这一页归组用的是 currentZoneId / currentZoneName（终端当前所属分区），
               不是 groupName —— 这个页面编辑的就是终端分区本身，
@@ -88,38 +90,41 @@
       </el-form>
 
       <template #footer>
-        <el-button @click="dlg.visible = false">取消</el-button>
-        <el-button type="primary" :loading="dlg.saving" @click="submit">确定</el-button>
+        <el-button @click="dlg.visible = false">{{ $t("common.cancel") }}</el-button>
+        <el-button type="primary" :loading="dlg.saving" @click="submit">{{ $t("common.confirm") }}</el-button>
       </template>
     </el-dialog>
 
     <!-- 删除影响面 -->
-    <el-dialog v-model="del.visible" title="删除终端分区" width="620px">
+    <el-dialog v-model="del.visible" :title="$t('zone.deleteZoneTitle')" width="620px">
       <el-alert type="error" :closable="false" show-icon class="mb12">
-        删除分区后，成员终端变成<b>未分区</b>；引用了这个分区号的任务会被复位成 0，
-        也就是<b>不再按分区限定播放范围</b>。不可恢复。
+        {{ $t("zone.afterDeleteMembers") }}<b>{{ $t("zone.unzoned") }}</b
+        >{{ $t("zone.tasksResetTo0") }}<b>{{ $t("zone.noLongerZoneLimited") }}</b
+        >{{ $t("zone.notRecoverablePeriod") }}
       </el-alert>
 
       <el-table v-if="del.preview?.deletable.length" :data="del.preview.deletable" size="small" max-height="280">
-        <el-table-column prop="name" label="分区" min-width="140" />
-        <el-table-column label="影响面" min-width="300">
+        <el-table-column prop="name" :label="$t('zone.zoneLabel')" min-width="140" />
+        <el-table-column :label="$t('common.impact')" min-width="300">
           <template #default="{ row }">
-            <el-tag v-if="row.impact?.terminals" size="small" class="mr4">成员终端 {{ row.impact?.terminals }} 台</el-tag>
+            <el-tag v-if="row.impact?.terminals" size="small" class="mr4">{{
+              $t("zone.memberTerminals", { n: row.impact?.terminals })
+            }}</el-tag>
             <el-tag v-if="row.impact?.tasks" type="danger" size="small"> {{ row.impact?.tasks }} 条任务的分区号将被复位 </el-tag>
-            <span v-if="!row.impact?.terminals && !row.impact?.tasks" class="muted">空分区</span>
+            <span v-if="!row.impact?.terminals && !row.impact?.tasks" class="muted">{{ $t("zone.emptyZone") }}</span>
           </template>
         </el-table-column>
       </el-table>
 
       <el-alert v-if="del.preview?.blocked.length" type="warning" :closable="false" class="mt12">
-        以下分区不会被删除：
+        {{ $t("zone.theseKept") }}
         <div v-for="b in del.preview.blocked" :key="b.id">· {{ b.name || b.id }}：{{ b.detail }}</div>
       </el-alert>
 
       <template #footer>
-        <el-button @click="del.visible = false">取消</el-button>
+        <el-button @click="del.visible = false">{{ $t("common.cancel") }}</el-button>
         <el-button type="danger" :disabled="!del.preview?.deletable.length" :loading="del.saving" @click="submitDelete">
-          确认删除
+          {{ $t("common.confirmDelete") }}
         </el-button>
       </template>
     </el-dialog>
@@ -127,6 +132,7 @@
 </template>
 
 <script setup lang="tsx" name="zone">
+import { useI18n } from "vue-i18n";
 import { Delete, EditPen } from "@element-plus/icons-vue";
 import { ElMessage, ElMessageBox, ElNotification } from "element-plus";
 import { computed, onMounted, reactive, ref } from "vue";
@@ -147,6 +153,9 @@ import type { Zone, ZonePreview, ZoneTerminalOption } from "@/api/modules/basecf
 import ProTable from "@/components/ProTable/index.vue";
 import { useAuthStore } from "@/stores/modules/auth";
 import type { ColumnProps, ProTableInstance } from "@/components/ProTable/interface";
+
+// 脚本里拼的文案用 t()；模板里的 $t 不用引入
+const { t } = useI18n();
 
 const authStore = useAuthStore();
 const canEdit = computed(() => !!(authStore.authButtonListGet as any)?.zone?.edit);
@@ -178,14 +187,14 @@ const columns = reactive<ColumnProps<Zone>[]>([
   // 搜索框也是旧版就有的（搜索条件 → 分区名称）
   {
     prop: "name",
-    label: "分区名称",
+    label: t("terminalCommon.zoneName"),
     minWidth: 200,
-    search: { el: "input", key: "keyword", props: { placeholder: "按分区名称搜索" } }
+    search: { el: "input", key: "keyword", props: { placeholder: t("zone.searchByZoneName") } }
   },
-  { prop: "info", label: "分区描述", minWidth: 220, showOverflowTooltip: true },
-  { prop: "terminalCount", label: "终端列表", width: 130 },
-  { prop: "createTime", label: "创建时间", width: 180 },
-  { prop: "operation", label: "操作", fixed: "right", width: 140 }
+  { prop: "info", label: t("zone.zoneDesc"), minWidth: 220, showOverflowTooltip: true },
+  { prop: "terminalCount", label: t("terminalCommon.terminalList"), width: 130 },
+  { prop: "createTime", label: t("common.createTime"), width: 180 },
+  { prop: "operation", label: t("common.operation"), fixed: "right", width: 140 }
 ]);
 
 const dataCallback = (data: any) => {
@@ -227,7 +236,7 @@ const openCreate = async () => {
     visible: true,
     saving: false,
     isEdit: false,
-    title: "添加",
+    title: t("common.add"),
     id: 0,
     form: { name: "", info: "" }
   });
@@ -241,7 +250,7 @@ const openEdit = async (row: Zone) => {
     visible: true,
     saving: false,
     isEdit: true,
-    title: `修改终端分区：${data.name}`,
+    title: t("zone.editZone", { name: data.name }),
     id: data.id,
     form: { name: data.name, info: data.info }
   });
@@ -250,12 +259,12 @@ const openEdit = async (row: Zone) => {
   const dropped = data.members.filter(m => m.deleted).length;
   await searchTerminals("");
   if (dropped) {
-    ElMessage.warning(`该分区里有 ${dropped} 台终端已被删除，已自动从成员列表中移除`);
+    ElMessage.warning(t("zone.droppedDeleted", { n: dropped }));
   }
 };
 
 const submit = async () => {
-  if (!dlg.form.name.trim()) return ElMessage.warning("请输入分区名称");
+  if (!dlg.form.name.trim()) return ElMessage.warning(t("terminalCommon.zoneNameRequired"));
   const payload = {
     name: dlg.form.name.trim(),
     info: dlg.form.info.trim(),
@@ -266,10 +275,10 @@ const submit = async () => {
     t => selectedTerminalIds.value.includes(t.id) && t.currentZoneId > 0 && t.currentZoneId !== dlg.id
   );
   if (moving.length) {
-    await ElMessageBox.confirm(`有 <b>${moving.length}</b> 台终端当前属于别的分区，保存后会被移过来。确认继续？`, "二次确认", {
+    await ElMessageBox.confirm(t("zone.movingWarn", { n: moving.length }), t("common.doubleConfirm"), {
       type: "warning",
       dangerouslyUseHTMLString: true,
-      confirmButtonText: "确认"
+      confirmButtonText: t("common.confirm2")
     });
   }
   dlg.saving = true;
@@ -279,7 +288,7 @@ const submit = async () => {
     } else {
       await createZoneApi(payload);
     }
-    ElMessage.success("保存成功");
+    ElMessage.success(t("common.saveSuccess"));
     dlg.visible = false;
     // 分区名/成员变了，全站终端树的分区缓存要作废，否则别的页面还摆着旧分区
     invalidateZones();
@@ -295,7 +304,7 @@ const del = reactive({ visible: false, saving: false, preview: null as ZonePrevi
 
 const openDelete = async (raw: (string | number)[]) => {
   const ids = toIds(raw);
-  if (!ids.length) return ElMessage.warning("请先勾选终端分区");
+  if (!ids.length) return ElMessage.warning(t("zone.pickZoneFirst"));
   const { data } = await previewDeleteZonesApi(ids);
   del.preview = data;
   del.visible = true;
@@ -305,19 +314,19 @@ const submitDelete = async () => {
   const ids = del.preview!.deletable.map(d => d.id);
   const tasks = del.preview!.deletable.reduce((n, d) => n + d.impact.tasks, 0);
   if (tasks > 0) {
-    await ElMessageBox.confirm(
-      `这次删除会把 <b>${tasks}</b> 条任务的分区号复位，这些任务将不再按分区限定播放范围。确认继续？`,
-      "二次确认",
-      { type: "warning", dangerouslyUseHTMLString: true, confirmButtonText: "确认删除" }
-    );
+    await ElMessageBox.confirm(t("zone.resetWarn", { n: tasks }), t("common.doubleConfirm"), {
+      type: "warning",
+      dangerouslyUseHTMLString: true,
+      confirmButtonText: t("common.confirmDelete")
+    });
   }
   del.saving = true;
   try {
     const { data } = await deleteZonesApi(ids);
     del.visible = false;
     ElNotification({
-      title: "删除完成",
-      message: `分区 ${data.deleted.length} 个，${data.resetTerminals} 台终端移出分区，${data.resetTasks} 条任务分区号已复位`,
+      title: t("common.deleteDone"),
+      message: t("zone.deleteSummary", { n: data.deleted.length, terms: data.resetTerminals, tasks: data.resetTasks }),
       type: "success"
     });
     invalidateZones();

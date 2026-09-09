@@ -22,6 +22,7 @@ import (
 	"sort"
 
 	"htweb/internal/auth"
+	"htweb/internal/i18n"
 )
 
 // 系统预置文件夹 ID。旧代码把这些数字散落在十几个文件里硬编码，
@@ -115,8 +116,8 @@ func (s *Service) Tree(ctx context.Context, u *auth.User, scene Scene, withCount
 		}
 	}
 
-	res := build(rows, counts, u, scene, registerFlag)
-	res.RootName = "文件管理"
+	res := build(ctx, rows, counts, u, scene, registerFlag)
+	res.RootName = i18n.TC(ctx, "文件管理")
 	return res, nil
 }
 
@@ -224,7 +225,8 @@ func (s *Service) registerFlag(ctx context.Context) (int, error) {
 }
 
 // build 在内存中构树。纯函数，便于单元测试。
-func build(rows []Row, counts map[int64]int64, u *auth.User, scene Scene, registerFlag int) *TreeResult {
+// ctx 只为取界面语言（系统预置目录名要跟着切），别的什么都不做。
+func build(ctx context.Context, rows []Row, counts map[int64]int64, u *auth.User, scene Scene, registerFlag int) *TreeResult {
 	// 场景裁剪：任务选择树恒不显示语音合成媒体库（BR-04）
 	if scene == ScenePicker {
 		rows = filterOut(rows, func(r Row) bool { return r.ID == IDTTS })
@@ -241,14 +243,18 @@ func build(rows []Row, counts map[int64]int64, u *auth.User, scene Scene, regist
 		if r.CreateTime.Valid {
 			ct = r.CreateTime.Time.Format("2006-01-02 15:04:05")
 		}
+		sys := r.ID <= SystemMaxID
 		byID[r.ID] = &Node{
-			ID:         r.ID,
-			Name:       r.Name,
+			ID: r.ID,
+			// 只翻**系统预置**的那几个库（共享/铃声/点播/报警/录音/语音合成）——
+			// 它们是产品词汇。用户自己在下面建的目录名是用户的数据，一个字都不动。
+			// 判据就是现成的 System 标志，不用另立一套规则。
+			Name:       localizedFolderName(ctx, sys, r.Name),
 			ParentID:   r.ParentID,
 			UserID:     r.UserID,
 			Shared:     r.Priority == 1,
 			CreateTime: ct,
-			System:     r.ID <= SystemMaxID,
+			System:     sys,
 			MediaCount: counts[r.ID],
 			Children:   []*Node{},
 		}
@@ -393,4 +399,15 @@ func (s *Service) Depth(ctx context.Context, id int64) (int, error) {
 		}
 	}
 	return depth, nil
+}
+
+// localizedFolderName 只在**系统预置**目录上翻名字。
+//
+// 用户自己建的目录名是他们的数据 —— 万一有人把自己的目录也叫「铃声媒体库」，
+// 翻了就成了两个同名节点，而其中一个还不是他起的那个名字。
+func localizedFolderName(ctx context.Context, system bool, name string) string {
+	if !system {
+		return name
+	}
+	return i18n.TC(ctx, name)
 }
