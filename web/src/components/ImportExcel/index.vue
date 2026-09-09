@@ -1,10 +1,10 @@
 <template>
-  <el-dialog v-model="dialogVisible" :title="`批量添加${parameter.title}`" :destroy-on-close="true" width="580px" draggable>
+  <el-dialog v-model="dialogVisible" :title='$t("upload.bulkAdd", { what: parameter.title })' :destroy-on-close="true" width="580px" draggable>
     <el-form class="drawer-multiColumn-form" label-width="100px">
-      <el-form-item label="模板下载 :">
-        <el-button type="primary" :icon="Download" @click="downloadTemp"> 点击下载 </el-button>
+      <el-form-item :label='$t("upload.templateDownload")'>
+        <el-button type="primary" :icon="Download" @click="downloadTemp">{{ $t("upload.clickToDownload") }}</el-button>
       </el-form-item>
-      <el-form-item label="文件上传 :">
+      <el-form-item :label='$t("upload.fileUpload")'>
         <el-upload
           action="#"
           class="upload"
@@ -23,7 +23,7 @@
             <el-icon class="el-icon--upload">
               <upload-filled />
             </el-icon>
-            <div class="el-upload__text">将文件拖到此处，或<em>点击上传</em></div>
+            <div class="el-upload__text">{{ $t("upload.dragHere") }}<em>{{ $t("upload.clickToUpload") }}</em></div>
           </slot>
           <template #tip>
             <slot name="tip">
@@ -32,7 +32,7 @@
           </template>
         </el-upload>
       </el-form-item>
-      <el-form-item label="数据覆盖 :">
+      <el-form-item :label='$t("upload.overwrite")'>
         <el-switch v-model="isCover" />
       </el-form-item>
     </el-form>
@@ -40,6 +40,7 @@
 </template>
 
 <script setup lang="ts" name="ImportExcel">
+import { useI18n } from "vue-i18n";
 import { Download } from "@element-plus/icons-vue";
 import { ElNotification, UploadRawFile, UploadRequestOptions } from "element-plus";
 import { ref } from "vue";
@@ -56,6 +57,9 @@ export interface ExcelParameterProps {
 }
 
 // 是否覆盖数据
+// 脚本里拼的文案用 t()；模板里的 $t 不用引入
+const { t } = useI18n();
+
 const isCover = ref(false);
 // 最大文件上传数
 const excelLimit = ref(1);
@@ -77,7 +81,7 @@ const acceptParams = (params: ExcelParameterProps) => {
 // Excel 导入模板下载
 const downloadTemp = () => {
   if (!parameter.value.tempApi) return;
-  useDownload(parameter.value.tempApi, `${parameter.value.title}模板`);
+  useDownload(parameter.value.tempApi, t("upload.templateOf", { what: parameter.value.title }));
 };
 
 // 文件上传
@@ -99,15 +103,15 @@ const beforeExcelUpload = (file: UploadRawFile) => {
   const fileSize = file.size / 1024 / 1024 < parameter.value.fileSize!;
   if (!isExcel)
     ElNotification({
-      title: "温馨提示",
-      message: "上传文件只能是 xls / xlsx 格式！",
+      title: t("upload.tip"),
+      message: t("upload.onlyExcel"),
       type: "warning"
     });
   if (!fileSize)
     setTimeout(() => {
       ElNotification({
-        title: "温馨提示",
-        message: `上传文件大小不能超过 ${parameter.value.fileSize}MB！`,
+        title: t("upload.tip"),
+        message: t("upload.tooLargeMB", { n: parameter.value.fileSize }),
         type: "warning"
       });
     }, 0);
@@ -117,8 +121,8 @@ const beforeExcelUpload = (file: UploadRawFile) => {
 // 文件数超出提示
 const handleExceed = () => {
   ElNotification({
-    title: "温馨提示",
-    message: "最多只能上传一个文件！",
+    title: t("upload.tip"),
+    message: t("upload.onlyOneFile"),
     type: "warning"
   });
 };
@@ -126,8 +130,8 @@ const handleExceed = () => {
 // 上传错误提示
 const excelUploadError = () => {
   ElNotification({
-    title: "温馨提示",
-    message: `批量添加${parameter.value.title}失败，请您重新上传！`,
+    title: t("upload.tip"),
+    message: t("upload.bulkAddFailed", { what: parameter.value.title }),
     type: "error"
   });
 };
@@ -135,8 +139,8 @@ const excelUploadError = () => {
 // 上传成功提示
 const excelUploadSuccess = () => {
   ElNotification({
-    title: "温馨提示",
-    message: `批量添加${parameter.value.title}成功！`,
+    title: t("upload.tip"),
+    message: t("upload.bulkAddOk", { what: parameter.value.title }),
     type: "success"
   });
 };

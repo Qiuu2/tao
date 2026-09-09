@@ -95,8 +95,8 @@
                 v-model="fileRange"
                 type="daterange"
                 value-format="YYYY-MM-DD"
-                start-placeholder="起始日期"
-                end-placeholder="结束日期"
+                :start-placeholder='$t("common.startDate")'
+                :end-placeholder='$t("common.endDate")'
                 size="default"
                 @change="loadFiles"
               />
@@ -141,8 +141,7 @@
       <el-alert type="warning" :closable="false" class="mb12">
         <div>{{ $t("log.deleteUsesDelete") }}</div>
         <div v-if="stats?.fromServer">
-          {{ $t("log.noteAmong") }} <b>{{ stats.fromServer }}</b> 条是后台广播服务写的（回收临时文件、播放通道等），
-          清理会一并删除，且服务之后还会继续写入。
+          {{ $t("log.noteAmong") }} <b>{{ stats.fromServer }}</b> {{ $t("log.serviceWrites") }}
         </div>
       </el-alert>
       <el-form label-width="100px">

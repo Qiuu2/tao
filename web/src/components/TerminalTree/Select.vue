@@ -19,7 +19,7 @@
     :data="nodes"
     :props="{ label: 'label', children: 'children' }"
     node-key="key"
-    :placeholder="placeholder"
+    :placeholder="placeholderText"
     :clearable="clearable"
     :disabled="disabled"
     filterable
@@ -48,6 +48,9 @@ interface Node {
 
 // 脚本里拼的文案用 t()；模板里的 $t 不用引入
 const { t } = useI18n();
+// 下面 for 循环里的临时变量也叫 t（一台终端），会把 i18n 的 t 遮住，
+// 那几行用这个别名。
+const i18nT = t;
 
 const props = withDefaults(
   defineProps<{
@@ -66,11 +69,13 @@ const props = withDefaults(
     ungroupedLabel?: string;
   }>(),
   {
-    placeholder: "选择终端",
+    // ⚠ defineProps 的默认值会被提到 setup 外面，**不能引用 t** ——
+    // vue-tsc 不报，vite build 才报。留空串，在取值处兜底。
+    placeholder: "",
     clearable: true,
     disabled: false,
     allowEmpty: false,
-    emptyLabel: "（不指定）",
+    emptyLabel: "",
     groupField: "groupName",
     groupIdField: "groupId",
     // 措辞照 ok112：language/chinese.php 的 No_group_terminal = "无分区终端"
@@ -78,6 +83,9 @@ const props = withDefaults(
     ungroupedLabel: ""
   }
 );
+
+/** placeholder 的默认值取不到 t（见 defineProps 里的注释），在这里兜底。 */
+const placeholderText = computed(() => props.placeholder || t("termSelect.pickTerminal"));
 
 const emit = defineEmits<{ (e: "update:modelValue", v: number | undefined): void }>();
 
@@ -102,7 +110,7 @@ onMounted(async () => {
 /** ⚠ 与 index.vue 同因：task/alarm 两个接口用字面量 "(未分区)"，其余用空串 */
 const cleanGroup = (v: any) => {
   const s = String(v ?? "").trim();
-  return s === "(未分区)" || s === "（未分区）" ? "" : s;
+  return s === t("common.noZone") || s === t("common.noZone2") ? "" : s;
 };
 
 /*
@@ -117,7 +125,7 @@ const nodes = computed<Node[]>(() => {
   for (const g of groups.value) {
     const node: Node = {
       key: `g:${g.id}`,
-      label: g.name || `分区 ${g.id}`,
+      label: g.name || t("termSelect.zoneNo", { id: g.id }),
       disabled: true,
       children: []
     };
@@ -141,7 +149,9 @@ const nodes = computed<Node[]>(() => {
     if (!b) b = ungrouped;
     b.children!.push({
       key: t.id,
-      label: `${t.name || "终端 " + t.id}${t.netstate === 1 ? "" : "（离线）"}`,
+      label:
+        (t.name || i18nT("common.terminalNo", { id: t.id })) +
+        (t.netstate === 1 ? "" : i18nT("termSelect.offlineSuffix")),
       terminalId: t.id
     });
   }
@@ -149,7 +159,7 @@ const nodes = computed<Node[]>(() => {
   list.sort((a, b) => String(a.label).localeCompare(String(b.label), "zh"));
   list.push(ungrouped);
   // 「不指定」放最前，且不属于任何分区
-  if (props.allowEmpty) list.unshift({ key: 0, label: props.emptyLabel });
+  if (props.allowEmpty) list.unshift({ key: 0, label: props.emptyLabel || i18nT("termSelect.unspecified") });
   return list;
 });
 

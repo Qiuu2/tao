@@ -1,4 +1,5 @@
 import { ref } from "vue";
+import i18n from "@/languages";
 
 /**
  * @description 获取本地时间
@@ -18,7 +19,8 @@ export const useTime = () => {
     const date = new Date();
     year.value = date.getFullYear();
     month.value = date.getMonth() + 1;
-    week.value = "日一二三四五六".charAt(date.getDay());
+    // 一个字符对一天：中文是「日一二…」，英文是 SMTWTFS。
+    week.value = i18n.global.t("sys.weekLetters").charAt(date.getDay());
     day.value = date.getDate();
     hour.value =
       (date.getHours() + "")?.padStart(2, "0") ||
@@ -29,7 +31,14 @@ export const useTime = () => {
     second.value =
       (date.getSeconds() + "")?.padStart(2, "0") ||
       new Intl.NumberFormat(undefined, { minimumIntegerDigits: 2 }).format(date.getSeconds());
-    nowTime.value = `${year.value}年${month.value}月${day.value} ${hour.value}:${minute.value}:${second.value}`;
+    nowTime.value = i18n.global.t("sys.clockLine", {
+      y: year.value,
+      m: month.value,
+      d: day.value,
+      hh: hour.value,
+      mm: minute.value,
+      ss: second.value
+    });
   };
 
   updateTime();

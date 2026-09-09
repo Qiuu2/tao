@@ -59,6 +59,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"htweb/internal/i18n"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -154,33 +155,33 @@ type Status struct {
 //	3                    服务器是标准版软件
 //	4                    服务器已过期
 //	其它（含 0）          服务器没有注册
-func statusText(flag, daysLeft int) string {
+func statusText(ctx context.Context, flag, daysLeft int) string {
 	switch {
 	case flag == FlagRegistered:
-		return "服务器已注册"
+		return i18n.TC(ctx, "服务器已注册")
 	case flag == FlagTrial && daysLeft >= 0:
-		return "服务器在试用期"
+		return i18n.TC(ctx, "服务器在试用期")
 	case flag == FlagTrial:
-		return "服务器没有注册"
+		return i18n.TC(ctx, "服务器没有注册")
 	case flag == FlagStandard:
-		return "服务器是标准版软件"
+		return i18n.TC(ctx, "服务器是标准版软件")
 	case flag == FlagExpired:
-		return "服务器已过期"
+		return i18n.TC(ctx, "服务器已过期")
 	}
-	return "服务器没有注册"
+	return i18n.TC(ctx, "服务器没有注册")
 }
 
 // trialAlert 是旧版 settrydo() 里那几句 alert：这些状态下按钮不发请求，只提示。
-func trialAlert(flag int) string {
+func trialAlert(ctx context.Context, flag int) string {
 	switch flag {
 	case FlagRegistered:
-		return "服务器已注册"
+		return i18n.TC(ctx, "服务器已注册")
 	case FlagTrial:
-		return "服务器在试用期"
+		return i18n.TC(ctx, "服务器在试用期")
 	case FlagStandard:
-		return "服务器是标准版软件"
+		return i18n.TC(ctx, "服务器是标准版软件")
 	case FlagExpired:
-		return "服务器已过期"
+		return i18n.TC(ctx, "服务器已过期")
 	}
 	return ""
 }
@@ -202,17 +203,17 @@ func (s *Service) Status(ctx context.Context, withMachineCode bool) (*Status, er
 	days, missing := s.trialDaysLeft()
 	out.TrialDaysLeft = days
 	out.SerialFileMissing = missing
-	out.StatusText = statusText(out.Flag, days)
+	out.StatusText = statusText(ctx, out.Flag, days)
 	out.Registered = out.Flag == FlagRegistered
 	if out.Flag == FlagTrial && days >= 0 {
-		out.TrialNotice = fmt.Sprintf("服务器还有%d天到期，到期后服务器不能使用，为了您的正常使用，请及时注册！", days)
+		out.TrialNotice = fmt.Sprintf(i18n.TC(ctx, "服务器还有%d天到期，到期后服务器不能使用，为了您的正常使用，请及时注册！"), days)
 	}
 	if s.opt.TrialFile != "" {
 		if _, err := os.Stat(s.opt.TrialFile); err == nil {
 			out.TrialUsed = true
 		}
 	}
-	out.CanTrial = trialAlert(out.Flag) == ""
+	out.CanTrial = trialAlert(ctx, out.Flag) == ""
 	// 与 auth.Login 里那条判断保持一致：只有 1（已注册）和 2（试用中）能登录
 	out.LoginBlocked = out.Flag != FlagRegistered && out.Flag != FlagTrial
 	return out, nil
@@ -320,7 +321,7 @@ func (s *Service) Register(ctx context.Context, licenseKey string) (*RegisterRes
 		// 新版一律按失败处理，并把实际输出带回去，免得「点了没反应」。
 		res.Message = "注册错误、请确认注册码、再重新输入"
 		if outcome != "" && outcome != "failed" {
-			res.Message += fmt.Sprintf("（注册程序返回：%s）", outcome)
+			res.Message += fmt.Sprintf(i18n.TC(ctx, "（注册程序返回：%s）"), outcome)
 		}
 	}
 	return res, nil
@@ -357,7 +358,7 @@ func (s *Service) Trial(ctx context.Context) (*Status, error) {
 		return nil, err
 	}
 	if !cur.CanTrial {
-		return nil, fmt.Errorf("%w：%s", ErrNoTrial, trialAlert(cur.Flag))
+		return nil, fmt.Errorf("%w：%s", ErrNoTrial, trialAlert(ctx, cur.Flag))
 	}
 
 	body, err := os.ReadFile(s.opt.SerialFile)

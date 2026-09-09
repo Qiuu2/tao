@@ -577,7 +577,7 @@ const send = async () => {
       JSON.parse(bodyText.value);
       payload = bodyText.value;
     } catch (e: any) {
-      bodyErr.value = "请求体不是合法的 JSON：" + (e?.message ?? e);
+      bodyErr.value = t("console.badJson") + (e?.message ?? e);
       return;
     }
   }

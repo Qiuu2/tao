@@ -521,31 +521,37 @@ const refreshLight = async () => {
 
 /* ---------------- 快捷入口 ---------------- */
 
-const pageOptions = [
-  { path: "/terminal", label: "终端管理" },
-  { path: "/media", label: "文件管理" },
-  { path: "/alarm/area", label: "报警分区" },
-  { path: "/alarm/mapping", label: "报警映射" },
-  { path: "/bell", label: "作息方案" },
-  { path: "/task", label: "文件广播" },
-  { path: "/offline", label: "离线传输" },
-  { path: "/server", label: "服务器信息" },
-  { path: "/backup", label: "备份还原" },
-  { path: "/log", label: "日志" },
-  { path: "/user/list", label: "用户" },
-  { path: "/user/group", label: "用户组" }
+// 快捷入口的候选页。名字用侧边栏那一套（menu.*），别自己再起一份 ——
+// 两份迟早对不上，而对不上的表现是「菜单里叫 A、快捷入口里叫 B」。
+//
+// ⚠ label 会**存进库里**：用户挑的时候看到什么，存下来的就是什么。
+// 所以早先建的快捷入口保持原样（是他当时起的名字），不会跟着切语言。
+const PAGE_KEYS: { path: string; key: string }[] = [
+  { path: "/terminal", key: "menu.terminal" },
+  { path: "/media", key: "menu.media" },
+  { path: "/alarm/area", key: "menu.alarmArea" },
+  { path: "/alarm/mapping", key: "menu.alarmMapping" },
+  { path: "/bell", key: "menu.bell" },
+  { path: "/task", key: "menu.task" },
+  { path: "/offline", key: "menu.offline" },
+  { path: "/server", key: "menu.server" },
+  { path: "/backup", key: "menu.backup" },
+  { path: "/log", key: "menu.log" },
+  { path: "/user/list", key: "menu.userList" },
+  { path: "/user/group", key: "menu.userGroup" }
 ];
+const pageOptions = computed(() => PAGE_KEYS.map(p => ({ path: p.path, label: t(p.key) })));
 
-const sd = reactive({ visible: false, busy: false, path: "/terminal", label: "终端管理" });
+const sd = reactive({ visible: false, busy: false, path: "/terminal", label: "" });
 
 const openShortcut = () => {
   sd.path = "/terminal";
-  sd.label = "终端管理";
+  sd.label = t("menu.terminal");
   sd.busy = false;
   sd.visible = true;
 };
 const onPickPage = (p: string) => {
-  sd.label = pageOptions.find(x => x.path === p)?.label ?? "";
+  sd.label = pageOptions.value.find(x => x.path === p)?.label ?? "";
 };
 
 const persistShortcuts = async (list: { label: string; path: string; icon: string }[]) => {

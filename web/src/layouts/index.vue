@@ -1,6 +1,6 @@
 <!-- 💥 这里是一次性加载 LayoutComponents -->
 <template>
-  <el-watermark id="watermark" :font="font" :content="watermark ? ['IP数字网络广播系统'] : ''">
+  <el-watermark id="watermark" :font="font" :content="watermark ? [$t('sys.watermark')] : ''">
     <component :is="LayoutComponents[layout]" />
     <ThemeDrawer />
     <!-- AI 助手浮在所有页面之上。助手功能关掉时它自己不出现，见组件里的 ready -->

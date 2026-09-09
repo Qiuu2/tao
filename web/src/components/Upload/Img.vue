@@ -19,15 +19,15 @@
         <div class="upload-handle" @click.stop>
           <div v-if="!self_disabled" class="handle-icon" @click="editImg">
             <el-icon><Edit /></el-icon>
-            <span>编辑</span>
+            <span>{{ $t("upload.edit") }}</span>
           </div>
           <div class="handle-icon" @click="imgViewVisible = true">
             <el-icon><ZoomIn /></el-icon>
-            <span>查看</span>
+            <span>{{ $t("upload.view") }}</span>
           </div>
           <div v-if="!self_disabled" class="handle-icon" @click="deleteImg">
             <el-icon><Delete /></el-icon>
-            <span>删除</span>
+            <span>{{ $t("upload.delete") }}</span>
           </div>
         </div>
       </template>
@@ -48,6 +48,7 @@
 </template>
 
 <script setup lang="ts" name="UploadImg">
+import { useI18n } from "vue-i18n";
 import type { UploadProps, UploadRequestOptions } from "element-plus";
 import { ElNotification, formContextKey, formItemContextKey } from "element-plus";
 import { computed, inject, ref } from "vue";
@@ -68,6 +69,9 @@ interface UploadFileProps {
 }
 
 // 接受父组件参数
+// 脚本里拼的文案用 t()；模板里的 $t 不用引入
+const { t } = useI18n();
+
 const props = withDefaults(defineProps<UploadFileProps>(), {
   imageUrl: "",
   drag: true,
@@ -142,15 +146,15 @@ const beforeUpload: UploadProps["beforeUpload"] = rawFile => {
   const imgType = props.fileType.includes(rawFile.type as File.ImageMimeType);
   if (!imgType)
     ElNotification({
-      title: "温馨提示",
-      message: "上传图片不符合所需的格式！",
+      title: t("upload.tip"),
+      message: t("upload.imgBadFormat"),
       type: "warning"
     });
   if (!imgSize)
     setTimeout(() => {
       ElNotification({
-        title: "温馨提示",
-        message: `上传图片大小不能超过 ${props.fileSize}M！`,
+        title: t("upload.tip"),
+        message: t("upload.imgTooLargeMB", { n: props.fileSize }),
         type: "warning"
       });
     }, 0);
@@ -162,8 +166,8 @@ const beforeUpload: UploadProps["beforeUpload"] = rawFile => {
  * */
 const uploadSuccess = () => {
   ElNotification({
-    title: "温馨提示",
-    message: "图片上传成功！",
+    title: t("upload.tip"),
+    message: t("upload.imgOk"),
     type: "success"
   });
 };
@@ -173,8 +177,8 @@ const uploadSuccess = () => {
  * */
 const uploadError = () => {
   ElNotification({
-    title: "温馨提示",
-    message: "图片上传失败，请您重新上传！",
+    title: t("upload.tip"),
+    message: t("upload.imgFailed"),
     type: "error"
   });
 };

@@ -164,7 +164,7 @@ const login = (formEl: FormInstance | undefined) => {
       });
       if (data.server?.readonly) {
         ElNotification({
-          title: "备机模式",
+          title: t("sys.standbyMode"),
           message: t("login.standbyNotice"),
           type: "warning",
           duration: 0

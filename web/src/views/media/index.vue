@@ -14,7 +14,7 @@
     <!-- 左：文件夹树 -->
     <div class="tree-panel">
       <div class="tree-header">
-        <span class="tree-title">{{ treeData?.rootName || "文件管理" }}</span>
+        <span class="tree-title">{{ treeData?.rootName || $t("menu.media") }}</span>
         <span>
           <el-button
             link
@@ -124,7 +124,7 @@
                 :title="$t('media.deleteSelected')"
                 @click="onDeleteMedia(scope.selectedListIds)"
               >
-                删除{{ scope.selectedListIds.length ? `(${scope.selectedListIds.length})` : "" }}
+                {{ $t("common.delete") }}{{ scope.selectedListIds.length ? `(${scope.selectedListIds.length})` : "" }}
               </el-button>
               <el-button
                 type="danger"
@@ -301,7 +301,7 @@
       <div class="mt10">
         <el-button :disabled="uploading" @click="uploadVisible = false">{{ $t("common.cancel") }}</el-button>
         <el-button type="primary" :loading="uploading" :disabled="!fileList.length" @click="doUpload">
-          确定{{ fileList.length ? `（${fileList.length} 个）` : "" }}
+          {{ $t("common.confirm") }}{{ fileList.length ? $t("sys.nFiles", { n: fileList.length }) : "" }}
         </el-button>
       </div>
 

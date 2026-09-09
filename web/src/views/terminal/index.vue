@@ -245,7 +245,7 @@
               :type="t.deleted ? 'danger' : 'info'"
               effect="plain"
             >
-              {{ t.deleted ? `已删除 #${t.terminalId}` : t.terminalname }}
+              {{ t.deleted ? $t("sys.deletedTerminalNo", { id: t.terminalId }) : t.terminalname }}
             </el-tag>
           </template>
         </el-table-column>
@@ -589,7 +589,7 @@
           @input="loadCallGroups"
         />
         <el-button size="small" link @click="cg.orderBy = cg.orderBy === 'name' ? '' : 'name'">
-          {{ cg.orderBy === "name" ? "按名称排序 ✓" : "按名称排序" }}
+          {{ cg.orderBy === "name" ? $t("sys.sortByNameOn") : $t("sys.sortByName") }}
         </el-button>
       </div>
 
@@ -671,7 +671,7 @@
               :disabled="!fm.folderId"
               @input="loadFolderTerminals"
             />
-            <span class="dlg-note">{{ fm.folderName ? `当前目录：${fm.folderName}` : "请先在左边选一个目录" }}</span>
+            <span class="dlg-note">{{ fm.folderName ? $t("sys.currentFolder", { name: fm.folderName }) : $t("sys.pickFolderFirst") }}</span>
           </div>
           <el-table
             v-loading="fm.listLoading"
@@ -701,7 +701,7 @@
             <el-table-column prop="ip" :label="$t('common.ipAddress')" width="126" />
             <el-table-column prop="volume" :label="$t('common.volume')" width="70" align="center" />
             <template #empty>
-              <span class="dlg-note">{{ fm.folderId ? "这个目录里还没有终端" : "请先在左边选一个目录" }}</span>
+              <span class="dlg-note">{{ fm.folderId ? $t("sys.noTerminalInFolder") : $t("sys.pickFolderFirst") }}</span>
             </template>
           </el-table>
         </div>
@@ -729,7 +729,7 @@
     >
       <el-form label-width="90px">
         <el-form-item v-if="fe.mode === 'create'" :label="$t('term.parentFolder')">
-          <span class="dlg-note">{{ fm.folderName || "根目录" }}</span>
+          <span class="dlg-note">{{ fm.folderName || $t("sys.rootFolder") }}</span>
         </el-form-item>
         <el-form-item :label="$t('term.folderName')" required>
           <el-input v-model="fe.name" maxlength="32" show-word-limit :placeholder="$t('term.digitsLettersHanzi')" />
@@ -1270,7 +1270,7 @@ const batchItems: BatchItem[] = [
   { cmd: "reregister", label: t("term.reregister"), ready: true },
   { cmd: "view-shortcut", label: t("term.viewShortcutKeys"), single: true, ready: true, cap: "shortcut" },
   { cmd: "del-shortcut", label: t("term.deleteShortcutKey"), single: true, ready: true, cap: "shortcut" },
-  { cmd: "quick-task", label: "快捷任务", single: true, ready: true, cap: "quickTask" },
+  { cmd: "quick-task", label: t("term.quickTask"), single: true, ready: true, cap: "quickTask" },
   { cmd: "password", label: t("term.setTerminalPassword"), single: true, ready: true, cap: "password" },
   { cmd: "instancy:1", label: t("term.setEmergency"), ready: true, cap: "instancy" },
   { cmd: "instancy:0", label: t("term.cancelEmergency"), ready: true, cap: "instancy" },

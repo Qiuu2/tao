@@ -152,10 +152,11 @@ const i18nT = t;
 const ZONE_LABELS = computed(() => {
   // 第 7、8 位是电源不是分区（旧版 language/chinese.php 的 zone_7 / zone_8
   // 就写着「电源一 / 电源二」），别顺手排成「分区七 / 分区八」。
-  const zh = ["一", "二", "三", "四", "五", "六", "", "", "九", "十", "十一", "十二", "十三", "十四", "十五", "十六"];
+  // prettier-ignore
+  const zh = ["一", "二", "三", "四", "五", "六", "", "", "九", "十", "十一", "十二", "十三", "十四", "十五", "十六"]; // i18n-ignore：只在中文界面用，英文走 i+1
   const isEn = locale.value === "en";
   return zh.map((w, i) => {
-    if (i === 6 || i === 7) return t("common.powerBit", { n: isEn ? i - 5 : i === 6 ? "一" : "二" });
+    if (i === 6 || i === 7) return t("common.powerBit", { n: isEn ? i - 5 : i === 6 ? "一" : "二" }); // i18n-ignore
     return t("common.zoneBit", { n: isEn ? i + 1 : w });
   });
 });

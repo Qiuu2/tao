@@ -5,9 +5,13 @@
 </template>
 
 <script setup lang="ts">
+import { useI18n } from "vue-i18n";
 import { ElMessage } from "element-plus";
 import screenfull from "screenfull";
 import { onMounted, ref } from "vue";
+
+// 脚本里拼的文案用 t()；模板里的 $t 不用引入
+const { t } = useI18n();
 
 const isFullscreen = ref(screenfull.isFullscreen);
 
@@ -19,7 +23,7 @@ onMounted(() => {
 });
 
 const handleFullScreen = () => {
-  if (!screenfull.isEnabled) ElMessage.warning("当前您的浏览器不支持全屏 ❌");
+  if (!screenfull.isEnabled) ElMessage.warning(t("sys.noFullscreen"));
   screenfull.toggle();
 };
 </script>

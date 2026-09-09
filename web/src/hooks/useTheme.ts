@@ -9,6 +9,7 @@ import { menuTheme } from "@/styles/theme/menu";
 import { getDarkColor, getLightColor } from "@/utils/color";
 
 import { Theme } from "./interface";
+import i18n from "@/languages";
 
 /**
  * @description 全局主题 hooks
@@ -31,7 +32,7 @@ export const useTheme = () => {
   const changePrimary = (val: string | null) => {
     if (!val) {
       val = DEFAULT_PRIMARY;
-      ElMessage({ type: "success", message: `主题颜色已重置为 ${DEFAULT_PRIMARY}` });
+      ElMessage({ type: "success", message: i18n.global.t("sys.themeReset", { color: DEFAULT_PRIMARY }) });
     }
     // 计算主题颜色变化
     document.documentElement.style.setProperty("--el-color-primary", val);

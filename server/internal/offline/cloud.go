@@ -440,7 +440,7 @@ var weekNames = [7]string{"日", "一", "二", "三", "四", "五", "六"}
 // cycleText / lengthText 与 typedtask 包里那两份同口径，
 // 只是离线副本这边独立取一份，免得两个包互相依赖。
 
-func lengthText(t, v int) string {
+func lengthText(ctx context.Context, t, v int) string {
 	if v <= 0 {
 		return "—"
 	}
@@ -448,14 +448,14 @@ func lengthText(t, v int) string {
 		h, m, s := v/3600, (v%3600)/60, v%60
 		switch {
 		case h > 0:
-			return fmt.Sprintf("%d小时%d分%d秒", h, m, s)
+			return fmt.Sprintf(i18n.TC(ctx, "%d小时%d分%d秒"), h, m, s)
 		case m > 0:
-			return fmt.Sprintf("%d分%d秒", m, s)
+			return fmt.Sprintf(i18n.TC(ctx, "%d分%d秒"), m, s)
 		default:
-			return fmt.Sprintf("%d秒", s)
+			return fmt.Sprintf(i18n.TC(ctx, "%d秒"), s)
 		}
 	}
-	return fmt.Sprintf("循环 %d 次", v)
+	return fmt.Sprintf(i18n.TC(ctx, "循环 %d 次"), v)
 }
 
 // typeText 与 enable 包里的那份保持同样的取值来源（task.tasktype 列注释 + 各页面反推）。
@@ -579,7 +579,7 @@ func (s *Service) ListTransferTasks(ctx context.Context, u *auth.User, q Transfe
 		t.TypeText = typeText(t.TaskType)
 		t.StateText = TextCtx(ctx, t.State)
 		t.CycleText = i18n.CycleText(ctx, t.ExeModel)
-		t.LengthText = lengthText(t.TimeLengthType, t.TimeLength)
+		t.LengthText = lengthText(ctx, t.TimeLengthType, t.TimeLength)
 		// ⚠ offlinetask.projectstate 与 task 同源：0 = 启用、1 = 停用
 		if t.ProjectState == 0 {
 			t.ProjectText = "启用"

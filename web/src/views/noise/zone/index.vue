@@ -88,7 +88,7 @@
         <el-table-column :label='$t("terminalCommon.netState")' width="110">
           <template #default="{ row }">
             <el-tag :type="row.netstate === 1 ? 'success' : 'info'" size="small">
-              {{ row.netstate === 1 ? "在线" : "离线" }}
+              {{ row.netstate === 1 ? $t("common.online") : $t("common.offline") }}
             </el-tag>
           </template>
         </el-table-column>

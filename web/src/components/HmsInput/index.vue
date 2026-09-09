@@ -10,15 +10,15 @@
     <el-select :model-value="h" size="small" :disabled="disabled" style="width: 74px" @update:model-value="v => emitAt(v, m, s)">
       <el-option v-for="n in 24" :key="n - 1" :label="pad(n - 1)" :value="n - 1" />
     </el-select>
-    <span class="hms-u">时</span>
+    <span class="hms-u">{{ $t("hms.hour") }}</span>
     <el-select :model-value="m" size="small" :disabled="disabled" style="width: 74px" @update:model-value="v => emitAt(h, v, s)">
       <el-option v-for="n in 60" :key="n - 1" :label="pad(n - 1)" :value="n - 1" />
     </el-select>
-    <span class="hms-u">分</span>
+    <span class="hms-u">{{ $t("hms.minute") }}</span>
     <el-select :model-value="s" size="small" :disabled="disabled" style="width: 74px" @update:model-value="v => emitAt(h, m, v)">
       <el-option v-for="n in 60" :key="n - 1" :label="pad(n - 1)" :value="n - 1" />
     </el-select>
-    <span class="hms-u">秒</span>
+    <span class="hms-u">{{ $t("hms.second") }}</span>
   </div>
 </template>
 

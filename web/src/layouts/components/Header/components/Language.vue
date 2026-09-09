@@ -27,8 +27,11 @@ const i18n = useI18n();
 const globalStore = useGlobalStore();
 const language = computed(() => globalStore.language);
 
+// 语言名一律用**它自己那门语言**写 —— 切语言的人正是看不懂当前这门语言的人，
+// 把「简体中文」翻成 Chinese 反而更难找。
+// prettier-ignore
 const languageList = [
-  { label: "简体中文", value: "zh" },
+  { label: "简体中文", value: "zh" }, // i18n-ignore
   { label: "English", value: "en" }
 ];
 

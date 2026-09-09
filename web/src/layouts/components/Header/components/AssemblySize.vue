@@ -17,19 +17,23 @@
 </template>
 
 <script setup lang="ts">
+import { useI18n } from "vue-i18n";
 import { computed } from "vue";
 
 import { AssemblySizeType } from "@/stores/interface";
 import { useGlobalStore } from "@/stores/modules/global";
 
+// 脚本里拼的文案用 t()；模板里的 $t 不用引入
+const { t } = useI18n();
+
 const globalStore = useGlobalStore();
 const assemblySize = computed(() => globalStore.assemblySize);
 
-const assemblySizeList = [
-  { label: "默认", value: "default" },
-  { label: "大型", value: "large" },
-  { label: "小型", value: "small" }
-];
+const assemblySizeList = computed(() => [
+  { label: t("size.default"), value: "default" },
+  { label: t("size.large"), value: "large" },
+  { label: t("size.small"), value: "small" }
+]);
 
 const setAssemblySize = (item: AssemblySizeType) => {
   if (assemblySize.value === item) return;

@@ -28,11 +28,14 @@ function walk(dir, out = []) {
 }
 
 /** 摘掉注释：<!-- -->、块注释、行注释。 */
+// 抹注释但**保住行数** —— 下面要按行号对 i18n-ignore 标记，
+// 直接删掉整段注释会让行号错位，标记就对不上了。
 function stripComments(t) {
+  const keepLines = m => m.replace(/[^\n]/g, " ");
   return t
-    .replace(/<!--[\s\S]*?-->/g, "")
-    .replace(/\/\*[\s\S]*?\*\//g, "")
-    .replace(/^\s*\/\/.*$/gm, "");
+    .replace(/<!--[\s\S]*?-->/g, keepLines)
+    .replace(/\/\*[\s\S]*?\*\//g, keepLines)
+    .replace(/^\s*\/\/.*$/gm, keepLines);
 }
 
 const CJK = /[一-鿿]/;
@@ -102,7 +105,7 @@ for (const p of files) {
 perFile.sort((a, b) => b[1] - a[1]);
 console.log(`\n未接入 i18n 的界面文案：${uniq.size} 条不重复 / ${total} 处 / ${perFile.length} 个文件`);
 console.log("剩得最多的文件：");
-for (const [p, n] of perFile.slice(0, 15)) console.log(`  ${String(n).padStart(4)}  ${p}`);
+for (const [p, n] of perFile.slice(0, 60)) console.log(`  ${String(n).padStart(4)}  ${p}`);
 
 if (process.argv.includes("--list")) {
   console.log("\n全部剩余文案：");

@@ -22,6 +22,7 @@ import { formContextKey, formItemContextKey } from "element-plus";
 import { computed, inject, nextTick, onBeforeUnmount, shallowRef } from "vue";
 
 import { uploadImg, uploadVideo } from "@/api/modules/upload";
+import i18n from "@/languages";
 
 // 富文本 DOM 元素
 const editorRef = shallowRef();
@@ -49,7 +50,7 @@ const props = withDefaults(defineProps<RichEditorProps>(), {
   },
   editorConfig: () => {
     return {
-      placeholder: "请输入内容...",
+      placeholder: i18n.global.t("sys.editorPlaceholder"),
       MENU_CONF: {}
     };
   },

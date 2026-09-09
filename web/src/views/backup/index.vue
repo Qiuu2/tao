@@ -185,7 +185,7 @@ const onPick = async (uf: any) => {
     return ElMessage.warning(t("backup.tooLarge", { max: human(MAX) }));
   }
   if (file.size === 0) {
-    return ElMessage.warning("这个文件是空的");
+    return ElMessage.warning(t("backup.emptyFile"));
   }
 
   uploading.value = true;
@@ -196,7 +196,7 @@ const onPick = async (uf: any) => {
       data.renamed ? t("backup.uploadedRenamed", { name: data.name }) : t("backup.uploaded", { name: data.name })
     );
     if (data.item && !data.item.compatible) {
-      ElMessage.warning("这个包与当前数据库结构不一致，列表里会标成「不可恢复」");
+      ElMessage.warning(t("backup.schemaMismatch"));
     }
     await load();
   } finally {
@@ -248,7 +248,7 @@ const download = (row: BackupItem) => {
 };
 
 const remove = async (row: BackupItem) => {
-  await ElMessageBox.confirm(`确定删除备份包「${row.name}」？删除后无法恢复。`, t("common.doubleConfirm"), { type: "warning" });
+  await ElMessageBox.confirm(t("backup.confirmDeletePkg", { name: row.name }), t("common.doubleConfirm"), { type: "warning" });
   await deleteBackupApi(row.name);
   ElMessage.success(t("common.deleted"));
   load();
@@ -276,7 +276,7 @@ const openRestore = async (row: BackupItem) => {
 
 const doRestore = async () => {
   if (!rst.pre) return;
-  await ElMessageBox.confirm("最后确认：这会清空数据库现有全部数据并写入备份内容，不可撤销。", t("backup.dangerous"), {
+  await ElMessageBox.confirm(t("backup.finalConfirm"), t("backup.dangerous"), {
     type: "error",
     confirmButtonText: t("backup.iConfirmRestore")
   });
@@ -290,8 +290,8 @@ const doRestore = async () => {
     });
     rst.visible = false;
     let msg = t("backup.restoreDone", { tables: data.tablesRestored, deleted: data.rowsDeleted, inserted: data.rowsInserted });
-    if (data.mediaRestored) msg += `，媒体 ${data.mediaRestored} 个`;
-    if (data.safetyBackup) msg += `；安全备份 ${data.safetyBackup}`;
+    if (data.mediaRestored) msg += t("backup.mediaRestoredN", { n: data.mediaRestored });
+    if (data.safetyBackup) msg += t("backup.safetyBackupName", { name: data.safetyBackup });
     ElMessage.success(msg);
     if (data.mediaFailed?.length) {
       ElMessage.warning(t("backup.mediaFailed", { n: data.mediaFailed.length, names: data.mediaFailed.join("、") }));
@@ -300,7 +300,7 @@ const doRestore = async () => {
     // 顺带把「后台服务还没加载新数据」这件事讲清楚 ——
     // 让它自动生效的那条报文实测是整机重启，不能替用户按下去。
     const hint = data.backendNeedsRestart ? `\n\n${data.restartHint}` : "";
-    await ElMessageBox.alert(`数据已恢复，所有会话已失效，请重新登录。${hint}`, "请重新登录", {
+    await ElMessageBox.alert(t("backup.restoredRelogin", { hint }), t("backup.reloginTitle"), {
       confirmButtonText: t("backup.goSignIn")
     });
     userStore.setToken("");

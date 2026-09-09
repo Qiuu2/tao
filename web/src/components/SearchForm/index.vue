@@ -21,7 +21,7 @@
             <el-button type="primary" :icon="Search" @click="search"> {{ $t("common.search") }} </el-button>
             <el-button :icon="Delete" @click="reset"> {{ $t("common.reset") }} </el-button>
             <el-button v-if="showCollapse" type="primary" link class="search-isOpen" @click="collapsed = !collapsed">
-              {{ collapsed ? "展开" : "合并" }}
+              {{ collapsed ? $t("sys.expand") : $t("sys.merge") }}
               <el-icon class="el-icon--right">
                 <component :is="collapsed ? ArrowDown : ArrowUp"></component>
               </el-icon>

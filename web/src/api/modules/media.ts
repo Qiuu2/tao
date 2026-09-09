@@ -1,6 +1,7 @@
 import http from "@/api";
 import { PORT1 } from "@/api/config/servicePort";
 import { ResPage } from "@/api/interface/index";
+import i18n from "@/languages";
 
 /** 文件夹树节点 */
 export interface FolderNode {
@@ -151,18 +152,23 @@ export const clearFolderMediaApi = (folderId: number, confirmFolderName: string)
   return http.post<MediaDeleteRes>(PORT1 + `/api/folders/${folderId}/media:clear`, { confirmFolderName });
 };
 
-/** 被阻断原因的中文说明 */
-export const blockReasonText = (reason: string): string => {
-  const map: Record<string, string> = {
-    IN_USE_TASK: "正被任务使用",
-    IN_USE_SHORTCUT: "正被终端快捷键使用",
-    IN_USE_ALARM: "正被报警映射使用",
-    IN_USE_BELL: "正被打铃条目使用",
-    SYSTEM_FOLDER_NO_PERMISSION: "位于系统预置库，仅超级管理员可删",
-    SYSTEM_RESERVED: "系统预置媒体库，不可删除",
-    NO_PERMISSION: "无权操作",
-    MEDIA_IN_USE: "目录内有媒体正被使用",
-    NOT_FOUND: "对象不存在"
-  };
-  return map[reason] || reason;
-};
+/**
+ * 被阻断原因的说明。
+ *
+ * 后端给的是 IN_USE_TASK 这种码，翻译在字典里（block.*）——
+ * 认不出的码原样返回，好过显示一句编出来的话。
+ */
+const BLOCK_REASONS = [
+  "IN_USE_TASK",
+  "IN_USE_SHORTCUT",
+  "IN_USE_ALARM",
+  "IN_USE_BELL",
+  "SYSTEM_FOLDER_NO_PERMISSION",
+  "SYSTEM_RESERVED",
+  "NO_PERMISSION",
+  "MEDIA_IN_USE",
+  "NOT_FOUND"
+];
+
+export const blockReasonText = (reason: string): string =>
+  BLOCK_REASONS.includes(reason) ? i18n.global.t(`block.${reason}`) : reason;

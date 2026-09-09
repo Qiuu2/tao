@@ -91,7 +91,7 @@
               style="width: 220px"
               @input="loadTasks"
             />
-            <span class="dlg-note">{{ pickedTaskName ? `已选：${pickedTaskName}` : "未选择任务" }}</span>
+            <span class="dlg-note">{{ pickedTaskName ? $t("sys.pickedTask", { name: pickedTaskName }) : $t("sys.noTaskPicked") }}</span>
           </div>
           <el-tree
             ref="taskTreeRef"

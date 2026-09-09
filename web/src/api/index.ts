@@ -11,6 +11,7 @@ import { useUserStore } from "@/stores/modules/user";
 
 import { AxiosCanceler } from "./helper/axiosCancel";
 import { checkStatus } from "./helper/checkStatus";
+import i18n from "@/languages";
 
 export interface CustomAxiosRequestConfig extends InternalAxiosRequestConfig {
   loading?: boolean;
@@ -91,8 +92,8 @@ class RequestHttp {
         const { response } = error;
         tryHideFullScreenLoading();
         // 请求超时 && 网络错误单独判断，没有 response
-        if (error.message.indexOf("timeout") !== -1) ElMessage.error("请求超时！请您稍后重试");
-        if (error.message.indexOf("Network Error") !== -1) ElMessage.error("网络错误！请您稍后重试");
+        if (error.message.indexOf("timeout") !== -1) ElMessage.error(i18n.global.t("http.timeout"));
+        if (error.message.indexOf("Network Error") !== -1) ElMessage.error(i18n.global.t("http.network"));
         // 根据服务器响应的错误状态码，做不同的处理
         if (response) checkStatus(response.status);
         // 服务器结果都没有返回(可能服务器错误可能客户端断网)，断网处理:可以跳转到断网页面

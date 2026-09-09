@@ -228,14 +228,14 @@
         <el-table-column :label="$t('terminalCommon.netState')" width="100">
           <template #default="{ row }">
             <el-tag :type="row.netstate === 1 ? 'success' : 'info'" size="small">
-              {{ row.netstate === 1 ? "在线" : "离线" }}
+              {{ row.netstate === 1 ? $t("common.online") : $t("common.offline") }}
             </el-tag>
           </template>
         </el-table-column>
         <el-table-column :label="$t('terminalCommon.deviceState')" width="100">
           <template #default="{ row }">
             <el-tag :type="row.taskstate === 1 ? 'warning' : 'info'" size="small" effect="plain">
-              {{ row.taskstate === 1 ? "播放中" : "空闲" }}
+              {{ row.taskstate === 1 ? $t("terminalCommon.playing") : $t("terminalCommon.idle") }}
             </el-tag>
           </template>
         </el-table-column>

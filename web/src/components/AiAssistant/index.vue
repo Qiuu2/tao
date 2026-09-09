@@ -138,7 +138,7 @@
       <el-empty v-if="!history.length" :description='$t("ai.noHistory")' />
       <div v-for="h in history" :key="h.id" :class="['history-item', h.role]">
         <div class="history-head">
-          <span class="role">{{ h.role === "user" ? "我" : "小电" }}</span>
+          <span class="role">{{ h.role === "user" ? $t("sys.me") : $t("sys.assistantName") }}</span>
           <span class="time">{{ h.createTime }}</span>
         </div>
         <div class="history-text">{{ h.text }}</div>

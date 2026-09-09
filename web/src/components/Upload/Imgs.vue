@@ -27,11 +27,11 @@
         <div class="upload-handle" @click.stop>
           <div class="handle-icon" @click="handlePictureCardPreview(file)">
             <el-icon><ZoomIn /></el-icon>
-            <span>查看</span>
+            <span>{{ $t("upload.view") }}</span>
           </div>
           <div v-if="!self_disabled" class="handle-icon" @click="handleRemove(file)">
             <el-icon><Delete /></el-icon>
-            <span>删除</span>
+            <span>{{ $t("upload.delete") }}</span>
           </div>
         </div>
       </template>
@@ -44,6 +44,7 @@
 </template>
 
 <script setup lang="ts" name="UploadImgs">
+import { useI18n } from "vue-i18n";
 import { Plus } from "@element-plus/icons-vue";
 import type { UploadFile, UploadProps, UploadRequestOptions, UploadUserFile } from "element-plus";
 import { ElNotification, formContextKey, formItemContextKey } from "element-plus";
@@ -63,6 +64,9 @@ interface UploadFileProps {
   width?: string; // 组件宽度 ==> 非必传（默认为 150px）
   borderRadius?: string; // 组件边框圆角 ==> 非必传（默认为 8px）
 }
+
+// 脚本里拼的文案用 t()；模板里的 $t 不用引入
+const { t } = useI18n();
 
 const props = withDefaults(defineProps<UploadFileProps>(), {
   fileList: () => [],
@@ -104,15 +108,15 @@ const beforeUpload: UploadProps["beforeUpload"] = rawFile => {
   const imgType = props.fileType.includes(rawFile.type as File.ImageMimeType);
   if (!imgType)
     ElNotification({
-      title: "温馨提示",
-      message: "上传图片不符合所需的格式！",
+      title: t("upload.tip"),
+      message: t("upload.imgBadFormat"),
       type: "warning"
     });
   if (!imgSize)
     setTimeout(() => {
       ElNotification({
-        title: "温馨提示",
-        message: `上传图片大小不能超过 ${props.fileSize}M！`,
+        title: t("upload.tip"),
+        message: t("upload.imgTooLargeMB", { n: props.fileSize }),
         type: "warning"
       });
     }, 0);
@@ -152,8 +156,8 @@ const uploadSuccess = (response: { fileUrl: string } | undefined, uploadFile: Up
     formContext?.validateField([formItemContext.prop as string]);
   }
   ElNotification({
-    title: "温馨提示",
-    message: "图片上传成功！",
+    title: t("upload.tip"),
+    message: t("upload.imgOk"),
     type: "success"
   });
 };
@@ -172,8 +176,8 @@ const handleRemove = (file: UploadFile) => {
  * */
 const uploadError = () => {
   ElNotification({
-    title: "温馨提示",
-    message: "图片上传失败，请您重新上传！",
+    title: t("upload.tip"),
+    message: t("upload.imgFailed"),
     type: "error"
   });
 };
@@ -183,8 +187,8 @@ const uploadError = () => {
  * */
 const handleExceed = () => {
   ElNotification({
-    title: "温馨提示",
-    message: `当前最多只能上传 ${props.limit} 张图片，请移除后上传！`,
+    title: t("upload.tip"),
+    message: t("upload.imgLimit", { n: props.limit }),
     type: "warning"
   });
 };

@@ -416,6 +416,23 @@ var codeDict = map[string]string{
 	"任务类型只能是 file、collect 或 amplifier":        "The task type must be file, collect or amplifier",
 	"请先选择要删除的遥控任务":                            "Select the remote tasks to delete first",
 
+	// ——— 注册服务 ———
+	"服务器已注册":    "This server is licensed",
+	"服务器在试用期":   "This server is in its trial period",
+	"服务器没有注册":   "This server is not licensed",
+	"服务器是标准版软件": "This server runs the standard edition",
+	"服务器已过期":    "This server's licence has expired",
+	"服务器还有%d天到期，到期后服务器不能使用，为了您的正常使用，请及时注册！": "This server expires in %d days. It stops working after that — please register in good time.",
+	"已过期，请重新获取注册码":                     "It has expired — please obtain a new licence code",
+	"当前状态不能领取试用":                       "The trial cannot be claimed in the current state",
+	"未配置试用标记文件路径（register.trial_file）": "No trial marker file path is configured (register.trial_file)",
+	"注册成功、服务器已重启":                      "Registered; the server has restarted",
+	"注册码过长":                            "That licence code is too long",
+	"注册程序无法执行":                         "The registration program could not be run",
+	"注册错误、请确认注册码、再重新输入":                "Registration failed — check the licence code and enter it again",
+	"请输入注册码":                           "Enter the licence code",
+	"（注册程序返回：%s）":                      " (the registration program returned: %s)",
+
 	// ——— 接口调用平台的目录（internal/openapi/spec.go）———
 	//
 	// 这一段是 Localize 走结构时用的。新增接口时把新文案补进来即可 ——

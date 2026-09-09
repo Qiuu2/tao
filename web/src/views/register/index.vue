@@ -37,39 +37,39 @@
   <div class="reg-page" v-loading="loading">
     <el-card shadow="never" class="reg-card">
       <!-- 旧版顶上是一张 user_regist.gif，这里换成同样位置的标题条 -->
-      <div class="reg-head">注册服务</div>
+      <div class="reg-head">{{ $t("register.title") }}</div>
 
       <!-- 旧版那个红色的 demos 行：试用期时显示「服务器还有 N 天到期…」 -->
       <div v-if="st.trialNotice" class="reg-demos">{{ st.trialNotice }}</div>
 
       <el-form label-width="110px" class="reg-form">
-        <el-form-item label="服务器状态">
+        <el-form-item :label='$t("register.serverState")'>
           <span class="reg-state" :class="{ ok: st.registered }">{{ st.statusText }}</span>
         </el-form-item>
 
-        <el-form-item label="机器码">
+        <el-form-item :label='$t("register.machineCode")'>
           <el-input
             v-model="st.machineCode"
             readonly
             class="reg-input"
-            placeholder="（未取到机器码）"
-            title="机器码，用户需要把机器码复制下来发到厂家，厂家会算出一个注册码给用户完成注册"
+            :placeholder='$t("register.machineCodeEmpty")'
+            :title='$t("register.machineCodeTitle")'
           >
             <template #append>
-              <el-button :disabled="!st.machineCode" @click="copyCode">复制</el-button>
+              <el-button :disabled="!st.machineCode" @click="copyCode">{{ $t("common.copy") }}</el-button>
             </template>
           </el-input>
-          <div class="reg-tip">机器码，用户需要把机器码复制下来发到厂家，厂家会算出一个注册码给用户完成注册。</div>
+          <div class="reg-tip">{{ $t("register.machineCodeTip") }}</div>
         </el-form-item>
 
-        <el-form-item label="注册码" required>
+        <el-form-item :label='$t("register.licenceCode")' required>
           <el-input
             v-model="licenseKey"
             class="reg-input"
             maxlength="128"
             show-word-limit
-            placeholder="请输入注册码"
-            title="注册码,用户在此输入厂家给的注册码完成注册，如果用户没有注册，则此处会有红色字体提示用户当前状态是适用期还是已过期"
+            :placeholder='$t("register.licenceCodeRequired")'
+            :title='$t("register.licenceCodeTitle")'
             @focus="err = ''"
           />
           <div v-if="err" class="reg-err">{{ err }}</div>
@@ -79,38 +79,42 @@
           <!-- 按钮文案照抄旧版 language/chinese.php：「注 册」中间有个空格，「试用」没有 -->
           <el-button
             type="primary"
-            title="用户输入注册码后点击注册，弹出成功后完成注册后即可"
+            :title='$t("register.submitTitle")'
             :loading="submitting"
             @click="submit"
           >
-            注 册
+            {{ $t("register.submit") }}
           </el-button>
-          <el-button :loading="trying" @click="doTrial">试用</el-button>
+          <el-button :loading="trying" @click="doTrial">{{ $t("register.trial") }}</el-button>
           <!-- 登录前打开这一页时给一条回登录页的路；登录后侧边栏本来就在，不用这个按钮 -->
-          <el-button v-if="standalone" link type="primary" @click="$router.replace('/login')">返回登录</el-button>
+          <el-button v-if="standalone" link type="primary" @click="$router.replace('/login')">{{ $t("register.backToLogin") }}</el-button>
         </el-form-item>
       </el-form>
 
-      <div v-if="standalone && st.loginBlocked" class="reg-blocked">服务器当前不能登录 —— 注册成功或领取试用后再回登录页。</div>
+      <div v-if="standalone && st.loginBlocked" class="reg-blocked">{{ $t("register.cannotLogin") }}</div>
 
       <div class="reg-foot">
         <div v-if="st.serialFileMissing">
-          试用起算文件读不到，剩余天数算不出来 —— 到「配置文件 → register.serial_file」核对路径。
+          {{ $t("register.trialFileMissing") }}
         </div>
         <div v-else-if="st.registerflag === REGISTER_FLAG.TRIAL">剩余试用天数：{{ st.trialDaysLeft }} 天（试用期共 5 天）</div>
-        <div v-if="st.trialUsed">这台服务器已经领过试用期，不能再领第二次。</div>
+        <div v-if="st.trialUsed">{{ $t("register.trialUsed") }}</div>
       </div>
     </el-card>
   </div>
 </template>
 
 <script setup lang="ts" name="registerServer">
+import { useI18n } from "vue-i18n";
 import { ElMessage, ElMessageBox } from "element-plus";
 import { computed, onMounted, reactive, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 
 import { getRegisterApi, getRegisterStatusApi, REGISTER_FLAG, startTrialApi, submitRegisterApi } from "@/api/modules/register";
 import type { RegisterStatus } from "@/api/modules/register";
+
+// 脚本里拼的文案用 t()；模板里的 $t 不用引入
+const { t } = useI18n();
 
 const blank = (): RegisterStatus => ({
   registerflag: 0,
@@ -164,17 +168,17 @@ const load = async () => {
 const copyCode = async () => {
   try {
     await navigator.clipboard.writeText(st.machineCode);
-    ElMessage.success("机器码已复制");
+    ElMessage.success(t("register.codeCopied"));
   } catch {
     // 剪贴板在非 https / 无权限时会被浏览器挡下，这时提示手动复制
-    ElMessage.warning("浏览器不允许自动复制，请手动选中机器码复制");
+    ElMessage.warning(t("register.copyNotAllowed"));
   }
 };
 
 const submit = async () => {
   err.value = "";
   if (!licenseKey.value.trim()) {
-    err.value = "请输入注册码";
+    err.value = t("register.licenceCodeRequired");
     return;
   }
   submitting.value = true;
@@ -205,9 +209,9 @@ const doTrial = async () => {
     return;
   }
   try {
-    await ElMessageBox.confirm("领取后服务器会重启，试用期共 5 天。确定要领取吗？", "领取试用期", {
+    await ElMessageBox.confirm(t("register.claimConfirm"), t("register.claimTrial"), {
       type: "warning",
-      confirmButtonText: "确定领取"
+      confirmButtonText: t("register.claimOk")
     });
   } catch {
     return; // 点了取消
@@ -215,7 +219,7 @@ const doTrial = async () => {
   trying.value = true;
   try {
     await startTrialApi();
-    ElMessage.success("您有5天的试用期，请尽快注册");
+    ElMessage.success(t("register.trialDaysNotice"));
     await load();
   } catch {
     // 「服务器已试用过」这类，拦截器已经把后端那句话弹出来了

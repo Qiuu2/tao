@@ -64,7 +64,7 @@
           <template #default="{ row }">
             <template v-if="row.lastusedtime">
               {{ row.lastusedtime }}
-              <span class="muted"> · {{ row.lastusedip || "未知来源" }}</span>
+              <span class="muted"> · {{ row.lastusedip || $t("sys.unknownSource") }}</span>
             </template>
             <span v-else class="muted">{{ $t("keys.neverUsed") }}</span>
           </template>
@@ -73,7 +73,7 @@
         <el-table-column :label='$t("common.operation")' fixed="right" width="170">
           <template #default="{ row }">
             <el-button type="primary" link :disabled="!canControl" @click="toggle(row)">
-              {{ row.enabled ? "停用" : "启用" }}
+              {{ row.enabled ? $t("common.disable") : $t("common.enable") }}
             </el-button>
             <el-button type="danger" link :icon="Delete" :disabled="!canDelete" @click="remove(row)">{{ $t("common.delete") }}</el-button>
           </template>

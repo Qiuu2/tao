@@ -4,13 +4,13 @@
       {{ title }}
     </h4>
     <div class="search">
-      <el-input v-model="filterText" placeholder="输入关键字进行过滤" clearable />
+      <el-input v-model="filterText" :placeholder='$t("treeFilter.filterPlaceholder")' clearable />
       <el-dropdown trigger="click">
         <el-icon size="20"><More /></el-icon>
         <template #dropdown>
           <el-dropdown-menu>
-            <el-dropdown-item @click="toggleTreeNodes(true)">展开全部</el-dropdown-item>
-            <el-dropdown-item @click="toggleTreeNodes(false)">折叠全部</el-dropdown-item>
+            <el-dropdown-item @click="toggleTreeNodes(true)">{{ $t("treeFilter.expandAll") }}</el-dropdown-item>
+            <el-dropdown-item @click="toggleTreeNodes(false)">{{ $t("treeFilter.collapseAll") }}</el-dropdown-item>
           </el-dropdown-menu>
         </template>
       </el-dropdown>
@@ -46,6 +46,7 @@
 </template>
 
 <script setup lang="ts" name="TreeFilter">
+import { useI18n } from "vue-i18n";
 import { ElTree } from "element-plus";
 import { nextTick, onBeforeMount, ref, watch } from "vue";
 
@@ -59,6 +60,9 @@ interface TreeFilterProps {
   multiple?: boolean; // 是否为多选 ==> 非必传，默认为 false
   defaultValue?: any; // 默认选中的值 ==> 非必传
 }
+// 脚本里拼的文案用 t()；模板里的 $t 不用引入
+const { t } = useI18n();
+
 const props = withDefaults(defineProps<TreeFilterProps>(), {
   id: "id",
   label: "label",
@@ -85,7 +89,7 @@ onBeforeMount(async () => {
   if (props.requestApi) {
     const { data } = await props.requestApi!();
     treeData.value = data;
-    treeAllData.value = [{ id: "", [props.label]: "全部" }, ...data];
+    treeAllData.value = [{ id: "", [props.label]: t("common.all") }, ...data];
   }
 });
 
@@ -101,7 +105,7 @@ watch(
   () => {
     if (props.data?.length) {
       treeData.value = props.data;
-      treeAllData.value = [{ id: "", [props.label]: "全部" }, ...props.data];
+      treeAllData.value = [{ id: "", [props.label]: t("common.all") }, ...props.data];
     }
   },
   { deep: true, immediate: true }

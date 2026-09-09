@@ -1,6 +1,10 @@
 import { RouteRecordRaw } from "vue-router";
 
 import { HOME_URL, LOGIN_URL } from "@/config";
+import i18n from "@/languages";
+
+// 这里在组件外面，取不到 setup 里的 t() —— 用 i18n 实例上的全局 t。
+const t = i18n.global.t;
 
 /**
  * staticRouter (静态路由)
@@ -15,7 +19,7 @@ export const staticRouter: RouteRecordRaw[] = [
     name: "login",
     component: () => import("@/views/login/index.vue"),
     meta: {
-      title: "登录"
+      title: t("route.login")
     }
   },
   {
@@ -33,7 +37,7 @@ export const staticRouter: RouteRecordRaw[] = [
     name: "registerServerStandalone",
     component: () => import("@/views/register/index.vue"),
     meta: {
-      title: "注册服务"
+      title: t("route.register")
     }
   },
   {
@@ -55,7 +59,7 @@ export const errorRouter = [
     name: "403",
     component: () => import("@/components/ErrorMessage/403.vue"),
     meta: {
-      title: "403页面"
+      title: t("route.p403")
     }
   },
   {
@@ -63,7 +67,7 @@ export const errorRouter = [
     name: "404",
     component: () => import("@/components/ErrorMessage/404.vue"),
     meta: {
-      title: "404页面"
+      title: t("route.p404")
     }
   },
   {
@@ -71,7 +75,7 @@ export const errorRouter = [
     name: "500",
     component: () => import("@/components/ErrorMessage/500.vue"),
     meta: {
-      title: "500页面"
+      title: t("route.p500")
     }
   },
   // Resolve refresh page, route warnings

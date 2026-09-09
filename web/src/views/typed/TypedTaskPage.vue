@@ -147,12 +147,12 @@
         <el-table-column :label="$t('terminalCommon.netState')" width="100">
           <template #default="{ row }">
             <el-tag :type="row.netstate === 1 ? 'success' : 'info'" size="small">
-              {{ row.netstate === 1 ? "在线" : "离线" }}
+              {{ row.netstate === 1 ? $t("common.online") : $t("common.offline") }}
             </el-tag>
           </template>
         </el-table-column>
         <el-table-column :label="$t('terminalCommon.deviceState')" width="100">
-          <template #default="{ row }">{{ row.devicestate === 1 ? "正常" : "空闲" }}</template>
+          <template #default="{ row }">{{ row.devicestate === 1 ? $t("common.normal") : $t("terminalCommon.idle") }}</template>
         </el-table-column>
         <el-table-column prop="ip" :label="$t('terminalCommon.terminalIp')" width="150" />
         <el-table-column prop="volume" :label="$t('common.volume')" width="80" />
@@ -676,7 +676,8 @@ const { t } = useI18n();
 
 const props = defineProps<{ kind: TypedKind }>();
 
-const title = computed(() => KIND_TITLE[props.kind]);
+// KIND_TITLE 存的是 i18n 键（见 ninemod.ts 的注释）
+const title = computed(() => t(KIND_TITLE[props.kind]));
 const authStore = useAuthStore();
 /*
   这四页的权限位各不相同（终端功放=powerplay、采播管理=admpriv、

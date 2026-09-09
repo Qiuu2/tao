@@ -95,7 +95,7 @@ export const resetRouter = () => {
  * */
 router.onError(error => {
   NProgress.done();
-  console.warn("路由错误", error.message);
+  console.warn("route error", error.message);
 });
 
 /**

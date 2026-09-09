@@ -522,7 +522,7 @@
           <el-table-column :label="$t('bell.bellMusic')" min-width="134">
             <template #default="{ row }">
               <span v-if="dlg.mode === 'batch'" :class="{ muted: !batchMediaName(row) }">{{
-                batchMediaName(row) || "未设置"
+                batchMediaName(row) || $t("sys.notSet")
               }}</span>
               <el-select
                 v-else
@@ -578,7 +578,7 @@
           <el-table-column :label="$t('common.operation')" width="152" align="center">
             <template #default="{ row, $index }">
               <el-button link type="primary" :loading="row.busy" @click="saveOneItem($index)">
-                {{ row.taskid ? "修改" : "添加" }}
+                {{ row.taskid ? $t("common.modify") : $t("common.add") }}
               </el-button>
               <el-button v-if="dlg.mode !== 'batch'" link type="primary" @click="copyItemRow($index)">{{
                 $t("common.copy")

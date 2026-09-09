@@ -1,6 +1,7 @@
 import { nextTick, ref } from "vue";
 
 import { assistantChatApi, type AssistantActionLog, type AssistantChoice, type ChatResponse } from "@/api/modules/assistant";
+import i18n from "@/languages";
 
 /**
  * 一轮对话在界面上的样子。
@@ -90,7 +91,7 @@ export function useAssistantChat() {
       const res = data as ChatResponse;
       Object.assign(holder, {
         pending: false,
-        text: res.reply || "（没有回话）",
+        text: res.reply || i18n.global.t("sys.noReply"),
         intent: res.intent,
         dialogState: res.dialogStateDetail,
         choices: res.choices,
@@ -106,7 +107,7 @@ export function useAssistantChat() {
       Object.assign(holder, {
         pending: false,
         warning: true,
-        text: "没能把这句话发出去，检查一下网络再试试。"
+        text: i18n.global.t("sys.sendFailed")
       });
     } finally {
       loading.value = false;

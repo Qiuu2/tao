@@ -20,6 +20,7 @@
 </template>
 
 <script setup lang="ts">
+import { useI18n } from "vue-i18n";
 import { ArrowRight } from "@element-plus/icons-vue";
 import { computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
@@ -28,6 +29,9 @@ import { HOME_URL } from "@/config";
 import { menuTitle } from "@/languages";
 import { useAuthStore } from "@/stores/modules/auth";
 import { useGlobalStore } from "@/stores/modules/global";
+
+// 脚本里拼的文案用 t()；模板里的 $t 不用引入
+const { t } = useI18n();
 
 const route = useRoute();
 const router = useRouter();
@@ -39,7 +43,7 @@ const breadcrumbList = computed(() => {
   // 🙅‍♀️不需要首页面包屑可删除以下判断
   if (breadcrumbData[0].path !== HOME_URL) {
     // 「首页」这一节是这里补出来的，不在后端菜单里，所以要单独翻一次
-    breadcrumbData = [{ path: HOME_URL, meta: { icon: "HomeFilled", title: menuTitle("home", "首页") } }, ...breadcrumbData];
+    breadcrumbData = [{ path: HOME_URL, meta: { icon: "HomeFilled", title: menuTitle("home", t("menu.home")) } }, ...breadcrumbData];
   }
   return breadcrumbData;
 });

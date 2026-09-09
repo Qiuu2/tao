@@ -20,6 +20,7 @@ import (
 
 	"htweb/internal/auth"
 	"htweb/internal/folder"
+	"htweb/internal/i18n"
 	"htweb/internal/store"
 )
 
@@ -212,7 +213,7 @@ func (s *Service) List(ctx context.Context, u *auth.User, q ListQuery) (*ListRes
 		it.UserID = userID.Int64
 		it.SizeText = FormatSizeKB(it.Size)
 		it.BitrateText = FormatBitrate(it.Bitrate)
-		it.TimeText = FormatDuration(it.TimeLength)
+		it.TimeText = FormatDuration(ctx, it.TimeLength)
 		// 物理路径不外泄给前端，只给资源接口地址（修复 D-02 的信息暴露面）
 		it.StreamURL = fmt.Sprintf("/api/media/%d/stream", it.ID)
 		it.DownloadURL = fmt.Sprintf("/api/media/%d/download", it.ID)
@@ -239,7 +240,7 @@ func (s *Service) folderInfo(ctx context.Context, u *auth.User, folderID int64) 
 		`SELECT name, parentid FROM filefolder WHERE id = ? LIMIT 1`, folderID).
 		Scan(&info.Name, &parentID)
 	if err == sql.ErrNoRows {
-		info.Name = "(目录不存在)"
+		info.Name = i18n.TC(ctx, "(目录不存在)")
 		return info, nil
 	}
 	if err != nil {
@@ -247,6 +248,9 @@ func (s *Service) folderInfo(ctx context.Context, u *auth.User, folderID int64) 
 	}
 
 	info.System = folderID <= 9
+	// 系统预置库的名字是产品词汇，跟着语言走；用户自己建的目录名不动。
+	// 判据与目录树那边同一条（folder.LocalizedName）。
+	info.Name = folder.LocalizedName(ctx, folderID, info.Name)
 
 	// 目录容量：交给数据库聚合，而不是把所有行取回来在应用里累加（修复 D-23）
 	var sum sql.NullInt64
@@ -399,6 +403,6 @@ func FormatBitrate(bps int64) string {
 }
 
 // FormatDuration 秒 → "x分y秒"，与旧界面一致。
-func FormatDuration(sec int64) string {
-	return fmt.Sprintf("%d分%d秒", sec/60, sec%60)
+func FormatDuration(ctx context.Context, sec int64) string {
+	return fmt.Sprintf(i18n.TC(ctx, "%d分%d秒"), sec/60, sec%60)
 }

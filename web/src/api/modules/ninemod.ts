@@ -8,11 +8,12 @@ import type { ResPage } from "@/api/interface";
 
 export type TypedKind = "amplifier" | "collect" | "tts" | "led";
 
+/** 四类任务的页面标题。存的是 i18n 键 —— 这是模块级常量，取不到 setup 里的 t()。 */
 export const KIND_TITLE: Record<TypedKind, string> = {
-  amplifier: "终端功放",
-  collect: "采播管理",
-  tts: "文字语音",
-  led: "LED 播放"
+  amplifier: "menu.amplifier",
+  collect: "menu.collect",
+  tts: "menu.tts",
+  led: "menu.led"
 };
 
 export interface TypedTask {

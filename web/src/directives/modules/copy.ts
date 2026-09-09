@@ -6,6 +6,7 @@
 
 import { ElMessage } from "element-plus";
 import type { Directive, DirectiveBinding } from "vue";
+import i18n from "@/languages";
 interface ElType extends HTMLElement {
   copyData: string | number;
 }
@@ -27,10 +28,10 @@ async function handleClick(this: any) {
     await navigator.clipboard.writeText(this.copyData);
     ElMessage({
       type: "success",
-      message: "复制成功"
+      message: i18n.global.t("sys.copied")
     });
   } catch (err) {
-    console.error("复制操作不被支持或失败: ", err);
+    console.error("copy unsupported or failed:", err);
   }
 }
 

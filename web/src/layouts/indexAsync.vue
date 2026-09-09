@@ -1,6 +1,6 @@
 <!-- 💥 这里是异步加载 LayoutComponents -->
 <template>
-  <el-watermark id="watermark" :font="font" :content="watermark ? ['IP数字网络广播系统'] : ''">
+  <el-watermark id="watermark" :font="font" :content="watermark ? [$t('sys.watermark')] : ''">
     <suspense>
       <template #default>
         <component :is="LayoutComponents[layout]" />
