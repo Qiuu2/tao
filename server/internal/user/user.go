@@ -95,7 +95,7 @@ func (s *Service) ListUsers(ctx context.Context, cur *auth.User, q UserListQuery
 		if u.UsergroupName == "" {
 			u.UsergroupName = i18n.TC(ctx, "(用户组已删除)")
 		}
-		u.EnableText = map[bool]string{true: "启用", false: "停用"}[u.Enable == 1]
+		u.EnableText = map[bool]string{true: i18n.TC(ctx, "启用"), false: i18n.TC(ctx, "停用")}[u.Enable == 1]
 		u.CanModify = true
 		u.CanDelete = u.ID != SystemUserID
 		out = append(out, u)

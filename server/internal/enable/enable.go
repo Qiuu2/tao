@@ -547,9 +547,9 @@ func (s *Service) PickTasks(ctx context.Context, isAdmin bool, userID int64, key
 		p.TypeText = typeText(ctx, p.TaskType)
 		// task.projectstate：0 = 启用、1 = 停用
 		if p.State == 0 {
-			p.StateText = "启用"
+			p.StateText = i18n.TC(ctx, "启用")
 		} else {
-			p.StateText = "停用"
+			p.StateText = i18n.TC(ctx, "停用")
 		}
 		out = append(out, p)
 	}
