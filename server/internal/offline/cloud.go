@@ -129,7 +129,7 @@ func (s *Service) ListCloudTerminals(ctx context.Context, u *auth.User, q CloudQ
 
 	res := &CloudResult{Items: items, Total: total}
 	if !u.IsAdmin {
-		res.ScopeNote = "仅显示绑定给我的终端"
+		res.ScopeNote = i18n.TC(ctx, "仅显示绑定给我的终端")
 	}
 	return res, nil
 }
@@ -183,9 +183,9 @@ func (s *Service) CloudInventory(ctx context.Context, u *auth.User, terminalID i
 		}
 		it.Missing = !exists
 		if it.Missing {
-			it.Name = "(离线媒体副本已不存在)"
+			it.Name = i18n.TC(ctx, "(离线媒体副本已不存在)")
 		}
-		it.StateText = StateText[State(it.State)]
+		it.StateText = TextCtx(ctx, it.State)
 		out = append(out, it)
 	}
 	mrs.Close()
@@ -213,9 +213,9 @@ func (s *Service) CloudInventory(ctx context.Context, u *auth.User, terminalID i
 		it.TaskID = it.ID
 		it.Missing = !exists
 		if it.Missing {
-			it.Name = "(离线任务副本已不存在)"
+			it.Name = i18n.TC(ctx, "(离线任务副本已不存在)")
 		}
-		it.StateText = StateText[State(it.State)]
+		it.StateText = TextCtx(ctx, it.State)
 		out = append(out, it)
 	}
 	return out, trs.Err()
@@ -309,7 +309,7 @@ func (s *Service) CloudBulk(ctx context.Context, u *auth.User,
 	}
 	text, ok := cloudActionText[action]
 	if !ok {
-		return nil, fmt.Errorf("不认识的动作：%s", action)
+		return nil, fmt.Errorf(i18n.TC(ctx, "不认识的动作：%s"), action)
 	}
 	if err := s.assertTerminals(ctx, u, termIDs); err != nil {
 		return nil, err
@@ -361,8 +361,8 @@ func (s *Service) CloudBulk(ctx context.Context, u *auth.User,
 	tph, targs := placeholders(termIDs)
 
 	out := &CloudBulkResult{
-		Action: string(action), ActionText: text,
-		TerminalCount: len(termIDs), StateText: Text(int(mediaState)),
+		Action: string(action), ActionText: i18n.TC(ctx, text),
+		TerminalCount: len(termIDs), StateText: TextCtx(ctx, int(mediaState)),
 	}
 
 	q := `UPDATE offlinemediaofterminal SET offlinestate = ? WHERE terminalid IN (` + tph + `)`
@@ -394,7 +394,7 @@ func (s *Service) CloudBulk(ctx context.Context, u *auth.User,
 	}
 
 	if out.MediaRows == 0 && out.TaskRows == 0 {
-		return nil, fmt.Errorf("选中的终端上没有任何离线内容，%s 无事可做", text)
+		return nil, fmt.Errorf(i18n.TC(ctx, "选中的终端上没有任何离线内容，%s 无事可做"), i18n.TC(ctx, text))
 	}
 	return out, nil
 }
@@ -577,7 +577,7 @@ func (s *Service) ListTransferTasks(ctx context.Context, u *auth.User, q Transfe
 			return nil, fmt.Errorf("扫描离线任务副本行: %w", err)
 		}
 		t.TypeText = typeText(t.TaskType)
-		t.StateText = StateText[State(t.State)]
+		t.StateText = TextCtx(ctx, t.State)
 		t.CycleText = i18n.CycleText(ctx, t.ExeModel)
 		t.LengthText = lengthText(t.TimeLengthType, t.TimeLength)
 		// ⚠ offlinetask.projectstate 与 task 同源：0 = 启用、1 = 停用
@@ -638,7 +638,7 @@ func (s *Service) TransferMedia(ctx context.Context, u *auth.User, taskID int64)
 		}
 		it.Missing = exists == 0
 		if it.Missing {
-			it.Name = "(离线媒体副本已不存在)"
+			it.Name = i18n.TC(ctx, "(离线媒体副本已不存在)")
 		}
 		out = append(out, it)
 	}
@@ -688,11 +688,11 @@ func (s *Service) TransferBulk(ctx context.Context, u *auth.User,
 	}
 	n, _ := res.RowsAffected()
 	if n == 0 {
-		return nil, fmt.Errorf("选中的任务还没有下发到任何终端，%s 无事可做", cloudActionText[action])
+		return nil, fmt.Errorf(i18n.TC(ctx, "选中的任务还没有下发到任何终端，%s 无事可做"), i18n.TC(ctx, cloudActionText[action]))
 	}
 	return &CloudBulkResult{
-		Action: string(action), ActionText: cloudActionText[action],
-		TerminalCount: 0, TaskRows: n, StateText: Text(int(state)),
+		Action: string(action), ActionText: i18n.TC(ctx, cloudActionText[action]),
+		TerminalCount: 0, TaskRows: n, StateText: TextCtx(ctx, int(state)),
 	}, nil
 }
 
@@ -738,9 +738,9 @@ func (s *Service) TransferDetail(ctx context.Context, u *auth.User, taskID int64
 		}
 		t.Deleted = !exists
 		if t.Deleted {
-			t.TerminalName = "(终端已删除)"
+			t.TerminalName = i18n.TC(ctx, "(终端已删除)")
 		}
-		t.StateText = StateText[State(t.State)]
+		t.StateText = TextCtx(ctx, t.State)
 		// area 列的默认值带着三层单引号（'''11111111'''），旧数据里可能就是这个样子。
 		// 展示时把引号剥掉，免得界面上出现一串莫名其妙的撇号。
 		t.Area = strings.Trim(t.Area, "'")
@@ -781,7 +781,7 @@ func (s *Service) assertTerminalsOnline(ctx context.Context, ids []int64) error 
 		return err
 	}
 	if len(off) > 0 {
-		return fmt.Errorf("这些终端不在线，清除指令发不下去：%s", strings.Join(off, "、"))
+		return fmt.Errorf(i18n.TC(ctx, "这些终端不在线，清除指令发不下去：%s"), strings.Join(off, i18n.TC(ctx, "、")))
 	}
 	return nil
 }

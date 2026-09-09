@@ -22,43 +22,43 @@
       <template #tableHeader="scope">
         <div class="header-bar">
           <div class="header-left">
-            <el-button :disabled="!scope.isSelected" @click="bulk('idle', scope.selectedListIds)">空闲传输</el-button>
-            <el-button :disabled="!scope.isSelected" @click="bulk('immediate', scope.selectedListIds)"> 立即传输 </el-button>
-            <el-button :disabled="!scope.isSelected" @click="bulk('deleteIdle', scope.selectedListIds)"> 空闲删除 </el-button>
-            <el-button :disabled="!scope.isSelected" @click="bulk('deleteNow', scope.selectedListIds)"> 立即删除 </el-button>
-            <el-button :disabled="!scope.isSelected" @click="bulk('stop', scope.selectedListIds)">停止传输</el-button>
-            <el-button :disabled="!scope.isSelected" @click="bulk('clearAll', scope.selectedListIds)"> 全部清除 </el-button>
-            <el-button :disabled="!scope.isSelected" @click="syncTime(scope.selectedListIds)">同步时间</el-button>
+            <el-button :disabled="!scope.isSelected" @click="bulk('idle', scope.selectedListIds)">{{ $t("taskCommon.idleTransfer") }}</el-button>
+            <el-button :disabled="!scope.isSelected" @click="bulk('immediate', scope.selectedListIds)"> {{ $t("taskCommon.nowTransfer") }} </el-button>
+            <el-button :disabled="!scope.isSelected" @click="bulk('deleteIdle', scope.selectedListIds)"> {{ $t("offline.idleDelete") }} </el-button>
+            <el-button :disabled="!scope.isSelected" @click="bulk('deleteNow', scope.selectedListIds)"> {{ $t("offline.nowDelete") }} </el-button>
+            <el-button :disabled="!scope.isSelected" @click="bulk('stop', scope.selectedListIds)">{{ $t("cloud.stopTransfer") }}</el-button>
+            <el-button :disabled="!scope.isSelected" @click="bulk('clearAll', scope.selectedListIds)"> {{ $t("cloud.clearAll") }} </el-button>
+            <el-button :disabled="!scope.isSelected" @click="syncTime(scope.selectedListIds)">{{ $t("term.syncTime") }}</el-button>
             <el-button :disabled="!scope.isSelected" @click="bulk('clearTerminalMedia', scope.selectedListIds)">
-              清除终端媒体
+              {{ $t("cloud.clearTerminalMedia") }}
             </el-button>
             <el-button :disabled="!scope.isSelected" @click="bulk('clearIdleMedia', scope.selectedListIds)">
-              清除空闲媒体
+              {{ $t("cloud.clearIdleMedia") }}
             </el-button>
-            <el-button :icon="Download" @click="goOffline">去音乐传输下发</el-button>
+            <el-button :icon="Download" @click="goOffline">{{ $t("cloud.goOffline") }}</el-button>
           </div>
           <div class="header-right">
             <el-tag v-if="scopeNote" type="info" size="small" effect="plain">{{ scopeNote }}</el-tag>
-            <el-tag type="info" size="small" effect="plain">只列有存储容量的终端</el-tag>
+            <el-tag type="info" size="small" effect="plain">{{ $t("cloud.onlyWithCapacity") }}</el-tag>
           </div>
         </div>
       </template>
 
       <template #netstate="s">
         <el-tag :type="s.row.netstate === 1 ? 'success' : 'info'" size="small">
-          {{ s.row.netstate === 1 ? "在线" : "离线" }}
+          {{ s.row.netstate === 1 ? $t("common.online") : $t("common.offline") }}
         </el-tag>
       </template>
 
       <template #taskstate="s">
         <el-tag :type="s.row.taskstate === 1 ? 'warning' : 'info'" size="small" effect="plain">
-          {{ s.row.taskstate === 1 ? "播放中" : "空闲" }}
+          {{ s.row.taskstate === 1 ? $t("terminalCommon.playing") : $t("terminalCommon.idle") }}
         </el-tag>
       </template>
 
       <template #devicestate="s">
         <el-tag :type="s.row.devicestate === 1 ? 'success' : 'info'" size="small" effect="plain">
-          {{ s.row.devicestate === 1 ? "已启动" : "已停止" }}
+          {{ s.row.devicestate === 1 ? $t("common.started") : $t("common.stopped") }}
         </el-tag>
       </template>
 
@@ -67,7 +67,7 @@
 
       <template #operation="s">
         <el-button type="primary" link :icon="View" @click="openInventory(s.row)">
-          查看内容
+          {{ $t("cloud.viewContent") }}
           <span v-if="s.row.mediaCount + s.row.taskCount" class="cnt"> （{{ s.row.mediaCount + s.row.taskCount }}） </span>
         </el-button>
       </template>
@@ -75,20 +75,20 @@
 
     <el-dialog v-model="inv.visible" :title="inv.title" width="820px" top="6vh">
       <el-tabs v-model="inv.tab">
-        <el-tab-pane :label="`离线媒体（${mediaItems.length}）`" name="media">
+        <el-tab-pane :label='$t("cloud.mediaTab", { n: mediaItems.length })' name="media">
           <el-table :data="mediaItems" size="small" max-height="420">
-            <el-table-column prop="id" label="媒体 ID" width="90" />
-            <el-table-column prop="name" label="名称" min-width="220" show-overflow-tooltip />
-            <el-table-column label="大小" width="110">
+            <el-table-column prop="id" :label='$t("cloud.mediaId")' width="90" />
+            <el-table-column prop="name" :label='$t("common.name")' min-width="220" show-overflow-tooltip />
+            <el-table-column :label='$t("common.size")' width="110">
               <template #default="{ row }">{{ human(row.size) }}</template>
             </el-table-column>
-            <el-table-column label="归属" width="130">
+            <el-table-column :label='$t("cloud.belongsTo")' width="130">
               <template #default="{ row }">
-                <span v-if="row.taskId">任务 {{ row.taskId }}</span>
-                <span v-else class="muted">独立下发</span>
+                <span v-if="row.taskId">{{ $t("cloud.taskNo", { id: row.taskId }) }}</span>
+                <span v-else class="muted">{{ $t("cloud.standalone") }}</span>
               </template>
             </el-table-column>
-            <el-table-column label="状态" width="130">
+            <el-table-column :label='$t("common.status")' width="130">
               <template #default="{ row }">
                 <el-tag :type="stateType(row.offlinestate)" size="small">{{ row.stateText }}</el-tag>
               </template>
@@ -96,11 +96,11 @@
           </el-table>
         </el-tab-pane>
 
-        <el-tab-pane :label="`离线任务（${taskItems.length}）`" name="task">
+        <el-tab-pane :label='$t("cloud.taskTab", { n: taskItems.length })' name="task">
           <el-table :data="taskItems" size="small" max-height="420">
-            <el-table-column prop="id" label="任务 ID" width="90" />
-            <el-table-column prop="name" label="任务名称" min-width="260" show-overflow-tooltip />
-            <el-table-column label="状态" width="130">
+            <el-table-column prop="id" :label='$t("cloud.taskId")' width="90" />
+            <el-table-column prop="name" :label='$t("taskCommon.taskName")' min-width="260" show-overflow-tooltip />
+            <el-table-column :label='$t("common.status")' width="130">
               <template #default="{ row }">
                 <el-tag :type="stateType(row.offlinestate)" size="small">{{ row.stateText }}</el-tag>
               </template>
@@ -109,16 +109,17 @@
         </el-tab-pane>
       </el-tabs>
 
-      <div v-if="!mediaItems.length && !taskItems.length" class="empty">这台终端里还没有任何离线内容。</div>
+      <div v-if="!mediaItems.length && !taskItems.length" class="empty">{{ $t("cloud.emptyInventory") }}</div>
 
       <template #footer>
-        <el-button @click="inv.visible = false">关闭</el-button>
+        <el-button @click="inv.visible = false">{{ $t("common.close") }}</el-button>
       </template>
     </el-dialog>
   </div>
 </template>
 
 <script setup lang="tsx" name="cloudTerminal">
+import { useI18n } from "vue-i18n";
 import { Download, View } from "@element-plus/icons-vue";
 import { computed, reactive, ref } from "vue";
 import { useRouter } from "vue-router";
@@ -130,6 +131,9 @@ import type { CloudItem, CloudTerminal } from "@/api/modules/ninemod";
 import { syncTerminalTimeApi } from "@/api/modules/terminal";
 import ProTable from "@/components/ProTable/index.vue";
 import type { ColumnProps, ProTableInstance } from "@/components/ProTable/interface";
+
+// 脚本里拼的文案用 t()；模板里的 $t 不用引入
+const { t } = useI18n();
 
 const router = useRouter();
 const proTableRef = ref<ProTableInstance>();
@@ -147,17 +151,17 @@ const dataCallback = (data: any) => {
 // 已在后端补上；「离线内容」那一列去掉了，条数改到操作列里的「查看内容」上看。
 const columns = reactive<ColumnProps<CloudTerminal>[]>([
   { type: "selection", fixed: "left", width: 50 },
-  { prop: "terminalname", label: "终端名称", minWidth: 180 },
+  { prop: "terminalname", label: t("terminalCommon.terminalName"), minWidth: 180 },
   // 旧版 terminalmanager_form.html 里终端名称后面就是「所属分区」
-  { prop: "groupName", label: "所属分区", width: 150, showOverflowTooltip: true },
-  { prop: "typeName", label: "终端类型", minWidth: 140, showOverflowTooltip: true },
-  { prop: "taskstate", label: "任务状态", width: 110 },
-  { prop: "netstate", label: "网络状态", width: 110 },
-  { prop: "devicestate", label: "设备状态", width: 110 },
-  { prop: "ip", label: "IP地址", width: 150 },
-  { prop: "totalcapacity", label: "总容量", width: 120 },
-  { prop: "resetcapacity", label: "剩余容量", width: 130 },
-  { prop: "operation", label: "操作", fixed: "right", width: 130 }
+  { prop: "groupName", label: t("term.myZone"), width: 150, showOverflowTooltip: true },
+  { prop: "typeName", label: t("terminalCommon.terminalType"), minWidth: 140, showOverflowTooltip: true },
+  { prop: "taskstate", label: t("term.taskStateLabel"), width: 110 },
+  { prop: "netstate", label: t("terminalCommon.netState"), width: 110 },
+  { prop: "devicestate", label: t("terminalCommon.deviceState"), width: 110 },
+  { prop: "ip", label: t("common.ipAddress"), width: 150 },
+  { prop: "totalcapacity", label: t("cloud.totalCapacity"), width: 120 },
+  { prop: "resetcapacity", label: t("cloud.freeCapacity"), width: 130 },
+  { prop: "operation", label: t("common.operation"), fixed: "right", width: 130 }
 ]);
 
 // human 把字节数变成人看得懂的单位。0 直接显示 0，不显示 "0 B" —— 现网这两列全是 0，
@@ -187,14 +191,14 @@ const taskItems = computed(() => items.value.filter(i => i.kind === "task"));
 const toIds = (raw: (string | number)[]) => (raw ?? []).map(Number).filter(n => Number.isFinite(n) && n > 0);
 
 const ACTION_TEXT: Record<string, string> = {
-  idle: "空闲传输",
-  immediate: "立即传输",
-  deleteIdle: "空闲删除",
-  deleteNow: "立即删除",
-  stop: "停止传输",
-  clearAll: "全部清除",
-  clearTerminalMedia: "清除终端媒体",
-  clearIdleMedia: "清除空闲媒体"
+  idle: t("taskCommon.idleTransfer"),
+  immediate: t("taskCommon.nowTransfer"),
+  deleteIdle: t("offline.idleDelete"),
+  deleteNow: t("offline.nowDelete"),
+  stop: t("cloud.stopTransfer"),
+  clearAll: t("cloud.clearAll"),
+  clearTerminalMedia: t("cloud.clearTerminalMedia"),
+  clearIdleMedia: t("cloud.clearIdleMedia")
 };
 
 /** 会让终端删文件的动作。旧版这几个也都是先弹确认框的。 */
@@ -203,33 +207,39 @@ const DESTRUCTIVE = ["deleteIdle", "deleteNow", "clearAll", "clearTerminalMedia"
 /** 清除类动作不可逆（终端上的文件会被删掉），先确认再发 */
 const bulk = async (action: string, raw: (string | number)[]) => {
   const ids = toIds(raw);
-  if (!ids.length) return ElMessage.warning("请先勾选终端");
+  if (!ids.length) return ElMessage.warning(t("cloud.pickTerminalFirst"));
   const text = ACTION_TEXT[action] ?? action;
   if (DESTRUCTIVE.includes(action)) {
-    await ElMessageBox.confirm(`将对选中的 ${ids.length} 台终端执行「${text}」，终端上的离线内容会被删除，不可恢复。`, text, {
+    await ElMessageBox.confirm(t("cloud.bulkConfirm", { n: ids.length, action: text }), text, {
       type: "warning"
     });
   }
   const { data } = await cloudBulkApi(ids, action);
   ElMessage.success(
-    `${data.actionText}：媒体 ${data.mediaRows} 条、任务 ${data.taskRows} 条已置为「${data.stateText}」，` +
-      `实际传输由后台广播服务完成`
+    t("cloud.bulkDone", {
+      action: data.actionText,
+      media: data.mediaRows,
+      task: data.taskRows,
+      state: data.stateText
+    })
   );
   proTableRef.value?.getTableList();
 };
 
 const syncTime = async (raw: (string | number)[]) => {
   const ids = toIds(raw);
-  if (!ids.length) return ElMessage.warning("请先勾选终端");
+  if (!ids.length) return ElMessage.warning(t("cloud.pickTerminalFirst"));
   const { data } = await syncTerminalTimeApi(ids);
   const skipped = data.skipped?.length ?? 0;
-  ElMessage.success(`时间同步指令已下发 ${data.succeeded.length} 台${skipped ? `，跳过 ${skipped} 台` : ""}`);
+  ElMessage.success(
+    t("cloud.syncDone", { n: data.succeeded.length }) + (skipped ? t("cloud.syncSkipped", { n: skipped }) : "")
+  );
 };
 
 const openInventory = async (row: CloudTerminal) => {
   const { data } = await getCloudInventoryApi(row.id);
   items.value = data ?? [];
-  inv.title = `${row.terminalname || "终端 " + row.id} 的离线内容`;
+  inv.title = t("cloud.inventoryTitle", { name: row.terminalname || t("common.terminalNo", { id: row.id }) });
   inv.tab = mediaItems.value.length || !taskItems.value.length ? "media" : "task";
   inv.visible = true;
 };

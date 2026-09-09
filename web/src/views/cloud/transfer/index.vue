@@ -17,29 +17,29 @@
   <div class="table-box">
     <!-- 页签照 :80：作息方案 | 文件广播。多留一个「全部」，因为功放/语音/LED 的副本也能存在 -->
     <el-tabs v-model="initParam.kind" class="kind-tabs">
-      <el-tab-pane label="作息方案" name="bell" />
-      <el-tab-pane label="文件广播" name="file" />
-      <el-tab-pane label="全部" name="" />
+      <el-tab-pane :label='$t("menu.bell")' name="bell" />
+      <el-tab-pane :label='$t("menu.task")' name="file" />
+      <el-tab-pane :label='$t("common.all")' name="" />
     </el-tabs>
 
     <ProTable ref="proTableRef" :columns="columns" :request-api="getTransferListApi" :init-param="initParam" row-key="taskId">
       <template #tableHeader="scope">
         <div class="header-bar">
           <div class="header-left">
-            <el-button :disabled="!scope.isSelected" @click="bulk('idle', scope.selectedListIds)">空闲传输</el-button>
-            <el-button :disabled="!scope.isSelected" @click="bulk('immediate', scope.selectedListIds)"> 立即传输 </el-button>
-            <el-button :disabled="!scope.isSelected" @click="bulk('stop', scope.selectedListIds)">停止传输</el-button>
-            <el-button :icon="Download" @click="goOffline">去音乐传输下发</el-button>
+            <el-button :disabled="!scope.isSelected" @click="bulk('idle', scope.selectedListIds)">{{ $t("taskCommon.idleTransfer") }}</el-button>
+            <el-button :disabled="!scope.isSelected" @click="bulk('immediate', scope.selectedListIds)"> {{ $t("taskCommon.nowTransfer") }} </el-button>
+            <el-button :disabled="!scope.isSelected" @click="bulk('stop', scope.selectedListIds)">{{ $t("cloud.stopTransfer") }}</el-button>
+            <el-button :icon="Download" @click="goOffline">{{ $t("cloud.goOffline") }}</el-button>
           </div>
           <div class="header-right">
-            <el-tag type="info" size="small" effect="plain">这里是离线副本，不是原任务</el-tag>
+            <el-tag type="info" size="small" effect="plain">{{ $t("cloud.isCopyNotSource") }}</el-tag>
           </div>
         </div>
       </template>
 
       <template #taskName="s">
         {{ s.row.taskName }}
-        <el-tag v-if="s.row.sourceMissing" type="danger" size="small" effect="plain" class="ml6">原任务已删除</el-tag>
+        <el-tag v-if="s.row.sourceMissing" type="danger" size="small" effect="plain" class="ml6">{{ $t("cloud.sourceMissing") }}</el-tag>
       </template>
 
       <!-- 所属分类：作息方案连它的方案名一起显示（旧版 `作息方案(info)`） -->
@@ -54,66 +54,67 @@
       <!-- 行内两个链接照 :80：终端 / 媒体 -->
       <template #operation="s">
         <el-button type="primary" link :icon="View" @click="openDetail(s.row)">
-          终端
+          {{ $t("terminalCommon.terminal") }}
           <span v-if="s.row.terminalCount" class="small">（{{ s.row.doneCount }}/{{ s.row.terminalCount }}）</span>
         </el-button>
-        <el-button type="primary" link :icon="Files" @click="openMedia(s.row)">媒体</el-button>
+        <el-button type="primary" link :icon="Files" @click="openMedia(s.row)">{{ $t("taskCommon.media") }}</el-button>
       </template>
     </ProTable>
 
     <el-dialog v-model="dlg.visible" :title="dlg.title" width="760px" top="6vh">
       <el-table :data="detail" size="small" max-height="420">
         <el-table-column prop="terminalId" label="ID" width="80" />
-        <el-table-column prop="terminalname" label="终端名称" min-width="180" show-overflow-tooltip />
-        <el-table-column prop="typeName" label="型号" min-width="140" show-overflow-tooltip />
+        <el-table-column prop="terminalname" :label='$t("terminalCommon.terminalName")' min-width="180" show-overflow-tooltip />
+        <el-table-column prop="typeName" :label='$t("cloud.model")' min-width="140" show-overflow-tooltip />
         <el-table-column prop="ip" label="IP" width="140" />
-        <el-table-column label="联网" width="90">
+        <el-table-column :label='$t("cloud.networked")' width="90">
           <template #default="{ row }">
             <el-tag :type="row.netstate === 1 ? 'success' : 'info'" size="small">
-              {{ row.netstate === 1 ? "在线" : "离线" }}
+              {{ row.netstate === 1 ? $t("common.online") : $t("common.offline") }}
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="传输状态" width="130">
+        <el-table-column :label='$t("cloud.transferState")' width="130">
           <template #default="{ row }">
             <el-tag :type="stateType(row.offlinestate)" size="small">{{ row.stateText }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="area" label="区域" width="110" />
+        <el-table-column prop="area" :label='$t("cloud.area")' width="110" />
       </el-table>
-      <div v-if="!detail.length" class="empty">这条离线副本还没有下发到任何终端。</div>
+      <div v-if="!detail.length" class="empty">{{ $t("cloud.noTerminalsForCopy") }}</div>
       <template #footer>
-        <el-button @click="dlg.visible = false">关闭</el-button>
+        <el-button @click="dlg.visible = false">{{ $t("common.close") }}</el-button>
       </template>
     </el-dialog>
 
     <!-- 行内「媒体」链接：这条离线任务副本里带了哪些媒体 -->
     <el-dialog v-model="mdlg.visible" :title="mdlg.title" width="720px" top="6vh">
       <el-table :data="mediaList" size="small" max-height="420">
-        <el-table-column prop="sort" label="序号" width="70" />
-        <el-table-column prop="name" label="媒体名称" min-width="220" show-overflow-tooltip>
+        <el-table-column prop="sort" :label='$t("common.index")' width="70" />
+        <el-table-column prop="name" :label='$t("taskCommon.mediaName")' min-width="220" show-overflow-tooltip>
           <template #default="{ row }">
             {{ row.name }}
-            <el-tag v-if="row.missing" type="danger" size="small" effect="plain" class="ml6">副本已删除</el-tag>
+            <el-tag v-if="row.missing" type="danger" size="small" effect="plain" class="ml6">{{ $t("cloud.copyMissing") }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="typeid" label="媒体类型" width="100" />
-        <el-table-column label="媒体大小" width="110">
+        <el-table-column prop="typeid" :label='$t("media.mediaType")' width="100" />
+        <el-table-column :label='$t("taskCommon.mediaSize")' width="110">
           <template #default="{ row }">{{ human(row.size) }}</template>
         </el-table-column>
-        <el-table-column label="下发进度" width="130">
-          <template #default="{ row }">{{ row.done }} / {{ row.terminals }} 台</template>
+        <el-table-column :label='$t("cloud.pushProgress")' width="130">
+          <template #default="{ row }">{{ $t("cloud.progressN", { done: row.done, total: row.terminals }) }}</template>
         </el-table-column>
       </el-table>
-      <div v-if="!mediaList.length" class="empty">这条离线副本里没有媒体。</div>
+      <div v-if="!mediaList.length" class="empty">{{ $t("cloud.noMediaInCopy") }}</div>
       <template #footer>
-        <el-button @click="mdlg.visible = false">关闭</el-button>
+        <el-button @click="mdlg.visible = false">{{ $t("common.close") }}</el-button>
       </template>
     </el-dialog>
   </div>
 </template>
 
 <script setup lang="tsx" name="cloudTransfer">
+import { useI18n } from "vue-i18n";
 import { Download, Files, View } from "@element-plus/icons-vue";
 import { ElMessage } from "element-plus";
 import { reactive, ref } from "vue";
@@ -124,6 +125,9 @@ import type { TransferMediaItem, TransferTask, TransferTerminal } from "@/api/mo
 import ProTable from "@/components/ProTable/index.vue";
 import type { ColumnProps, ProTableInstance } from "@/components/ProTable/interface";
 
+// 脚本里拼的文案用 t()；模板里的 $t 不用引入
+const { t } = useI18n();
+
 const router = useRouter();
 const proTableRef = ref<ProTableInstance>();
 
@@ -131,18 +135,18 @@ const proTableRef = ref<ProTableInstance>();
 // 任务名称 | 播放周期 | 开始日期 | 结束日期 | 执行时间 | 播放时长 | 状态 | 离线状态 | 操作，无搜索区。
 const columns = reactive<ColumnProps<TransferTask>[]>([
   { type: "selection", fixed: "left", width: 50 },
-  { prop: "taskName", label: "任务名称", minWidth: 220 },
+  { prop: "taskName", label: t("taskCommon.taskName"), minWidth: 220 },
   // 旧版 offlinetask_form.html 这一列叫「所属分类」，作息方案还带着方案名
-  { prop: "category", label: "所属分类", width: 160 },
-  { prop: "cycleText", label: "播放周期", width: 120 },
-  { prop: "startdate", label: "开始日期", width: 120 },
-  { prop: "enddate", label: "结束日期", width: 120 },
-  { prop: "playtime", label: "执行时间", width: 110 },
-  { prop: "lengthText", label: "播放时长", width: 120 },
-  { prop: "projectText", label: "状态", width: 100 },
+  { prop: "category", label: t("cloud.category"), width: 160 },
+  { prop: "cycleText", label: t("taskCommon.cycle"), width: 120 },
+  { prop: "startdate", label: t("common.startDate"), width: 120 },
+  { prop: "enddate", label: t("common.endDate"), width: 120 },
+  { prop: "playtime", label: t("taskCommon.runTime"), width: 110 },
+  { prop: "lengthText", label: t("taskCommon.playLength"), width: 120 },
+  { prop: "projectText", label: t("common.status"), width: 100 },
   // 旧版这一列的表头写的是「终端状态」，不是「离线状态」
-  { prop: "offlinestate", label: "终端状态", width: 140 },
-  { prop: "operation", label: "操作", fixed: "right", width: 120 }
+  { prop: "offlinestate", label: t("cloud.terminalState"), width: 140 },
+  { prop: "operation", label: t("common.operation"), fixed: "right", width: 120 }
 ]);
 
 // 3 = 离线完成、8 = 删除完成 算「好」；6/7/9/10 是进行中；11/12 是被停掉的
@@ -162,7 +166,7 @@ const detail = ref<TransferTerminal[]>([]);
 const openDetail = async (row: TransferTask) => {
   const { data } = await getTransferDetailApi(row.taskId);
   detail.value = data ?? [];
-  dlg.title = `「${row.taskName}」的下发终端`;
+  dlg.title = t("cloud.detailTitle", { name: row.taskName });
   dlg.visible = true;
 };
 
@@ -172,7 +176,7 @@ const mediaList = ref<TransferMediaItem[]>([]);
 const openMedia = async (row: TransferTask) => {
   const { data } = await getTransferMediaApi(row.taskId);
   mediaList.value = data ?? [];
-  mdlg.title = `「${row.taskName}」的媒体清单`;
+  mdlg.title = t("cloud.mediaTitle", { name: row.taskName });
   mdlg.visible = true;
 };
 
@@ -187,9 +191,9 @@ const toIds = (raw: (string | number)[]) => (raw ?? []).map(Number).filter(n => 
 
 const bulk = async (action: string, raw: (string | number)[]) => {
   const ids = toIds(raw);
-  if (!ids.length) return ElMessage.warning("请先勾选任务");
+  if (!ids.length) return ElMessage.warning(t("cloud.pickTaskFirst"));
   const { data } = await transferBulkApi(ids, action);
-  ElMessage.success(`${data.actionText}：${data.taskRows} 条下发关系已置为「${data.stateText}」`);
+  ElMessage.success(t("cloud.transferDone", { action: data.actionText, n: data.taskRows, state: data.stateText }));
   proTableRef.value?.getTableList();
 };
 

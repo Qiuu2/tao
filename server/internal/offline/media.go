@@ -77,7 +77,7 @@ func (s *Service) Dispatch(ctx context.Context, u *auth.User, in MediaInput) (*M
 
 	out := &MediaResult{
 		MediaCount: len(mediaIDs), TerminalCount: len(termIDs),
-		State: state, StateText: Text(int(state)),
+		State: state, StateText: TextCtx(ctx, int(state)),
 	}
 
 	tx, err := s.db.BeginTx(ctx, nil)

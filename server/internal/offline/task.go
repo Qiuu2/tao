@@ -78,7 +78,7 @@ func (s *Service) DispatchTasks(ctx context.Context, u *auth.User, in TaskInput)
 
 	out := &TaskResult{
 		TaskCount: len(taskIDs), TerminalCount: len(termIDs),
-		State: state, StateText: Text(int(state)), SkippedNoMedia: []int64{},
+		State: state, StateText: TextCtx(ctx, int(state)), SkippedNoMedia: []int64{},
 	}
 
 	tx, err := s.db.BeginTx(ctx, nil)

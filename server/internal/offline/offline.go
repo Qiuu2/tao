@@ -27,9 +27,12 @@
 package offline
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"strings"
+
+	"htweb/internal/i18n"
 )
 
 // State 是 offlinestate 的取值。注释直接抄自
@@ -67,6 +70,16 @@ func Text(s int) string {
 		return t
 	}
 	return fmt.Sprintf("未知(%d)", s)
+}
+
+// TextCtx 是 Text 的跟随请求语言版本。
+//
+// 状态名是**算出来的**，不是库里存的，所以在这里翻就够了 —— 库里始终只有数字。
+func TextCtx(ctx context.Context, s int) string {
+	if t, ok := StateText[State(s)]; ok {
+		return i18n.TC(ctx, t)
+	}
+	return fmt.Sprintf(i18n.TC(ctx, "未知(%d)"), s)
 }
 
 // Mode 是接口层的下发意图，映射到 Web 允许写的那 5 个状态。

@@ -7,6 +7,7 @@ import (
 	"fmt"
 
 	"htweb/internal/auth"
+	"htweb/internal/i18n"
 )
 
 // Detail 是编辑弹窗需要的全部数据。
@@ -132,7 +133,7 @@ func (s *Service) TerminalOptions(ctx context.Context, forUserID int64) ([]Termi
 			return nil, err
 		}
 		if o.GroupName == "" {
-			o.GroupName = "(未分区)"
+			o.GroupName = i18n.TC(ctx, "(未分区)")
 		}
 		out = append(out, o)
 	}

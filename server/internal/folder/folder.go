@@ -411,3 +411,12 @@ func localizedFolderName(ctx context.Context, system bool, name string) string {
 	}
 	return i18n.TC(ctx, name)
 }
+
+// LocalizedName 是给**别的包**用的同一条规则：拿到目录 id 和名字，
+// 只有系统预置的那几个（id <= SystemMaxID）才翻。
+//
+// 各种下拉/选择器都会顺手把目录名带出来，那些地方不走 build()，
+// 所以要有个能单独调的入口 —— 否则每处各写一遍 id <= 9，迟早写错一处。
+func LocalizedName(ctx context.Context, id int64, name string) string {
+	return localizedFolderName(ctx, id <= SystemMaxID, name)
+}

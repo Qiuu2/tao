@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"htweb/internal/auth"
+	"htweb/internal/i18n"
 	"htweb/internal/store"
 )
 
@@ -102,10 +103,10 @@ func (s *Service) MediaStatusList(ctx context.Context, u *auth.User,
 		}
 		m.StateText = Text(m.State)
 		if !copyOK {
-			m.CopyMissing, m.MediaName = true, "(离线副本已删除)"
+			m.CopyMissing, m.MediaName = true, i18n.TC(ctx, "(离线副本已删除)")
 		}
 		if !termOK {
-			m.TerminalMissing, m.TerminalName = true, "(终端已删除)"
+			m.TerminalMissing, m.TerminalName = true, i18n.TC(ctx, "(终端已删除)")
 		}
 		out.Items = append(out.Items, m)
 	}
@@ -190,7 +191,7 @@ func (s *Service) TaskStatusList(ctx context.Context, u *auth.User,
 			t.CopyMissing = true
 		}
 		if !termOK {
-			t.TerminalMissing, t.TerminalName = true, "(终端已删除)"
+			t.TerminalMissing, t.TerminalName = true, i18n.TC(ctx, "(终端已删除)")
 		}
 		out.Items = append(out.Items, t)
 	}
@@ -244,7 +245,7 @@ type PurgeResult struct {
 // 旧版删完四张表却把 task 上的离线标记留着，任务永远显示「离线中」。
 func (s *Service) PurgeAll(ctx context.Context, confirmText string) (*PurgeResult, error) {
 	if confirmText != PurgeConfirmText {
-		return nil, fmt.Errorf("确认文本不正确，需要逐字输入「%s」", PurgeConfirmText)
+		return nil, fmt.Errorf(i18n.TC(ctx, "确认文本不正确，需要逐字输入「%s」"), PurgeConfirmText)
 	}
 
 	tx, err := s.db.BeginTx(ctx, nil)

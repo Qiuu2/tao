@@ -6,6 +6,7 @@ import (
 
 	"htweb/internal/auth"
 	"htweb/internal/folder"
+	"htweb/internal/i18n"
 	"htweb/internal/store"
 )
 
@@ -64,6 +65,7 @@ func (s *Service) MediaOptions(ctx context.Context, u *auth.User, keyword string
 		if err := rs.Scan(&o.ID, &o.Name, &o.Size, &o.TimeLength, &o.FolderID, &o.FolderName); err != nil {
 			return nil, err
 		}
+		o.FolderName = folder.LocalizedName(ctx, o.FolderID, o.FolderName)
 		out = append(out, o)
 	}
 	return out, rs.Err()
@@ -140,7 +142,7 @@ func (s *Service) TerminalOptions(ctx context.Context, u *auth.User, keyword str
 func (s *Service) fillOptionGroupNames(ctx context.Context, opts []TerminalOption, ids map[int64]bool) error {
 	if len(ids) == 0 {
 		for i := range opts {
-			opts[i].GroupName = "(未分区)"
+			opts[i].GroupName = i18n.TC(ctx, "(未分区)")
 		}
 		return nil
 	}
@@ -170,7 +172,7 @@ func (s *Service) fillOptionGroupNames(ctx context.Context, opts []TerminalOptio
 	}
 	for i := range opts {
 		if opts[i].GroupID == 0 {
-			opts[i].GroupName = "(未分区)"
+			opts[i].GroupName = i18n.TC(ctx, "(未分区)")
 			continue
 		}
 		if n, ok := names[opts[i].GroupID]; ok {

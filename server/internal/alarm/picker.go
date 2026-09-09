@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"htweb/internal/auth"
+	"htweb/internal/folder"
 	"htweb/internal/store"
 )
 
@@ -191,6 +192,7 @@ func (s *Service) AlarmMedia(ctx context.Context, keyword string) (*AlarmMediaRe
 		if err := rs.Scan(&o.ID, &o.Name, &o.TimeLength, &o.FolderID, &o.FolderName); err != nil {
 			return nil, err
 		}
+		o.FolderName = folder.LocalizedName(ctx, o.FolderID, o.FolderName)
 		out.List = append(out.List, o)
 	}
 	if err := rs.Err(); err != nil {
