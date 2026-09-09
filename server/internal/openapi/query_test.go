@@ -525,3 +525,43 @@ func TestTaskWriteReceiptShowsServerDecisions(t *testing.T) {
 		}
 	}
 }
+
+// 每个会写终端清单的接口，都得说清「分区号不用你传」。
+//
+// # 为什么
+//
+// 用户的原话是「我看接口调用平台的新建任务没有传 groupid 呀」。
+// 他是对的：请求体里确实没有这个参数。而库里 terminaloftask 存着一个分区号，
+// 后台下发时读的就是它 —— 一个知道这件事的人看到请求体里没有它，
+// 合理的怀疑就是「我漏传了，任务会播错」。
+//
+// 这个参数不存在是**有意的**（服务端按终端此刻的分区自己算，见
+// task.FillGroupIDs）。但「有意省掉」和「忘了写」在页面上长得一模一样，
+// 所以必须写出来。
+func TestTerminalWritingEndpointsExplainZoneID(t *testing.T) {
+	// 会往 terminaloftask 写行的接口。加了新的也要挂上这条说明。
+	want := []string{"tasks.create", "tasks.update", "play.start", "schedules.create"}
+	for _, id := range want {
+		ep := findEndpoint(t, id)
+		var found bool
+		for _, n := range ep.Notes {
+			if strings.Contains(n, "分区号") {
+				found = true
+			}
+		}
+		if !found {
+			t.Errorf("%s（%s）会写终端清单，却没说清分区号不用调用方传 —— "+
+				"看到请求体里没有它的人，只会以为自己漏传了", id, ep.Summary)
+		}
+	}
+
+	// 反过来：只读的接口不该挂这条，否则满页都是同一句话，真正要看的反而被淹掉。
+	for _, id := range []string{"tasks.list", "terminals.list", "tasks.get"} {
+		ep := findEndpoint(t, id)
+		for _, n := range ep.Notes {
+			if strings.Contains(n, "没有分区号这个参数") {
+				t.Errorf("%s 是只读接口，不该挂「分区号不用传」这条说明", id)
+			}
+		}
+	}
+}
