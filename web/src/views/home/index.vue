@@ -24,9 +24,9 @@
   <div class="dash">
     <!-- ===== 顶部快捷入口 ===== -->
     <div class="dash-toolbar">
-      <el-button size="small" :icon="Plus" :disabled="!isSuper" @click="openShortcut()">新增</el-button>
+      <el-button size="small" :icon="Plus" :disabled="!isSuper" @click="openShortcut()">{{ $t("common.create") }}</el-button>
       <el-button size="small" :icon="EditPen" :disabled="!isSuper || !cfg?.shortcuts.length" @click="editMode = !editMode">
-        编辑
+        {{ $t("common.edit") }}
       </el-button>
       <div class="chips">
         <el-tag
@@ -41,7 +41,7 @@
           {{ sc.label }}
         </el-tag>
         <span v-if="!cfg?.shortcuts.length" class="muted small">
-          还没有快捷入口{{ isSuper ? "，点「新增」添加，之后点一下就能直接进对应页面" : "" }}
+          {{ isSuper ? $t("dash.noShortcutSuper") : $t("dash.noShortcut") }}
         </span>
       </div>
     </div>
@@ -49,9 +49,9 @@
     <div class="dash-row">
       <!-- ===== 设备概况 ===== -->
       <section class="panel">
-        <header class="panel-hd">设备概况</header>
+        <header class="panel-hd">{{ $t("dash.deviceOverview") }}</header>
         <div class="donut-wrap">
-          <svg :viewBox="`0 0 ${DONUT} ${DONUT}`" class="donut" role="img" aria-label="设备类型构成">
+          <svg :viewBox="`0 0 ${DONUT} ${DONUT}`" class="donut" role="img" :aria-label="$t('dash.deviceMixLabel')">
             <circle :cx="C" :cy="C" :r="R" class="donut-track" :stroke-width="TH" />
             <circle
               v-for="(s, i) in donutArcs"
@@ -66,7 +66,7 @@
               :stroke-dashoffset="-s.offset"
               :transform="`rotate(-90 ${C} ${C})`"
             />
-            <text :x="C" :y="C - 6" class="donut-cap">设备总数</text>
+            <text :x="C" :y="C - 6" class="donut-cap">{{ $t("dash.deviceTotal") }}</text>
             <text :x="C" :y="C + 22" class="donut-num">{{ overview?.total ?? 0 }}</text>
           </svg>
           <ul class="legend">
@@ -75,20 +75,20 @@
               <span class="lg-name">{{ t.type }}</span>
               <span class="lg-val">{{ t.total }}</span>
             </li>
-            <li v-if="!overview?.byType.length" class="muted small">暂无终端</li>
+            <li v-if="!overview?.byType.length" class="muted small">{{ $t("dash.noTerminals") }}</li>
           </ul>
         </div>
         <div class="stat-row">
           <div class="stat stat-total">
-            <div class="stat-k">设备总数</div>
+            <div class="stat-k">{{ $t("dash.deviceTotal") }}</div>
             <div class="stat-v">{{ overview?.total ?? 0 }}</div>
           </div>
           <div class="stat stat-on">
-            <div class="stat-k">在线</div>
+            <div class="stat-k">{{ $t("common.online") }}</div>
             <div class="stat-v">{{ overview?.online ?? 0 }}</div>
           </div>
           <div class="stat stat-off">
-            <div class="stat-k">离线</div>
+            <div class="stat-k">{{ $t("common.offline") }}</div>
             <div class="stat-v">{{ overview?.offline ?? 0 }}</div>
           </div>
         </div>
@@ -97,27 +97,33 @@
       <!-- ===== 快捷任务 ===== -->
       <section class="panel">
         <header class="panel-hd">
-          快捷任务
+          {{ $t("dash.quickTasks") }}
           <div class="hd-actions">
             <!--
               :80 这两个按钮直接弹出文件广播的新建/编辑表单。
               我们不在首页重做一遍那张大表单，而是跳到文件广播页并带上 action=create，
               由那一页自己把新建弹窗打开 —— 只有一处表单，改一次就够。
             -->
-            <el-button size="small" type="primary" @click="goTask('create')">新增文件广播</el-button>
-            <el-button size="small" type="primary" plain @click="goTask('')">编辑文件广播</el-button>
-            <el-button size="small" type="primary" :disabled="!isSuper" @click="openQuickBind">绑定快捷任务</el-button>
+            <el-button size="small" type="primary" @click="goTask('create')">{{ $t("dash.newFileTask") }}</el-button>
+            <el-button size="small" type="primary" plain @click="goTask('')">{{ $t("dash.editQuickTasks") }}</el-button>
+            <el-button size="small" type="primary" :disabled="!isSuper" @click="openQuickBind">{{
+              $t("dash.bindQuickTasks")
+            }}</el-button>
           </div>
         </header>
         <div class="panel-bd">
-          <div v-if="!cfg?.quickTasks.length" class="empty">暂无快捷任务</div>
+          <div v-if="!cfg?.quickTasks.length" class="empty">{{ $t("dash.noQuickTasks") }}</div>
           <div v-else class="task-grid">
             <div v-for="t in cfg.quickTasks" :key="t.taskId" class="task-card">
               <div class="task-name" :class="{ danger: t.missing }">{{ t.taskName }}</div>
               <div class="task-sub">{{ t.missing ? `ID ${t.taskId}` : `${t.playtime} · ${t.stateText}` }}</div>
               <div class="task-ops">
-                <el-button size="small" type="success" :disabled="t.missing" @click="runTask(t.taskId)">执行</el-button>
-                <el-button size="small" type="danger" :disabled="t.missing" @click="stopTask(t.taskId)">停止</el-button>
+                <el-button size="small" type="success" :disabled="t.missing" @click="runTask(t.taskId)">{{
+                  $t("dash.run")
+                }}</el-button>
+                <el-button size="small" type="danger" :disabled="t.missing" @click="stopTask(t.taskId)">{{
+                  $t("dash.stop")
+                }}</el-button>
               </div>
             </div>
           </div>
@@ -129,7 +135,7 @@
       <!-- ===== 服务器性能 ===== -->
       <section class="panel">
         <header class="panel-hd">
-          服务器性能
+          {{ $t("dash.serverPerf") }}
           <span class="hd-note">{{ perf?.os || "—" }}</span>
         </header>
         <div class="gauge-row">
@@ -155,21 +161,23 @@
         </div>
         <div class="net-box">
           <div class="net-hd">
-            网络流量
+            {{ $t("dash.network") }}
             <span class="hd-note">{{ perf?.iface || "—" }}</span>
           </div>
-          <div class="net-line">接收：{{ rate(perf?.rxRate) }}</div>
-          <div class="net-line">发送：{{ rate(perf?.txRate) }}</div>
-          <div v-if="perf?.warmingUp" class="muted small">首次采样，速率需要再等一轮才有数</div>
+          <div class="net-line">{{ $t("dash.rx") }}{{ rate(perf?.rxRate) }}</div>
+          <div class="net-line">{{ $t("dash.tx") }}{{ rate(perf?.txRate) }}</div>
+          <div v-if="perf?.warmingUp" class="muted small">{{ $t("dash.firstSample") }}</div>
         </div>
       </section>
 
       <!-- ===== 紧急广播 ===== -->
       <section class="panel">
         <header class="panel-hd">
-          紧急广播
+          {{ $t("dash.emergency") }}
           <div class="hd-actions">
-            <el-button size="small" type="primary" plain :disabled="!isSuper" @click="openEmergencyBind"> 绑定任务 </el-button>
+            <el-button size="small" type="primary" plain :disabled="!isSuper" @click="openEmergencyBind">
+              {{ $t("dash.bindTask") }}
+            </el-button>
           </div>
         </header>
         <div class="panel-bd">
@@ -177,19 +185,19 @@
             <div v-for="s in cfg?.emergency ?? []" :key="s.key" class="emg-card">
               <span class="emg-name">{{ s.name }}</span>
               <span class="emg-bind" :class="{ muted: !s.task, danger: s.task?.missing }">
-                {{ s.task ? s.task.taskName : "未绑定" }}
+                {{ s.task ? s.task.taskName : $t("dash.unbound") }}
               </span>
               <span class="emg-ops">
                 <el-button size="small" type="success" :disabled="!s.task || s.task.missing" @click="runTask(s.task!.taskId)">
-                  执行
+                  {{ $t("dash.run") }}
                 </el-button>
                 <el-button size="small" type="danger" :disabled="!s.task || s.task.missing" @click="stopTask(s.task!.taskId)">
-                  停止
+                  {{ $t("dash.stop") }}
                 </el-button>
               </span>
             </div>
           </div>
-          <div class="muted small mt8">四个槽位是固定的，只能改「每个槽位绑哪个文件广播任务」，不能增删。</div>
+          <div class="muted small mt8">{{ $t("dash.emergencyFixedTip") }}</div>
         </div>
       </section>
     </div>
@@ -197,54 +205,54 @@
     <!-- ===== 浏览任务 ===== -->
     <section class="panel">
       <div class="filter-bar">
-        <span class="fl">任务管理：</span>
+        <span class="fl">{{ $t("dash.filterFolder") }}</span>
         <el-select v-model="bq.folderId" size="small" style="width: 130px" @change="loadTasks">
-          <el-option label="全部" :value="0" />
+          <el-option :label="$t('common.all')" :value="0" />
           <el-option v-for="f in folders" :key="f.id" :label="f.name" :value="f.id" />
         </el-select>
-        <span class="fl">星期筛选：</span>
+        <span class="fl">{{ $t("dash.filterWeekday") }}</span>
         <el-select v-model="bq.weekday" size="small" style="width: 120px" @change="loadTasks">
-          <el-option label="今天" :value="0" />
-          <el-option v-for="(w, i) in weekLabels" :key="i" :label="`周${w}`" :value="i + 1" />
+          <el-option :label="$t('dash.today')" :value="0" />
+          <el-option v-for="(w, i) in weekLabels" :key="i" :label="w" :value="i + 1" />
         </el-select>
-        <span class="fl">任务类型：</span>
+        <span class="fl">{{ $t("dash.filterType") }}</span>
         <el-select v-model="bq.autoMode" size="small" style="width: 120px" @change="loadTasks">
-          <el-option label="全部" :value="0" />
-          <el-option label="自动任务" :value="1" />
-          <el-option label="手动任务" :value="2" />
+          <el-option :label="$t('common.all')" :value="0" />
+          <el-option :label="$t('dash.autoTask')" :value="1" />
+          <el-option :label="$t('dash.manualTask')" :value="2" />
         </el-select>
       </div>
 
       <!-- :80 这里是「当天启用 / 当天停用」两个按钮，不是页签；多留一个「全部」 -->
       <div class="scope-bar">
         <el-radio-group v-model="bq.scope" size="small" @change="loadTasks">
-          <el-radio-button value="enabled">当天启用</el-radio-button>
-          <el-radio-button value="disabled">当天停用</el-radio-button>
-          <el-radio-button value="all">全部</el-radio-button>
+          <el-radio-button value="enabled">{{ $t("dash.onToday") }}</el-radio-button>
+          <el-radio-button value="disabled">{{ $t("dash.offToday") }}</el-radio-button>
+          <el-radio-button value="all">{{ $t("common.all") }}</el-radio-button>
         </el-radio-group>
       </div>
 
-      <el-table :data="tasks" v-loading="tasksLoading" size="small" empty-text="暂无数据">
-        <el-table-column prop="index" label="序号" width="70" />
-        <el-table-column prop="taskName" label="任务名称" min-width="160" show-overflow-tooltip />
-        <el-table-column prop="folderName" label="所属分类" width="130" show-overflow-tooltip />
-        <el-table-column prop="cycleText" label="播放周期" width="140" />
-        <el-table-column prop="playtime" label="执行时间" width="110" />
-        <el-table-column label="状态" width="110">
+      <el-table :data="tasks" v-loading="tasksLoading" size="small" :empty-text="$t('common.noData')">
+        <el-table-column prop="index" :label="$t('common.index')" width="70" />
+        <el-table-column prop="taskName" :label="$t('dash.taskName')" min-width="160" show-overflow-tooltip />
+        <el-table-column prop="folderName" :label="$t('dash.folder')" width="130" show-overflow-tooltip />
+        <el-table-column prop="cycleText" :label="$t('dash.weekdays')" width="140" />
+        <el-table-column prop="playtime" :label="$t('dash.playTime')" width="110" />
+        <el-table-column :label="$t('common.status')" width="110">
           <template #default="{ row }">
             <el-tag :type="row.enabledToday ? 'success' : 'info'" size="small" effect="plain">
               {{ row.enabledToday ? "当天启用" : "当天停用" }}
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="startdate" label="起始日期" width="110" />
-        <el-table-column prop="enddate" label="结束日期" width="110" />
-        <el-table-column prop="terminals" label="终端属性" width="100" />
-        <el-table-column label="操作任务" width="150" fixed="right">
+        <el-table-column prop="startdate" :label="$t('common.startDate')" width="110" />
+        <el-table-column prop="enddate" :label="$t('common.endDate')" width="110" />
+        <el-table-column prop="terminals" :label="$t('dash.terminalCount')" width="100" />
+        <el-table-column :label="$t('dash.taskActions')" width="150" fixed="right">
           <template #default="{ row }">
-            <el-button type="success" link @click="runTask(row.taskId)">执行</el-button>
-            <el-button type="danger" link @click="stopTask(row.taskId)">停止</el-button>
-            <el-button type="primary" link @click="go('/task')">查看</el-button>
+            <el-button type="success" link @click="runTask(row.taskId)">{{ $t("dash.run") }}</el-button>
+            <el-button type="danger" link @click="stopTask(row.taskId)">{{ $t("dash.stop") }}</el-button>
+            <el-button type="primary" link @click="go('/task')">{{ $t("common.view") }}</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -264,56 +272,59 @@
     </section>
 
     <!-- 新增快捷入口 -->
-    <el-dialog v-model="sd.visible" title="新增快捷入口" width="460px">
+    <el-dialog v-model="sd.visible" :title="$t('dash.newShortcut')" width="460px">
       <el-form label-width="90px">
-        <el-form-item label="目标页面">
+        <el-form-item :label="$t('dash.shortcutPath')">
           <el-select v-model="sd.path" class="fill" @change="onPickPage">
             <el-option v-for="p in pageOptions" :key="p.path" :label="p.label" :value="p.path" />
           </el-select>
         </el-form-item>
-        <el-form-item label="显示名称">
+        <el-form-item :label="$t('dash.shortcutLabel')">
           <el-input v-model="sd.label" maxlength="12" show-word-limit />
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="sd.visible = false">取消</el-button>
-        <el-button type="primary" :loading="sd.busy" @click="addShortcut">确定</el-button>
+        <el-button @click="sd.visible = false">{{ $t("common.cancel") }}</el-button>
+        <el-button type="primary" :loading="sd.busy" @click="addShortcut">{{ $t("common.confirm") }}</el-button>
       </template>
     </el-dialog>
 
     <!-- 绑定快捷任务 -->
-    <el-dialog v-model="qd.visible" title="绑定快捷任务" width="560px">
+    <el-dialog v-model="qd.visible" :title="$t('dash.bindQuickTasks')" width="560px">
       <el-alert type="info" :closable="false" class="mb12">
-        只能绑定<b>文件广播</b>任务，最多 12 个。绑定后可在首页直接执行/停止。
+        <!-- 整句一个键。拆成「只能绑定」+ 组件名 + 「任务，最多 12 个」去翻，
+             中文能拼出来，英文语序对不上，只会拼出一句不通的话。 -->
+        {{ $t("dash.quickTaskDialogTip", { kind: $t("menu.task") }) }}
       </el-alert>
-      <el-select v-model="qd.ids" multiple filterable placeholder="选择文件广播任务" class="fill">
+      <el-select v-model="qd.ids" multiple filterable :placeholder="$t('dash.pickFileTask')" class="fill">
         <el-option v-for="t in fileTasks" :key="t.taskid" :label="t.taskname" :value="t.taskid" />
       </el-select>
       <template #footer>
-        <el-button @click="qd.visible = false">取消</el-button>
-        <el-button type="primary" :loading="qd.busy" @click="saveQuick">确定</el-button>
+        <el-button @click="qd.visible = false">{{ $t("common.cancel") }}</el-button>
+        <el-button type="primary" :loading="qd.busy" @click="saveQuick">{{ $t("common.confirm") }}</el-button>
       </template>
     </el-dialog>
 
     <!-- 绑定紧急广播 -->
-    <el-dialog v-model="ed.visible" title="绑定紧急广播" width="560px">
-      <el-alert type="info" :closable="false" class="mb12"> 四个槽位固定，留空表示解绑。同样只能绑文件广播任务。 </el-alert>
+    <el-dialog v-model="ed.visible" :title="$t('dash.bindEmergency')" width="560px">
+      <el-alert type="info" :closable="false" class="mb12"> {{ $t("dash.emergencyDialogTip") }} </el-alert>
       <el-form label-width="80px">
         <el-form-item v-for="s in cfg?.emergency ?? []" :key="s.key" :label="s.name">
-          <el-select v-model="ed.slots[s.key]" clearable filterable placeholder="未绑定" class="fill">
+          <el-select v-model="ed.slots[s.key]" clearable filterable :placeholder="$t('dash.unbound')" class="fill">
             <el-option v-for="t in fileTasks" :key="t.taskid" :label="t.taskname" :value="t.taskid" />
           </el-select>
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="ed.visible = false">取消</el-button>
-        <el-button type="primary" :loading="ed.busy" @click="saveEmergency">确定</el-button>
+        <el-button @click="ed.visible = false">{{ $t("common.cancel") }}</el-button>
+        <el-button type="primary" :loading="ed.busy" @click="saveEmergency">{{ $t("common.confirm") }}</el-button>
       </template>
     </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts" name="home">
+import { useI18n } from "vue-i18n";
 import { computed, onMounted, onUnmounted, reactive, ref } from "vue";
 import { useRouter } from "vue-router";
 import { ElMessage } from "element-plus";
@@ -333,6 +344,9 @@ import {
 } from "@/api/modules/dashboard";
 import { controlTaskApi, getTaskFolderTreeApi, getTaskListApi, type TaskRow } from "@/api/modules/task";
 import { useUserStore } from "@/stores/modules/user";
+
+// 脚本里拼的文案用 t()；模板里的 $t 不用引入
+const { t } = useI18n();
 
 const router = useRouter();
 const userStore = useUserStore();
@@ -404,14 +418,14 @@ const gauges = computed(() => {
     { key: "cpu", name: "CPU", value: p?.cpuPercent ?? 0, color: level(p?.cpuPercent ?? 0), sub: p?.host || "" },
     {
       key: "mem",
-      name: "内存",
+      name: t("dash.memory"),
       value: p?.memPercent ?? 0,
       color: level(p?.memPercent ?? 0),
       sub: p ? `${size(p.memUsed)} / ${size(p.memTotal)}` : ""
     },
     {
       key: "disk",
-      name: "磁盘",
+      name: t("dash.disk"),
       value: p?.diskPercent ?? 0,
       color: level(p?.diskPercent ?? 0),
       sub: p ? `${size(p.diskUsed)} / ${size(p.diskTotal)}` : ""
@@ -442,7 +456,18 @@ const loadPerf = async () => {
 /* ---------------- 浏览任务 ---------------- */
 
 // exemodel 是周日打头的 7 位掩码，下拉的 value 就是位次（周日 = 1）
-const weekLabels = ["日", "一", "二", "三", "四", "五", "六"];
+// 周几的短标签。exemodel 是**周日打头**的 7 位掩码，所以这里也从周日排起，
+// 下拉的 value 就是位次（周日 = 1）。中文是「周日/周一…」，英文是「Sun/Mon…」——
+// 英文里再拼一个「周」字出来会变成 "周Sun"。
+const weekLabels = computed(() => [
+  t("week.sun"),
+  t("week.mon"),
+  t("week.tue"),
+  t("week.wed"),
+  t("week.thu"),
+  t("week.fri"),
+  t("week.sat")
+]);
 const tasks = ref<BrowseItem[]>([]);
 const tasksTotal = ref(0);
 const tasksLoading = ref(false);
@@ -477,14 +502,14 @@ const loadFolders = async () => {
 const runTask = async (id: number) => {
   const { data } = await controlTaskApi("start", [id]);
   if (data.blocked?.length) ElMessage.warning(data.blocked[0].detail);
-  else ElMessage.success("已下发启动");
+  else ElMessage.success(t("dash.startSent"));
   refreshLight();
 };
 
 const stopTask = async (id: number) => {
   const { data } = await controlTaskApi("stop", [id]);
   if (data.blocked?.length) ElMessage.warning(data.blocked[0].detail);
-  else ElMessage.success("已下发停止");
+  else ElMessage.success(t("dash.stopSent"));
   refreshLight();
 };
 
@@ -530,12 +555,12 @@ const persistShortcuts = async (list: { label: string; path: string; icon: strin
 };
 
 const addShortcut = async () => {
-  if (!sd.label.trim()) return ElMessage.warning("请填写显示名称");
+  if (!sd.label.trim()) return ElMessage.warning(t("dash.shortcutLabelRequired"));
   sd.busy = true;
   try {
     const list = [...(cfg.value?.shortcuts ?? []), { label: sd.label.trim(), path: sd.path, icon: "" }];
     await persistShortcuts(list);
-    ElMessage.success("已添加");
+    ElMessage.success(t("dash.added"));
     sd.visible = false;
   } finally {
     sd.busy = false;
@@ -571,7 +596,7 @@ const saveQuick = async () => {
   qd.busy = true;
   try {
     await saveQuickTasksApi(qd.ids);
-    ElMessage.success("已保存");
+    ElMessage.success(t("common.saveSuccess"));
     qd.visible = false;
     const { data } = await getDashConfigApi();
     cfg.value = data;
@@ -594,7 +619,7 @@ const saveEmergency = async () => {
     const payload: Record<string, number> = {};
     Object.entries(ed.slots).forEach(([k, v]) => (payload[k] = v ?? 0));
     await saveEmergencyApi(payload);
-    ElMessage.success("已保存");
+    ElMessage.success(t("common.saveSuccess"));
     ed.visible = false;
     const { data } = await getDashConfigApi();
     cfg.value = data;
