@@ -145,6 +145,19 @@ func (a *app) handleOpenTaskCreate(w http.ResponseWriter, r *http.Request) {
 	httpx.OK(w, res)
 }
 
+// handleOpenTaskGet 取一条任务的全貌。
+//
+// 建完任务后用它核对「我填的那些真的写进去了吗」—— 列表接口给的是摘要，
+// 间隔播放、LED 字幕、终端区域掩码都不在里面。
+func (a *app) handleOpenTaskGet(w http.ResponseWriter, r *http.Request) {
+	d, err := a.openAPI.GetTask(r.Context(), auth.From(r.Context()), pathRef(r))
+	if err != nil {
+		a.failOpen(w, "查询任务详情", err)
+		return
+	}
+	httpx.OK(w, d)
+}
+
 func (a *app) handleOpenTaskUpdate(w http.ResponseWriter, r *http.Request) {
 	var in openapi.TaskInput
 	if !httpx.DecodeJSON(w, r, &in) {

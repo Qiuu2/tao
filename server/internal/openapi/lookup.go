@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -91,6 +92,73 @@ func (r Ref) String() string {
 
 func (r Ref) empty() bool { return r.ID == 0 && r.Name == "" }
 
+// TerminalPick 是「一台终端」加上它在这条任务里的**区域掩码**。
+//
+// 两种写法都收：
+//
+//	"A101教室音箱"                                  最常见，区域用默认的全开
+//	{ "terminal": "A101教室音箱", "area": "11110000" } 要指定分路时
+//
+// # 区域掩码是什么
+//
+// 一台终端可能带多路输出（教室的前后喇叭、楼层的几个分区）。掩码的每一位对应
+// 一路，1 = 这一路出声。默认 "11111111"（八路全开）——
+// 与界面新建任务时的默认值一致。绝大多数装机现场用不到它。
+//
+// ⚠ 分区（zones）展开出来的终端一律用默认掩码。要给某台终端单独设掩码，
+// 就把它单独列在 terminals 里。
+type TerminalPick struct {
+	Ref
+	Area string
+}
+
+func (t *TerminalPick) UnmarshalJSON(b []byte) error {
+	trimmed := strings.TrimSpace(string(b))
+	if trimmed == "" || trimmed == "null" {
+		return nil
+	}
+	// 对象形式：{ "terminal": ..., "area": ... }
+	if trimmed[0] == '{' {
+		var obj struct {
+			Terminal json.RawMessage `json:"terminal"`
+			Name     string          `json:"name"`
+			ID       int64           `json:"id"`
+			Area     string          `json:"area"`
+		}
+		if err := json.Unmarshal(b, &obj); err != nil {
+			return badf("终端项格式不对：%s", trimmed)
+		}
+		t.Area = strings.TrimSpace(obj.Area)
+		switch {
+		case len(obj.Terminal) > 0:
+			return t.Ref.UnmarshalJSON(obj.Terminal)
+		case obj.ID > 0:
+			t.Ref = Ref{ID: obj.ID}
+		case strings.TrimSpace(obj.Name) != "":
+			t.Ref = Ref{Name: strings.TrimSpace(obj.Name)}
+		default:
+			return badf("终端项里要有 terminal（名字或编号）")
+		}
+		return nil
+	}
+	// 标量形式：直接是名字或编号
+	return t.Ref.UnmarshalJSON(b)
+}
+
+// reAreaMask 与 task 包的校验保持一致：1~16 位的 0/1 串。
+var reAreaMask = regexp.MustCompile(`^[01]{1,16}$`)
+
+func (t TerminalPick) checkArea() error {
+	if t.Area == "" {
+		return nil
+	}
+	if !reAreaMask.MatchString(t.Area) {
+		return badf("终端「%s」的区域掩码不对：要 1~16 位的 0/1 串，比如 11111111，收到 %q",
+			t.Ref.String(), t.Area)
+	}
+	return nil
+}
+
 // namedRow 是寻址用的一行：一个 id 配一个名字。
 type namedRow struct {
 	ID   int64
@@ -114,6 +182,28 @@ type lookupSpec struct {
 // 「广播到 A101、A102、A103」里 A102 拼错了，只播两个是最坏的结果 ——
 // 调用方以为三个都播了，而漏掉的那个没有任何迹象。宁可一个都不播，报错让他改。
 func (s *Service) resolveRefs(ctx context.Context, u *auth.User, spec lookupSpec, refs []Ref) ([]int64, error) {
+	aligned, err := s.resolveRefsAligned(ctx, u, spec, refs)
+	if err != nil {
+		return nil, err
+	}
+	seen := map[int64]bool{}
+	out := make([]int64, 0, len(aligned))
+	for _, id := range aligned {
+		if id > 0 && !seen[id] {
+			seen[id] = true
+			out = append(out, id)
+		}
+	}
+	return out, nil
+}
+
+// resolveRefsAligned 与 resolveRefs 一样解析，但返回值**与入参一一对应**、不去重。
+//
+// 需要它是因为有些引用带着附加信息（比如终端各自的区域掩码），
+// 去重之后就没法把「第几个引用」对回「第几个附加信息」了。
+// 解析不出来的位置不会出现 —— 一个对不上就整体报错，这条规矩没变。
+// 空引用那一位返回 0，由调用方跳过。
+func (s *Service) resolveRefsAligned(ctx context.Context, u *auth.User, spec lookupSpec, refs []Ref) ([]int64, error) {
 	if len(refs) == 0 {
 		return nil, nil
 	}
@@ -132,10 +222,10 @@ func (s *Service) resolveRefs(ctx context.Context, u *auth.User, spec lookupSpec
 		}
 	}
 
-	seen := map[int64]bool{}
 	out := make([]int64, 0, len(refs))
 	for _, ref := range refs {
 		if ref.empty() {
+			out = append(out, 0)
 			continue
 		}
 		var id int64
@@ -159,10 +249,7 @@ func (s *Service) resolveRefs(ctx context.Context, u *auth.User, spec lookupSpec
 					len(hits), spec.what, ref.Name, joinIDs(hits))
 			}
 		}
-		if !seen[id] {
-			seen[id] = true
-			out = append(out, id)
-		}
+		out = append(out, id)
 	}
 	return out, nil
 }

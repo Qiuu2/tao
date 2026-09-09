@@ -774,6 +774,8 @@ func (a *app) routes() http.Handler {
 	}
 	// 「添加任务」是一次调用带上媒体、终端、任务信息 —— 与界面上那一屏对应。
 	mux.HandleFunc("POST /openapi/v1/tasks", openTask(a.handleOpenTaskCreate))
+	// 详情：建完任务核对用。列表给的是摘要，间隔播放/LED/区域掩码都不在里面。
+	mux.HandleFunc("GET /openapi/v1/tasks/{ref}", openq(a.handleOpenTaskGet))
 	mux.HandleFunc("PUT /openapi/v1/tasks/{ref}", openTask(a.handleOpenTaskUpdate))
 	// {action} ∈ start / stop（现在播、现在停）| enable / disable（启用、停用）
 	//

@@ -2,6 +2,7 @@ package openapi
 
 import (
 	"reflect"
+	"strings"
 	"testing"
 
 	"htweb/internal/auth"
@@ -205,6 +206,104 @@ func TestCodeTablesAreComplete(t *testing.T) {
 			if !warned {
 				t.Errorf("对照表 %q 一个 Warn 都没标 —— 它正是要提醒人别猜的那种", ct.Field)
 			}
+		}
+	}
+}
+
+// 新建任务的接口必须覆盖 task.Input 里**每一个**业务字段。
+//
+// # 为什么写这个
+//
+// 用户的原话是「任务不是有很多字段变量在存吗？为什么我看实例不对呢」——
+// 当时接口只开放了 17 个概念，而 task.Input 有 23 个字段：间隔播放、
+// 当天停用、发送模式、本地优先、LED 字幕、终端区域掩码全漏了。
+//
+// 漏掉一个字段**没有任何症状**：接口照常返回 200，任务也建出来了，
+// 只是那一项永远是默认值。集成方发现不了，我们也发现不了。
+// 所以把「覆盖完整」变成一件测试能查的事。
+//
+// 这里比对的是**字段说明**（平台和文档都从它生成），而不是 Go 结构体 ——
+// 结构体里有了但没写进说明，对集成方而言仍然等于不存在。
+func TestCreateTaskCoversEveryBackendField(t *testing.T) {
+	// task.Input 里每个业务字段，对应到接口里应当出现的那个名字。
+	// 左边是后端字段，右边是接口字段名（用它在说明里搜）。
+	want := map[string]string{
+		"TaskName":     "name",
+		"FolderID":     "folder",
+		"Media":        "media",
+		"Terminals":    "terminals",
+		"StartDate":    "startDate",
+		"EndDate":      "endDate",
+		"PlayTime":     "playTime",
+		"EndTime":      "endTime",
+		"ExeModel":     "weekdays",
+		"DisableDay":   "disableDay",
+		"TimeLength":   "seconds",
+		"TimeLengthTy": "loopTimes",
+		"IntervalS":    "interval.everySeconds",
+		"IntPlayLen":   "interval.playSeconds",
+		"IntPlayLenTy": "interval.playTimes",
+		"Volume":       "volume",
+		"Priority":     "priority",
+		"PrePower":     "prePower",
+		"ProjectState": "enabled",
+		"IsRandomPlay": "sequential",
+		"DataSendMode": "multicast",
+		"LocalPlay":    "localFirst",
+		"LED":          "led",
+	}
+
+	var create *Endpoint
+	for _, g := range Catalog().Groups {
+		for i, ep := range g.Endpoints {
+			if ep.ID == "tasks.create" {
+				create = &g.Endpoints[i]
+			}
+		}
+	}
+	if create == nil {
+		t.Fatal("目录里找不到 tasks.create")
+	}
+
+	documented := map[string]bool{}
+	for _, f := range create.Fields {
+		documented[f.Name] = true
+	}
+	for backend, api := range want {
+		if !documented[api] {
+			t.Errorf("task.Input.%s 对应的接口字段 %q 没写进「请求体字段」——"+
+				"集成方看不到它，等于这个功能不存在", backend, api)
+		}
+	}
+
+	// 示例里也要把主要字段摆出来。只给三四个字段的「示例」会让人以为
+	// 接口就只有那么几项 —— 这正是这轮修改的起因。
+	for _, must := range []string{"name", "media", "terminals", "playTime",
+		"weekdays", "seconds", "volume", "interval", "led"} {
+		if !strings.Contains(create.Body, `"`+must+`"`) {
+			t.Errorf("新建任务的请求体示例里没有 %q —— 示例要能代表接口的全貌", must)
+		}
+	}
+}
+
+// 任务详情要能把新建时填的东西**读回来**，否则集成方没法核对自己填对没有。
+func TestTaskDetailMirrorsCreateFields(t *testing.T) {
+	var detail *Endpoint
+	for _, g := range Catalog().Groups {
+		for i, ep := range g.Endpoints {
+			if ep.ID == "tasks.get" {
+				detail = &g.Endpoints[i]
+			}
+		}
+	}
+	if detail == nil {
+		t.Fatal("目录里找不到 tasks.get（任务详情）——" +
+			"没有它，集成方建完任务只能拿到一个 id，没法确认填的东西写进去没有")
+	}
+	for _, must := range []string{"interval", "disableDay", "led", "area",
+		"multicast", "localFirst", "weekdays"} {
+		if !strings.Contains(detail.Sample, must) {
+			t.Errorf("任务详情的响应示例里没有 %q —— 新建时能填的，详情就该能读回来", must)
 		}
 	}
 }
