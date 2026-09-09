@@ -1,6 +1,130 @@
+/**
+ * 中文文案。
+ *
+ * # 组织方式
+ *
+ *	common   到处都在用的那些词（确定/取消/删除/状态…）。
+ *	         能进 common 的标准是「在任何页面里意思都一样」——
+ *	         「执行」在任务页是播放、在别处可能是别的意思，那就不进 common。
+ *	menu     左侧菜单。菜单由后端下发，标题是中文；这里按菜单项的 name 翻，
+ *	         所以后端不用改（见 stores/modules/auth.ts）。
+ *	其余     一个页面一个命名空间，键名照着页面里的意思取。
+ *
+ * ⚠ zh.ts 与 en.ts 的键必须**一一对应**。缺键时 vue-i18n 会回落到中文，
+ * 页面上就会出现一句突兀的中文，而且不报错 —— 所以有 i18n_test 那个脚本
+ * 专门比对两边的键集合。
+ */
 export default {
+  common: {
+    confirm: "确定",
+    cancel: "取消",
+    ok: "确定",
+    close: "关闭",
+    save: "保存",
+    search: "搜索",
+    reset: "重置",
+    add: "添加",
+    create: "新增",
+    edit: "编辑",
+    modify: "修改",
+    delete: "删除",
+    remove: "移除",
+    refresh: "刷新",
+    clear: "清空",
+    selectAll: "全选",
+    back: "返回",
+    detail: "详情",
+    view: "查看",
+    operation: "操作",
+    status: "状态",
+    enable: "启用",
+    disable: "停用",
+    enabled: "已启用",
+    disabled: "已停用",
+    online: "在线",
+    offline: "离线",
+    yes: "是",
+    no: "否",
+    all: "全部",
+    none: "无",
+    name: "名称",
+    remark: "备注",
+    index: "序号",
+    tip: "温馨提示",
+    warning: "提示",
+    confirmDelete: "确认删除",
+    deleteConfirmTip: "此操作不可恢复，确定要删除吗？",
+    saveSuccess: "保存成功",
+    deleteSuccess: "删除成功",
+    operationSuccess: "操作成功",
+    operationFailed: "操作失败",
+    loading: "加载中…",
+    noData: "暂无数据",
+    startDate: "开始日期",
+    endDate: "结束日期",
+    startTime: "开始时间",
+    endTime: "结束时间",
+    volume: "音量",
+    keyword: "关键字",
+    pleaseSelect: "请选择",
+    pleaseInput: "请输入"
+  },
+  menu: {
+    dashboard: "看板",
+    home: "首页",
+    config: "基础配置",
+    server: "服务器信息",
+    time: "时间设置",
+    backup: "备份还原",
+    holiday: "节假日管理",
+    resource: "资源管理",
+    terminal: "终端管理",
+    zone: "终端分区",
+    media: "文件管理",
+    alarmArea: "报警分区",
+    alarmMapping: "报警映射",
+    remote: "遥控任务",
+    taskmgr: "任务管理",
+    bell: "作息方案",
+    task: "文件广播",
+    amplifier: "终端功放",
+    collect: "采播管理",
+    tts: "文字语音",
+    led: "led播放",
+    enable: "启用管理",
+    cloud: "云广播管理",
+    cloudTerminal: "云广播终端",
+    offline: "音乐传输",
+    transfer: "任务传送",
+    noise: "噪声检测",
+    noiseDevice: "噪声设备",
+    noiseZone: "声场分区",
+    user: "用户管理",
+    userList: "用户",
+    userGroup: "用户组",
+    registerServer: "注册服务",
+    log: "日志",
+    dev: "开发者接口",
+    openapiConsole: "接口调用平台",
+    openapiKeys: "开发者密钥"
+  },
+  login: {
+    title: "登录",
+    username: "用户名",
+    password: "密码",
+    captcha: "验证码",
+    usernameRequired: "请输入用户名",
+    passwordRequired: "请输入密码",
+    captchaRequired: "请输入验证码",
+    refreshCaptcha: "点击刷新验证码",
+    submit: "登录",
+    reset: "重置",
+    success: "登录成功",
+    welcomeBack: "欢迎回来，{name}",
+    standbyNotice: "当前服务器为备份服务器，系统处于只读状态，所有写操作将被拒绝。"
+  },
   home: {
-    welcome: "欢迎使用"
+    welcome: "欢迎"
   },
   tabs: {
     refresh: "刷新",
@@ -13,10 +137,10 @@ export default {
   },
   header: {
     componentSize: "组件大小",
-    language: "国际化",
-    theme: "全局主题",
+    language: "语言",
+    theme: "主题",
     layoutConfig: "布局设置",
-    primary: "primary",
+    primary: "主题颜色",
     darkMode: "暗黑模式",
     greyMode: "灰色模式",
     weakMode: "色弱模式",
@@ -24,6 +148,9 @@ export default {
     exitFullScreen: "退出全屏",
     personalData: "个人信息",
     changePassword: "修改密码",
-    logout: "退出登录"
+    logout: "退出登录",
+    logoutConfirm: "确定要退出登录吗？",
+    logoutDone: "退出登录成功！",
+    searchMenu: "菜单搜索"
   }
 };

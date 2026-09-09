@@ -2,7 +2,15 @@ export type LayoutType = "vertical" | "classic" | "transverse" | "columns";
 
 export type AssemblySizeType = "large" | "default" | "small";
 
-export type LanguageType = "zh" | "en" | null;
+/**
+ * 界面语言。
+ *
+ * ⚠ 不再有 null。null 的含义是「没选过，去猜浏览器语言」，
+ * 而在这个产品里猜出来的结果（这台机器上是 en-US）几乎总是错的，
+ * 还让「当前是什么语言」变成一个要跑一遍逻辑才知道的问题。
+ * 没选过就是中文，写在默认值里。
+ */
+export type LanguageType = "zh" | "en";
 
 /* UserState */
 export interface UserState {

@@ -6,14 +6,13 @@
 
 <script setup lang="ts">
 import { ElConfigProvider } from "element-plus";
+import en from "element-plus/es/locale/lang/en";
 import zhCn from "element-plus/es/locale/lang/zh-cn";
-import { computed, onMounted, reactive } from "vue";
+import { computed, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
 
 import { useTheme } from "@/hooks/useTheme";
 import { useGlobalStore } from "@/stores/modules/global";
-
-import { LanguageType } from "./stores/interface";
 
 const globalStore = useGlobalStore();
 
@@ -22,24 +21,31 @@ const { initTheme } = useTheme();
 initTheme();
 
 /*
-  语言固定中文。
+  语言跟着用户选的走。
 
-  ⚠ 原来这里是「globalStore.language ?? getBrowserLang()」，
-    也就是没设置过就去猜浏览器语言。这台机器上的浏览器报的是 en-US，
-    于是分页条（Total / items/page / Go to）、日期时间选择器（Mon/Tue、
-    Now/OK/Clear）、表格空数据提示这些 **Element Plus 自带的文案全成了英文**。
+  ⚠ 这里原来是 onMounted 里无条件 `i18n.locale.value = "zh"` ——
+    右上角点 English 之后，只要有任何一次重新挂载（刷新、路由到全屏页再回来）
+    就被按回中文，而 Element Plus 的 locale 更是写死 zhCn 从来没动过。
+    表现就是「点了 English 什么也没发生」。
 
-    这是个中文产品，没有出英文版的打算，所以不猜了 —— 直接钉死 zh-cn。
-    要做多语言时再把 getBrowserLang 那套接回来。
+    默认值放在 store 里（"zh"），初始值由 languages/index.ts 从
+    localStorage 读回来，两边同一个来源，不再各写各的。
 */
 const i18n = useI18n();
-onMounted(() => {
-  i18n.locale.value = "zh";
-  globalStore.setGlobalState("language", "zh" as LanguageType);
-});
+watch(
+  () => globalStore.language,
+  lang => {
+    i18n.locale.value = lang;
+    // 记在 html 上：CSS 里要按语言微调宽度时有个抓手，
+    // 也方便排查「现在到底是什么语言」。
+    document.documentElement.setAttribute("lang", lang === "en" ? "en" : "zh-CN");
+  },
+  { immediate: true }
+);
 
-// element language：恒为简体中文
-const locale = computed(() => zhCn);
+// Element Plus 自带的文案（分页「共 x 条」、日期选择器的星期、表格空数据提示）
+// 跟着一起切。只切我们自己的 $t 而不切它，会切出一个中英夹杂的界面。
+const locale = computed(() => (globalStore.language === "en" ? en : zhCn));
 
 // element assemblySize
 const assemblySize = computed(() => globalStore.assemblySize);

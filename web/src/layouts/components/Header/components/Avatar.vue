@@ -27,6 +27,7 @@
 import { ElMessage, ElMessageBox } from "element-plus";
 import { ref } from "vue";
 import { useRouter } from "vue-router";
+import { useI18n } from "vue-i18n";
 
 import { logoutApi } from "@/api/modules/login";
 import { LOGIN_URL } from "@/config";
@@ -36,13 +37,14 @@ import InfoDialog from "./InfoDialog.vue";
 import PasswordDialog from "./PasswordDialog.vue";
 
 const router = useRouter();
+const { t } = useI18n();
 const userStore = useUserStore();
 
 // 退出登录
 const logout = () => {
-  ElMessageBox.confirm("您是否确认退出登录?", "温馨提示", {
-    confirmButtonText: "确定",
-    cancelButtonText: "取消",
+  ElMessageBox.confirm(t("header.logoutConfirm"), t("common.tip"), {
+    confirmButtonText: t("common.confirm"),
+    cancelButtonText: t("common.cancel"),
     type: "warning"
   }).then(async () => {
     // 1.执行退出登录接口
@@ -53,7 +55,7 @@ const logout = () => {
 
     // 3.重定向到登陆页
     router.replace(LOGIN_URL);
-    ElMessage.success("退出登录成功！");
+    ElMessage.success(t("header.logoutDone"));
   });
 };
 

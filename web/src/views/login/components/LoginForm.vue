@@ -1,7 +1,7 @@
 <template>
   <el-form ref="loginFormRef" :model="loginForm" :rules="loginRules" size="large">
     <el-form-item prop="username">
-      <el-input v-model="loginForm.username" placeholder="用户名">
+      <el-input v-model="loginForm.username" :placeholder="$t('login.username')">
         <template #prefix>
           <el-icon class="el-input__icon">
             <user />
@@ -10,7 +10,13 @@
       </el-input>
     </el-form-item>
     <el-form-item prop="password">
-      <el-input v-model="loginForm.password" type="password" placeholder="密码" show-password autocomplete="current-password">
+      <el-input
+        v-model="loginForm.password"
+        type="password"
+        :placeholder="$t('login.password')"
+        show-password
+        autocomplete="current-password"
+      >
         <template #prefix>
           <el-icon class="el-input__icon">
             <lock />
@@ -29,7 +35,7 @@
             又被 axiosCancel 取消，第二个带着同一个 id 上去就成了「验证码错误」——
             明明输的是对的。实测：按回车 2 次请求、点按钮 1 次请求。
         -->
-        <el-input v-model="loginForm.captcha" placeholder="验证码" maxlength="10">
+        <el-input v-model="loginForm.captcha" :placeholder="$t('login.captcha')" maxlength="10">
           <template #prefix>
             <el-icon class="el-input__icon">
               <picture-filled />
@@ -40,22 +46,23 @@
           v-if="captchaImage"
           class="captcha-img"
           :src="captchaImage"
-          alt="点击刷新验证码"
-          title="点击刷新验证码"
+          :alt="$t('login.refreshCaptcha')"
+          :title="$t('login.refreshCaptcha')"
           @click="refreshCaptcha"
         />
       </div>
     </el-form-item>
   </el-form>
   <div class="login-btn">
-    <el-button :icon="CircleClose" round size="large" @click="resetForm(loginFormRef)"> 重置 </el-button>
+    <el-button :icon="CircleClose" round size="large" @click="resetForm(loginFormRef)"> {{ $t("login.reset") }} </el-button>
     <el-button :icon="UserFilled" round size="large" type="primary" :loading="loading" @click="login(loginFormRef)">
-      登录
+      {{ $t("login.submit") }}
     </el-button>
   </div>
 </template>
 
 <script setup lang="ts">
+import { useI18n } from "vue-i18n";
 import { CircleClose, PictureFilled, UserFilled } from "@element-plus/icons-vue";
 import type { ElForm } from "element-plus";
 import { ElNotification } from "element-plus";
@@ -76,6 +83,9 @@ const tabsStore = useTabsStore();
 const keepAliveStore = useKeepAliveStore();
 
 type FormInstance = InstanceType<typeof ElForm>;
+// 校验提示、通知这些在**脚本里**拼的文案，用 t() 而不是 $t —— $t 只在模板里有
+const { t } = useI18n();
+
 const loginFormRef = ref<FormInstance>();
 const loading = ref(false);
 // 是否需要验证码，由 /api/captcha 的 enabled 字段（即服务端 auth.captcha_enabled）决定。
@@ -85,9 +95,9 @@ const captchaRequired = ref(true);
 // 必填校验跟着 captchaRequired 走。el-form-item 上的 v-if 卸载时本就会从表单注销，
 // 这里再撤掉规则是第二道保险 —— 避免哪天 v-if 改成 v-show 就变成永远校验不过。
 const loginRules = computed(() => ({
-  username: [{ required: true, message: "请输入用户名", trigger: "blur" }],
-  password: [{ required: true, message: "请输入密码", trigger: "blur" }],
-  captcha: captchaRequired.value ? [{ required: true, message: "请输入验证码", trigger: "blur" }] : []
+  username: [{ required: true, message: t("login.usernameRequired"), trigger: "blur" }],
+  password: [{ required: true, message: t("login.passwordRequired"), trigger: "blur" }],
+  captcha: captchaRequired.value ? [{ required: true, message: t("login.captchaRequired"), trigger: "blur" }] : []
 }));
 const captchaImage = ref("");
 
@@ -147,15 +157,15 @@ const login = (formEl: FormInstance | undefined) => {
 
       router.push(HOME_URL);
       ElNotification({
-        title: "登录成功",
-        message: `欢迎回来，${data.user?.username ?? loginForm.username}`,
+        title: t("login.success"),
+        message: t("login.welcomeBack", { name: data.user?.username ?? loginForm.username }),
         type: "success",
         duration: 2500
       });
       if (data.server?.readonly) {
         ElNotification({
           title: "备机模式",
-          message: "当前服务器为备份服务器，系统处于只读状态，所有写操作将被拒绝。",
+          message: t("login.standbyNotice"),
           type: "warning",
           duration: 0
         });
