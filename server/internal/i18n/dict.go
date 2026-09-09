@@ -293,6 +293,32 @@ var codeDict = map[string]string{
 	"选中的终端上没有任何离线内容，%s 无事可做":                                   "The selected terminals hold no offline content, so “%s” has nothing to do",
 	"确认文本不正确，需要逐字输入「%s」":                                       "The confirmation text does not match — type “%s” exactly",
 	"、": ", ",
+
+	// ——— 用户与用户组 ———
+	"(用户组已删除)":                  "(user group deleted)",
+	"不能停用当前登录的账号":               "You cannot disable the account you are signed in with",
+	"不能删除当前登录的账号":               "You cannot delete the account you are signed in with",
+	"两次输入的密码不一致":                "The two passwords do not match",
+	"密码长度必须在 1~20 之间":           "The password must be 1 to 20 characters long",
+	"密码长度不能超过 20":               "The password may be at most 20 characters long",
+	"用户名长度非法":                   "That username length is not allowed",
+	"必须指定用户组":                   "Choose a user group",
+	"服务器未注册，禁止新建或删除用户":          "The server is not licensed, so users cannot be created or deleted",
+	"未选择要删除的用户":                 "No users were selected for deletion",
+	"系统用户 admin 受保护":            "The system account “admin” is protected",
+	"系统用户组受保护":                  "The system user group is protected",
+	"用户组名称不能为空":                 "The group name cannot be empty",
+	"用户组名称过长":                   "That group name is too long",
+	"组级别必须在 1~10 之间":            "The group level must be between 1 and 10",
+	"优先级基数必须在 0~9 之间":           "The priority base must be between 0 and 9",
+	"用户组级别必须在 10~109 之间，当前是 %d": "The group level must be between 10 and 109 — it is currently %d",
+	"确认文本与用户组名称不一致，操作已取消":       "The confirmation text does not match the group name, so nothing was done",
+	"分控 ID 已分配完，请先释放或提高授权数":     "All sub-control IDs are taken — release one or raise the licensed count",
+	"名称已被使用":                    "That name is already taken",
+	"描述过长":                      "That description is too long",
+	"对象不存在":                     "That item does not exist",
+	"无权操作":                      "You do not have permission to do that",
+	"操作繁忙，请稍后重试":                "The system is busy — please try again shortly",
 }
 
 // dataDict 是**不在 Go 源码里**的那些：库里的数据（终端型号）、

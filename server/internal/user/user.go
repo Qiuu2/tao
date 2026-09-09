@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"htweb/internal/i18n"
 	"strings"
 
 	"htweb/internal/auth"
@@ -92,7 +93,7 @@ func (s *Service) ListUsers(ctx context.Context, cur *auth.User, q UserListQuery
 			return nil, 0, err
 		}
 		if u.UsergroupName == "" {
-			u.UsergroupName = "(用户组已删除)"
+			u.UsergroupName = i18n.TC(ctx, "(用户组已删除)")
 		}
 		u.EnableText = map[bool]string{true: "启用", false: "停用"}[u.Enable == 1]
 		u.CanModify = true

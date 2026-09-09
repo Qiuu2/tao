@@ -6,6 +6,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"htweb/internal/i18n"
 	"strings"
 
 	"htweb/internal/auth"
@@ -209,7 +210,7 @@ func (in GroupInput) validateBase() error {
 // （旧文档写「用户组级别，最大 5」，与那个 10~109 的下拉自相矛盾），
 // 它们落在区间外。改描述、改权限时不该被级别挡住 —— 那会让这些用户组
 // 一个字段都改不了；真去动级别时，才必须落进 10~109。
-func (in GroupInput) validateLevel() error {
+func (in GroupInput) validateLevel(ctx context.Context) error {
 	if in.GroupLevel < 1 || in.GroupLevel > 10 {
 		return fmt.Errorf("组级别必须在 1~10 之间")
 	}
@@ -217,7 +218,7 @@ func (in GroupInput) validateLevel() error {
 		return fmt.Errorf("优先级基数必须在 0~9 之间")
 	}
 	if lv := JoinLevel(in.GroupLevel, in.PriorityBase); lv < 10 || lv > 109 {
-		return fmt.Errorf("用户组级别必须在 10~109 之间，当前是 %d", lv)
+		return fmt.Errorf(i18n.TC(ctx, "用户组级别必须在 10~109 之间，当前是 %d"), lv)
 	}
 	return nil
 }
@@ -227,7 +228,7 @@ func (s *Service) CreateGroup(ctx context.Context, in GroupInput) (int64, error)
 		return 0, err
 	}
 	// 新建没有「原值」可言，级别一律照区间校验
-	if err := in.validateLevel(); err != nil {
+	if err := in.validateLevel(ctx); err != nil {
 		return 0, err
 	}
 	name := strings.TrimSpace(in.Name)
@@ -311,7 +312,7 @@ func (s *Service) UpdateGroup(ctx context.Context, id int64, in GroupInput) (*Pr
 	// 级别没动就不校验区间 —— 旧库里那些 level 为 1/3/5 的用户组
 	// 否则连描述都改不了。详见 validateLevel 的注释。
 	if newLevel != oldLevel {
-		if err := in.validateLevel(); err != nil {
+		if err := in.validateLevel(ctx); err != nil {
 			return nil, err
 		}
 	}

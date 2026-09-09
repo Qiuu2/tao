@@ -36,57 +36,35 @@ export interface Rights {
 
   group 用来在界面上按新 web 的菜单分组排列。
 
+  ⚠ group / label / tip 存的是 **i18n 键**，不是字面文字 —— 这张表是模块级常量，
+  取不到 setup 里的 t()，所以把翻译推到用的地方（user/group 那一页）去做。
+
   13 项对满 usergroup 的 13 列。最后补上的是 led播放：它借用旧版空出来的
   telephonepriv 那一列（新版没有电话广播这一页），列不动、语义换。
 */
 export const RIGHT_ITEMS: { key: keyof Rights; group: string; label: string; tip: string }[] = [
   // —— 资源管理 ——
-  {
-    key: "terminalpriv",
-    group: "资源管理",
-    label: "终端管理",
-    tip: "终端管理页的全部写操作：参数、音量、启停、密码、开关、快捷键、寻呼组、快捷任务、终端替换、删除；云广播管理 → 音乐传输；时间设置 → 下发校时"
-  },
-  {
-    key: "terminalgrouppriv",
-    group: "资源管理",
-    label: "分区管理",
-    tip: "终端分区的增删改；噪声检测 → 噪声设备、声场分区"
-  },
-  {
-    key: "alarmgrouppriv",
-    group: "资源管理",
-    label: "报警管理",
-    tip: "报警分区、报警映射的增删改"
-  },
-  { key: "mediapriv", group: "资源管理", label: "文件管理", tip: "文件管理页：上传媒体、删除媒体、清空文件夹内媒体" },
-  { key: "folderpriv", group: "资源管理", label: "文件夹管理", tip: "文件管理页：新建 / 改名 / 删除媒体文件夹" },
+  { key: "terminalpriv", group: "rights.groupResource", label: "rights.terminal", tip: "rights.terminalTip" },
+  { key: "terminalgrouppriv", group: "rights.groupResource", label: "rights.zone", tip: "rights.zoneTip" },
+  { key: "alarmgrouppriv", group: "rights.groupResource", label: "rights.alarm", tip: "rights.alarmTip" },
+  { key: "mediapriv", group: "rights.groupResource", label: "rights.media", tip: "rights.mediaTip" },
+  { key: "folderpriv", group: "rights.groupResource", label: "rights.folder", tip: "rights.folderTip" },
 
   // —— 任务管理 ——
-  { key: "taskpriv", group: "任务管理", label: "文件广播", tip: "文件广播的增删改与启停、任务分组" },
-  { key: "bellpriv", group: "任务管理", label: "作息方案", tip: "作息方案与打铃条目的增删改、启停、复制；节假日管理" },
-  { key: "powerplay", group: "任务管理", label: "终端功放", tip: "终端功放任务的新建 / 修改 / 删除 / 启停" },
-  { key: "admpriv", group: "任务管理", label: "采播管理", tip: "采播任务的新建 / 修改 / 删除 / 启停" },
-  { key: "ttspriv", group: "任务管理", label: "文字语音", tip: "文字语音任务的新建 / 修改 / 删除 / 启停；启用管理" },
-  {
-    key: "telephonepriv",
-    group: "任务管理",
-    label: "led播放",
-    tip: "led播放 任务的新建 / 修改 / 删除 / 启停；LED 任务目录与 LED 屏设备"
-  },
+  { key: "taskpriv", group: "rights.groupTask", label: "rights.task", tip: "rights.taskTip" },
+  { key: "bellpriv", group: "rights.groupTask", label: "rights.bell", tip: "rights.bellTip" },
+  { key: "powerplay", group: "rights.groupTask", label: "rights.amplifier", tip: "rights.amplifierTip" },
+  { key: "admpriv", group: "rights.groupTask", label: "rights.collect", tip: "rights.collectTip" },
+  { key: "ttspriv", group: "rights.groupTask", label: "rights.tts", tip: "rights.ttsTip" },
+  { key: "telephonepriv", group: "rights.groupTask", label: "rights.led", tip: "rights.ledTip" },
 
   // —— 系统 ——
-  {
-    key: "serverpriv",
-    group: "系统",
-    label: "遥控管理",
-    tip: "遥控任务；云广播管理 → 任务传送；基础配置 → 服务器信息、时间设置里的 NTP / GPS；用户管理 → 注册服务"
-  },
-  { key: "userpriv", group: "系统", label: "用户管理", tip: "用户与用户组的查看与维护" }
+  { key: "serverpriv", group: "rights.groupSystem", label: "rights.remote", tip: "rights.remoteTip" },
+  { key: "userpriv", group: "rights.groupSystem", label: "rights.user", tip: "rights.userTip" }
 ];
 
 /** 界面上按这个顺序分组排列，与新 web 的菜单同序 */
-export const RIGHT_GROUPS = ["资源管理", "任务管理", "系统"] as const;
+export const RIGHT_GROUPS = ["rights.groupResource", "rights.groupTask", "rights.groupSystem"] as const;
 
 export const emptyRights = (v = 0): Rights => RIGHT_ITEMS.reduce((acc, i) => ({ ...acc, [i.key]: v }), {} as Rights);
 

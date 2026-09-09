@@ -21,39 +21,41 @@
   <div class="table-box">
     <ProTable ref="proTableRef" :columns="columns" :request-api="getGroupListApi" row-key="id">
       <template #tableHeader>
-        <el-button v-if="canAdd" type="primary" :icon="CirclePlus" @click="openCreate">新建用户组</el-button>
-        <span v-else class="muted">当前账号没有新建用户组的权限</span>
+        <el-button v-if="canAdd" type="primary" :icon="CirclePlus" @click="openCreate">{{ $t("user.newGroup") }}</el-button>
+        <span v-else class="muted">{{ $t("user.noPermissionToCreateGroup") }}</span>
       </template>
 
       <template #levelCol="scope">
-        <el-tag size="small" effect="plain">级别 {{ scope.row.groupLevel }}</el-tag>
-        <el-tag size="small" type="info" effect="plain" class="ml6">优先级基数 {{ scope.row.priorityBase }}</el-tag>
-        <span class="raw-level">（level={{ scope.row.level }}）</span>
+        <el-tag size="small" effect="plain">{{ $t("user.levelN", { n: scope.row.groupLevel }) }}</el-tag>
+        <el-tag size="small" type="info" effect="plain" class="ml6">
+          {{ $t("user.priorityBase") }} {{ scope.row.priorityBase }}
+        </el-tag>
+        <span class="raw-level">{{ $t("user.rawLevel", { n: scope.row.level }) }}</span>
       </template>
 
       <template #rightsCol="scope">
-        <el-tag v-if="scope.row.system" type="danger" size="small">全部权限</el-tag>
+        <el-tag v-if="scope.row.system" type="danger" size="small">{{ $t("user.allRights") }}</el-tag>
         <template v-else>
           <el-tag v-for="k in grantedOf(scope.row.rights)" :key="k" size="small" effect="plain" class="mr4">
             {{ labelOf(k) }}
           </el-tag>
-          <span v-if="!grantedOf(scope.row.rights).length" class="muted">无任何权限</span>
+          <span v-if="!grantedOf(scope.row.rights).length" class="muted">{{ $t("user.noRights") }}</span>
         </template>
       </template>
 
       <template #operation="scope">
         <el-button type="primary" link :icon="EditPen" :disabled="!canEdit" @click="openEdit(scope.row)">
-          {{ scope.row.system ? "查看 / 改描述" : "编辑" }}
+          {{ scope.row.system ? $t("user.viewOrEditInfo") : $t("common.edit") }}
         </el-button>
         <el-button
           type="danger"
           link
           :icon="Delete"
           :disabled="!canDelete || !scope.row.canDelete"
-          :title="scope.row.system ? '系统用户组不可删除' : ''"
+          :title="scope.row.system ? $t('user.systemGroupUndeletable') : ''"
           @click="openDelete(scope.row)"
         >
-          删除
+          {{ $t("common.delete") }}
         </el-button>
       </template>
     </ProTable>
@@ -61,35 +63,35 @@
     <!-- 新建 / 编辑 -->
     <el-dialog v-model="dlg.visible" :title="dlg.title" width="720px" top="6vh">
       <el-alert v-if="dlg.system" type="warning" :closable="false" show-icon class="mb12">
-        这是系统用户组，拥有全部权限。名称、级别与权限均不可修改，只能修改描述。
+        {{ $t("user.systemGroupNotice") }}
       </el-alert>
 
       <el-form :model="dlg.form" label-width="110px">
-        <el-form-item label="用户组名称" required>
+        <el-form-item :label='$t("user.groupName")' required>
           <el-input v-model="dlg.form.name" :disabled="dlg.system" maxlength="60" show-word-limit />
         </el-form-item>
-        <el-form-item label="描述">
-          <el-input v-model="dlg.form.info" maxlength="60" show-word-limit placeholder="选填" />
+        <el-form-item :label='$t("common.description")'>
+          <el-input v-model="dlg.form.info" maxlength="60" show-word-limit :placeholder='$t("common.optional")' />
         </el-form-item>
 
-        <el-form-item label="组级别">
+        <el-form-item :label='$t("user.groupLevel")'>
           <el-select v-model="dlg.form.groupLevel" :disabled="dlg.system" style="width: 200px">
             <el-option v-for="n in groupLevelOptions" :key="n" :label="levelLabel(n)" :value="n" />
           </el-select>
         </el-form-item>
 
-        <el-form-item label="优先级基数">
+        <el-form-item :label='$t("user.priorityBase")'>
           <el-select v-model="dlg.form.priorityBase" :disabled="dlg.system" style="width: 140px">
             <el-option v-for="n in 10" :key="n - 1" :label="String(n - 1)" :value="n - 1" />
           </el-select>
         </el-form-item>
 
         <el-alert v-if="dlg.isEdit && levelChanged" type="warning" :closable="false" show-icon class="mb12">
-          组级别或优先级基数已改动。保存后会<b>重算该组内所有用户的任务优先级</b>： 新优先级 =
-          {{ dlg.form.groupLevel * 10 + dlg.form.priorityBase }} + 原优先级个位。
+          {{ $t("user.levelChangedWarn") }}<b>{{ $t("user.levelChangedWarnBold") }}</b>
+          {{ $t("user.levelChangedWarnTail", { n: dlg.form.groupLevel * 10 + dlg.form.priorityBase }) }}
         </el-alert>
 
-        <el-form-item label="功能权限">
+        <el-form-item :label='$t("user.rights")'>
           <!--
             按新 web 的菜单分组排列，每一项下面写清它到底管住哪几页 ——
             勾了就能进、不勾就进不去，菜单与按钮都跟着它走。
@@ -97,9 +99,9 @@
           <div class="rights-wrap">
             <div v-for="g in RIGHT_GROUPS" :key="g" class="right-group">
               <div class="right-group-head">
-                <span class="right-group-title">{{ g }}</span>
-                <el-button v-if="!dlg.system" link type="primary" size="small" @click="setGroupRights(g, 1)"> 全选 </el-button>
-                <el-button v-if="!dlg.system" link size="small" @click="setGroupRights(g, 0)">全不选</el-button>
+                <span class="right-group-title">{{ $t(g) }}</span>
+                <el-button v-if="!dlg.system" link type="primary" size="small" @click="setGroupRights(g, 1)"> {{ $t("user.selectAllRights") }} </el-button>
+                <el-button v-if="!dlg.system" link size="small" @click="setGroupRights(g, 0)">{{ $t("user.clearAllRights") }}</el-button>
               </div>
               <div class="rights-grid">
                 <div v-for="item in itemsOf(g)" :key="item.key" class="right-item">
@@ -108,58 +110,58 @@
                     :disabled="dlg.system"
                     @update:model-value="v => (dlg.form.rights[item.key] = v ? 1 : 0)"
                   >
-                    {{ item.label }}
+                    {{ $t(item.label) }}
                   </el-checkbox>
-                  <div class="right-tip">{{ item.tip }}</div>
+                  <div class="right-tip">{{ $t(item.tip) }}</div>
                 </div>
               </div>
             </div>
           </div>
           <div v-if="!dlg.system" class="rights-ops">
-            <el-button link type="primary" @click="setAllRights(1)">全选</el-button>
-            <el-button link @click="setAllRights(0)">全不选</el-button>
+            <el-button link type="primary" @click="setAllRights(1)">{{ $t("user.selectAllRights") }}</el-button>
+            <el-button link @click="setAllRights(0)">{{ $t("user.clearAllRights") }}</el-button>
           </div>
         </el-form-item>
       </el-form>
 
       <template #footer>
-        <el-button @click="dlg.visible = false">取消</el-button>
-        <el-button type="primary" :loading="dlg.loading" @click="submit">确定</el-button>
+        <el-button @click="dlg.visible = false">{{ $t("common.cancel") }}</el-button>
+        <el-button type="primary" :loading="dlg.loading" @click="submit">{{ $t("common.confirm") }}</el-button>
       </template>
     </el-dialog>
 
     <!-- 删除影响面 -->
-    <el-dialog v-model="del.visible" title="删除用户组" width="560px">
+    <el-dialog v-model="del.visible" :title='$t("user.deleteGroupTitle")' width="560px">
       <el-alert type="error" :closable="false" show-icon class="mb12">
-        删除用户组会<b>连同组内全部用户一起删除</b>，并清空他们名下的所有数据，不可恢复。
+        {{ $t("user.deleteGroupWarn") }}<b>{{ $t("user.deleteGroupWarnBold") }}</b>{{ $t("user.deleteGroupWarnTail") }}
       </el-alert>
 
       <el-descriptions v-if="del.impact" :column="2" border size="small">
-        <el-descriptions-item label="连带删除用户">{{ del.impact.users }} 个</el-descriptions-item>
-        <el-descriptions-item label="文件夹">{{ del.impact.folders }} 个</el-descriptions-item>
-        <el-descriptions-item label="媒体">{{ del.impact.media }} 个</el-descriptions-item>
-        <el-descriptions-item label="任务">{{ del.impact.tasks }} 条</el-descriptions-item>
-        <el-descriptions-item label="终端分区">{{ del.impact.terminalGroups }} 个</el-descriptions-item>
-        <el-descriptions-item label="报警分区">{{ del.impact.alarmAreas }} 个</el-descriptions-item>
+        <el-descriptions-item :label='$t("user.cascadeUsers")'>{{ $t("user.nItems", { n: del.impact.users }) }}</el-descriptions-item>
+        <el-descriptions-item :label='$t("user.folders")'>{{ $t("user.nItems", { n: del.impact.folders }) }}</el-descriptions-item>
+        <el-descriptions-item :label='$t("taskCommon.media")'>{{ $t("user.nItems", { n: del.impact.media }) }}</el-descriptions-item>
+        <el-descriptions-item :label='$t("taskCommon.task")'>{{ $t("user.nRows", { n: del.impact.tasks }) }}</el-descriptions-item>
+        <el-descriptions-item :label='$t("user.terminalZones")'>{{ $t("user.nItems", { n: del.impact.terminalGroups }) }}</el-descriptions-item>
+        <el-descriptions-item :label='$t("user.alarmZones")'>{{ $t("user.nItems", { n: del.impact.alarmAreas }) }}</el-descriptions-item>
       </el-descriptions>
 
       <div v-if="del.impact?.userNames?.length" class="mt12">
-        <div class="muted mb6">将被删除的用户：</div>
+        <div class="muted mb6">{{ $t("user.usersToDelete") }}</div>
         <el-tag v-for="n in del.impact.userNames" :key="n" size="small" type="danger" effect="plain" class="mr4">
           {{ n }}
         </el-tag>
       </div>
 
       <el-form label-width="130px" class="mt12">
-        <el-form-item label="请输入用户组名">
+        <el-form-item :label='$t("user.typeGroupName")'>
           <el-input v-model="del.confirmText" :placeholder="del.row?.name" />
         </el-form-item>
       </el-form>
 
       <template #footer>
-        <el-button @click="del.visible = false">取消</el-button>
+        <el-button @click="del.visible = false">{{ $t("common.cancel") }}</el-button>
         <el-button type="danger" :disabled="del.confirmText !== del.row?.name" :loading="del.loading" @click="confirmDelete">
-          我确认删除
+          {{ $t("user.confirmDeleteIt") }}
         </el-button>
       </template>
     </el-dialog>
@@ -167,6 +169,7 @@
 </template>
 
 <script setup lang="tsx" name="userGroup">
+import { useI18n } from "vue-i18n";
 import { CirclePlus, Delete, EditPen } from "@element-plus/icons-vue";
 import { ElMessage, ElNotification } from "element-plus";
 import { computed, reactive, ref } from "vue";
@@ -188,6 +191,9 @@ import ProTable from "@/components/ProTable/index.vue";
 import { ColumnProps } from "@/components/ProTable/interface";
 import { useAuthStore } from "@/stores/modules/auth";
 
+// 脚本里拼的文案用 t()；模板里的 $t 不用引入
+const { t } = useI18n();
+
 const authStore = useAuthStore();
 const btn = computed(() => (authStore.authButtonListGet as any)?.usergroup ?? {});
 const canAdd = computed(() => !!btn.value.add);
@@ -199,15 +205,19 @@ const refresh = () => proTableRef.value?.getTableList?.();
 
 const columns = reactive<ColumnProps<UserGroup>[]>([
   { prop: "id", label: "ID", width: 80 },
-  { prop: "name", label: "用户组", search: { el: "input", key: "keyword", props: { placeholder: "按名称搜索" } } },
-  { prop: "levelCol", label: "级别 / 优先级", width: 320 },
-  { prop: "userCount", label: "组内用户", width: 100 },
-  { prop: "rightsCol", label: "功能权限", minWidth: 300 },
-  { prop: "info", label: "描述", minWidth: 140, showOverflowTooltip: true },
-  { prop: "operation", label: "操作", width: 190, fixed: "right" }
+  { prop: "name", label: t("common.userGroup"), search: { el: "input", key: "keyword", props: { placeholder: t("user.searchByName") } } },
+  { prop: "levelCol", label: t("user.levelAndPriority"), width: 320 },
+  { prop: "userCount", label: t("user.groupMembers"), width: 100 },
+  { prop: "rightsCol", label: t("user.rights"), minWidth: 300 },
+  { prop: "info", label: t("common.description"), minWidth: 140, showOverflowTooltip: true },
+  { prop: "operation", label: t("common.operation"), width: 190, fixed: "right" }
 ]);
 
-const labelOf = (k: string) => RIGHT_ITEMS.find(i => i.key === k)?.label ?? k;
+// 权限项的 label 存的是 i18n 键（见 account.ts 的注释），这里翻出来再显示。
+const labelOf = (k: string) => {
+  const item = RIGHT_ITEMS.find(i => i.key === k);
+  return item ? t(item.label) : k;
+};
 const grantedOf = (r?: Rights) => (r ? RIGHT_ITEMS.filter(i => r[i.key] === 1).map(i => i.key as string) : []);
 
 /* ---------------- 新建 / 编辑 ---------------- */
@@ -247,14 +257,14 @@ const groupLevelOptions = computed(() => {
   if (!list.includes(cur)) list.unshift(cur);
   return list;
 });
-const levelLabel = (n: number) => (n >= 1 && n <= 10 ? `级别 ${n}` : `级别 ${n}（旧值，改动后须落在 1~10）`);
+const levelLabel = (n: number) => (n >= 1 && n <= 10 ? t("user.levelN", { n }) : t("user.levelNLegacy", { n }));
 
 const openCreate = () => {
   Object.assign(dlg, {
     visible: true,
     isEdit: false,
     system: false,
-    title: "新建用户组",
+    title: t("user.newGroup"),
     id: 0,
     originLevel: 10,
     loading: false,
@@ -267,7 +277,7 @@ const openEdit = (row: UserGroup) => {
     visible: true,
     isEdit: true,
     system: row.system,
-    title: row.system ? "系统用户组" : "修改用户组",
+    title: row.system ? t("user.systemGroup") : t("user.editGroup"),
     id: row.id,
     originLevel: row.level,
     loading: false,
@@ -288,7 +298,7 @@ const setAllRights = (v: number) => (dlg.form.rights = emptyRights(v));
 const setGroupRights = (group: string, v: number) => itemsOf(group).forEach(i => (dlg.form.rights[i.key] = v));
 
 const submit = async () => {
-  if (!dlg.form.name.trim()) return ElMessage.warning("请输入用户组名称");
+  if (!dlg.form.name.trim()) return ElMessage.warning(t("user.groupNameRequired"));
   dlg.loading = true;
   try {
     if (dlg.isEdit) {
@@ -296,17 +306,17 @@ const submit = async () => {
       const rc = data?.priorityRecalc;
       if (rc?.affectedTasks) {
         ElNotification({
-          title: "修改成功",
-          message: `已重算 ${rc.affectedUsers} 个用户共 ${rc.affectedTasks} 条任务的优先级`,
+          title: t("common.updateSuccess"),
+          message: t("user.recalcSummary", { users: rc.affectedUsers, tasks: rc.affectedTasks }),
           type: "success",
           duration: 6000
         });
       } else {
-        ElMessage.success("修改成功");
+        ElMessage.success(t("common.updateSuccess"));
       }
     } else {
       await createGroupApi({ ...dlg.form });
-      ElMessage.success("创建成功");
+      ElMessage.success(t("common.createSuccess"));
     }
     dlg.visible = false;
     refresh();
@@ -336,8 +346,12 @@ const confirmDelete = async () => {
   try {
     const { data } = await deleteGroupApi(del.row.id, del.confirmText);
     ElNotification({
-      title: "删除完成",
-      message: `已删除用户组及 ${data?.users ?? 0} 个用户、${data?.tasks ?? 0} 条任务、${data?.media ?? 0} 个媒体`,
+      title: t("common.deleteDone"),
+      message: t("user.groupDeletedSummary", {
+        users: data?.users ?? 0,
+        tasks: data?.tasks ?? 0,
+        media: data?.media ?? 0
+      }),
       type: "success",
       duration: 6000
     });
