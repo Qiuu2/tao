@@ -10,6 +10,12 @@ import base from "./vite.config";
 
 export default defineConfig(async env => {
   const cfg = await (base as any)(env);
+  // 预览产物是**一个自足的 HTML**，没有 service worker 可言。
+  // 但基础配置里的 PWA 插件照样会去生成 precache 清单，而单文件打包出来的
+  // app.js 超过它默认 2 MiB 的上限时，整个构建就以「资源过大」失败 ——
+  // 字典翻倍那次正是这样断的。这里直接把它摘掉。
+  cfg.plugins = (cfg.plugins ?? []).flat().filter((p: any) => !p || !String(p.name).startsWith("vite-plugin-pwa"));
+
   return mergeConfig(cfg, {
     base: "./",
     build: {
