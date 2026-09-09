@@ -9215,28 +9215,28 @@
   "msg": "ok",
   "data": [
    {
-    "id": 18,
+    "id": 21,
     "name": "消防告警平台",
-    "prefix": "XjE3qQCv",
+    "prefix": "qySPfcdD",
     "userId": 1,
     "userName": "admin",
     "enabled": false,
     "expiretime": "2027-06-30 23:59:59",
     "lastusedtime": "",
     "lastusedip": "",
-    "createtime": "2026-09-08 10:14:20"
+    "createtime": "2026-09-09 01:09:50"
    },
    {
-    "id": 17,
+    "id": 20,
     "name": "教务系统",
-    "prefix": "awhyVCGv",
+    "prefix": "eRZjCUHF",
     "userId": 1,
     "userName": "admin",
     "enabled": true,
     "expiretime": "",
     "lastusedtime": "2026-09-08 07:41:12",
     "lastusedip": "192.168.2.240",
-    "createtime": "2026-09-08 10:14:20"
+    "createtime": "2026-09-09 01:09:50"
    }
   ]
  },
@@ -9870,91 +9870,121 @@
          "name": "name",
          "type": "string",
          "required": true,
-         "desc": "任务名，最多 45 字"
+         "desc": "任务名称，最多 45 字"
+        },
+        {
+         "name": "folder",
+         "type": "string/int",
+         "required": false,
+         "desc": "所属分组，名字或编号。不给落到你看得见的第一个分组"
         },
         {
          "name": "media",
          "type": "数组",
          "required": false,
-         "desc": "播放清单，按数组顺序播。写名字或编号都行"
+         "desc": "媒体清单，**按数组顺序播**。每项写名字或编号"
         },
         {
          "name": "terminals",
          "type": "数组",
          "required": false,
-         "desc": "播到哪些终端"
+         "desc": "播到哪些终端。每项可以只写名字/编号，也可以写 { \"terminal\": \"A101教室音箱\", \"area\": \"11110000\" } 来指定区域掩码"
         },
         {
          "name": "zones",
          "type": "数组",
          "required": false,
-         "desc": "播到哪些分区。与 terminals 取并集去重"
+         "desc": "播到哪些分区，会展开成终端。与 terminals 取并集去重"
         },
         {
          "name": "playTime",
          "type": "string",
          "required": true,
-         "desc": "每天几点播。09:50 或 09:50:00"
+         "desc": "播放时间（每天几点开播）。09:50 或 09:50:00"
         },
         {
          "name": "endTime",
          "type": "string",
          "required": false,
-         "desc": "不给就按 playTime + 时长自动算"
-        },
-        {
-         "name": "weekdays",
-         "type": "数组",
-         "required": false,
-         "desc": "1=周一 … 7=周日。留空 = 手动任务，不是「每天」"
+         "desc": "结束时间。不给就按 playTime + 时长自动算"
         },
         {
          "name": "startDate",
          "type": "string",
          "required": false,
-         "desc": "生效起始日。不给默认今天"
+         "desc": "开始日期。不给默认今天"
         },
         {
          "name": "endDate",
          "type": "string",
          "required": false,
-         "desc": "生效结束日。不给默认一年后"
+         "desc": "结束日期。不给默认一年后"
+        },
+        {
+         "name": "weekdays",
+         "type": "数组",
+         "required": false,
+         "desc": "执行模式：1=周一 … 7=周日。**留空 = 手动**，不是「每天」；要每天就写 [1,2,3,4,5,6,7]"
+        },
+        {
+         "name": "disableDay",
+         "type": "string",
+         "required": false,
+         "desc": "当天停用：这一天不执行，YYYY-MM-DD。留空 = 没有例外日"
         },
         {
          "name": "seconds",
          "type": "int",
          "required": false,
-         "desc": "播多久（秒）。与 loopTimes 二选一"
+         "desc": "时长（秒）。与 loopTimes 二选一；都不给按媒体自身总时长算"
         },
         {
          "name": "loopTimes",
          "type": "int",
          "required": false,
-         "desc": "把清单循环几遍。与 seconds 二选一"
+         "desc": "循环次数。与 seconds 二选一。⚠ 填 0 是**无限循环**，不是「不循环」"
+        },
+        {
+         "name": "interval",
+         "type": "对象",
+         "required": false,
+         "desc": "间隔播放（界面「播放模式 → 间隔时间」）。不给 = 普通模式，从头播到尾"
+        },
+        {
+         "name": "interval.everySeconds",
+         "type": "int",
+         "required": false,
+         "desc": "间隔长度：每隔多少秒响一次"
+        },
+        {
+         "name": "interval.playSeconds",
+         "type": "int",
+         "required": false,
+         "desc": "间隔时长：每次响多少秒。与 playTimes 二选一"
+        },
+        {
+         "name": "interval.playTimes",
+         "type": "int",
+         "required": false,
+         "desc": "间隔次数：每次把清单播几遍，最多 99。与 playSeconds 二选一"
         },
         {
          "name": "volume",
          "type": "int",
          "required": false,
-         "desc": "0~100，默认 80"
+         "desc": "任务音量 0~100，默认 80"
         },
         {
          "name": "priority",
          "type": "int",
          "required": false,
-         "desc": "10~109，数字小的优先级高。不给取你能用的最低一档"
+         "desc": "任务级别 10~109。⚠ **数字小的优先级高**；不给取你能用的最低一档"
         },
         {
          "name": "prePower",
          "type": "int",
          "required": false,
-         "desc": "提前多少秒开功放电源"
-        },
-        {
-         "name": "enabled",
-         "type": "bool",
-         "required": false,
-         "desc": "建完是启用还是停用，默认启用"
+         "desc": "预开电源：提前多少秒开功放，0~3600"
         },
         {
          "name": "sequential",
@@ -9963,13 +9993,61 @@
          "desc": "true 顺序播（默认）、false 随机播"
         },
         {
-         "name": "folder",
-         "type": "string/int",
+         "name": "multicast",
+         "type": "bool",
          "required": false,
-         "desc": "任务分组。不给落到你看得见的第一个分组"
+         "desc": "发送模式：true 组播、false 单播（默认）。组播要求交换机支持，没把握别动"
+        },
+        {
+         "name": "localFirst",
+         "type": "bool",
+         "required": false,
+         "desc": "本地优先播放：终端上已下发过这个媒体就放本地那份，断网也能响。默认关"
+        },
+        {
+         "name": "enabled",
+         "type": "bool",
+         "required": false,
+         "desc": "建完是启用还是停用，默认启用"
+        },
+        {
+         "name": "led",
+         "type": "对象",
+         "required": false,
+         "desc": "LED 字幕。不给或正文为空 = 不上屏。⚠ 改任务时传 null 会**删掉**原有字幕"
+        },
+        {
+         "name": "led.text",
+         "type": "string",
+         "required": false,
+         "desc": "字幕正文，最多 1024 字"
+        },
+        {
+         "name": "led.name",
+         "type": "string",
+         "required": false,
+         "desc": "字幕子任务名。留空跟主任务同名"
+        },
+        {
+         "name": "led.speed",
+         "type": "int",
+         "required": false,
+         "desc": "Led 速度 0~10"
+        },
+        {
+         "name": "led.mode",
+         "type": "int",
+         "required": false,
+         "desc": "Led 显示模式 0~10"
+        },
+        {
+         "name": "led.devices",
+         "type": "数组",
+         "required": false,
+         "desc": "上到哪几块屏。每项 { terminal, deviceId }；deviceId 在「led播放 → LED 屏设备」里看"
         }
        ],
-       "body": "{\n  \"name\": \"课间音乐\",\n  \"media\": [\"大课间.mp3\"],\n  \"zones\": [\"教学楼\"],\n  \"playTime\": \"09:50\",\n  \"weekdays\": [1, 2, 3, 4, 5],\n  \"seconds\": 600,\n  \"volume\": 70\n}",
+       "body": "{\n  \"name\": \"课间音乐\",\n  \"folder\": \"admin\",\n\n  \"media\": [\"大课间.mp3\", \"10.起床号.mp3\"],\n  \"terminals\": [{ \"terminal\": \"A101教室音箱\", \"area\": \"11110000\" }],\n  \"zones\": [\"教学楼\"],\n\n  \"playTime\": \"09:50\",\n  \"endTime\": \"10:00:00\",\n  \"startDate\": \"2026-09-01\",\n  \"endDate\": \"2027-01-31\",\n  \"weekdays\": [1, 2, 3, 4, 5],\n  \"disableDay\": \"2026-10-01\",\n\n  \"seconds\": 600,\n  \"interval\": { \"everySeconds\": 300, \"playSeconds\": 30 },\n\n  \"volume\": 70,\n  \"priority\": 20,\n  \"prePower\": 10,\n  \"sequential\": true,\n  \"multicast\": false,\n  \"localFirst\": false,\n  \"enabled\": true,\n\n  \"led\": {\n    \"text\": \"课间休息，请到操场活动\",\n    \"speed\": 5,\n    \"mode\": 0,\n    \"devices\": [{ \"terminal\": \"A101教室音箱\", \"deviceId\": 1 }]\n  }\n}",
        "sample": "{ \"id\": 70230, \"mediaCount\": 1, \"terminalCount\": 4 }",
        "returns": [
         {
@@ -9997,6 +10075,125 @@
         "不给 priority 时取最低一档，会被别的广播压住。要它优先就自己填一个小数字。"
        ],
        "danger": true,
+       "freeform": false
+      },
+      {
+       "id": "tasks.get",
+       "method": "GET",
+       "path": "/tasks/{ref}",
+       "summary": "任务详情",
+       "desc": "一条任务的全貌 —— 建任务时能填的每一项，这里都能读回来。建完之后用它核对「我填的那些真的写进去了吗」；列表接口给的是摘要，间隔播放、LED 字幕、终端区域掩码都不在里面。",
+       "right": "有效密钥即可",
+       "params": [
+        {
+         "name": "ref",
+         "in": "path",
+         "type": "string",
+         "required": true,
+         "desc": "任务名或编号",
+         "example": ""
+        }
+       ],
+       "fields": null,
+       "body": "",
+       "sample": "{\n  \"id\": 70230, \"name\": \"课间音乐\", \"note\": \"\", \"folderId\": 1,\n  \"media\": [{ \"id\": 124, \"name\": \"大课间.mp3\" }],\n  \"terminals\": [{ \"id\": 1, \"name\": \"A101教室音箱\", \"area\": \"11110000\", \"deleted\": false }],\n  \"startDate\": \"2026-09-01\", \"endDate\": \"2027-01-31\",\n  \"playTime\": \"09:50:00\", \"endTime\": \"10:00:00\",\n  \"weekdays\": [1,2,3,4,5], \"disableDay\": \"2026-10-01\",\n  \"seconds\": 600, \"loopTimes\": 0,\n  \"interval\": { \"everySeconds\": 300, \"playSeconds\": 30, \"playTimes\": 0 },\n  \"volume\": 70, \"priority\": 20, \"prePower\": 10,\n  \"enabled\": true, \"sequential\": true, \"multicast\": false, \"localFirst\": false,\n  \"led\": { \"text\": \"课间休息\", \"name\": \"课间音乐\", \"speed\": 5, \"mode\": 0,\n           \"devices\": [{ \"terminalId\": 1, \"terminalName\": \"A101教室音箱\", \"deviceId\": 1 }] }\n}",
+       "returns": [
+        {
+         "name": "id / name / note / folderId",
+         "type": "混合",
+         "required": false,
+         "desc": "编号、任务名称、备注（只读）、所属分组编号"
+        },
+        {
+         "name": "media[]",
+         "type": "数组",
+         "required": false,
+         "desc": "媒体清单，**按播放顺序**。每项 {id, name}"
+        },
+        {
+         "name": "terminals[].area",
+         "type": "string",
+         "required": false,
+         "desc": "这台终端的区域掩码。每一位对应一路输出，1 = 出声"
+        },
+        {
+         "name": "terminals[].deleted",
+         "type": "bool",
+         "required": false,
+         "desc": "这台终端已经被删了但任务里还挂着。如实报出来 —— 悄悄跳过的话「为什么少一台」查不出原因"
+        },
+        {
+         "name": "startDate / endDate",
+         "type": "string",
+         "required": false,
+         "desc": "生效日期区间"
+        },
+        {
+         "name": "playTime / endTime",
+         "type": "string",
+         "required": false,
+         "desc": "每天几点开播 / 几点结束"
+        },
+        {
+         "name": "weekdays",
+         "type": "数组",
+         "required": false,
+         "desc": "1=周一 … 7=周日。空数组 = 手动任务"
+        },
+        {
+         "name": "disableDay",
+         "type": "string",
+         "required": false,
+         "desc": "当天停用的那一天。没有就是空串（库里的 0000-00-00 已经替你抹掉了）"
+        },
+        {
+         "name": "seconds / loopTimes",
+         "type": "int",
+         "required": false,
+         "desc": "时长（秒）与循环次数，**只有一个非零** —— 库里共用一列，这里替你分开了"
+        },
+        {
+         "name": "interval",
+         "type": "对象",
+         "required": false,
+         "desc": "间隔播放。**null 表示普通模式**（从头播到尾）"
+        },
+        {
+         "name": "volume / priority / prePower",
+         "type": "int",
+         "required": false,
+         "desc": "音量、任务级别（小的优先）、预开电源秒数"
+        },
+        {
+         "name": "enabled",
+         "type": "bool",
+         "required": false,
+         "desc": "启没启用。库里 projectstate 0 才是启用，这里已经翻成正常的布尔"
+        },
+        {
+         "name": "sequential",
+         "type": "bool",
+         "required": false,
+         "desc": "true 顺序、false 随机。库里 israndomplay 取值是反的，这里已经翻正"
+        },
+        {
+         "name": "multicast / localFirst",
+         "type": "bool",
+         "required": false,
+         "desc": "组播、本地优先播放"
+        },
+        {
+         "name": "led",
+         "type": "对象",
+         "required": false,
+         "desc": "LED 字幕。**null 表示这条任务不上屏**"
+        }
+       ],
+       "notes": [
+        "⚠ 详情里**没有** running（此刻在不在播）—— 底层详情不带执行状态，硬填一个 false 就是在撒谎。要知道在不在播，查任务列表的 running。",
+        "返回的形状与新建任务的入参一致：读回来改两个值再 PUT 回去就行。"
+       ],
+       "danger": false,
        "freeform": false
       },
       {
