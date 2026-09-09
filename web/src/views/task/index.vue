@@ -16,8 +16,10 @@
     <!-- 左：任务分组树 -->
     <div class="card tree-panel">
       <div class="tree-head">
-        <span class="tree-title">任务分组</span>
-        <el-button v-if="canFolder" type="primary" link :icon="FolderAdd" @click="openFolderCreate">新建</el-button>
+        <span class="tree-title">{{ $t("task.taskFolder") }}</span>
+        <el-button v-if="canFolder" type="primary" link :icon="FolderAdd" @click="openFolderCreate">{{
+          $t("common.create")
+        }}</el-button>
       </div>
       <el-scrollbar>
         <el-tree
@@ -36,8 +38,13 @@
               <span class="tree-name">{{ data.name }}</span>
               <span class="tree-count">{{ data.taskCount }}</span>
               <span v-if="canFolder" class="tree-ops">
-                <el-icon title="重命名" @click.stop="openFolderRename(data)"><EditPen /></el-icon>
-                <el-icon v-if="data.canDelete" class="danger" title="删除分组" @click.stop="confirmFolderDelete(data)">
+                <el-icon :title="$t('task.rename')" @click.stop="openFolderRename(data)"><EditPen /></el-icon>
+                <el-icon
+                  v-if="data.canDelete"
+                  class="danger"
+                  :title="$t('task.deleteFolderTitle')"
+                  @click.stop="confirmFolderDelete(data)"
+                >
                   <Delete />
                 </el-icon>
               </span>
@@ -68,7 +75,9 @@
                 旧版没有「批量编辑」这样的下拉，所以不摆；
                 「批量添加终端」在终端管理的批量操作里，那边留着。
               -->
-              <el-button type="primary" :icon="CirclePlus" :disabled="!canAdd" @click="openCreate">添加</el-button>
+              <el-button type="primary" :icon="CirclePlus" :disabled="!canAdd" @click="openCreate">{{
+                $t("common.add")
+              }}</el-button>
 
               <el-button
                 type="danger"
@@ -76,7 +85,7 @@
                 :disabled="!canDelete || !scope.isSelected"
                 @click="openDelete(scope.selectedListIds)"
               >
-                删除{{ scope.selectedListIds.length ? `(${scope.selectedListIds.length})` : "" }}
+                {{ $t("common.delete") }}{{ scope.selectedListIds.length ? `(${scope.selectedListIds.length})` : "" }}
               </el-button>
 
               <el-button
@@ -84,26 +93,26 @@
                 :disabled="!canControl || !scope.isSelected"
                 @click="control('start', scope.selectedListIds)"
               >
-                执行
+                {{ $t("taskCommon.run") }}
               </el-button>
               <el-button
                 :icon="VideoPause"
                 :disabled="!canControl || !scope.isSelected"
                 @click="control('stop', scope.selectedListIds)"
               >
-                停止
+                {{ $t("taskCommon.stop") }}
               </el-button>
               <el-button :disabled="!canControl || !scope.isSelected" @click="control('pause', scope.selectedListIds)">
-                暂停
+                {{ $t("task.pause") }}
               </el-button>
               <el-button :disabled="!canControl || !scope.isSelected" @click="control('resume', scope.selectedListIds)">
-                恢复
+                {{ $t("taskCommon.resume") }}
               </el-button>
               <el-button :disabled="!canControl || !scope.isSelected" @click="onMoreCmd('enable', scope.selectedListIds)">
-                启用
+                {{ $t("common.enable") }}
               </el-button>
               <el-button :disabled="!canControl || !scope.isSelected" @click="onMoreCmd('disable', scope.selectedListIds)">
-                停用
+                {{ $t("common.disable") }}
               </el-button>
 
               <!--
@@ -111,11 +120,11 @@
                   全系统同时只能有一条，服务端会挡住第二条并说清是哪条占着。
               -->
               <el-button :disabled="!canEdit || !scope.isSelected" @click="setEmergency(scope.selectedListIds)">
-                紧急设置
+                {{ $t("task.emergencySet") }}
               </el-button>
-              <el-button :disabled="!canEdit" @click="cancelEmergency">取消紧急设置</el-button>
+              <el-button :disabled="!canEdit" @click="cancelEmergency">{{ $t("task.emergencyUnset") }}</el-button>
               <el-button :disabled="!canEdit || !scope.isSelected" @click="openVolume(scope.selectedListIds)">
-                设置音量
+                {{ $t("terminalCommon.setVolume") }}
               </el-button>
             </div>
             <div class="header-right">
@@ -133,7 +142,7 @@
           <div class="expand">
             <div class="expand-col">
               <div class="expand-title">媒体清单（{{ scope.row.media?.length ?? 0 }}）</div>
-              <div v-if="!scope.row.media?.length" class="muted">未选择媒体</div>
+              <div v-if="!scope.row.media?.length" class="muted">{{ $t("task.noMediaPicked") }}</div>
               <el-tag
                 v-for="m in scope.row.media"
                 :key="m.mediaId"
@@ -147,7 +156,7 @@
             </div>
             <div class="expand-col">
               <div class="expand-title">终端清单（{{ scope.row.terminals?.length ?? 0 }}）</div>
-              <div v-if="!scope.row.terminals?.length" class="muted">未选择终端</div>
+              <div v-if="!scope.row.terminals?.length" class="muted">{{ $t("task.noTerminalPicked") }}</div>
               <el-tag
                 v-for="t in scope.row.terminals"
                 :key="t.terminalId"
@@ -167,8 +176,8 @@
           旧模板 BellManager/bellManager_form.html 就是 `== 0` 渲染 Enabled。
         -->
         <template #projectstate="scope">
-          <el-tag v-if="scope.row.projectstate === 0" type="success" size="small">启用</el-tag>
-          <el-tag v-else type="info" size="small">停用</el-tag>
+          <el-tag v-if="scope.row.projectstate === 0" type="success" size="small">{{ $t("common.enable") }}</el-tag>
+          <el-tag v-else type="info" size="small">{{ $t("common.disable") }}</el-tag>
         </template>
 
         <template #state="scope">
@@ -179,8 +188,8 @@
         </template>
 
         <template #weekdays="scope">
-          <span v-if="scope.row.exemodel === '1111111'">每天</span>
-          <span v-else-if="!scope.row.weekdays?.length" class="muted">手动</span>
+          <span v-if="scope.row.exemodel === '1111111'">{{ $t("taskCommon.everyDay") }}</span>
+          <span v-else-if="!scope.row.weekdays?.length" class="muted">{{ $t("taskCommon.manual") }}</span>
           <span v-else>{{ scope.row.weekdays.map((d: number) => WEEK[d - 1]).join(" ") }}</span>
         </template>
 
@@ -190,14 +199,18 @@
           复制是我们多的一个（:80 没有，但去掉就丢功能）。
         -->
         <template #operation="scope">
-          <el-button type="primary" link :icon="EditPen" :disabled="!canEdit" @click="openEdit(scope.row)">编辑</el-button>
+          <el-button type="primary" link :icon="EditPen" :disabled="!canEdit" @click="openEdit(scope.row)">{{
+            $t("common.edit")
+          }}</el-button>
           <el-button type="primary" link @click="openTerminals(scope.row)">
-            终端<span class="cnt">({{ scope.row.terminals?.length ?? 0 }})</span>
+            {{ $t("terminalCommon.terminal") }}<span class="cnt">({{ scope.row.terminals?.length ?? 0 }})</span>
           </el-button>
           <el-button type="primary" link @click="openMedia(scope.row)">
-            媒体<span class="cnt">({{ scope.row.media?.length ?? 0 }})</span>
+            {{ $t("taskCommon.media") }}<span class="cnt">({{ scope.row.media?.length ?? 0 }})</span>
           </el-button>
-          <el-button type="primary" link :icon="CopyDocument" :disabled="!canCopy" @click="openCopy(scope.row)"> 复制 </el-button>
+          <el-button type="primary" link :icon="CopyDocument" :disabled="!canCopy" @click="openCopy(scope.row)">
+            {{ $t("common.copy") }}
+          </el-button>
         </template>
       </ProTable>
     </div>
@@ -205,63 +218,63 @@
     <!-- 行内「终端」链接：列名照 :80 的同名弹窗 -->
     <el-dialog v-model="tm.visible" :title="tm.title" width="760px" top="6vh">
       <el-table :data="tm.list" size="small" max-height="420">
-        <el-table-column prop="terminalname" label="终端名称" min-width="180" show-overflow-tooltip>
+        <el-table-column prop="terminalname" :label="$t('terminalCommon.terminalName')" min-width="180" show-overflow-tooltip>
           <template #default="{ row }">
             {{ row.terminalname }}
-            <el-tag v-if="row.deleted" type="danger" size="small" effect="plain" class="ml6">已删除</el-tag>
+            <el-tag v-if="row.deleted" type="danger" size="small" effect="plain" class="ml6">{{ $t("common.deleted") }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="typeName" label="终端类型" width="140" show-overflow-tooltip />
-        <el-table-column label="网络状态" width="100">
+        <el-table-column prop="typeName" :label="$t('terminalCommon.terminalType')" width="140" show-overflow-tooltip />
+        <el-table-column :label="$t('terminalCommon.netState')" width="100">
           <template #default="{ row }">
             <el-tag :type="row.netstate === 1 ? 'success' : 'info'" size="small">
               {{ row.netstate === 1 ? "在线" : "离线" }}
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="设备状态" width="100">
+        <el-table-column :label="$t('terminalCommon.deviceState')" width="100">
           <template #default="{ row }">
             <el-tag :type="row.taskstate === 1 ? 'warning' : 'info'" size="small" effect="plain">
               {{ row.taskstate === 1 ? "播放中" : "空闲" }}
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="ip" label="终端IP" width="140" />
-        <el-table-column prop="volume" label="音量" width="80" />
+        <el-table-column prop="ip" :label="$t('terminalCommon.terminalIp')" width="140" />
+        <el-table-column prop="volume" :label="$t('common.volume')" width="80" />
       </el-table>
-      <div v-if="!tm.list.length" class="empty-note">这条任务还没有选终端。</div>
+      <div v-if="!tm.list.length" class="empty-note">{{ $t("task.noTerminalYet") }}</div>
       <template #footer>
-        <el-button @click="tm.visible = false">关闭</el-button>
+        <el-button @click="tm.visible = false">{{ $t("common.close") }}</el-button>
       </template>
     </el-dialog>
 
     <!-- 行内「媒体」链接 -->
     <el-dialog v-model="md.visible" :title="md.title" width="640px" top="6vh">
       <el-table :data="md.list" size="small" max-height="420">
-        <el-table-column prop="sort" label="序号" width="70" />
-        <el-table-column prop="name" label="媒体名称" min-width="240" show-overflow-tooltip>
+        <el-table-column prop="sort" :label="$t('common.index')" width="70" />
+        <el-table-column prop="name" :label="$t('taskCommon.mediaName')" min-width="240" show-overflow-tooltip>
           <template #default="{ row }">
             {{ row.name }}
-            <el-tag v-if="row.deleted" type="danger" size="small" effect="plain" class="ml6">已删除</el-tag>
+            <el-tag v-if="row.deleted" type="danger" size="small" effect="plain" class="ml6">{{ $t("common.deleted") }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="媒体大小" width="120">
+        <el-table-column :label="$t('taskCommon.mediaSize')" width="120">
           <template #default="{ row }">{{ humanSize(row.size) }}</template>
         </el-table-column>
       </el-table>
-      <div v-if="!md.list.length" class="empty-note">这条任务还没有选媒体。</div>
+      <div v-if="!md.list.length" class="empty-note">{{ $t("task.noMediaYet") }}</div>
       <template #footer>
-        <el-button @click="md.visible = false">关闭</el-button>
+        <el-button @click="md.visible = false">{{ $t("common.close") }}</el-button>
       </template>
     </el-dialog>
 
     <!-- 设置音量（:80 的「设置音量」按钮） -->
-    <el-dialog v-model="vol.visible" title="设置音量" width="440px">
+    <el-dialog v-model="vol.visible" :title="$t('terminalCommon.setVolume')" width="440px">
       <p class="dlg-note">将对选中的 {{ vol.ids.length }} 条任务生效，功放/LED 子任务一并同步。</p>
       <el-slider v-model="vol.value" :min="0" :max="100" show-input />
       <template #footer>
-        <el-button @click="vol.visible = false">取消</el-button>
-        <el-button type="primary" :loading="vol.saving" @click="submitVolume">确定</el-button>
+        <el-button @click="vol.visible = false">{{ $t("common.cancel") }}</el-button>
+        <el-button type="primary" :loading="vol.saving" @click="submitVolume">{{ $t("common.confirm") }}</el-button>
       </template>
     </el-dialog>
 
@@ -283,16 +296,16 @@
     -->
     <el-dialog v-model="dlg.visible" :title="dlg.title" width="960px" top="4vh">
       <el-form :model="dlg.form" label-width="110px">
-        <el-divider content-position="left">任务属性</el-divider>
+        <el-divider content-position="left">{{ $t("task.taskProps") }}</el-divider>
         <el-row :gutter="16">
           <el-col :span="12">
             <!-- 旧版 maxlength="8"：任务名称最大 8 字节 -->
-            <el-form-item label="任务名称" required>
-              <el-input v-model="dlg.form.taskname" maxlength="8" show-word-limit placeholder="请输入任务名称" />
+            <el-form-item :label="$t('taskCommon.taskName')" required>
+              <el-input v-model="dlg.form.taskname" maxlength="8" show-word-limit :placeholder="$t('task.taskNameRequired')" />
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="所属分组" required>
+            <el-form-item :label="$t('task.belongFolder')" required>
               <el-select v-model="dlg.form.folderId" class="fill">
                 <el-option v-for="f in flatFolders" :key="f.id" :label="f.name" :value="f.id" />
               </el-select>
@@ -301,35 +314,35 @@
         </el-row>
         <el-row :gutter="16">
           <el-col :span="12">
-            <el-form-item label="预开电源">
+            <el-form-item :label="$t('taskCommon.prePower')">
               <el-select v-model="dlg.form.power.prepower" class="fill">
-                <el-option v-for="s in prepowerSeconds" :key="s" :label="`${s} 秒`" :value="s" />
-                <el-option v-for="m in [1, 2, 3, 4, 5]" :key="`m${m}`" :label="`${m} 分钟`" :value="m * 60" />
+                <el-option v-for="s in prepowerSeconds" :key="s" :label="$t('task.secondsN', { n: s })" :value="s" />
+                <el-option v-for="m in [1, 2, 3, 4, 5]" :key="`m${m}`" :label="$t('task.minutesN', { n: m })" :value="m * 60" />
               </el-select>
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="随机播放">
+            <el-form-item :label="$t('term.randomPlay')">
               <!-- 旧版是一个复选框；⚠ 取值反直觉：0 = 随机、1 = 顺序 -->
-              <el-checkbox v-model="randomOn">选中歌曲将随机播放</el-checkbox>
+              <el-checkbox v-model="randomOn">{{ $t("task.randomHint") }}</el-checkbox>
             </el-form-item>
           </el-col>
         </el-row>
         <el-row :gutter="16">
           <el-col :span="12">
-            <el-form-item label="发送模式">
+            <el-form-item :label="$t('taskCommon.sendMode')">
               <el-select v-model="dlg.form.power.datasendmodel" class="fill">
-                <el-option label="单播" :value="0" />
-                <el-option label="组播" :value="1" />
+                <el-option :label="$t('taskCommon.unicast')" :value="0" />
+                <el-option :label="$t('term.multicast')" :value="1" />
               </el-select>
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="任务级别">
+            <el-form-item :label="$t('taskCommon.priority')">
               <el-select v-model="dlg.form.playback.priority" style="width: 110px">
                 <el-option v-for="p in priorityOptions" :key="p" :label="String(p)" :value="p" />
               </el-select>
-              <span class="form-tip">10 为最高级别</span>
+              <span class="form-tip">{{ $t("task.highestLevel") }}</span>
             </el-form-item>
           </el-col>
         </el-row>
@@ -342,16 +355,16 @@
         -->
         <el-row :gutter="16">
           <el-col :span="12">
-            <el-form-item label="播放模式">
+            <el-form-item :label="$t('task.playMode')">
               <el-select v-model="playMode" class="fill" @change="onPlayModeChange">
-                <el-option label="普通模式" :value="0" />
-                <el-option label="间隔时间" :value="1" />
+                <el-option :label="$t('task.normalMode')" :value="0" />
+                <el-option :label="$t('task.intervalTime')" :value="1" />
               </el-select>
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="led播放">
-              <el-checkbox v-model="ledOn">上屏显示 led 字幕</el-checkbox>
+            <el-form-item :label="$t('task.ledPlay')">
+              <el-checkbox v-model="ledOn">{{ $t("task.ledShow") }}</el-checkbox>
             </el-form-item>
           </el-col>
         </el-row>
@@ -360,11 +373,11 @@
         <el-form-item v-if="playMode === 0" label-width="0">
           <el-radio-group v-model="dlg.form.playback.timelengthtype" class="len-group">
             <div class="len-line">
-              <el-radio :value="1">时长</el-radio>
+              <el-radio :value="1">{{ $t("common.duration") }}</el-radio>
               <HmsInput v-model="durationSec" :disabled="dlg.form.playback.timelengthtype !== 1" />
             </div>
             <div class="len-line">
-              <el-radio :value="2">循环次数</el-radio>
+              <el-radio :value="2">{{ $t("taskCommon.loopTimes") }}</el-radio>
               <!-- el-input-number 改 disabled 后不会更新 aria-disabled，用 key 强制重建 -->
               <el-input-number
                 :key="`cyc-${dlg.form.playback.timelengthtype}`"
@@ -375,26 +388,26 @@
                 :controls="false"
                 style="width: 90px"
               />
-              <span class="form-tip">0 是无限循环，最大 10 次</span>
+              <span class="form-tip">{{ $t("task.infiniteLoop") }}</span>
             </div>
           </el-radio-group>
         </el-form-item>
 
         <template v-else>
-          <el-form-item label="时长">
+          <el-form-item :label="$t('common.duration')">
             <HmsInput v-model="durationSec" />
           </el-form-item>
-          <el-form-item label="间隔长度">
+          <el-form-item :label="$t('task.intervalLength')">
             <HmsInput v-model="dlg.form.playback.interval_s" />
           </el-form-item>
           <el-form-item label-width="0">
             <el-radio-group v-model="dlg.form.playback.intplaylengthtype" class="len-group">
               <div class="len-line">
-                <el-radio :value="1">间隔时长</el-radio>
+                <el-radio :value="1">{{ $t("task.intervalPlayLength") }}</el-radio>
                 <HmsInput v-model="dlg.form.playback.intplaylength" :disabled="dlg.form.playback.intplaylengthtype !== 1" />
               </div>
               <div class="len-line">
-                <el-radio :value="2">间隔次数</el-radio>
+                <el-radio :value="2">{{ $t("task.intervalPlayTimes") }}</el-radio>
                 <el-input-number
                   :key="`int-${dlg.form.playback.intplaylengthtype}`"
                   v-model="intCycleTimes"
@@ -409,33 +422,33 @@
           </el-form-item>
         </template>
 
-        <el-divider content-position="left">执行时间</el-divider>
+        <el-divider content-position="left">{{ $t("taskCommon.runTime") }}</el-divider>
         <el-row :gutter="16">
           <el-col :span="8">
-            <el-form-item label="播放时间" required>
+            <el-form-item :label="$t('taskCommon.playTime')" required>
               <el-time-picker v-model="dlg.form.schedule.playtime" value-format="HH:mm:ss" class="fill" />
             </el-form-item>
           </el-col>
           <el-col :span="8">
-            <el-form-item label="开始日期" required>
+            <el-form-item :label="$t('common.startDate')" required>
               <el-date-picker v-model="dateRange[0]" type="date" value-format="YYYY-MM-DD" class="fill" />
             </el-form-item>
           </el-col>
           <el-col :span="8">
-            <el-form-item label="结束日期" required>
+            <el-form-item :label="$t('common.endDate')" required>
               <el-date-picker v-model="dateRange[1]" type="date" value-format="YYYY-MM-DD" class="fill" />
             </el-form-item>
           </el-col>
         </el-row>
-        <el-form-item label="任务音量">
+        <el-form-item :label="$t('task.taskVolume')">
           <el-slider v-model="dlg.form.playback.defaultvolume" :min="0" :max="100" show-input class="vol-slider" />
         </el-form-item>
-        <el-form-item label="执行模式">
+        <el-form-item :label="$t('taskCommon.exeMode')">
           <!-- 旧版是「手动 / 每天 / 每星期」下拉，选每星期才出现星期勾选 -->
           <el-select v-model="runMode" style="width: 140px" @change="onRunModeChange">
-            <el-option label="手动" :value="0" />
-            <el-option label="每天" :value="1" />
-            <el-option label="每星期" :value="2" />
+            <el-option :label="$t('taskCommon.manual')" :value="0" />
+            <el-option :label="$t('taskCommon.everyDay')" :value="1" />
+            <el-option :label="$t('taskCommon.everyWeek')" :value="2" />
           </el-select>
           <el-checkbox-group v-if="runMode === 2" v-model="weekdaySel" class="ml16">
             <el-checkbox v-for="(w, i) in WEEK" :key="i" :value="i">{{ w }}</el-checkbox>
@@ -443,31 +456,31 @@
         </el-form-item>
 
         <template v-if="ledOn">
-          <el-divider content-position="left">led字幕</el-divider>
+          <el-divider content-position="left">{{ $t("task.ledSubtitle") }}</el-divider>
           <!-- 名称与速度并成一行，速度排在字幕上面 -->
           <el-row :gutter="16">
             <el-col :span="12">
-              <el-form-item label="LED任务名称">
-                <el-input v-model="dlg.form.led.name" maxlength="8" show-word-limit placeholder="留空则与任务名相同" />
+              <el-form-item :label="$t('task.ledTaskName')">
+                <el-input v-model="dlg.form.led.name" maxlength="8" show-word-limit :placeholder="$t('task.sameAsTask')" />
               </el-form-item>
             </el-col>
             <el-col :span="12">
-              <el-form-item label="Led速度">
+              <el-form-item :label="$t('task.ledSpeed')">
                 <el-select v-model="dlg.form.led.speed" style="width: 110px">
-                  <el-option v-for="n in [0, 1, 2, 3, 4, 5]" :key="n" :label="`${n} 级`" :value="n" />
+                  <el-option v-for="n in [0, 1, 2, 3, 4, 5]" :key="n" :label="$t('task.levelN', { n })" :value="n" />
                 </el-select>
-                <span class="form-tip">0 ~ 5 级</span>
+                <span class="form-tip">{{ $t("task.levels0to5") }}</span>
               </el-form-item>
             </el-col>
           </el-row>
-          <el-form-item label="led字幕" required>
+          <el-form-item :label="$t('task.ledSubtitle')" required>
             <el-input
               v-model="dlg.form.led.text"
               type="textarea"
               :rows="3"
               maxlength="341"
               show-word-limit
-              placeholder="请输入 led 字幕内容"
+              :placeholder="$t('task.ledContent')"
             />
           </el-form-item>
         </template>
@@ -475,7 +488,7 @@
         <!-- 媒体与终端两棵树并排，与旧版表单左右两栏的排法一致 -->
         <el-row :gutter="16">
           <el-col :span="12">
-            <el-divider content-position="left">媒体文件列表</el-divider>
+            <el-divider content-position="left">{{ $t("task.mediaList") }}</el-divider>
             <el-form-item label-width="0">
               <!-- 旧版这里是一棵「媒体库 → 音频文件」的树，不是一条长下拉 -->
               <MediaTree v-model="selectedMediaIds" :selected-names="selectedMediaNames" height="300px" style="width: 100%" />
@@ -493,7 +506,7 @@
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-divider content-position="left">终端列表</el-divider>
+            <el-divider content-position="left">{{ $t("terminalCommon.terminalList") }}</el-divider>
             <el-form-item label-width="0">
               <TerminalTree
                 v-model="selectedTerminalIds"
@@ -510,38 +523,39 @@
       </el-form>
 
       <template #footer>
-        <el-button @click="dlg.visible = false">取消</el-button>
-        <el-button type="primary" :loading="dlg.saving" @click="submit">提交</el-button>
+        <el-button @click="dlg.visible = false">{{ $t("common.cancel") }}</el-button>
+        <el-button type="primary" :loading="dlg.saving" @click="submit">{{ $t("common.submit") }}</el-button>
       </template>
     </el-dialog>
 
     <!-- 复制任务 -->
-    <el-dialog v-model="cp.visible" title="复制任务" width="480px">
+    <el-dialog v-model="cp.visible" :title="$t('task.copyTask')" width="480px">
       <el-form label-width="100px">
-        <el-form-item label="新任务名称" required>
+        <el-form-item :label="$t('task.newTaskName')" required>
           <el-input v-model="cp.name" maxlength="85" show-word-limit />
         </el-form-item>
-        <el-form-item label="目标分组" required>
+        <el-form-item :label="$t('task.targetFolder')" required>
           <el-select v-model="cp.folderId" class="fill">
             <el-option v-for="f in flatFolders" :key="f.id" :label="f.name" :value="f.id" />
           </el-select>
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="cp.visible = false">取消</el-button>
-        <el-button type="primary" :loading="cp.saving" @click="submitCopy">确定</el-button>
+        <el-button @click="cp.visible = false">{{ $t("common.cancel") }}</el-button>
+        <el-button type="primary" :loading="cp.saving" @click="submitCopy">{{ $t("common.confirm") }}</el-button>
       </template>
     </el-dialog>
 
     <!-- 删除影响面 -->
-    <el-dialog v-model="del.visible" title="删除任务" width="640px">
+    <el-dialog v-model="del.visible" :title="$t('task.deleteTaskTitle')" width="640px">
       <el-alert type="error" :closable="false" show-icon class="mb12">
-        删除任务会一并清掉它的媒体清单、终端清单、快捷键映射与离线记录，且<b>不可恢复</b>。
+        {{ $t("task.deleteCleansAll") }}<b>{{ $t("common.notRecoverable") }}</b
+        >。
       </el-alert>
 
       <el-table v-if="del.preview?.deletable.length" :data="del.preview.deletable" size="small" max-height="300">
-        <el-table-column prop="taskname" label="任务" min-width="140" />
-        <el-table-column label="影响面" min-width="330">
+        <el-table-column prop="taskname" :label="$t('taskCommon.task')" min-width="140" />
+        <el-table-column :label="$t('common.impact')" min-width="330">
           <template #default="{ row }">
             <el-tag v-if="row.impact?.media" size="small" class="mr4">媒体 {{ row.impact?.media }}</el-tag>
             <el-tag v-if="row.impact?.terminals" size="small" class="mr4">终端 {{ row.impact?.terminals }}</el-tag>
@@ -549,10 +563,10 @@
             <el-tag v-if="row.impact?.offlineTasks" size="small" class="mr4">离线任务 {{ row.impact?.offlineTasks }}</el-tag>
             <el-tag v-if="row.impact?.offlineMedia" size="small" class="mr4">离线媒体 {{ row.impact?.offlineMedia }}</el-tag>
             <el-tag v-if="row.impact?.powerTaskId" type="warning" size="small" class="mr4">
-              功放子任务 {{ row.impact?.powerTaskId }} 一并删除
+              {{ $t("task.powerSubDeleted", { id: row.impact?.powerTaskId }) }}
             </el-tag>
             <el-tag v-if="row.impact?.ledTaskId" type="warning" size="small" class="mr4">
-              LED 子任务 {{ row.impact?.ledTaskId }} 一并删除
+              {{ $t("task.ledSubDeleted", { id: row.impact?.ledTaskId }) }}
             </el-tag>
             <el-tag v-if="row.impact?.otherLinked" type="danger" size="small" effect="plain">
               另有 {{ row.impact?.otherLinked }} 条任务关联着它，不会被删除，关联会失效
@@ -562,14 +576,14 @@
       </el-table>
 
       <el-alert v-if="del.preview?.blocked.length" type="warning" :closable="false" class="mt12">
-        以下任务不会被删除：
+        {{ $t("task.theseKept") }}
         <div v-for="b in del.preview.blocked" :key="b.id">· {{ b.name || b.id }}：{{ b.detail }}</div>
       </el-alert>
 
       <template #footer>
-        <el-button @click="del.visible = false">取消</el-button>
+        <el-button @click="del.visible = false">{{ $t("common.cancel") }}</el-button>
         <el-button type="danger" :disabled="!del.preview?.deletable.length" :loading="del.saving" @click="submitDelete">
-          确认删除
+          {{ $t("common.confirmDelete") }}
         </el-button>
       </template>
     </el-dialog>
@@ -577,19 +591,20 @@
     <!-- 分组新建 / 重命名 -->
     <el-dialog v-model="fd.visible" :title="fd.title" width="440px">
       <el-form label-width="90px">
-        <el-form-item label="分组名称" required>
+        <el-form-item :label="$t('task.folderName')" required>
           <el-input v-model="fd.name" maxlength="16" show-word-limit />
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="fd.visible = false">取消</el-button>
-        <el-button type="primary" :loading="fd.saving" @click="submitFolder">确定</el-button>
+        <el-button @click="fd.visible = false">{{ $t("common.cancel") }}</el-button>
+        <el-button type="primary" :loading="fd.saving" @click="submitFolder">{{ $t("common.confirm") }}</el-button>
       </template>
     </el-dialog>
   </div>
 </template>
 
 <script setup lang="tsx" name="taskList">
+import { useI18n } from "vue-i18n";
 import {
   ArrowDown,
   ArrowUp,
@@ -645,7 +660,10 @@ import { useAuthStore } from "@/stores/modules/auth";
 import type { ColumnProps, ProTableInstance } from "@/components/ProTable/interface";
 
 // exemodel 是周日打头的 7 位掩码（旧站表单也是「日一二三四五六」的排法）
-const WEEK = ["日", "一", "二", "三", "四", "五", "六"];
+// 脚本里拼的文案用 t()；模板里的 $t 不用引入
+const { t } = useI18n();
+
+const WEEK = [t("week.sun"), t("week.mon"), t("week.tue"), t("week.wed"), t("week.thu"), t("week.fri"), t("week.sat")];
 
 const route = useRoute();
 const router = useRouter();
@@ -704,19 +722,19 @@ const columns = reactive<ColumnProps<TaskRow>[]>([
   // 列名逐个照 ok112 的 FileAd/FileTaskManager_from.html + language/chinese.php：
   // 文件广播任务|播放周期|开始日期|结束日期|执行时间|播放时长|状态|播放模式|音量|任务级别|所属用户|正在播放|终端属性
   // 「终端属性」在旧版是一个「浏览」链接，这里已经做成操作列里的「终端(N)」，不再单列一列。
-  { prop: "taskname", label: "文件广播任务", minWidth: 160, sortable: "custom", search: { el: "input", key: "keyword" } },
-  { prop: "weekdays", label: "播放周期", minWidth: 130 },
-  { prop: "startdate", label: "开始日期", width: 115 },
-  { prop: "enddate", label: "结束日期", width: 115 },
-  { prop: "playtime", label: "执行时间", width: 100, sortable: "custom" },
-  { prop: "timelengthText", label: "播放时长", width: 110 },
-  { prop: "projectstate", label: "状态", width: 80, sortable: "custom" },
-  { prop: "playModeText", label: "播放模式", width: 95 },
-  { prop: "defaultvolume", label: "音量", width: 70 },
-  { prop: "priority", label: "任务级别", width: 90, sortable: "custom" },
-  { prop: "ownerUserName", label: "所属用户", width: 110 },
-  { prop: "state", label: "正在播放", width: 110, sortable: "custom" },
-  { prop: "operation", label: "操作", fixed: "right", width: 190 }
+  { prop: "taskname", label: t("task.fileTask"), minWidth: 160, sortable: "custom", search: { el: "input", key: "keyword" } },
+  { prop: "weekdays", label: t("taskCommon.cycle"), minWidth: 130 },
+  { prop: "startdate", label: t("common.startDate"), width: 115 },
+  { prop: "enddate", label: t("common.endDate"), width: 115 },
+  { prop: "playtime", label: t("taskCommon.runTime"), width: 100, sortable: "custom" },
+  { prop: "timelengthText", label: t("taskCommon.playLength"), width: 110 },
+  { prop: "projectstate", label: t("common.status"), width: 80, sortable: "custom" },
+  { prop: "playModeText", label: t("task.playMode"), width: 95 },
+  { prop: "defaultvolume", label: t("common.volume"), width: 70 },
+  { prop: "priority", label: t("taskCommon.priority"), width: 90, sortable: "custom" },
+  { prop: "ownerUserName", label: t("taskCommon.owner"), width: 110 },
+  { prop: "state", label: t("task.playing"), width: 110, sortable: "custom" },
+  { prop: "operation", label: t("common.operation"), fixed: "right", width: 190 }
 ]);
 
 const stateTagType = (s: number) => (s === 1 ? "warning" : s === 3 ? "success" : "info");
@@ -751,10 +769,10 @@ const onFolderChange = (node: TaskFolderNode) => {
 const reportControl = (res: TaskControlResult, action: string) => {
   const ok = res.succeeded.length;
   if (!res.blocked.length) {
-    ElMessage.success(`${action}成功，共 ${ok} 条`);
+    ElMessage.success(t("task.batchDone", { action, ok }));
   } else {
     const detail = res.blocked.map(b => `${b.name || b.id}：${b.detail}`).join("；");
-    ElMessageBox.alert(detail, `${action}完成：成功 ${ok} 条，跳过 ${res.blocked.length} 条`, {
+    ElMessageBox.alert(detail, t("task.batchDoneWithSkip", { action, ok, skip: res.blocked.length }), {
       type: ok ? "warning" : "error"
     });
   }
@@ -768,13 +786,13 @@ const md = reactive({ visible: false, title: "", list: [] as TaskRow["media"] })
 
 const openTerminals = (row: TaskRow) => {
   tm.list = row.terminals ?? [];
-  tm.title = `「${row.taskname}」的终端`;
+  tm.title = t("task.terminalsOf", { name: row.taskname });
   tm.visible = true;
 };
 
 const openMedia = (row: TaskRow) => {
   md.list = row.media ?? [];
-  md.title = `「${row.taskname}」的媒体`;
+  md.title = t("task.mediaOf", { name: row.taskname });
   md.visible = true;
 };
 
@@ -786,36 +804,38 @@ const humanSize = (n: number) => {
 
 const control = async (action: TaskAction, raw: (string | number)[]) => {
   const ids = toIds(raw);
-  if (!ids.length) return ElMessage.warning("请先勾选任务");
-  const label = { start: "启动", stop: "停止", pause: "暂停", resume: "恢复" }[action];
+  if (!ids.length) return ElMessage.warning(t("taskCommon.pickTaskFirst"));
+  const label = { start: t("term.start"), stop: t("taskCommon.stop"), pause: t("task.pause"), resume: t("taskCommon.resume") }[
+    action
+  ];
   const { data } = await controlTaskApi(action, ids);
   reportControl(data, label);
 };
 
 const onMoreCmd = async (cmd: string, raw: (string | number)[]) => {
   const ids = toIds(raw);
-  if (!ids.length) return ElMessage.warning("请先勾选任务");
+  if (!ids.length) return ElMessage.warning(t("taskCommon.pickTaskFirst"));
   if (cmd === "pause" || cmd === "resume") return control(cmd as TaskAction, raw);
   if (cmd === "volume") return openVolume(raw);
   const enable = cmd === "enable";
   const { data } = await setTaskProjectStateApi(ids, enable);
-  reportControl(data, enable ? "启用方案" : "停用方案");
+  reportControl(data, enable ? t("task.enablePlan") : t("task.disablePlan"));
 };
 
 /* ---------------- 紧急任务 / 设置音量 ---------------- */
 
 const setEmergency = async (raw: (string | number)[]) => {
   const ids = toIds(raw);
-  if (!ids.length) return ElMessage.warning("请先勾选任务");
-  if (ids.length > 1) return ElMessage.warning("紧急任务全系统只能有一条，请只勾选一条");
+  if (!ids.length) return ElMessage.warning(t("taskCommon.pickTaskFirst"));
+  if (ids.length > 1) return ElMessage.warning(t("task.onlyOneUrgent"));
   const { data } = await setTaskEmergencyApi(ids[0]);
-  ElMessage.success(`已把「${data.taskName}」设为紧急任务`);
+  ElMessage.success(t("task.urgentSet", { name: data.taskName }));
   refresh();
 };
 
 const cancelEmergency = async () => {
   const { data } = await cancelTaskEmergencyApi();
-  ElMessage.success(`已取消紧急任务「${data.taskName}」`);
+  ElMessage.success(t("task.urgentCleared", { name: data.taskName }));
   refresh();
 };
 
@@ -823,7 +843,7 @@ const vol = reactive({ visible: false, saving: false, ids: [] as number[], value
 
 const openVolume = (raw: (string | number)[]) => {
   const ids = toIds(raw);
-  if (!ids.length) return ElMessage.warning("请先勾选任务");
+  if (!ids.length) return ElMessage.warning(t("taskCommon.pickTaskFirst"));
   vol.ids = ids;
   vol.value = 80;
   vol.visible = true;
@@ -834,7 +854,7 @@ const submitVolume = async () => {
   try {
     const { data } = await setTaskVolumeApi(vol.ids, vol.value);
     vol.visible = false;
-    reportControl(data, "设置音量");
+    reportControl(data, t("terminalCommon.setVolume"));
   } finally {
     vol.saving = false;
   }
@@ -859,7 +879,7 @@ const searchMedia = async (kw: string) => {
   }
 };
 
-const mediaLabel = (id: number) => mediaNames[id] ?? `媒体 ${id}`;
+const mediaLabel = (id: number) => mediaNames[id] ?? t("task.mediaId", { id });
 
 const moveMedia = (i: number, delta: number) => {
   const arr = selectedMediaIds.value;
@@ -1020,8 +1040,8 @@ const applyMask = (mask: string) => {
 };
 
 const openCreate = async () => {
-  if (!currentFolder.value) return ElMessage.warning("请先在左侧选择一个任务分组");
-  Object.assign(dlg, { visible: true, isEdit: false, title: "添加任务", id: 0, saving: false, form: emptyForm() });
+  if (!currentFolder.value) return ElMessage.warning(t("task.pickFolderFirst"));
+  Object.assign(dlg, { visible: true, isEdit: false, title: t("task.addTask"), id: 0, saving: false, form: emptyForm() });
   dateRange.value = [dlg.form.schedule.startdate, dlg.form.schedule.enddate];
   applyMask(dlg.form.schedule.exemodel);
   runMode.value = 1;
@@ -1045,7 +1065,7 @@ const openEdit = async (row: TaskRow) => {
   Object.assign(dlg, {
     visible: true,
     isEdit: true,
-    title: `修改任务：${data.taskname}`,
+    title: t("task.editTask", { name: data.taskname }),
     id: data.taskid,
     saving: false,
     form: {
@@ -1107,11 +1127,11 @@ const openEdit = async (row: TaskRow) => {
 
 const submit = async () => {
   const f = dlg.form;
-  if (!f.taskname.trim()) return ElMessage.warning("请输入任务名称");
-  if (!f.folderId) return ElMessage.warning("请选择所属分组");
-  if (ledOn.value && !f.led.text.trim()) return ElMessage.warning("请输入 led 字幕内容");
-  if (!selectedMediaIds.value.length) return ElMessage.warning("请在媒体文件列表里选择要播放的媒体");
-  if (!selectedTerminalIds.value.length) return ElMessage.warning("请在终端列表里选择终端");
+  if (!f.taskname.trim()) return ElMessage.warning(t("task.taskNameRequired"));
+  if (!f.folderId) return ElMessage.warning(t("task.pickBelongFolder"));
+  if (ledOn.value && !f.led.text.trim()) return ElMessage.warning(t("task.ledContent"));
+  if (!selectedMediaIds.value.length) return ElMessage.warning(t("task.pickMediaInList"));
+  if (!selectedTerminalIds.value.length) return ElMessage.warning(t("task.pickTerminalInList"));
 
   const pb = f.playback;
   const payload = {
@@ -1140,11 +1160,11 @@ const submit = async () => {
   dlg.saving = true;
   try {
     const { data } = dlg.isEdit ? await updateTaskApi(dlg.id, payload) : await createTaskApi(payload);
-    const parts = [`媒体 ${data.mediaCount} 条`, `终端 ${data.terminalCount} 台`];
-    if (data.powerTaskId) parts.push(`功放子任务 ${data.powerTaskId}`);
-    if (data.ledTaskId) parts.push(`LED 子任务 ${data.ledTaskId}`);
+    const parts = [t("task.mediaCount", { n: data.mediaCount }), t("task.terminalCount", { n: data.terminalCount })];
+    if (data.powerTaskId) parts.push(t("task.powerSubTask", { id: data.powerTaskId }));
+    if (data.ledTaskId) parts.push(t("task.ledSubTask", { id: data.ledTaskId }));
     ElNotification({
-      title: dlg.isEdit ? "修改成功" : "创建成功",
+      title: dlg.isEdit ? t("common.updateSuccess") : t("common.createSuccess"),
       message: parts.join("，"),
       type: "success"
     });
@@ -1165,18 +1185,18 @@ const openCopy = (row: TaskRow) => {
     visible: true,
     saving: false,
     id: row.taskid,
-    name: `${row.taskname}-副本`,
+    name: t("task.copySuffix", { name: row.taskname }),
     folderId: row.folderId || currentFolder.value
   });
 };
 
 const submitCopy = async () => {
-  if (!cp.name.trim()) return ElMessage.warning("请输入新任务名称");
-  if (!cp.folderId) return ElMessage.warning("请选择目标分组");
+  if (!cp.name.trim()) return ElMessage.warning(t("task.newTaskNameRequired"));
+  if (!cp.folderId) return ElMessage.warning(t("task.pickTargetFolder"));
   cp.saving = true;
   try {
     const { data } = await copyTaskApi(cp.id, cp.folderId, cp.name.trim());
-    ElMessage.success(`已复制为任务 ${data.taskid}`);
+    ElMessage.success(t("task.copiedAs", { id: data.taskid }));
     cp.visible = false;
     refresh();
     loadFolders();
@@ -1191,7 +1211,7 @@ const del = reactive({ visible: false, saving: false, preview: null as TaskDelet
 
 const openDelete = async (raw: (string | number)[]) => {
   const ids = toIds(raw);
-  if (!ids.length) return ElMessage.warning("请先勾选任务");
+  if (!ids.length) return ElMessage.warning(t("taskCommon.pickTaskFirst"));
   const { data } = await previewDeleteTasksApi(ids);
   del.preview = data;
   del.visible = true;
@@ -1203,8 +1223,8 @@ const submitDelete = async () => {
     const ids = del.preview!.deletable.map(d => d.taskid);
     const { data } = await deleteTasksApi(ids);
     del.visible = false;
-    const extra = data.deletedSubTasks.length ? `，连带子任务 ${data.deletedSubTasks.length} 条` : "";
-    ElMessage.success(`已删除 ${data.deleted.length} 条任务${extra}`);
+    const extra = data.deletedSubTasks.length ? t("task.withSubTasks", { n: data.deletedSubTasks.length }) : "";
+    ElMessage.success(t("task.deletedTasks", { n: data.deleted.length, extra }));
     refresh();
     loadFolders();
   } finally {
@@ -1220,7 +1240,7 @@ const openFolderCreate = () => {
   Object.assign(fd, {
     visible: true,
     saving: false,
-    title: "新建任务分组",
+    title: t("task.newFolder"),
     id: 0,
     name: "",
     parentId: currentFolder.value || 0
@@ -1228,11 +1248,11 @@ const openFolderCreate = () => {
 };
 
 const openFolderRename = (node: TaskFolderNode) => {
-  Object.assign(fd, { visible: true, saving: false, title: "重命名分组", id: node.id, name: node.name, parentId: 0 });
+  Object.assign(fd, { visible: true, saving: false, title: t("task.renameFolder"), id: node.id, name: node.name, parentId: 0 });
 };
 
 const submitFolder = async () => {
-  if (!fd.name.trim()) return ElMessage.warning("请输入分组名称");
+  if (!fd.name.trim()) return ElMessage.warning(t("task.folderNameRequired"));
   fd.saving = true;
   try {
     if (fd.id) {
@@ -1241,7 +1261,7 @@ const submitFolder = async () => {
       await createTaskFolderApi({ name: fd.name.trim(), parentId: fd.parentId });
     }
     fd.visible = false;
-    ElMessage.success("保存成功");
+    ElMessage.success(t("common.saveSuccess"));
     loadFolders();
   } finally {
     fd.saving = false;
@@ -1249,15 +1269,19 @@ const submitFolder = async () => {
 };
 
 const confirmFolderDelete = async (node: TaskFolderNode) => {
-  await ElMessageBox.confirm(
-    `删除分组「${node.name}」会同时删除它<b>整棵子树</b>下的全部任务，不可恢复。是否继续？`,
-    "删除任务分组",
-    { type: "warning", dangerouslyUseHTMLString: true, confirmButtonText: "确定删除" }
-  );
+  await ElMessageBox.confirm(t("task.deleteFolderConfirm", { name: node.name }), t("task.deleteFolderMenu"), {
+    type: "warning",
+    dangerouslyUseHTMLString: true,
+    confirmButtonText: t("common.confirmDelete")
+  });
   const { data } = await deleteTaskFolderApi(node.id);
   ElNotification({
-    title: "删除完成",
-    message: `分组 ${data.deletedFolders.length} 个、任务 ${data.deletedTasks.length} 条、子任务 ${data.deletedSubTasks.length} 条`,
+    title: t("common.deleteDone"),
+    message: t("task.deleteSummary", {
+      folders: data.deletedFolders.length,
+      tasks: data.deletedTasks.length,
+      subs: data.deletedSubTasks.length
+    }),
     type: "success"
   });
   if (currentFolder.value === node.id) {

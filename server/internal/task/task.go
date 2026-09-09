@@ -32,6 +32,7 @@ import (
 	"strings"
 
 	"htweb/internal/auth"
+	"htweb/internal/i18n"
 	"htweb/internal/store"
 )
 
@@ -298,7 +299,7 @@ func (s *Service) List(ctx context.Context, u *auth.User, q ListQuery) (*ListRes
 			&it.OwnerUserName); err != nil {
 			return nil, fmt.Errorf("扫描任务行: %w", err)
 		}
-		decorate(&it)
+		decorate(ctx, &it)
 		items = append(items, it)
 		ids = append(ids, it.TaskID)
 	}
@@ -330,30 +331,33 @@ func (s *Service) List(ctx context.Context, u *auth.User, q ListQuery) (*ListRes
 }
 
 // decorate 填充纯展示派生字段，避免前端各自解释一遍编码。
-func decorate(it *Item) {
+func decorate(ctx context.Context, it *Item) {
+	l := i18n.From(ctx)
 	// BR-163：0 = 随机，1 = 顺序。写反了播放顺序就错了。
 	if it.IsRandomPlay == 1 {
-		it.PlayModeText = "顺序"
+		it.PlayModeText = i18n.T(l, "顺序")
 	} else {
-		it.PlayModeText = "随机"
+		it.PlayModeText = i18n.T(l, "随机")
 	}
 	switch it.State {
 	case 0:
-		it.StateText = "准备"
+		it.StateText = i18n.T(l, "准备")
 	case 1:
-		it.StateText = "执行中"
+		it.StateText = i18n.T(l, "执行中")
 	case 2:
-		it.StateText = "已停止"
+		it.StateText = i18n.T(l, "已停止")
 	case 3:
-		it.StateText = "立即执行"
+		it.StateText = i18n.T(l, "立即执行")
 	default:
-		it.StateText = fmt.Sprintf("未知(%d)", it.State)
+		it.StateText = fmt.Sprintf(i18n.T(l, "未知(%d)"), it.State)
 	}
 	// BR-164：1 = 按秒数，2 = 按循环次数
+	// 「播放 N 秒 / 循环 N 次」这类量词句，中英语序不同，
+	// 所以翻的是**格式串**再 Sprintf，而不是拿拼好的成品去查字典。
 	if it.TimeLengthTyp == 1 {
-		it.LengthText = fmt.Sprintf("播放 %d 秒", it.TimeLength)
+		it.LengthText = fmt.Sprintf(i18n.T(l, "播放 %d 秒"), it.TimeLength)
 	} else {
-		it.LengthText = fmt.Sprintf("循环 %d 次", it.TimeLength)
+		it.LengthText = fmt.Sprintf(i18n.T(l, "循环 %d 次"), it.TimeLength)
 	}
 	it.Weekdays = parseWeekdays(it.ExeModel)
 	if it.Media == nil {
