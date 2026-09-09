@@ -19,18 +19,26 @@
   <div class="offline-page">
     <el-alert v-if="summary" type="info" :closable="false" class="mb12">
       <template #title>
-        离线副本 {{ summary.offlineMedia }} 个媒体 / {{ summary.offlineTask }} 个任务 · 下发关系
-        {{ summary.offlineMediaOfTerminal }} 条媒体 / {{ summary.offlineTaskOfTerminal }} 条任务 · 标记为离线的任务
-        {{ summary.tasksMarked }} 个
+        <!-- 整句一个键：这是一串「数字 + 量词」交替的句子，
+             拆开翻译中文能拼出来，英文会拼成一句不通的话 -->
+        {{
+          $t("offline.summaryLine", {
+            media: summary.offlineMedia,
+            task: summary.offlineTask,
+            mediaLinks: summary.offlineMediaOfTerminal,
+            taskLinks: summary.offlineTaskOfTerminal,
+            marked: summary.tasksMarked
+          })
+        }}
       </template>
     </el-alert>
 
     <div class="tool-bar">
-      <el-button type="primary" :icon="Upload" :disabled="!canMedia" @click="openMedia">下发媒体</el-button>
-      <el-button type="primary" :icon="Files" :disabled="!canTask" @click="openTask">下发任务</el-button>
-      <el-button :icon="Refresh" @click="reload">刷新</el-button>
+      <el-button type="primary" :icon="Upload" :disabled="!canMedia" @click="openMedia">{{ $t("offline.pushMedia") }}</el-button>
+      <el-button type="primary" :icon="Files" :disabled="!canTask" @click="openTask">{{ $t("offline.pushTask") }}</el-button>
+      <el-button :icon="Refresh" @click="reload">{{ $t("common.refresh") }}</el-button>
       <div class="spacer" />
-      <el-button type="danger" :icon="Delete" @click="openPurge">清空全部离线数据</el-button>
+      <el-button type="danger" :icon="Delete" @click="openPurge">{{ $t("offline.clearAll") }}</el-button>
     </div>
 
     <el-tabs v-model="tab" @tab-change="reload">
@@ -39,14 +47,14 @@
         底下两个按钮 空闲传输 / 立即传输。挑完直接发，不再经过弹窗。
         后面两个页签是我们多给的「发了之后到哪一步了」，:80 没有对应视图。
       -->
-      <el-tab-pane label="音乐下发" name="dispatch">
+      <el-tab-pane :label="$t('offline.musicPush')" name="dispatch">
         <div class="dispatch">
           <div class="pane">
             <div class="pane-hd">
-              <span>终端</span>
+              <span>{{ $t("terminalCommon.terminal") }}</span>
               <el-input
                 v-model="dp.termKeyword"
-                placeholder="设备名称搜索"
+                :placeholder="$t('offline.searchDeviceName')"
                 clearable
                 size="small"
                 style="width: 180px"
@@ -67,10 +75,10 @@
 
           <div class="pane">
             <div class="pane-hd">
-              <span>媒体</span>
+              <span>{{ $t("taskCommon.media") }}</span>
               <el-input
                 v-model="dp.mediaKeyword"
-                placeholder="媒体名称搜索"
+                :placeholder="$t('common.searchMediaName')"
                 clearable
                 size="small"
                 style="width: 180px"
@@ -86,7 +94,7 @@
                   </el-checkbox>
                 </div>
               </el-checkbox-group>
-              <div v-if="!dp.medias.length" class="empty-note">没有匹配的媒体</div>
+              <div v-if="!dp.medias.length" class="empty-note">{{ $t("offline.noMatchingMedia") }}</div>
             </el-scrollbar>
           </div>
         </div>
@@ -95,22 +103,32 @@
              （「全部清除」在页顶那个「清空全部离线数据」上） -->
         <div class="dispatch-bar">
           <div class="spacer" />
-          <el-button :disabled="!canDispatch" @click="doDispatch('idle')">空闲传输</el-button>
-          <el-button type="primary" :disabled="!canDispatch" @click="doDispatch('immediate')">立即传输</el-button>
-          <el-button :disabled="!canDispatch" @click="doDispatch('deleteIdle')">空闲删除</el-button>
-          <el-button type="danger" :disabled="!canDispatch" @click="doDispatch('deleteNow')">立即删除</el-button>
+          <el-button :disabled="!canDispatch" @click="doDispatch('idle')">{{ $t("taskCommon.idleTransfer") }}</el-button>
+          <el-button type="primary" :disabled="!canDispatch" @click="doDispatch('immediate')">{{
+            $t("taskCommon.nowTransfer")
+          }}</el-button>
+          <el-button :disabled="!canDispatch" @click="doDispatch('deleteIdle')">{{ $t("offline.idleDelete") }}</el-button>
+          <el-button type="danger" :disabled="!canDispatch" @click="doDispatch('deleteNow')">{{
+            $t("offline.nowDelete")
+          }}</el-button>
         </div>
       </el-tab-pane>
 
-      <el-tab-pane label="媒体下发状态" name="media">
+      <el-tab-pane :label="$t('offline.mediaPushState')" name="media">
         <div class="filter-bar">
-          <el-select v-model="filter.state" placeholder="全部状态" clearable style="width: 160px" @change="reload">
+          <el-select
+            v-model="filter.state"
+            :placeholder="$t('offline.allStates')"
+            clearable
+            style="width: 160px"
+            @change="reload"
+          >
             <el-option v-for="s in states" :key="s.value" :label="s.text" :value="s.value" />
           </el-select>
           <el-input-number
             v-model="filter.terminalId"
             :min="0"
-            placeholder="终端 ID"
+            :placeholder="$t('offline.terminalId')"
             controls-position="right"
             style="width: 130px"
             @change="reload"
@@ -122,30 +140,30 @@
 
         <el-table :data="mediaRows" v-loading="loading" @selection-change="onMediaSelect">
           <el-table-column type="selection" width="46" />
-          <el-table-column label="媒体" min-width="180">
+          <el-table-column :label="$t('taskCommon.media')" min-width="180">
             <template #default="{ row }">
               <span :class="{ danger: row.copyMissing }">{{ row.mediaName }}</span>
               <span class="muted"> #{{ row.mediaId }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="终端" min-width="160">
+          <el-table-column :label="$t('terminalCommon.terminal')" min-width="160">
             <template #default="{ row }">
               <span :class="{ danger: row.terminalMissing }">{{ row.terminalName }}</span>
               <span class="muted"> #{{ row.terminalId }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="所属任务" width="150">
+          <el-table-column :label="$t('offline.belongTask')" width="150">
             <template #default="{ row }">
               <span v-if="row.taskId">{{ row.taskName || row.taskId }}</span>
-              <span v-else class="muted">单独下发</span>
+              <span v-else class="muted">{{ $t("offline.pushSingle") }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="状态" width="130">
+          <el-table-column :label="$t('common.status')" width="130">
             <template #default="{ row }">
               <el-tag :type="stateTag(row.offlinestate)" size="small">{{ row.offlineStateText }}</el-tag>
             </template>
           </el-table-column>
-          <el-table-column prop="sort" label="序" width="60" />
+          <el-table-column prop="sort" :label="$t('offline.seq')" width="60" />
         </el-table>
         <el-pagination
           class="pager"
@@ -170,26 +188,26 @@
         />
       </el-tab-pane>
 
-      <el-tab-pane label="任务下发状态" name="task">
+      <el-tab-pane :label="$t('offline.taskPushState')" name="task">
         <el-table :data="taskRows" v-loading="loading">
-          <el-table-column label="任务" min-width="180">
+          <el-table-column :label="$t('taskCommon.task')" min-width="180">
             <template #default="{ row }">
               {{ row.taskName || row.taskId }}
-              <el-tag v-if="row.copyMissing" type="danger" size="small" effect="plain">副本缺失</el-tag>
+              <el-tag v-if="row.copyMissing" type="danger" size="small" effect="plain">{{ $t("offline.copyMissing") }}</el-tag>
             </template>
           </el-table-column>
-          <el-table-column label="终端" min-width="160">
+          <el-table-column :label="$t('terminalCommon.terminal')" min-width="160">
             <template #default="{ row }">
               <span :class="{ danger: row.terminalMissing }">{{ row.terminalName }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="状态" width="130">
+          <el-table-column :label="$t('common.status')" width="130">
             <template #default="{ row }">
               <el-tag :type="stateTag(row.offlinestate)" size="small">{{ row.offlineStateText }}</el-tag>
             </template>
           </el-table-column>
-          <el-table-column prop="mediaCount" label="媒体数" width="90" />
-          <el-table-column prop="area" label="区域掩码" width="120" />
+          <el-table-column prop="mediaCount" :label="$t('offline.mediaCount')" width="90" />
+          <el-table-column prop="area" :label="$t('offline.areaMask')" width="120" />
         </el-table>
         <el-pagination
           class="pager"
@@ -208,9 +226,9 @@
     </el-tabs>
 
     <!-- 下发媒体 -->
-    <el-dialog v-model="md.visible" title="离线媒体下发" width="640px">
+    <el-dialog v-model="md.visible" :title="$t('offline.mediaPushTitle')" width="640px">
       <el-form label-width="90px">
-        <el-form-item label="媒体" required>
+        <el-form-item :label="$t('taskCommon.media')" required>
           <el-select
             v-model="md.mediaIds"
             multiple
@@ -218,80 +236,79 @@
             remote
             reserve-keyword
             :remote-method="searchMedia"
-            placeholder="媒体名称搜索"
+            :placeholder="$t('common.searchMediaName')"
             class="fill"
           >
             <el-option v-for="m in medias" :key="m.id" :label="m.name" :value="m.id" />
           </el-select>
         </el-form-item>
-        <el-form-item label="目标终端" required>
+        <el-form-item :label="$t('offline.targetTerminal')" required>
           <TerminalTree v-model="md.terminalIds" :terminals="terminals" height="240px" @search="searchTerminals" />
         </el-form-item>
-        <el-form-item label="下发方式">
+        <el-form-item :label="$t('offline.pushMode')">
           <el-radio-group v-model="md.mode">
-            <el-radio value="idle">空闲传输</el-radio>
-            <el-radio value="immediate">立即传输</el-radio>
-            <el-radio value="deleteIdle">空闲删除</el-radio>
-            <el-radio value="deleteNow">立即删除</el-radio>
+            <el-radio value="idle">{{ $t("taskCommon.idleTransfer") }}</el-radio>
+            <el-radio value="immediate">{{ $t("taskCommon.nowTransfer") }}</el-radio>
+            <el-radio value="deleteIdle">{{ $t("offline.idleDelete") }}</el-radio>
+            <el-radio value="deleteNow">{{ $t("offline.nowDelete") }}</el-radio>
           </el-radio-group>
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="md.visible = false">取消</el-button>
-        <el-button type="primary" :loading="md.busy" @click="submitMedia">下发</el-button>
+        <el-button @click="md.visible = false">{{ $t("common.cancel") }}</el-button>
+        <el-button type="primary" :loading="md.busy" @click="submitMedia">{{ $t("offline.push") }}</el-button>
       </template>
     </el-dialog>
 
     <!-- 下发任务 -->
-    <el-dialog v-model="tk.visible" title="离线任务下发" width="640px">
+    <el-dialog v-model="tk.visible" :title="$t('offline.taskPushTitle')" width="640px">
       <el-alert type="info" :closable="false" class="mb12">
-        任务下发会连同它的铃声清单一起下发，并自动补齐 offlinemedia 副本 —— 没有副本终端就拿不到文件。
+        {{ $t("offline.taskPushNote") }}
       </el-alert>
       <el-form label-width="90px">
-        <el-form-item label="任务" required>
-          <el-select v-model="tk.taskIds" multiple filterable placeholder="选择任务" class="fill">
+        <el-form-item :label="$t('taskCommon.task')" required>
+          <el-select v-model="tk.taskIds" multiple filterable :placeholder="$t('offline.pickTask')" class="fill">
             <el-option v-for="t in tasks" :key="t.taskid" :label="t.taskname" :value="t.taskid" />
           </el-select>
         </el-form-item>
-        <el-form-item label="目标终端" required>
+        <el-form-item :label="$t('offline.targetTerminal')" required>
           <TerminalTree v-model="tk.terminalIds" :terminals="terminals" height="240px" @search="searchTerminals" />
         </el-form-item>
-        <el-form-item label="下发方式">
+        <el-form-item :label="$t('offline.pushMode')">
           <el-radio-group v-model="tk.mode">
-            <el-radio value="idle">空闲传输</el-radio>
-            <el-radio value="immediate">立即传输</el-radio>
-            <el-radio value="deleteIdle">空闲删除</el-radio>
-            <el-radio value="deleteNow">立即删除</el-radio>
+            <el-radio value="idle">{{ $t("taskCommon.idleTransfer") }}</el-radio>
+            <el-radio value="immediate">{{ $t("taskCommon.nowTransfer") }}</el-radio>
+            <el-radio value="deleteIdle">{{ $t("offline.idleDelete") }}</el-radio>
+            <el-radio value="deleteNow">{{ $t("offline.nowDelete") }}</el-radio>
           </el-radio-group>
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="tk.visible = false">取消</el-button>
-        <el-button type="primary" :loading="tk.busy" @click="submitTask">下发</el-button>
+        <el-button @click="tk.visible = false">{{ $t("common.cancel") }}</el-button>
+        <el-button type="primary" :loading="tk.busy" @click="submitTask">{{ $t("offline.push") }}</el-button>
       </template>
     </el-dialog>
 
     <!-- 清空 -->
-    <el-dialog v-model="pg.visible" title="清空全部离线数据" width="560px">
+    <el-dialog v-model="pg.visible" :title="$t('offline.clearAll')" width="560px">
       <el-alert type="error" :closable="false" class="mb12">
-        <template #title>这是四条无 WHERE 的全表删除</template>
+        <template #title>{{ $t("offline.fullTableDelete") }}</template>
         <div class="alert-body">
-          会清空 offlinemedia、offlinemediaofterminal、offlinetask、offlinetaskofterminal 四张表， 并把 task.offlinestate
-          全部复位为 0。旧版这个动作只有前端一个 confirm 保护。
+          {{ $t("offline.clearWarn") }}
         </div>
       </el-alert>
       <el-descriptions v-if="summary" :column="2" border size="small" class="mb12">
-        <el-descriptions-item label="离线媒体副本">{{ summary.offlineMedia }}</el-descriptions-item>
-        <el-descriptions-item label="媒体下发关系">{{ summary.offlineMediaOfTerminal }}</el-descriptions-item>
-        <el-descriptions-item label="离线任务副本">{{ summary.offlineTask }}</el-descriptions-item>
-        <el-descriptions-item label="任务下发关系">{{ summary.offlineTaskOfTerminal }}</el-descriptions-item>
-        <el-descriptions-item label="待复位任务" :span="2">{{ summary.tasksMarked }}</el-descriptions-item>
+        <el-descriptions-item :label="$t('offline.offlineMediaCopy')">{{ summary.offlineMedia }}</el-descriptions-item>
+        <el-descriptions-item :label="$t('offline.mediaPushRel')">{{ summary.offlineMediaOfTerminal }}</el-descriptions-item>
+        <el-descriptions-item :label="$t('offline.offlineTaskCopy')">{{ summary.offlineTask }}</el-descriptions-item>
+        <el-descriptions-item :label="$t('offline.taskPushRel')">{{ summary.offlineTaskOfTerminal }}</el-descriptions-item>
+        <el-descriptions-item :label="$t('offline.pendingReset')" :span="2">{{ summary.tasksMarked }}</el-descriptions-item>
       </el-descriptions>
-      <el-input v-model="pg.confirmText" placeholder="逐字输入：清空全部离线数据" />
+      <el-input v-model="pg.confirmText" :placeholder="$t('offline.typeToConfirm')" />
       <template #footer>
-        <el-button @click="pg.visible = false">取消</el-button>
-        <el-button type="danger" :loading="pg.busy" :disabled="pg.confirmText !== '清空全部离线数据'" @click="submitPurge">
-          确认清空
+        <el-button @click="pg.visible = false">{{ $t("common.cancel") }}</el-button>
+        <el-button type="danger" :loading="pg.busy" :disabled="pg.confirmText !== $t('offline.clearAll')" @click="submitPurge">
+          {{ $t("offline.confirmClear") }}
         </el-button>
       </template>
     </el-dialog>
@@ -299,6 +316,7 @@
 </template>
 
 <script setup lang="ts" name="offlinePage">
+import { useI18n } from "vue-i18n";
 import { computed, onMounted, reactive, ref } from "vue";
 import { ElMessage, ElMessageBox } from "element-plus";
 import { Delete, Files, Refresh, Upload } from "@element-plus/icons-vue";
@@ -327,6 +345,11 @@ import {
   type TaskRow,
   type TaskTerminalOption
 } from "@/api/modules/task";
+
+// 脚本里拼的文案用 t()；模板里的 $t 不用引入
+const { t } = useI18n();
+// 有的循环里临时变量也叫 t（一台终端），会遮住上面这个 t
+const t2 = t;
 
 const authStore = useAuthStore();
 const btn = computed(() => (authStore.authButtonListGet as any) ?? {});
@@ -428,11 +451,14 @@ const loadDispatchTerminals = async () => {
   const list = data ?? [];
   const groups = new Map<string, TermNode>();
   for (const t of list) {
-    const name = t.groupName || "未分类终端";
+    const name = t.groupName || t2("offline.unclassified");
     if (!groups.has(name)) groups.set(name, { key: `g:${name}`, label: name, children: [] });
     groups.get(name)!.children!.push({
       key: `t:${t.id}`,
-      label: `${t.name || "终端 " + t.id}（${t.netstate === 1 ? "在线" : "离线"}）`,
+      label: t2("offline.termWithState", {
+        name: t.name || t2("common.terminalNo", { id: t.id }),
+        state: t.netstate === 1 ? t2("common.online") : t2("common.offline")
+      }),
       terminalId: t.id
     });
   }
@@ -453,28 +479,27 @@ const loadDispatchMedia = async () => {
 };
 
 const DISPATCH_TEXT: Record<string, string> = {
-  idle: "空闲传输",
-  immediate: "立即传输",
-  deleteIdle: "空闲删除",
-  deleteNow: "立即删除"
+  idle: t("taskCommon.idleTransfer"),
+  immediate: t("taskCommon.nowTransfer"),
+  deleteIdle: t("offline.idleDelete"),
+  deleteNow: t("offline.nowDelete")
 };
 
 const doDispatch = async (mode: OfflineMode) => {
-  if (!canDispatch.value) return ElMessage.warning("请先选终端和媒体");
+  if (!canDispatch.value) return ElMessage.warning(t("offline.pickTermAndMedia"));
   const text = DISPATCH_TEXT[mode] ?? mode;
   // 删除类动作会让终端把文件删掉，先确认（旧版这两个也是先弹确认框的）
   if (mode === "deleteIdle" || mode === "deleteNow") {
     await ElMessageBox.confirm(
-      `将对选中的 ${dp.terminalIds.length} 台终端上的 ${dp.mediaIds.length} 个媒体执行「${text}」，` +
-        `终端上的文件会被删掉，不可恢复。`,
+      t("offline.confirmPush", { terms: dp.terminalIds.length, media: dp.mediaIds.length, what: text }) + t("offline.filesGone"),
       text,
       { type: "warning" }
     );
   }
   const { data } = await dispatchOfflineMediaApi(dp.mediaIds, dp.terminalIds, mode);
   ElMessage.success(
-    `${text}已下发：${data.mediaCount} 个媒体 × ${data.terminalCount} 台终端，` +
-      `新建 ${data.linksCreated} 条、更新 ${data.linksUpdated} 条，状态「${data.offlineStateText}」`
+    t("offline.pushed", { what: text, media: data.mediaCount, terms: data.terminalCount }) +
+      t("offline.linkStats", { created: data.linksCreated, updated: data.linksUpdated, state: data.offlineStateText })
   );
   reload();
 };
@@ -495,14 +520,14 @@ const openMedia = async () => {
 };
 
 const submitMedia = async () => {
-  if (!md.mediaIds.length) return ElMessage.warning("请选择媒体");
-  if (!md.terminalIds.length) return ElMessage.warning("请选择终端");
+  if (!md.mediaIds.length) return ElMessage.warning(t("offline.pickMediaFirst"));
+  if (!md.terminalIds.length) return ElMessage.warning(t("offline.pickTerminalFirst"));
   md.busy = true;
   try {
     const { data } = await dispatchOfflineMediaApi(md.mediaIds, md.terminalIds, md.mode);
     ElMessage.success(
-      `已下发：副本新建 ${data.copiesCreated} / 更新 ${data.copiesUpdated}，` +
-        `关系新建 ${data.linksCreated} / 更新 ${data.linksUpdated}，状态「${data.offlineStateText}」`
+      t("offline.pushedCopies", { created: data.copiesCreated, updated: data.copiesUpdated }) +
+        t("offline.linkStats2", { created: data.linksCreated, updated: data.linksUpdated, state: data.offlineStateText })
     );
     md.visible = false;
     reload();
@@ -525,14 +550,14 @@ const openTask = async () => {
 };
 
 const submitTask = async () => {
-  if (!tk.taskIds.length) return ElMessage.warning("请选择任务");
-  if (!tk.terminalIds.length) return ElMessage.warning("请选择终端");
+  if (!tk.taskIds.length) return ElMessage.warning(t("offline.pickTaskFirst"));
+  if (!tk.terminalIds.length) return ElMessage.warning(t("offline.pickTerminalFirst"));
   tk.busy = true;
   try {
     const { data } = await dispatchOfflineTaskApi(tk.taskIds, tk.terminalIds, tk.mode);
-    ElMessage.success(`已下发 ${data.taskCopies} 个任务副本、${data.terminalLinks} 条终端关系、${data.mediaLinks} 条媒体关系`);
+    ElMessage.success(t("offline.pushedTasks", { copies: data.taskCopies, terms: data.terminalLinks, media: data.mediaLinks }));
     if (data.skippedNoMedia?.length) {
-      ElMessage.warning(`任务 ${data.skippedNoMedia.join("、")} 没有铃声清单，下发过去也放不出声`);
+      ElMessage.warning(t("offline.skippedNoMedia", { names: data.skippedNoMedia.join("、") }));
     }
     tk.visible = false;
     reload();
@@ -544,9 +569,9 @@ const submitTask = async () => {
 const stopSelected = async () => {
   const mediaIds = [...new Set(checkedMedia.value.map(r => r.mediaId))];
   const terminalIds = [...new Set(checkedMedia.value.map(r => r.terminalId))];
-  await ElMessageBox.confirm(`确定停止选中的 ${checkedMedia.value.length} 条传输？`, "提示", { type: "warning" });
+  await ElMessageBox.confirm(t("offline.confirmStop", { n: checkedMedia.value.length }), t("offline.tip"), { type: "warning" });
   const { data } = await stopOfflineApi(mediaIds, terminalIds);
-  ElMessage.success(`已标记停止 ${data.updated} 条`);
+  ElMessage.success(t("offline.markedStopped", { n: data.updated }));
   reload();
 };
 
@@ -565,8 +590,8 @@ const submitPurge = async () => {
   try {
     const { data } = await purgeOfflineApi(pg.confirmText);
     ElMessage.success(
-      `已清空：媒体副本 ${data.offlineMedia}、媒体关系 ${data.offlineMediaOfTerminal}、` +
-        `任务副本 ${data.offlineTask}、任务关系 ${data.offlineTaskOfTerminal}，复位任务 ${data.tasksReset}`
+      t("offline.clearedSummary", { media: data.offlineMedia, mediaLinks: data.offlineMediaOfTerminal }) +
+        t("offline.clearedSummary2", { task: data.offlineTask, taskLinks: data.offlineTaskOfTerminal, reset: data.tasksReset })
     );
     pg.visible = false;
     reload();

@@ -24,7 +24,7 @@
               :title="addDisabledReason"
               @click="openCreate"
             >
-              新建用户
+              {{ $t("user.newUser") }}
             </el-button>
             <el-button
               type="danger"
@@ -32,22 +32,28 @@
               :disabled="!canDelete || !scope.isSelected"
               @click="openDelete(scope.selectedListIds)"
             >
-              删除选中{{ scope.selectedListIds.length ? `(${scope.selectedListIds.length})` : "" }}
+              {{ $t("user.deleteSelected") }}{{ scope.selectedListIds.length ? `(${scope.selectedListIds.length})` : "" }}
             </el-button>
           </div>
           <div class="header-right">
             <el-tag v-if="scopeNote" type="info" size="small" effect="plain">{{ scopeNote }}</el-tag>
             <el-tag v-if="capacity" size="small" effect="plain">
-              分控授权 {{ capacity.capacity }} 路 · 手机 {{ capacity.ctrlUsed }} / 分控 {{ capacity.subUsed }} / 监控
-              {{ capacity.cameraUsed }}
+              {{
+                $t("user.capacityLine", {
+                  n: capacity.capacity,
+                  ctrl: capacity.ctrlUsed,
+                  sub: capacity.subUsed,
+                  camera: capacity.cameraUsed
+                })
+              }}
             </el-tag>
           </div>
         </div>
       </template>
 
       <template #enableCol="scope">
-        <el-tag v-if="scope.row.enable === 1" type="success" size="small">启用</el-tag>
-        <el-tag v-else type="info" size="small">停用</el-tag>
+        <el-tag v-if="scope.row.enable === 1" type="success" size="small">{{ $t("common.enable") }}</el-tag>
+        <el-tag v-else type="info" size="small">{{ $t("common.disable") }}</el-tag>
       </template>
 
       <template #windCol="scope">
@@ -58,7 +64,7 @@
       </template>
 
       <template #operation="scope">
-        <el-button type="primary" link :icon="EditPen" @click="openEdit(scope.row)">编辑</el-button>
+        <el-button type="primary" link :icon="EditPen" @click="openEdit(scope.row)">{{ $t("common.edit") }}</el-button>
         <el-button
           v-if="scope.row.enable === 1"
           type="warning"
@@ -67,10 +73,10 @@
           :disabled="!canEnable || !scope.row.canDelete"
           @click="toggleEnable(scope.row, false)"
         >
-          停用
+          {{ $t("common.disable") }}
         </el-button>
         <el-button v-else type="success" link :icon="Open" :disabled="!canEnable" @click="toggleEnable(scope.row, true)">
-          启用
+          {{ $t("common.enable") }}
         </el-button>
       </template>
     </ProTable>
@@ -78,55 +84,60 @@
     <!-- 新建 / 编辑 -->
     <el-dialog v-model="dlg.visible" :title="dlg.title" width="780px" top="5vh">
       <el-form :model="dlg.form" label-width="120px">
-        <el-divider content-position="left">基本信息</el-divider>
+        <el-divider content-position="left">{{ $t("user.basicInfo") }}</el-divider>
 
-        <el-form-item label="用户名" required>
+        <el-form-item :label="$t('user.username')" required>
           <el-input v-model="dlg.form.username" :disabled="dlg.usernameLocked" maxlength="50" show-word-limit />
         </el-form-item>
 
-        <el-form-item :label="dlg.isEdit ? '新密码' : '密码'" :required="!dlg.isEdit">
+        <el-form-item :label="dlg.isEdit ? $t('user.newPassword') : $t('user.password')" :required="!dlg.isEdit">
           <el-input v-model="dlg.form.password" type="password" show-password maxlength="20" autocomplete="new-password" />
         </el-form-item>
 
-        <el-form-item label="确认密码" :required="!dlg.isEdit">
+        <el-form-item :label="$t('user.confirmPassword')" :required="!dlg.isEdit">
           <el-input v-model="dlg.form.confirmPassword" type="password" show-password maxlength="20" autocomplete="new-password" />
         </el-form-item>
 
-        <el-form-item label="所属用户组" required>
+        <el-form-item :label="$t('user.belongGroup')" required>
           <el-select v-model="dlg.form.usergroupId" :disabled="dlg.groupLocked" style="width: 260px">
-            <el-option v-for="g in groupOptions" :key="g.id" :label="`${g.name}（级别 ${g.groupLevel}）`" :value="g.id" />
+            <el-option
+              v-for="g in groupOptions"
+              :key="g.id"
+              :label="$t('user.groupWithLevel', { name: g.name, level: g.groupLevel })"
+              :value="g.id"
+            />
           </el-select>
         </el-form-item>
 
-        <el-form-item label="描述">
-          <el-input v-model="dlg.form.info" maxlength="60" show-word-limit placeholder="选填" />
+        <el-form-item :label="$t('common.description')">
+          <el-input v-model="dlg.form.info" maxlength="60" show-word-limit :placeholder="$t('common.optional')" />
         </el-form-item>
 
-        <el-divider content-position="left">分控软件</el-divider>
-        <el-form-item label="启用分控">
+        <el-divider content-position="left">{{ $t("user.subControlSoftware") }}</el-divider>
+        <el-form-item :label="$t('user.enableSubControl')">
           <div class="wind-row">
             <el-checkbox v-model="dlg.form.enableCtrlwind">
-              手机分控
+              {{ $t("user.phoneSubControl") }}
               <span class="wind-quota">（1 ~ {{ capacity?.capacity ?? "-" }}）</span>
             </el-checkbox>
             <el-checkbox v-model="dlg.form.enableSubwind">
-              分控软件
+              {{ $t("user.subControlSoftware") }}
               <span class="wind-quota">（1001 ~ {{ 1000 + (capacity?.capacity ?? 0) }}）</span>
             </el-checkbox>
             <el-checkbox v-model="dlg.form.enableCamerawind">
-              监控软件
+              {{ $t("user.monitorSoftware") }}
               <span class="wind-quota">（2001 ~ {{ 2000 + (capacity?.capacity ?? 0) }}）</span>
             </el-checkbox>
           </div>
         </el-form-item>
 
-        <el-divider content-position="left">授权序列号（最多 3 条）</el-divider>
-        <el-form-item v-for="i in 3" :key="i" :label="`序列号 ${i}`">
-          <el-input v-model="dlg.form.serials[i - 1]" maxlength="64" placeholder="选填，留空表示删除该条" />
+        <el-divider content-position="left">{{ $t("user.serials") }}</el-divider>
+        <el-form-item v-for="i in 3" :key="i" :label="$t('user.serialN', { n: i })">
+          <el-input v-model="dlg.form.serials[i - 1]" maxlength="64" :placeholder="$t('user.serialPlaceholder')" />
         </el-form-item>
 
-        <el-divider content-position="left">终端绑定</el-divider>
-        <el-form-item label="可控制的终端">
+        <el-divider content-position="left">{{ $t("user.terminalBinding") }}</el-divider>
+        <el-form-item :label="$t('user.controllableTerminals')">
           <!--
             ⚠ 这个接口是一次性全量返回的（没有 keyword 参数），所以不监听 @search，
               树组件的搜索框在这里只会白跑一趟。传 :searchable="false" 把它藏掉。
@@ -136,24 +147,25 @@
       </el-form>
 
       <template #footer>
-        <el-button @click="dlg.visible = false">取消</el-button>
-        <el-button type="primary" :loading="dlg.loading" @click="submit">确定</el-button>
+        <el-button @click="dlg.visible = false">{{ $t("common.cancel") }}</el-button>
+        <el-button type="primary" :loading="dlg.loading" @click="submit">{{ $t("common.confirm") }}</el-button>
       </template>
     </el-dialog>
 
     <!-- 删除影响面 -->
-    <el-dialog v-model="del.visible" title="删除用户" width="560px">
+    <el-dialog v-model="del.visible" :title="$t('user.deleteUserTitle')" width="560px">
       <el-alert type="error" :closable="false" show-icon class="mb12">
-        删除用户会同时清空他名下的<b>全部数据</b>，不可恢复。
+        {{ $t("user.deleteAlsoClears") }}<b>{{ $t("user.allData") }}</b
+        >{{ $t("user.notRecoverableComma") }}
       </el-alert>
 
       <el-descriptions v-if="del.impact" :column="2" border size="small">
-        <el-descriptions-item label="用户">{{ del.impact.users }} 个</el-descriptions-item>
-        <el-descriptions-item label="文件夹">{{ del.impact.folders }} 个</el-descriptions-item>
-        <el-descriptions-item label="媒体">{{ del.impact.media }} 个</el-descriptions-item>
-        <el-descriptions-item label="任务">{{ del.impact.tasks }} 条</el-descriptions-item>
-        <el-descriptions-item label="终端分区">{{ del.impact.terminalGroups }} 个</el-descriptions-item>
-        <el-descriptions-item label="报警分区">{{ del.impact.alarmAreas }} 个</el-descriptions-item>
+        <el-descriptions-item :label="$t('common.user')">{{ del.impact.users }} 个</el-descriptions-item>
+        <el-descriptions-item :label="$t('media.belongFolder')">{{ del.impact.folders }} 个</el-descriptions-item>
+        <el-descriptions-item :label="$t('taskCommon.media')">{{ del.impact.media }} 个</el-descriptions-item>
+        <el-descriptions-item :label="$t('taskCommon.task')">{{ del.impact.tasks }} 条</el-descriptions-item>
+        <el-descriptions-item :label="$t('terminalCommon.zone')">{{ del.impact.terminalGroups }} 个</el-descriptions-item>
+        <el-descriptions-item :label="$t('terminalCommon.alarmZone')">{{ del.impact.alarmAreas }} 个</el-descriptions-item>
       </el-descriptions>
 
       <div v-if="del.impact?.userNames?.length" class="mt12">
@@ -163,14 +175,17 @@
       </div>
 
       <template #footer>
-        <el-button @click="del.visible = false">取消</el-button>
-        <el-button type="danger" :disabled="!del.ids.length" :loading="del.loading" @click="confirmDelete"> 确认删除 </el-button>
+        <el-button @click="del.visible = false">{{ $t("common.cancel") }}</el-button>
+        <el-button type="danger" :disabled="!del.ids.length" :loading="del.loading" @click="confirmDelete">
+          {{ $t("common.confirmDelete") }}
+        </el-button>
       </template>
     </el-dialog>
   </div>
 </template>
 
 <script setup lang="tsx" name="userList">
+import { useI18n } from "vue-i18n";
 import { CirclePlus, Delete, EditPen, Open, TurnOff } from "@element-plus/icons-vue";
 import { ElMessage, ElMessageBox, ElNotification } from "element-plus";
 import { computed, onMounted, reactive, ref } from "vue";
@@ -197,6 +212,11 @@ import TerminalTree from "@/components/TerminalTree/index.vue";
 import { ColumnProps } from "@/components/ProTable/interface";
 import { useAuthStore } from "@/stores/modules/auth";
 
+// 脚本里拼的文案用 t()；模板里的 $t 不用引入
+const { t } = useI18n();
+// 循环里的临时变量也叫 t（一台终端），会遮住上面这个 t
+const t2 = t;
+
 const authStore = useAuthStore();
 const btn = computed(() => (authStore.authButtonListGet as any)?.user ?? {});
 const canAdd = computed(() => !!btn.value.add);
@@ -219,26 +239,32 @@ const terminalOptions = ref<TerminalOption[]>([]);
 const terminalNodes = computed(() =>
   terminalOptions.value.map(t => ({
     ...t,
-    name: t.occupied ? `${t.name || "终端 " + t.id}（已绑定 ${t.ownerName}）` : t.name || `终端 ${t.id}`
+    name: t.occupied
+      ? t2("user.boundTo", { name: t.name || t2("common.terminalNo", { id: t.id }), owner: t.ownerName })
+      : t.name || t2("common.terminalNo", { id: t.id })
   }))
 );
 
 const addDisabledReason = computed(() => {
-  if (!canAdd.value) return "当前账号没有新建用户的权限";
-  if (capacity.value && !capacity.value.canCreateUser) return "服务器未注册，禁止新建用户";
+  if (!canAdd.value) return t("user.noPermissionToCreate");
+  if (capacity.value && !capacity.value.canCreateUser) return t("user.notRegistered");
   return "";
 });
 
 const columns = reactive<ColumnProps<UserRow>[]>([
   { type: "selection", fixed: "left", width: 55 },
-  { prop: "id", label: "编号", width: 80 },
-  { prop: "username", label: "用户名", search: { el: "input", key: "keyword", props: { placeholder: "按用户名搜索" } } },
-  { prop: "usergroupName", label: "用户组", width: 160 },
-  { prop: "enableCol", label: "状态", width: 90 },
-  { prop: "windCol", label: "分控 ID", minWidth: 220 },
-  { prop: "terminalCount", label: "绑定终端", width: 100 },
-  { prop: "info", label: "描述", minWidth: 140, showOverflowTooltip: true },
-  { prop: "operation", label: "操作", width: 170, fixed: "right" }
+  { prop: "id", label: t("common.id"), width: 80 },
+  {
+    prop: "username",
+    label: t("user.username"),
+    search: { el: "input", key: "keyword", props: { placeholder: t("user.searchByUsername") } }
+  },
+  { prop: "usergroupName", label: t("common.userGroup"), width: 160 },
+  { prop: "enableCol", label: t("common.status"), width: 90 },
+  { prop: "windCol", label: t("user.subControlId"), minWidth: 220 },
+  { prop: "terminalCount", label: t("user.bindTerminal"), width: 100 },
+  { prop: "info", label: t("common.description"), minWidth: 140, showOverflowTooltip: true },
+  { prop: "operation", label: t("common.operation"), width: 170, fixed: "right" }
 ]);
 
 const dataCallback = (data: any) => {
@@ -290,7 +316,7 @@ const openCreate = async () => {
   Object.assign(dlg, {
     visible: true,
     isEdit: false,
-    title: "新建用户",
+    title: t("user.newUser"),
     id: 0,
     usernameLocked: false,
     groupLocked: false,
@@ -309,7 +335,7 @@ const openEdit = async (row: UserRow) => {
   Object.assign(dlg, {
     visible: true,
     isEdit: true,
-    title: `修改用户：${data.username}`,
+    title: t("user.editUser", { name: data.username }),
     id: data.id,
     usernameLocked: data.usernameLocked,
     groupLocked: data.groupLocked,
@@ -334,10 +360,10 @@ const openEdit = async (row: UserRow) => {
 
 const submit = async () => {
   const f = dlg.form;
-  if (!f.username.trim()) return ElMessage.warning("请输入用户名");
-  if (!f.usergroupId) return ElMessage.warning("请选择所属用户组");
-  if (!dlg.isEdit && !f.password) return ElMessage.warning("请输入密码");
-  if (f.password !== f.confirmPassword) return ElMessage.warning("两次输入的密码不一致");
+  if (!f.username.trim()) return ElMessage.warning(t("user.usernameRequired"));
+  if (!f.usergroupId) return ElMessage.warning(t("user.pickGroup"));
+  if (!dlg.isEdit && !f.password) return ElMessage.warning(t("user.passwordRequired"));
+  if (f.password !== f.confirmPassword) return ElMessage.warning(t("user.passwordMismatch"));
 
   // 把选中的终端 id 还原成 {terminalId, groupId} —— groupId 从选项里取，
   // 不再像旧版那样让前端传两条平行的逗号串靠下标对齐
@@ -351,24 +377,24 @@ const submit = async () => {
     if (dlg.isEdit) {
       const { data } = await updateUserApi(dlg.id, { ...f, terminals });
       const parts: string[] = [];
-      if (data?.passwordChanged) parts.push("密码已重置");
+      if (data?.passwordChanged) parts.push(t("user.passwordReset"));
       if (data?.priorityRecalc?.affectedTasks) {
-        parts.push(`重算了 ${data.priorityRecalc.affectedTasks} 条任务的优先级`);
+        parts.push(t("user.recalcPriority", { n: data.priorityRecalc.affectedTasks }));
       }
       ElNotification({
-        title: "修改成功",
-        message: parts.length ? parts.join("；") : "用户信息已更新（密码未改动）",
+        title: t("common.updateSuccess"),
+        message: parts.length ? parts.join("；") : t("user.userInfoUpdated"),
         type: "success"
       });
     } else {
       const { data } = await createUserApi({ ...f, terminals });
       const wind: string[] = [];
-      if (data?.ctrlwind) wind.push(`手机分控 ${data.ctrlwind}`);
-      if (data?.subwind) wind.push(`分控软件 ${data.subwind}`);
-      if (data?.camerawind) wind.push(`监控软件 ${data.camerawind}`);
+      if (data?.ctrlwind) wind.push(t("user.ctrlWindN", { n: data.ctrlwind }));
+      if (data?.subwind) wind.push(t("user.subWindN", { n: data.subwind }));
+      if (data?.camerawind) wind.push(t("user.cameraWindN", { n: data.camerawind }));
       ElNotification({
-        title: "创建成功",
-        message: wind.length ? `已分配：${wind.join("、")}` : "用户已创建",
+        title: t("common.createSuccess"),
+        message: wind.length ? t("user.assigned", { list: wind.join("、") }) : t("user.userCreated"),
         type: "success"
       });
     }
@@ -383,16 +409,16 @@ const submit = async () => {
 /* ---------------- 启用 / 停用 ---------------- */
 
 const toggleEnable = async (row: UserRow, enable: boolean) => {
-  const verb = enable ? "启用" : "停用";
-  await ElMessageBox.confirm(
-    `${verb}用户「${row.username}」的同时，会${verb}他名下的<b>全部广播任务</b>。是否继续？`,
-    `${verb}用户`,
-    { type: "warning", dangerouslyUseHTMLString: true, confirmButtonText: `确定${verb}` }
-  );
+  const verb = enable ? t("common.enable") : t("common.disable");
+  await ElMessageBox.confirm(t("user.verbUserWarn", { verb, name: row.username }), t("user.verbUser", { verb }), {
+    type: "warning",
+    dangerouslyUseHTMLString: true,
+    confirmButtonText: t("user.confirmVerb", { verb })
+  });
   const { data } = await setUserEnableApi(row.id, enable);
   ElNotification({
-    title: `${verb}成功`,
-    message: data?.affectedTasks ? `已同步${verb} ${data.affectedTasks} 条任务` : "该用户名下没有任务",
+    title: t("user.verbSuccess", { verb }),
+    message: data?.affectedTasks ? t("user.syncedVerb", { verb, n: data.affectedTasks }) : t("user.noTaskUnderUser"),
     type: "success"
   });
   refresh();
@@ -410,7 +436,7 @@ const del = reactive<{
 // ProTable 的 selectedListIds 是 string[]，统一转数字
 const openDelete = async (rawIds: (string | number)[]) => {
   const ids = (rawIds ?? []).map(Number).filter(n => Number.isFinite(n) && n > 0);
-  if (!ids.length) return ElMessage.warning("请先勾选要删除的用户");
+  if (!ids.length) return ElMessage.warning(t("user.pickUsersToDelete"));
   const { data } = await previewDeleteUserApi(ids);
   Object.assign(del, { visible: true, ids, impact: data, loading: false });
 };
@@ -420,8 +446,8 @@ const confirmDelete = async () => {
   try {
     const { data } = await deleteUsersApi(del.ids);
     ElNotification({
-      title: "删除完成",
-      message: `已删除 ${data?.users ?? 0} 个用户、${data?.tasks ?? 0} 条任务、${data?.media ?? 0} 个媒体`,
+      title: t("common.deleteDone"),
+      message: t("user.deletedSummary", { users: data?.users ?? 0, tasks: data?.tasks ?? 0, media: data?.media ?? 0 }),
       type: "success",
       duration: 6000
     });
