@@ -109,6 +109,10 @@ func (s *Service) Config(ctx context.Context) (*Config, error) {
 	if err != nil {
 		return nil, err
 	}
+	// 绑定指向的任务已经被删掉了 —— 把绑定本身也清掉，别留着一条指向空处的记录。
+	if s.pruneDeleted(known) {
+		st = s.snapshot()
+	}
 
 	out := &Config{
 		Shortcuts:  st.Shortcuts,
@@ -129,6 +133,64 @@ func (s *Service) Config(ctx context.Context) (*Config, error) {
 	return out, nil
 }
 
+// pruneDeleted 把指向**已删除任务**的绑定从状态里摘掉，并落盘。
+// 返回是否真的动了东西。
+//
+// # 为什么是「读的时候顺手清」，而不是挂在删除任务那一步上
+//
+// 任务能从很多地方被删掉：任务页、开发者接口、AI 助手、删用户时的级联、
+// 删终端时的级联、快捷任务自己的清理……挂钩子就得每一处都挂，
+// 而漏掉任何一处的表现是「绑定还在、点了没反应」，没有任何报错。
+// 读的时候统一清，则不管任务是怎么没的都能收拾干净。
+//
+// ⚠ 只在 loadTasks **查成功**之后调用。查库失败时 Config 已经先返回了错误 ——
+// 数据库连不上的时候把用户的绑定全清掉，是这段代码最坏的失败方式。
+//
+// 判定依据是 task 表里有没有这一行，**不带可见范围过滤**（见 loadTasks 的 SQL）：
+// 这份状态是全站共用的一份，按「当前这个人看不看得见」来删，
+// 会让普通用户一进首页就把管理员配的绑定清掉。
+func (s *Service) pruneDeleted(known map[int64]BoundTask) bool {
+	s.mu.Lock()
+	var dropped []int64
+	kept := make([]int64, 0, len(s.state.QuickTasks))
+	for _, id := range s.state.QuickTasks {
+		if _, ok := known[id]; ok {
+			kept = append(kept, id)
+		} else {
+			dropped = append(dropped, id)
+		}
+	}
+	s.state.QuickTasks = kept
+	for key, id := range s.state.Emergency {
+		if id <= 0 {
+			continue
+		}
+		if _, ok := known[id]; !ok {
+			delete(s.state.Emergency, key)
+			dropped = append(dropped, id)
+		}
+	}
+	s.mu.Unlock()
+
+	if len(dropped) == 0 {
+		return false
+	}
+	// 说「条绑定」而不是「个任务」：同一条任务可能既在快捷任务里、又占着一个
+	// 紧急槽位，那是两条绑定。写成任务数会让人对着日志数不明白。
+	logf("首页有 %d 条绑定指向已被删除的任务，已清掉（任务号 %v）", len(dropped), dropped)
+	if err := s.save(); err != nil {
+		// 落盘失败不该让首页打不开：内存里已经清干净了，这一次的返回是对的，
+		// 下次进程重启会把旧的读回来，届时再清一次。
+		logf("清理失效绑定后落盘失败（下次读取会再清一次）: %v", err)
+	}
+	return true
+}
+
+// pick 兜底：绑定指向的任务不在库里。
+//
+// 正常情况下走不到这儿 —— pruneDeleted 已经把这类绑定摘掉了。
+// 留着它是为了 pruneDeleted 落盘失败、或者将来有别的读取路径时，
+// 页面上显示的是「(任务已删除)」而不是一个看不出问题的空白。
 func pick(known map[int64]BoundTask, id int64) BoundTask {
 	if t, ok := known[id]; ok {
 		return t

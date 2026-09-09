@@ -23,6 +23,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"log"
 	"os"
 	"path/filepath"
 	"sync"
@@ -41,6 +42,11 @@ var EmergencySlots = []struct {
 }
 
 // State 是落在 dashboard.json 里的全部界面状态。
+// logf 统一给日志加包名前缀，出问题时一眼能看出是首页这块在说话。
+func logf(format string, args ...any) {
+	log.Printf("dashboard: "+format, args...)
+}
+
 type State struct {
 	// Shortcuts 是顶部的快捷入口：点一下直接进对应页面。
 	Shortcuts []Shortcut `json:"shortcuts"`
