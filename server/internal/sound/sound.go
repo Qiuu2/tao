@@ -44,6 +44,7 @@ import (
 	"strings"
 
 	"htweb/internal/auth"
+	"htweb/internal/i18n"
 	"htweb/internal/store"
 )
 
@@ -181,14 +182,14 @@ type DeviceInput struct {
 	SendPort int
 }
 
-func (in *DeviceInput) validate() error {
+func (in *DeviceInput) validate(ctx context.Context) error {
 	in.Name = strings.TrimSpace(in.Name)
 	in.IP = strings.TrimSpace(in.IP)
 	if in.Name == "" {
 		return fmt.Errorf("设备名称不能为空")
 	}
 	if len(in.Name) > devNameLimit {
-		return fmt.Errorf("设备名称过长：按 UTF-8 计 %d 字节，上限 %d 字节（约 10 个汉字）",
+		return fmt.Errorf(i18n.TC(ctx, "设备名称过长：按 UTF-8 计 %d 字节，上限 %d 字节（约 10 个汉字）"),
 			len(in.Name), devNameLimit)
 	}
 	// 旧版对 ip 一个字符都不校验（与终端模块 D-87 同一个毛病）
@@ -197,7 +198,7 @@ func (in *DeviceInput) validate() error {
 	}
 	// devaddr 是 tinyint(3) unsigned，填 300 会被静默截成 255 —— 指向另一台设备
 	if in.DevAddr < 0 || in.DevAddr > maxDevAddr {
-		return fmt.Errorf("设备地址必须在 0 ~ %d 之间", maxDevAddr)
+		return fmt.Errorf(i18n.TC(ctx, "设备地址必须在 0 ~ %d 之间"), maxDevAddr)
 	}
 	if in.SendPort < 0 || in.SendPort > 65535 {
 		return fmt.Errorf("发送端口必须在 0 ~ 65535 之间")
@@ -219,7 +220,7 @@ func (s *Service) checkDeviceFree(ctx context.Context, ip string, addr int, excl
 	var id int64
 	err := s.db.QueryRowContext(ctx, q, args...).Scan(&id)
 	if err == nil {
-		return fmt.Errorf("IP %s 上的设备地址 %d 已经被占用", ip, addr)
+		return fmt.Errorf(i18n.TC(ctx, "IP %s 上的设备地址 %d 已经被占用"), ip, addr)
 	}
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil
@@ -230,7 +231,7 @@ func (s *Service) checkDeviceFree(ctx context.Context, ip string, addr int, excl
 const deviceLock = "htweb_sound_device"
 
 func (s *Service) CreateDevice(ctx context.Context, in DeviceInput) (int64, error) {
-	if err := in.validate(); err != nil {
+	if err := in.validate(ctx); err != nil {
 		return 0, err
 	}
 	unlock, err := store.Lock(ctx, s.db, deviceLock)
@@ -257,7 +258,7 @@ func (s *Service) UpdateDevice(ctx context.Context, id int64, in DeviceInput) er
 	if _, err := s.GetDevice(ctx, id); err != nil {
 		return err
 	}
-	if err := in.validate(); err != nil {
+	if err := in.validate(ctx); err != nil {
 		return err
 	}
 	unlock, err := store.Lock(ctx, s.db, deviceLock)
@@ -493,7 +494,7 @@ func (s *Service) GetGroup(ctx context.Context, u *auth.User, id int64) (*GroupD
 		}
 		t.Deleted = !exists
 		if t.Deleted {
-			t.TerminalName = "(终端已删除)"
+			t.TerminalName = i18n.TC(ctx, "(终端已删除)")
 		}
 		d.Terminals = append(d.Terminals, t)
 	}
@@ -534,18 +535,18 @@ func (s *Service) validateGroup(ctx context.Context, u *auth.User, in *GroupInpu
 		return fmt.Errorf("声场分区名称不能为空")
 	}
 	if len(in.Name) > groupNameLimit {
-		return fmt.Errorf("声场分区名称过长：按 UTF-8 计 %d 字节，上限 %d 字节",
+		return fmt.Errorf(i18n.TC(ctx, "声场分区名称过长：按 UTF-8 计 %d 字节，上限 %d 字节"),
 			len(in.Name), groupNameLimit)
 	}
 	if len(in.TerminalIDs) > maxMember {
-		return fmt.Errorf("声场分区终端最多 %d 台", maxMember)
+		return fmt.Errorf(i18n.TC(ctx, "声场分区终端最多 %d 台"), maxMember)
 	}
 	if len(in.DeviceIDs) > maxMember {
-		return fmt.Errorf("声场分区噪声设备最多 %d 台", maxMember)
+		return fmt.Errorf(i18n.TC(ctx, "声场分区噪声设备最多 %d 台"), maxMember)
 	}
 
 	if len(in.TerminalIDs) > 0 {
-		if err := assertNoDup(in.TerminalIDs, "终端"); err != nil {
+		if err := assertNoDup(ctx, in.TerminalIDs, "终端"); err != nil {
 			return err
 		}
 		ph, args := placeholders(in.TerminalIDs)
@@ -572,7 +573,7 @@ func (s *Service) validateGroup(ctx context.Context, u *auth.User, in *GroupInpu
 	}
 
 	if len(in.DeviceIDs) > 0 {
-		if err := assertNoDup(in.DeviceIDs, "噪声设备"); err != nil {
+		if err := assertNoDup(ctx, in.DeviceIDs, "噪声设备"); err != nil {
 			return err
 		}
 		ph, args := placeholders(in.DeviceIDs)
@@ -588,14 +589,14 @@ func (s *Service) validateGroup(ctx context.Context, u *auth.User, in *GroupInpu
 	return nil
 }
 
-func assertNoDup(ids []int64, what string) error {
+func assertNoDup(ctx context.Context, ids []int64, what string) error {
 	seen := map[int64]bool{}
 	for _, id := range ids {
 		if id <= 0 {
-			return fmt.Errorf("%s列表里有非法的 ID", what)
+			return fmt.Errorf(i18n.TC(ctx, "%s列表里有非法的 ID"), i18n.TC(ctx, what))
 		}
 		if seen[id] {
-			return fmt.Errorf("%s列表里有重复项", what)
+			return fmt.Errorf(i18n.TC(ctx, "%s列表里有重复项"), i18n.TC(ctx, what))
 		}
 		seen[id] = true
 	}

@@ -23,15 +23,15 @@
       <template #tableHeader="scope">
         <div class="header-bar">
           <div class="header-left">
-            <el-button type="primary" :disabled="!canEdit" @click="openCreate">添加节假日</el-button>
+            <el-button type="primary" :disabled="!canEdit" @click="openCreate">{{ $t("holiday.addHoliday") }}</el-button>
             <el-button type="danger" :disabled="!canEdit || !scope.isSelected" @click="doDelete(scope.selectedListIds)">
-              删除
+              {{ $t("common.delete") }}
             </el-button>
             <el-button type="primary" :disabled="!canEdit || !scope.isSelected" @click="setState(scope.selectedListIds, true)">
-              批量启用
+              {{ $t("holiday.enableSelected") }}
             </el-button>
             <el-button type="warning" :disabled="!canEdit || !scope.isSelected" @click="setState(scope.selectedListIds, false)">
-              批量禁用
+              {{ $t("holiday.disableSelected") }}
             </el-button>
           </div>
           <div class="header-right">
@@ -46,11 +46,11 @@
         <el-tag :type="scope.row.projectstate === HOLIDAY_ENABLED ? 'success' : 'info'" size="small">
           {{ scope.row.stateText }}
         </el-tag>
-        <el-tag v-if="scope.row.active" type="danger" size="small" effect="dark" class="ml6">今天生效</el-tag>
+        <el-tag v-if="scope.row.active" type="danger" size="small" effect="dark" class="ml6">{{ $t("holiday.effectiveToday") }}</el-tag>
       </template>
 
       <template #operation="scope">
-        <el-button type="primary" link :icon="EditPen" :disabled="!canEdit" @click="openEdit(scope.row)"> 修改 </el-button>
+        <el-button type="primary" link :icon="EditPen" :disabled="!canEdit" @click="openEdit(scope.row)"> {{ $t("common.modify") }} </el-button>
         <el-button
           v-if="scope.row.projectstate === HOLIDAY_ENABLED"
           type="warning"
@@ -58,10 +58,10 @@
           :disabled="!canEdit"
           @click="setState([scope.row.id], false)"
         >
-          停用
+          {{ $t("common.disable") }}
         </el-button>
-        <el-button v-else type="success" link :disabled="!canEdit" @click="setState([scope.row.id], true)"> 启用 </el-button>
-        <el-button type="danger" link :icon="Delete" :disabled="!canEdit" @click="doDelete([scope.row.id])"> 删除 </el-button>
+        <el-button v-else type="success" link :disabled="!canEdit" @click="setState([scope.row.id], true)"> {{ $t("common.enable") }} </el-button>
+        <el-button type="danger" link :icon="Delete" :disabled="!canEdit" @click="doDelete([scope.row.id])"> {{ $t("common.delete") }} </el-button>
       </template>
     </ProTable>
 
@@ -69,53 +69,54 @@
     <el-dialog v-model="dlg.visible" :title="dlg.title" width="620px">
       <!-- 表单项与占位符照 :80 的「添加节假日」弹窗 -->
       <el-form :model="dlg.form" label-width="120px">
-        <el-form-item label="节假日名称" required>
-          <el-input v-model="dlg.form.name" maxlength="10" show-word-limit placeholder="请输入节假日名称" />
+        <el-form-item :label='$t("holiday.name")' required>
+          <el-input v-model="dlg.form.name" maxlength="10" show-word-limit :placeholder='$t("holiday.nameRequired")' />
         </el-form-item>
-        <el-form-item label="节假日开始时间" required>
+        <el-form-item :label='$t("holiday.startLabel")' required>
           <el-date-picker
             v-model="dlg.range[0]"
             type="date"
             value-format="YYYY-MM-DD"
-            placeholder="请选择节假日开始时间"
+            :placeholder='$t("holiday.startRequired")'
             :clearable="false"
             class="fill"
             @change="checkOverlaps"
           />
         </el-form-item>
-        <el-form-item label="节假日结束时间" required>
+        <el-form-item :label='$t("holiday.endLabel")' required>
           <el-date-picker
             v-model="dlg.range[1]"
             type="date"
             value-format="YYYY-MM-DD"
-            placeholder="请选择节假日结束时间"
+            :placeholder='$t("holiday.endRequired")'
             :clearable="false"
             class="fill"
             @change="checkOverlaps"
           />
         </el-form-item>
-        <el-form-item label="状态">
+        <el-form-item :label='$t("common.status")'>
           <!-- ⚠ holidaytime 的取值与 task 相反：1 = 启用、0 = 停用 -->
           <el-radio-group v-model="dlg.form.projectstate">
-            <el-radio :value="HOLIDAY_ENABLED">启用</el-radio>
-            <el-radio :value="HOLIDAY_DISABLED">停用</el-radio>
+            <el-radio :value="HOLIDAY_ENABLED">{{ $t("common.enable") }}</el-radio>
+            <el-radio :value="HOLIDAY_DISABLED">{{ $t("common.disable") }}</el-radio>
           </el-radio-group>
         </el-form-item>
       </el-form>
 
       <el-alert v-if="overlaps.length" type="warning" :closable="false" show-icon class="mt4">
-        <template #title>这段日期和已有的节假日重叠</template>
+        <template #title>{{ $t("holiday.overlap") }}</template>
       </el-alert>
 
       <template #footer>
-        <el-button @click="dlg.visible = false">取消</el-button>
-        <el-button type="primary" :loading="dlg.saving" @click="submit">确定</el-button>
+        <el-button @click="dlg.visible = false">{{ $t("common.cancel") }}</el-button>
+        <el-button type="primary" :loading="dlg.saving" @click="submit">{{ $t("common.confirm") }}</el-button>
       </template>
     </el-dialog>
   </div>
 </template>
 
 <script setup lang="tsx" name="holiday">
+import { useI18n } from "vue-i18n";
 import { Delete, EditPen } from "@element-plus/icons-vue";
 import { ElMessage, ElMessageBox } from "element-plus";
 import { computed, reactive, ref } from "vue";
@@ -136,6 +137,9 @@ import ProTable from "@/components/ProTable/index.vue";
 import { useAuthStore } from "@/stores/modules/auth";
 import type { ColumnProps, ProTableInstance } from "@/components/ProTable/interface";
 
+// 脚本里拼的文案用 t()；模板里的 $t 不用引入
+const { t } = useI18n();
+
 const authStore = useAuthStore();
 const canEdit = computed(() => !!(authStore.authButtonListGet as any)?.holiday?.edit);
 
@@ -155,11 +159,11 @@ const todayCount = computed(() => (proTableRef.value?.tableData ?? []).filter((r
 // 后端的按名搜索与按状态筛选接口保留着，将来要加回来只需补 search 配置。
 const columns = reactive<ColumnProps<Holiday>[]>([
   { type: "selection", fixed: "left", width: 50 },
-  { prop: "name", label: "节假日名称", minWidth: 220 },
-  { prop: "startdate", label: "开始时间", minWidth: 160 },
-  { prop: "enddate", label: "结束时间", minWidth: 160 },
-  { prop: "projectstate", label: "状态", width: 150 },
-  { prop: "operation", label: "操作", fixed: "right", width: 190 }
+  { prop: "name", label: t("holiday.name"), minWidth: 220 },
+  { prop: "startdate", label: t("common.startTime"), minWidth: 160 },
+  { prop: "enddate", label: t("common.endTime"), minWidth: 160 },
+  { prop: "projectstate", label: t("common.status"), width: 150 },
+  { prop: "operation", label: t("common.operation"), fixed: "right", width: 190 }
 ]);
 
 const refresh = () => proTableRef.value?.getTableList();
@@ -191,7 +195,7 @@ const openCreate = () => {
     visible: true,
     saving: false,
     isEdit: false,
-    title: "添加节假日",
+    title: t("holiday.addHoliday"),
     id: 0,
     form: { name: "", projectstate: HOLIDAY_ENABLED },
     range: ["", ""]
@@ -205,7 +209,7 @@ const openEdit = async (row: Holiday) => {
     visible: true,
     saving: false,
     isEdit: true,
-    title: `修改节假日：${data.name}`,
+    title: t("holiday.editHoliday", { name: data.name }),
     id: data.id,
     form: { name: data.name, projectstate: data.projectstate },
     range: [data.startdate, data.enddate]
@@ -214,9 +218,9 @@ const openEdit = async (row: Holiday) => {
 };
 
 const submit = async () => {
-  if (!dlg.form.name.trim()) return ElMessage.warning("请输入节假日名称");
-  if (!dlg.range?.[0]) return ElMessage.warning("请选择节假日开始时间");
-  if (!dlg.range?.[1]) return ElMessage.warning("请选择节假日结束时间");
+  if (!dlg.form.name.trim()) return ElMessage.warning(t("holiday.nameRequired"));
+  if (!dlg.range?.[0]) return ElMessage.warning(t("holiday.startRequired"));
+  if (!dlg.range?.[1]) return ElMessage.warning(t("holiday.endRequired"));
   const payload = {
     name: dlg.form.name.trim(),
     startdate: dlg.range[0],
@@ -230,7 +234,7 @@ const submit = async () => {
     } else {
       await createHolidayApi(payload);
     }
-    ElMessage.success("保存成功");
+    ElMessage.success(t("common.saveSuccess"));
     dlg.visible = false;
     refresh();
   } finally {
@@ -242,21 +246,21 @@ const submit = async () => {
 
 const setState = async (raw: (string | number)[], enable: boolean) => {
   const ids = toIds(raw);
-  if (!ids.length) return ElMessage.warning("请先勾选节假日");
+  if (!ids.length) return ElMessage.warning(t("holiday.pickFirst"));
   const { data } = await setHolidayStateApi(ids, enable);
-  ElMessage.success(`已${enable ? "启用" : "停用"} ${data.affected} 条`);
+  ElMessage.success(t(enable ? "holiday.enabledN" : "holiday.disabledN", { n: data.affected }));
   refresh();
 };
 
 const doDelete = async (raw: (string | number)[]) => {
   const ids = toIds(raw);
-  if (!ids.length) return ElMessage.warning("请先勾选节假日");
-  await ElMessageBox.confirm(`确认删除选中的 ${ids.length} 条节假日？删除后这几天将恢复正常打铃。`, "删除节假日", {
+  if (!ids.length) return ElMessage.warning(t("holiday.pickFirst"));
+  await ElMessageBox.confirm(t("holiday.confirmDeleteN", { n: ids.length }), t("holiday.deleteHoliday"), {
     type: "warning",
-    confirmButtonText: "确认删除"
+    confirmButtonText: t("common.confirmDelete")
   });
   const { data } = await deleteHolidaysApi(ids);
-  ElMessage.success(`已删除 ${data.deleted} 条`);
+  ElMessage.success(t("holiday.deletedN", { n: data.deleted }));
   refresh();
 };
 </script>

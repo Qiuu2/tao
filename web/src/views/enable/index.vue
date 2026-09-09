@@ -22,20 +22,20 @@
           <!-- 按钮照旧版 enableManager_form.html：全选 / 取消 / 添加 / 修改 / 删除
                （全选与取消由 ProTable 的复选框代劳，修改是行内按钮） -->
           <div class="header-left">
-            <el-button type="primary" :disabled="!canEdit" @click="openCreate">添加</el-button>
+            <el-button type="primary" :disabled="!canEdit" @click="openCreate">{{ $t("common.add") }}</el-button>
             <el-button type="danger" :disabled="!canEdit || !scope.isSelected" @click="doDelete(scope.selectedListIds)">
-              删除
+              {{ $t("common.delete") }}
             </el-button>
           </div>
           <div class="header-right">
-            <el-tag type="info" size="small" effect="plain">已过期的计划不会再执行，但后台不会自动清理</el-tag>
+            <el-tag type="info" size="small" effect="plain">{{ $t("enable.expiredNote") }}</el-tag>
           </div>
         </div>
       </template>
 
       <template #starttime="s">
         {{ s.row.starttime }}
-        <el-tag v-if="s.row.expired" type="info" size="small" effect="plain" class="ml6">已过期</el-tag>
+        <el-tag v-if="s.row.expired" type="info" size="small" effect="plain" class="ml6">{{ $t("enable.expired") }}</el-tag>
       </template>
 
       <template #tasks="s">
@@ -52,12 +52,12 @@
           </el-tag>
           <span v-if="s.row.tasks?.length > 8" class="muted">…共 {{ s.row.tasks?.length }} 条</span>
         </template>
-        <span v-else class="muted">未绑定任务</span>
+        <span v-else class="muted">{{ $t("enable.noTaskBound") }}</span>
       </template>
 
       <template #operation="s">
-        <el-button type="primary" link :icon="EditPen" :disabled="!canEdit" @click="openEdit(s.row)">修改</el-button>
-        <el-button type="danger" link :icon="Delete" :disabled="!canEdit" @click="doDelete([s.row.id])">删除</el-button>
+        <el-button type="primary" link :icon="EditPen" :disabled="!canEdit" @click="openEdit(s.row)">{{ $t("common.modify") }}</el-button>
+        <el-button type="danger" link :icon="Delete" :disabled="!canEdit" @click="doDelete([s.row.id])">{{ $t("common.delete") }}</el-button>
       </template>
     </ProTable>
 
@@ -65,12 +65,12 @@
       <el-form :model="form" label-width="110px">
         <el-row :gutter="18">
           <el-col :span="12">
-            <el-form-item label="开始日期" required>
+            <el-form-item :label='$t("common.startDate")' required>
               <el-date-picker
                 v-model="form.startdate"
                 type="date"
                 value-format="YYYY-MM-DD"
-                placeholder="请选择开始日期"
+                :placeholder='$t("enable.startDateRequired")'
                 :clearable="false"
                 class="fill"
               />
@@ -78,11 +78,11 @@
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="开始时间" required>
+            <el-form-item :label='$t("common.startTime")' required>
               <el-time-picker
                 v-model="form.starttime"
                 value-format="HH:mm:ss"
-                placeholder="请选择开始时间"
+                :placeholder='$t("enable.pickStartTime")'
                 :clearable="false"
                 class="fill"
               />
@@ -91,55 +91,56 @@
         </el-row>
 
         <!-- ⚠ 表格必须包一层 width:100% 的块，否则会被 el-form-item 的 flex 压扁 -->
-        <el-form-item label="任务名称" required>
+        <el-form-item :label='$t("taskCommon.taskName")' required>
           <div class="pick-wrap">
             <div class="pick-bar">
               <el-input
                 v-model="pickKeyword"
-                placeholder="搜索任务名称"
+                :placeholder='$t("term.searchTaskName")'
                 clearable
                 size="small"
                 style="width: 240px"
                 @input="() => loadTasks()"
               />
               <div class="grow"></div>
-              <el-button size="small" type="primary" :disabled="!rows.length" @click="setAll(0)">全选启用</el-button>
-              <el-button size="small" type="warning" :disabled="!rows.length" @click="setAll(1)">全选停用</el-button>
+              <el-button size="small" type="primary" :disabled="!rows.length" @click="setAll(0)">{{ $t("enable.enableAll") }}</el-button>
+              <el-button size="small" type="warning" :disabled="!rows.length" @click="setAll(1)">{{ $t("enable.disableAll") }}</el-button>
             </div>
 
-            <el-table :data="rows" size="small" max-height="360" class="mt8" v-loading="taskLoading" empty-text="没有可选的任务">
-              <el-table-column type="index" label="选项" width="70" />
-              <el-table-column prop="taskName" label="任务名称" min-width="220" show-overflow-tooltip />
-              <el-table-column prop="typeText" label="任务类型" width="130" />
-              <el-table-column label="操作" width="190">
+            <el-table :data="rows" size="small" max-height="360" class="mt8" v-loading="taskLoading" :empty-text='$t("enable.noSelectableTask")'>
+              <el-table-column type="index" :label='$t("enable.options")' width="70" />
+              <el-table-column prop="taskName" :label='$t("taskCommon.taskName")' min-width="220" show-overflow-tooltip />
+              <el-table-column prop="typeText" :label='$t("typed.taskType")' width="130" />
+              <el-table-column :label='$t("common.operation")' width="190">
                 <template #default="{ row }">
                   <el-radio-group v-model="row.action" size="small">
-                    <el-radio-button :value="0">启用</el-radio-button>
-                    <el-radio-button :value="1">停用</el-radio-button>
+                    <el-radio-button :value="0">{{ $t("common.enable") }}</el-radio-button>
+                    <el-radio-button :value="1">{{ $t("common.disable") }}</el-radio-button>
                   </el-radio-group>
                 </template>
               </el-table-column>
-              <el-table-column label="计入本次" width="100">
+              <el-table-column :label='$t("enable.includeThisTime")' width="100">
                 <template #default="{ row }">
                   <el-checkbox v-model="row.picked" />
                 </template>
               </el-table-column>
             </el-table>
-            <div class="tip">勾上「计入本次」的任务才会写进这条计划；单选按钮的初值取自这条任务当前的启停状态。</div>
+            <div class="tip">{{ $t("enable.includeTip") }}</div>
             <div v-if="err.tasks" class="err">{{ err.tasks }}</div>
           </div>
         </el-form-item>
       </el-form>
 
       <template #footer>
-        <el-button @click="dlg.visible = false">取消</el-button>
-        <el-button type="primary" :loading="dlg.saving" @click="submit">提交</el-button>
+        <el-button @click="dlg.visible = false">{{ $t("common.cancel") }}</el-button>
+        <el-button type="primary" :loading="dlg.saving" @click="submit">{{ $t("common.submit") }}</el-button>
       </template>
     </el-dialog>
   </div>
 </template>
 
 <script setup lang="tsx" name="enablePlan">
+import { useI18n } from "vue-i18n";
 import { Delete, EditPen } from "@element-plus/icons-vue";
 import { ElMessage, ElMessageBox } from "element-plus";
 import { computed, onMounted, reactive, ref } from "vue";
@@ -157,6 +158,9 @@ import ProTable from "@/components/ProTable/index.vue";
 import { useAuthStore } from "@/stores/modules/auth";
 import type { ColumnProps, ProTableInstance } from "@/components/ProTable/interface";
 
+// 脚本里拼的文案用 t()；模板里的 $t 不用引入
+const { t } = useI18n();
+
 const authStore = useAuthStore();
 // 启用管理与文字语音同一个权限位（ttspriv），后端把它单独给成 enable.edit
 const canEdit = computed(() => !!(authStore.authButtonListGet as any)?.enable?.edit);
@@ -168,10 +172,10 @@ const proTableRef = ref<ProTableInstance>();
 // （模板里还有一列「状态」，但整块是被注释掉的，所以不列。）
 const columns = reactive<ColumnProps<EnablePlan>[]>([
   { type: "selection", fixed: "left", width: 50 },
-  { prop: "tasks", label: "任务名称", minWidth: 380 },
-  { prop: "startdate", label: "起始日期", width: 150 },
-  { prop: "starttime", label: "播放时间", width: 150 },
-  { prop: "operation", label: "操作", fixed: "right", width: 140 }
+  { prop: "tasks", label: t("taskCommon.taskName"), minWidth: 380 },
+  { prop: "startdate", label: t("enable.startDate2"), width: 150 },
+  { prop: "starttime", label: t("typed.playTime"), width: 150 },
+  { prop: "operation", label: t("common.operation"), fixed: "right", width: 140 }
 ]);
 
 const refresh = () => proTableRef.value?.getTableList();
@@ -227,7 +231,7 @@ const openCreate = async () => {
   clearErr();
   Object.assign(form, { startdate: new Date().toISOString().slice(0, 10), starttime: "08:00:00" });
   pickKeyword.value = "";
-  Object.assign(dlg, { visible: true, saving: false, isEdit: false, title: "添加启用管理", id: 0 });
+  Object.assign(dlg, { visible: true, saving: false, isEdit: false, title: t("enable.addPlan"), id: 0 });
   await loadTasks();
 };
 
@@ -240,24 +244,24 @@ const openEdit = async (row: EnablePlan) => {
   const chosen = new Map<number, number>();
   (data.tasks ?? []).filter(t => !t.missing).forEach(t => chosen.set(t.taskId, t.action));
   const dropped = (data.tasks ?? []).filter(t => t.missing).length;
-  Object.assign(dlg, { visible: true, saving: false, isEdit: true, title: `修改启用管理 #${data.id}`, id: data.id });
+  Object.assign(dlg, { visible: true, saving: false, isEdit: true, title: t("enable.editPlan", { id: data.id }), id: data.id });
   await loadTasks(chosen);
-  if (dropped) ElMessage.warning(`这条计划里有 ${dropped} 条任务已被删除，已自动移除`);
+  if (dropped) ElMessage.warning(t("enable.droppedTasks", { n: dropped }));
 };
 
 const submit = async () => {
   clearErr();
   let bad = false;
   if (!form.startdate) {
-    err.startdate = "请选择开始日期";
+    err.startdate = t("enable.startDateRequired");
     bad = true;
   }
   const picked = rows.value.filter(r => r.picked);
   if (!picked.length) {
-    err.tasks = "请至少勾选一条任务";
+    err.tasks = t("enable.pickTaskFirst");
     bad = true;
   }
-  if (bad) return ElMessage.warning("带 * 的项还没填完");
+  if (bad) return ElMessage.warning(t("enable.requiredNotFilled"));
 
   const body = {
     startdate: form.startdate,
@@ -268,7 +272,7 @@ const submit = async () => {
   try {
     if (dlg.isEdit) await updateEnableApi(dlg.id, body);
     else await createEnableApi(body);
-    ElMessage.success("保存成功");
+    ElMessage.success(t("common.saveSuccess"));
     dlg.visible = false;
     refresh();
   } finally {
@@ -278,13 +282,13 @@ const submit = async () => {
 
 const doDelete = async (raw: (string | number)[]) => {
   const ids = toIds(raw);
-  if (!ids.length) return ElMessage.warning("请先勾选启用计划");
-  await ElMessageBox.confirm(`确认删除选中的 ${ids.length} 条启用计划？`, "删除启用计划", {
+  if (!ids.length) return ElMessage.warning(t("enable.pickPlanFirst"));
+  await ElMessageBox.confirm(t("enable.confirmDeleteN", { n: ids.length }), t("enable.deletePlan"), {
     type: "warning",
-    confirmButtonText: "确认删除"
+    confirmButtonText: t("common.confirmDelete")
   });
   const { data } = await deleteEnableApi(ids);
-  ElMessage.success(`已删除 ${data.deleted} 条`);
+  ElMessage.success(t("enable.deletedN", { n: data.deleted }));
   refresh();
 };
 

@@ -26,50 +26,50 @@
 <template>
   <div class="ts-page" v-loading="loading">
     <div class="card ts-card">
-      <div class="ts-title">时间表单</div>
+      <div class="ts-title">{{ $t("time.timeForm") }}</div>
 
       <el-form label-width="70px" class="clock-form">
         <el-row :gutter="16">
           <el-col :span="8">
-            <el-form-item label="年份" required>
+            <el-form-item :label='$t("time.year")' required>
               <el-select v-model="cf.year" class="fill">
-                <el-option v-for="y in years" :key="y" :label="`${y}年`" :value="y" />
+                <el-option v-for="y in years" :key="y" :label='$t("time.yearN", { n: y })' :value="y" />
               </el-select>
             </el-form-item>
           </el-col>
           <el-col :span="8">
-            <el-form-item label="月份" required>
+            <el-form-item :label='$t("time.month")' required>
               <el-select v-model="cf.month" class="fill">
-                <el-option v-for="m in 12" :key="m" :label="`${m}月`" :value="m" />
+                <el-option v-for="m in 12" :key="m" :label='$t("time.monthN", { n: m })' :value="m" />
               </el-select>
             </el-form-item>
           </el-col>
           <el-col :span="8">
-            <el-form-item label="日期" required>
+            <el-form-item :label='$t("time.day")' required>
               <el-select v-model="cf.day" class="fill">
-                <el-option v-for="d in daysInMonth" :key="d" :label="`${d}日`" :value="d" />
+                <el-option v-for="d in daysInMonth" :key="d" :label='$t("time.dayN", { n: d })' :value="d" />
               </el-select>
             </el-form-item>
           </el-col>
 
           <el-col :span="8">
-            <el-form-item label="小时" required>
+            <el-form-item :label='$t("time.hour")' required>
               <el-select v-model="cf.hour" class="fill">
-                <el-option v-for="h in 24" :key="h" :label="`${h - 1}时`" :value="h - 1" />
+                <el-option v-for="h in 24" :key="h" :label='$t("time.hourN", { n: h - 1 })' :value="h - 1" />
               </el-select>
             </el-form-item>
           </el-col>
           <el-col :span="8">
-            <el-form-item label="分钟" required>
+            <el-form-item :label='$t("time.minute")' required>
               <el-select v-model="cf.minute" class="fill">
-                <el-option v-for="m in 60" :key="m" :label="`${m - 1}分`" :value="m - 1" />
+                <el-option v-for="m in 60" :key="m" :label='$t("time.minuteN", { n: m - 1 })' :value="m - 1" />
               </el-select>
             </el-form-item>
           </el-col>
           <el-col :span="8">
-            <el-form-item label="秒" required>
+            <el-form-item :label='$t("time.second")' required>
               <el-select v-model="cf.second" class="fill">
-                <el-option v-for="s in 60" :key="s" :label="`${s - 1}秒`" :value="s - 1" />
+                <el-option v-for="s in 60" :key="s" :label='$t("time.secondN", { n: s - 1 })' :value="s - 1" />
               </el-select>
             </el-form-item>
           </el-col>
@@ -77,7 +77,7 @@
 
         <div class="clock-actions">
           <el-button type="primary" :loading="clockBusy" :disabled="!canSetClock" @click="setClock('manual')">
-            设置服务器时间
+            {{ $t("time.setServerTime") }}
           </el-button>
         </div>
       </el-form>
@@ -86,30 +86,31 @@
 
       <!-- 下面两行的标签在 6.png 里是右对齐到同一条竖线的 -->
       <div class="line">
-        <span class="lbl">本地当前时间：</span>
+        <span class="lbl">{{ $t("time.localNow") }}</span>
         <span class="local-time">{{ browserTime }}</span>
-        <el-button :loading="clockBusy" :disabled="!canSetClock" @click="setClock('browser')"> 同步当前时间 </el-button>
+        <el-button :loading="clockBusy" :disabled="!canSetClock" @click="setClock('browser')"> {{ $t("time.syncNow") }} </el-button>
       </div>
 
       <div class="line">
-        <span class="lbl">北斗校时：</span>
+        <span class="lbl">{{ $t("time.beidouSyncLabel") }}</span>
         <!-- 下拉里是按终端分区分组的树，和全站其它选终端的地方一致 -->
         <div class="gps-select">
           <TerminalTreeSelect
             v-model="gps"
             :terminals="terminals"
-            placeholder="请选择采集器终端"
+            :placeholder='$t("time.pickCollector")'
             :disabled="!canConfig || !!st?.readOnly"
           />
         </div>
-        <el-button :loading="saving.gps" :disabled="!canConfig || !!st?.readOnly" @click="saveGps"> 北斗校时 </el-button>
-        <el-button :loading="saving.gps" :disabled="!canConfig || !!st?.readOnly" @click="clearGps"> 不校时 </el-button>
+        <el-button :loading="saving.gps" :disabled="!canConfig || !!st?.readOnly" @click="saveGps"> {{ $t("time.beidouSync") }} </el-button>
+        <el-button :loading="saving.gps" :disabled="!canConfig || !!st?.readOnly" @click="clearGps"> {{ $t("time.noSync") }} </el-button>
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts" name="timeSetting">
+import { useI18n } from "vue-i18n";
 import { ElMessage, ElMessageBox } from "element-plus";
 import { computed, onMounted, onUnmounted, ref, reactive } from "vue";
 
@@ -118,6 +119,9 @@ import TerminalTreeSelect from "@/components/TerminalTree/Select.vue";
 import { getTimeStateApi, getTimeTerminalsApi, setGpsTerminalApi, setServerClockApi } from "@/api/modules/basecfg";
 import type { TimeState, TimeTerminal } from "@/api/modules/basecfg";
 import { useAuthStore } from "@/stores/modules/auth";
+
+// 脚本里拼的文案用 t()；模板里的 $t 不用引入
+const { t } = useI18n();
 
 const authStore = useAuthStore();
 const btn = computed(() => (authStore.authButtonListGet as any)?.time ?? {});
@@ -179,11 +183,11 @@ const searchTerminals = async (kw: string) => {
 };
 
 const saveGps = async () => {
-  if (!gps.value) return ElMessage.warning("请先选择采集器终端，或点「不校时」");
+  if (!gps.value) return ElMessage.warning(t("time.pickCollectorOrNone"));
   saving.gps = true;
   try {
     await setGpsTerminalApi(gps.value);
-    ElMessage.success("已设置北斗校时终端");
+    ElMessage.success(t("time.beidouSet"));
     await load();
   } finally {
     saving.gps = false;
@@ -196,7 +200,7 @@ const clearGps = async () => {
   try {
     await setGpsTerminalApi(0);
     gps.value = undefined;
-    ElMessage.success("已停用北斗校时");
+    ElMessage.success(t("time.beidouDisabled"));
     await load();
   } finally {
     saving.gps = false;
@@ -220,19 +224,19 @@ const daysInMonth = computed(() => new Date(cf.year, cf.month, 0).getDate());
 const canSetClock = computed(() => !!st.value?.canSetClock && !st.value?.readOnly);
 
 const setClock = async (from: "manual" | "browser") => {
-  const t = from === "browser" ? new Date() : new Date(cf.year, cf.month - 1, cf.day, cf.hour, cf.minute, cf.second);
+  // 变量名不能叫 t —— i18n 的 t 在这一页也要用。
+  const when = from === "browser" ? new Date() : new Date(cf.year, cf.month - 1, cf.day, cf.hour, cf.minute, cf.second);
   const p = (n: number) => String(n).padStart(2, "0");
   const text =
-    `${t.getFullYear()}-${p(t.getMonth() + 1)}-${p(t.getDate())} ` +
-    `${p(t.getHours())}:${p(t.getMinutes())}:${p(t.getSeconds())}`;
+    `${when.getFullYear()}-${p(when.getMonth() + 1)}-${p(when.getDate())} ` +
+    `${p(when.getHours())}:${p(when.getMinutes())}:${p(when.getSeconds())}`;
 
   // ⚠ 这一句留着：拨动系统时间会让按时刻表打铃的任务瞬间集体触发或整批哑掉。
   //   它是**破坏性操作的确认**，不是页面说明。
   await ElMessageBox.confirm(
-    `将把服务器系统时间设置为 ${text}。\n\n` +
-      "⚠ 这台机器正按时刻表打铃：拨动系统时间会让一批任务瞬间集体触发或整批哑掉，请避开上下课时段。",
-    "设置服务器时间",
-    { type: "warning", confirmButtonText: "确认设置" }
+    t("time.confirmSetTime", { text }) + "\n\n" + t("time.bellWarn"),
+    t("time.setServerTime"),
+    { type: "warning", confirmButtonText: t("time.confirmSetTitle") }
   );
 
   clockBusy.value = true;
@@ -240,7 +244,7 @@ const setClock = async (from: "manual" | "browser") => {
     // 第二个参数是「同时关闭自动校时」。6.png 上没有这个勾选框，所以固定不关 ——
     // 关掉一个系统服务不该是某个按钮的隐藏副作用。
     await setServerClockApi(text, false);
-    ElMessage.success("已设置服务器时间");
+    ElMessage.success(t("time.serverTimeSet"));
     await load();
   } finally {
     clockBusy.value = false;

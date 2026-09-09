@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"htweb/internal/i18n"
 	"strconv"
 	"strings"
 
@@ -302,10 +303,10 @@ func (s *Service) validateArea(ctx context.Context, u *auth.User, in *AreaInput)
 	}
 	// name / info 都是 varchar(45)，超长会被 MySQL 静默截断
 	if len(in.Name) > 45 {
-		return fmt.Errorf("分区名称过长：按 UTF-8 计 %d 字节，上限 45 字节（约 15 个汉字）", len(in.Name))
+		return fmt.Errorf(i18n.TC(ctx, "分区名称过长：按 UTF-8 计 %d 字节，上限 45 字节（约 15 个汉字）"), len(in.Name))
 	}
 	if len(in.Info) > 45 {
-		return fmt.Errorf("分区描述过长：按 UTF-8 计 %d 字节，上限 45 字节（约 15 个汉字）", len(in.Info))
+		return fmt.Errorf(i18n.TC(ctx, "分区描述过长：按 UTF-8 计 %d 字节，上限 45 字节（约 15 个汉字）"), len(in.Info))
 	}
 	if len(in.Terminals) > 3000 {
 		return fmt.Errorf("分区成员最多 3000 台")

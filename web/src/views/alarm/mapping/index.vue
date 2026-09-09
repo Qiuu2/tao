@@ -24,9 +24,9 @@
         <div class="header-bar">
           <div class="header-left">
             <!-- :80 这一页顶部只有「添加」，取消映射放在行内操作里 -->
-            <el-button type="primary" :disabled="!canEdit" @click="openCreate">添加</el-button>
+            <el-button type="primary" :disabled="!canEdit" @click="openCreate">{{ $t("common.add") }}</el-button>
             <el-button type="danger" :disabled="!canEdit || !scope.isSelected" @click="confirmDelete(scope.selectedListIds)">
-              删除
+              {{ $t("common.delete") }}
             </el-button>
           </div>
           <div class="header-right">
@@ -42,7 +42,7 @@
 
       <template #alarmChannel="scope">
         <el-tag :type="scope.row.channelOutOfRange ? 'danger' : 'info'" size="small" effect="plain">
-          通道 {{ scope.row.alarmChannel }}
+          {{ $t("alarmMap.channelNo", { n: scope.row.alarmChannel }) }}
         </el-tag>
         <span v-if="scope.row.terminalChannels" class="muted"> / {{ scope.row.terminalChannels }}</span>
       </template>
@@ -56,18 +56,18 @@
       <template #mediaName="scope">
         <span :class="{ bad: scope.row.mediaDeleted }">{{ scope.row.mediaName }}</span>
         <el-tooltip v-if="scope.row.invalid" :content="scope.row.invalidReason" placement="top">
-          <el-tag type="danger" size="small" class="ml6">异常</el-tag>
+          <el-tag type="danger" size="small" class="ml6">{{ $t("alarmMap.abnormal") }}</el-tag>
         </el-tooltip>
       </template>
 
       <template #areaTerminalCount="scope">
-        <el-tag size="small" effect="plain">{{ scope.row.areaTerminalCount }} 台</el-tag>
+        <el-tag size="small" effect="plain">{{ $t("common.nTerminals", { n: scope.row.areaTerminalCount }) }}</el-tag>
       </template>
 
       <template #operation="scope">
-        <el-button type="primary" link :icon="EditPen" :disabled="!canEdit" @click="openEdit(scope.row)">修改</el-button>
+        <el-button type="primary" link :icon="EditPen" :disabled="!canEdit" @click="openEdit(scope.row)">{{ $t("common.modify") }}</el-button>
         <el-button type="danger" link :icon="Delete" :disabled="!canEdit" @click="confirmDelete([scope.row.id])">
-          取消
+          {{ $t("common.cancel") }}
         </el-button>
       </template>
     </ProTable>
@@ -75,40 +75,40 @@
     <!-- 设置 / 修改映射 -->
     <el-dialog v-model="dlg.visible" :title="dlg.title" width="620px">
       <el-alert v-if="!hosts.length" type="warning" :closable="false" show-icon class="mb12">
-        系统里还没有「报警主机」类型的终端。请先到终端管理里把报警主机的终端类型设为「报警主机」。
+        {{ $t("alarmMap.noAlarmHost") }}
       </el-alert>
       <el-alert v-if="mediaNote" type="warning" :closable="false" show-icon class="mb12">{{ mediaNote }}</el-alert>
 
       <el-form :model="dlg.form" label-width="110px">
-        <el-form-item label="报警主机" required>
+        <el-form-item :label='$t("alarmMap.alarmHost")' required>
           <!-- 报警主机也是终端（typeid=7），一样按终端分区排成树 -->
           <TerminalTreeSelect
             v-model="dlg.form.alarmTerminalId"
             :terminals="hostNodes"
-            placeholder="选择报警主机"
+            :placeholder='$t("alarmMap.pickAlarmHost")'
             :clearable="false"
             @update:model-value="onHostChange"
           />
         </el-form-item>
 
         <!-- 顺序照 :80 的「添加」弹窗：报警主机 / 映射名称 / 通道 / 报警分区 / 媒体文件 -->
-        <el-form-item label="映射名称">
-          <el-input v-model="dlg.form.info" maxlength="15" show-word-limit placeholder="请输入映射名称" />
+        <el-form-item :label='$t("alarmMap.mapName")'>
+          <el-input v-model="dlg.form.info" maxlength="15" show-word-limit :placeholder='$t("alarmMap.mapNameRequired")' />
         </el-form-item>
 
-        <el-form-item label="通道" required>
+        <el-form-item :label='$t("alarmMap.channel")' required>
           <el-select v-model="dlg.form.alarmChannel" class="fill" :disabled="!channelCount">
-            <el-option v-for="c in channelCount" :key="c" :label="`通道 ${c}`" :value="c" />
+            <el-option v-for="c in channelCount" :key="c" :label='$t("alarmMap.channelN", { n: c })' :value="c" />
           </el-select>
         </el-form-item>
 
-        <el-form-item label="报警分区" required>
+        <el-form-item :label='$t("terminalCommon.alarmZone")' required>
           <el-select v-model="dlg.form.alarmAreaId" class="fill">
             <el-option v-for="a in areas" :key="a.id" :label="a.name" :value="a.id" />
           </el-select>
         </el-form-item>
 
-        <el-form-item label="媒体文件" required>
+        <el-form-item :label='$t("taskCommon.mediaFile")' required>
           <el-select v-model="dlg.form.mediaId" filterable class="fill">
             <el-option v-for="m in media" :key="m.id" :label="m.name" :value="m.id">
               <span>{{ m.name }}</span>
@@ -119,14 +119,15 @@
       </el-form>
 
       <template #footer>
-        <el-button @click="dlg.visible = false">取消</el-button>
-        <el-button type="primary" :loading="dlg.saving" @click="submit">确定</el-button>
+        <el-button @click="dlg.visible = false">{{ $t("common.cancel") }}</el-button>
+        <el-button type="primary" :loading="dlg.saving" @click="submit">{{ $t("common.confirm") }}</el-button>
       </template>
     </el-dialog>
   </div>
 </template>
 
 <script setup lang="tsx" name="alarmMapping">
+import { useI18n } from "vue-i18n";
 import { Delete, EditPen } from "@element-plus/icons-vue";
 import { ElMessage, ElMessageBox } from "element-plus";
 import { computed, onMounted, reactive, ref } from "vue";
@@ -145,6 +146,9 @@ import ProTable from "@/components/ProTable/index.vue";
 import TerminalTreeSelect from "@/components/TerminalTree/Select.vue";
 import { useAuthStore } from "@/stores/modules/auth";
 import type { ColumnProps, ProTableInstance } from "@/components/ProTable/interface";
+
+// 脚本里拼的文案用 t()；模板里的 $t 不用引入
+const { t } = useI18n();
 
 const authStore = useAuthStore();
 const btn = computed(() => (authStore.authButtonListGet as any)?.alarm ?? {});
@@ -185,18 +189,18 @@ const columns = reactive<ColumnProps<AlarmMapping>[]>([
   { type: "selection", fixed: "left", width: 50 },
   {
     prop: "alarmTerminalName",
-    label: "报警主机",
+    label: t("alarmMap.alarmHost"),
     minWidth: 160,
-    search: { el: "input", key: "keyword", props: { placeholder: "报警主机 / 映射分区 / 映射名称" } }
+    search: { el: "input", key: "keyword", props: { placeholder: t("alarmMap.searchHint") } }
   },
   // 列序照旧版 alarmmanager/alarmmanager_form.html 的表头：
   // 报警主机 | 映射名称 | 映射通道 | 映射分区 | 报警媒体 | 分区终端
-  { prop: "info", label: "映射名称", minWidth: 160, showOverflowTooltip: true },
-  { prop: "alarmChannel", label: "映射通道", width: 110 },
-  { prop: "alarmAreaName", label: "映射分区", minWidth: 150 },
-  { prop: "mediaName", label: "报警媒体", minWidth: 180 },
-  { prop: "areaTerminalCount", label: "分区终端", width: 120 },
-  { prop: "operation", label: "操作", fixed: "right", width: 140 }
+  { prop: "info", label: t("alarmMap.mapName"), minWidth: 160, showOverflowTooltip: true },
+  { prop: "alarmChannel", label: t("alarmMap.mappedChannel"), width: 110 },
+  { prop: "alarmAreaName", label: t("alarmMap.mappedZone"), minWidth: 150 },
+  { prop: "mediaName", label: t("alarmMap.alarmMedia"), minWidth: 180 },
+  { prop: "areaTerminalCount", label: t("alarmMap.zoneTerminals"), width: 120 },
+  { prop: "operation", label: t("common.operation"), fixed: "right", width: 140 }
 ]);
 
 const dataCallback = (data: any) => {
@@ -218,7 +222,11 @@ const hosts = ref<AlarmHostOption[]>([]);
 const hostNodes = computed(() =>
   hosts.value.map(h => ({
     ...h,
-    name: `${h.name || "终端 " + h.id}（${h.ip} · ${h.channels} 路）`
+    name: t("alarmMap.hostOption", {
+      name: h.name || t("common.terminalNo", { id: h.id }),
+      ip: h.ip,
+      n: h.channels
+    })
   }))
 );
 const areas = ref<AlarmAreaOption[]>([]);
@@ -262,7 +270,7 @@ const openCreate = async () => {
     visible: true,
     saving: false,
     isEdit: false,
-    title: "添加",
+    title: t("common.add"),
     id: 0,
     form: { info: "", alarmTerminalId: 0, alarmChannel: 0, alarmAreaId: 0, mediaId: 0 }
   });
@@ -275,7 +283,7 @@ const openEdit = async (row: AlarmMapping) => {
     visible: true,
     saving: false,
     isEdit: true,
-    title: `修改报警映射 #${row.id}`,
+    title: t("alarmMap.editMapping", { id: row.id }),
     id: row.id,
     form: {
       info: row.info,
@@ -290,10 +298,10 @@ const openEdit = async (row: AlarmMapping) => {
 
 const submit = async () => {
   const f = dlg.form;
-  if (!f.alarmTerminalId) return ElMessage.warning("请选择报警主机");
-  if (!f.alarmChannel) return ElMessage.warning("请选择通道");
-  if (!f.alarmAreaId) return ElMessage.warning("请选择报警分区");
-  if (!f.mediaId) return ElMessage.warning("请选择播放媒体");
+  if (!f.alarmTerminalId) return ElMessage.warning(t("alarmMap.alarmHostRequired"));
+  if (!f.alarmChannel) return ElMessage.warning(t("alarmMap.channelRequired"));
+  if (!f.alarmAreaId) return ElMessage.warning(t("alarmMap.alarmZoneRequired"));
+  if (!f.mediaId) return ElMessage.warning(t("alarmMap.mediaRequired"));
 
   dlg.saving = true;
   try {
@@ -302,7 +310,7 @@ const submit = async () => {
     } else {
       await createAlarmMappingApi({ ...f });
     }
-    ElMessage.success("保存成功");
+    ElMessage.success(t("common.saveSuccess"));
     dlg.visible = false;
     refresh();
   } finally {
@@ -314,16 +322,16 @@ const submit = async () => {
 
 const confirmDelete = async (raw: (string | number)[]) => {
   const ids = toIds(raw);
-  if (!ids.length) return ElMessage.warning("请先勾选映射");
-  await ElMessageBox.confirm(`取消 ${ids.length} 条报警映射后，对应通道触发时将不再播放任何内容。是否继续？`, "取消报警映射", {
+  if (!ids.length) return ElMessage.warning(t("alarmMap.pickMappingFirst"));
+  await ElMessageBox.confirm(t("alarmMap.confirmClear", { n: ids.length }), t("alarmMap.clearMapping"), {
     type: "warning",
-    confirmButtonText: "确定取消映射"
+    confirmButtonText: t("alarmMap.confirmClearTitle")
   });
   const { data } = await deleteAlarmMappingsApi(ids);
   if (data.skipped?.length) {
-    ElMessage.warning(`已取消 ${data.deleted.length} 条，${data.skipped.length} 条无权操作或已不存在`);
+    ElMessage.warning(t("alarmMap.clearedNSkipped", { n: data.deleted.length, skipped: data.skipped.length }));
   } else {
-    ElMessage.success(`已取消 ${data.deleted.length} 条映射`);
+    ElMessage.success(t("alarmMap.clearedN", { n: data.deleted.length }));
   }
   refresh();
 };

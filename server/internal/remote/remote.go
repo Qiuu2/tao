@@ -47,6 +47,7 @@ import (
 	"strings"
 
 	"htweb/internal/auth"
+	"htweb/internal/i18n"
 	"htweb/internal/store"
 )
 
@@ -121,16 +122,16 @@ func kindOf(tasktype int, info string, secTaskID, prepower int) string {
 	return ""
 }
 
-func kindText(kind string) string {
+func kindText(ctx context.Context, kind string) string {
 	switch kind {
 	case KindFile:
-		return "文件广播"
+		return i18n.TC(ctx, "文件广播")
 	case KindCollect:
-		return "采播"
+		return i18n.TC(ctx, "采播")
 	case KindAmplifier:
-		return "终端功放"
+		return i18n.TC(ctx, "终端功放")
 	}
-	return "未知类型"
+	return i18n.TC(ctx, "未知类型")
 }
 
 // ---------- 列表 ----------
@@ -283,11 +284,11 @@ func (s *Service) tasksByKey(ctx context.Context, u *auth.User, keys []int64) (m
 		}
 		t.Missing = !exists
 		if t.Missing {
-			t.TaskName = "(任务已删除)"
+			t.TaskName = i18n.TC(ctx, "(任务已删除)")
 			t.KindText = "—"
 		} else {
 			t.Kind = kindOf(tasktype, info, secTaskID, prepower)
-			t.KindText = kindText(t.Kind)
+			t.KindText = kindText(ctx, t.Kind)
 		}
 		out[keyID] = append(out[keyID], t)
 	}
@@ -349,12 +350,12 @@ func (s *Service) validate(ctx context.Context, in *Input) error {
 		return fmt.Errorf("遥控任务名称不能为空")
 	}
 	if len(in.KeyName) > nameLimit {
-		return fmt.Errorf("遥控任务名称过长：按 UTF-8 计 %d 字节，上限 %d 字节（约 10 个汉字）",
+		return fmt.Errorf(i18n.TC(ctx, "遥控任务名称过长：按 UTF-8 计 %d 字节，上限 %d 字节（约 10 个汉字）"),
 			len(in.KeyName), nameLimit)
 	}
 	// 旧版不校验键号范围，0 和负数都能存
 	if in.KeyID < minKey || in.KeyID > maxKey {
-		return fmt.Errorf("遥控键号必须在 %d ~ %d 之间", minKey, maxKey)
+		return fmt.Errorf(i18n.TC(ctx, "遥控键号必须在 %d ~ %d 之间"), minKey, maxKey)
 	}
 	if len(in.TaskIDs) == 0 {
 		return fmt.Errorf("请至少选择一条任务")
@@ -400,7 +401,7 @@ func (s *Service) checkKeyFree(ctx context.Context, keyID int64, exclude int64) 
 	var v int64
 	err := s.db.QueryRowContext(ctx, q, args...).Scan(&v)
 	if err == nil {
-		return fmt.Errorf("遥控键号 %d 已经被占用", keyID)
+		return fmt.Errorf(i18n.TC(ctx, "遥控键号 %d 已经被占用"), keyID)
 	}
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil
@@ -569,7 +570,7 @@ func (s *Service) PickTasks(ctx context.Context, u *auth.User, kind, keyword str
 			return nil, err
 		}
 		p.Kind = kindOf(tasktype, info, secTaskID, prepower)
-		p.KindText = kindText(p.Kind)
+		p.KindText = kindText(ctx, p.Kind)
 		out = append(out, p)
 	}
 	return out, rs.Err()

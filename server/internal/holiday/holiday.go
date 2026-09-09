@@ -37,6 +37,7 @@ import (
 	"strings"
 	"time"
 
+	"htweb/internal/i18n"
 	"htweb/internal/store"
 )
 
@@ -72,11 +73,11 @@ type Item struct {
 	Active bool `json:"active"`
 }
 
-func stateText(v int) string {
+func stateText(ctx context.Context, v int) string {
 	if v == StateEnabled {
-		return "启用"
+		return i18n.TC(ctx, "启用")
 	}
-	return "停用"
+	return i18n.TC(ctx, "停用")
 }
 
 var orderWhitelist = map[string]string{
@@ -150,7 +151,7 @@ func (s *Service) List(ctx context.Context, q Query) (*ListResult, error) {
 			&it.State, &diff, &it.Active); err != nil {
 			return nil, fmt.Errorf("扫描节假日行: %w", err)
 		}
-		it.StateText = stateText(it.State)
+		it.StateText = stateText(ctx, it.State)
 		if diff >= 0 {
 			it.Days = diff + 1 // DATEDIFF 不含首日
 		}
@@ -176,7 +177,7 @@ func (s *Service) Get(ctx context.Context, id int64) (*Item, error) {
 	if err != nil {
 		return nil, fmt.Errorf("查询节假日: %w", err)
 	}
-	it.StateText = stateText(it.State)
+	it.StateText = stateText(ctx, it.State)
 	return &it, nil
 }
 
@@ -203,7 +204,7 @@ func (in *Input) normState() int {
 
 const dateLayout = "2006-01-02"
 
-func (in *Input) validate() error {
+func (in *Input) validate(ctx context.Context) error {
 	in.Name = strings.TrimSpace(in.Name)
 	in.StartDate = strings.TrimSpace(in.StartDate)
 	in.EndDate = strings.TrimSpace(in.EndDate)
@@ -212,7 +213,7 @@ func (in *Input) validate() error {
 		return fmt.Errorf("节假日名称不能为空")
 	}
 	if len(in.Name) > nameLimit {
-		return fmt.Errorf("节假日名称过长：按 UTF-8 计 %d 字节，上限 %d 字节（约 10 个汉字）",
+		return fmt.Errorf(i18n.TC(ctx, "节假日名称过长：按 UTF-8 计 %d 字节，上限 %d 字节（约 10 个汉字）"),
 			len(in.Name), nameLimit)
 	}
 	start, err := time.Parse(dateLayout, in.StartDate)
@@ -259,14 +260,14 @@ func (s *Service) Overlaps(ctx context.Context, start, end string, excludeID int
 		if err := rs.Scan(&it.ID, &it.Name, &it.StartDate, &it.EndDate, &it.State); err != nil {
 			return nil, err
 		}
-		it.StateText = stateText(it.State)
+		it.StateText = stateText(ctx, it.State)
 		out = append(out, it)
 	}
 	return out, rs.Err()
 }
 
 func (s *Service) Create(ctx context.Context, in Input) (int64, error) {
-	if err := in.validate(); err != nil {
+	if err := in.validate(ctx); err != nil {
 		return 0, err
 	}
 	// 旧版 INSERT 不写 projectstate，靠列默认值 DEFAULT 1 落成「启用」。
@@ -281,7 +282,7 @@ func (s *Service) Create(ctx context.Context, in Input) (int64, error) {
 }
 
 func (s *Service) Update(ctx context.Context, id int64, in Input) error {
-	if err := in.validate(); err != nil {
+	if err := in.validate(ctx); err != nil {
 		return err
 	}
 	// UPDATE 一律带 WHERE —— 旧版服务器参数那条 UPDATE 就是漏了 WHERE（D-208），

@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"htweb/internal/i18n"
 	"strings"
 	"unicode/utf8"
 
@@ -157,7 +158,7 @@ func (s *Service) ListMappings(ctx context.Context, u *auth.User, q MappingQuery
 			return nil, fmt.Errorf("扫描报警映射行: %w", err)
 		}
 		it.TerminalDeleted, it.AreaDeleted, it.MediaDeleted = !termOK, !areaOK, !mediaOK
-		decorateMapping(&it)
+		decorateMapping(ctx, &it)
 		items = append(items, it)
 	}
 	if err := rs.Err(); err != nil {
@@ -171,30 +172,30 @@ func (s *Service) ListMappings(ctx context.Context, u *auth.User, q MappingQuery
 	return res, nil
 }
 
-func decorateMapping(it *Mapping) {
+func decorateMapping(ctx context.Context, it *Mapping) {
 	var bad []string
 	if it.TerminalDeleted {
-		it.AlarmTerminalName = "(报警主机已删除)"
-		bad = append(bad, "报警主机已删除")
+		it.AlarmTerminalName = i18n.TC(ctx, "(报警主机已删除)")
+		bad = append(bad, i18n.TC(ctx, "报警主机已删除"))
 	}
 	if it.AreaDeleted {
-		it.AlarmAreaName = "(报警分区已删除)"
-		bad = append(bad, "报警分区已删除")
+		it.AlarmAreaName = i18n.TC(ctx, "(报警分区已删除)")
+		bad = append(bad, i18n.TC(ctx, "报警分区已删除"))
 	}
 	if it.MediaDeleted {
-		it.MediaName = "(媒体已删除)"
-		bad = append(bad, "媒体已删除")
+		it.MediaName = i18n.TC(ctx, "(媒体已删除)")
+		bad = append(bad, i18n.TC(ctx, "媒体已删除"))
 	}
 	// 通道数被改小之后，原来配好的高通道号就落在范围外了
 	if !it.TerminalDeleted && it.TerminalChannels > 0 &&
 		(it.AlarmChannel < 1 || it.AlarmChannel > it.TerminalChannels) {
 		it.ChannelOutOfRange = true
-		bad = append(bad, fmt.Sprintf("通道 %d 超出该主机的 %d 路范围",
+		bad = append(bad, fmt.Sprintf(i18n.TC(ctx, "通道 %d 超出该主机的 %d 路范围"),
 			it.AlarmChannel, it.TerminalChannels))
 	}
 	it.Invalid = len(bad) > 0
 	if it.Invalid {
-		it.InvalidReason = strings.Join(bad, "；") + " —— 报警触发时不会正常播放"
+		it.InvalidReason = strings.Join(bad, i18n.TC(ctx, "；")) + i18n.TC(ctx, " —— 报警触发时不会正常播放")
 	}
 }
 
@@ -216,7 +217,7 @@ func (s *Service) validate(ctx context.Context, u *auth.User, in *MappingInput) 
 	in.Info = strings.TrimSpace(in.Info)
 	// info 是 varchar(45) 且 NOT NULL，超长会被 MySQL 静默截断
 	if len(in.Info) > 45 {
-		return fmt.Errorf("备注过长：按 UTF-8 计 %d 字节，上限 45 字节（约 15 个汉字）", len(in.Info))
+		return fmt.Errorf(i18n.TC(ctx, "备注过长：按 UTF-8 计 %d 字节，上限 45 字节（约 15 个汉字）"), len(in.Info))
 	}
 	if utf8.RuneCountInString(in.Info) == 0 && in.Info != "" {
 		in.Info = ""
@@ -247,7 +248,7 @@ func (s *Service) validate(ctx context.Context, u *auth.User, in *MappingInput) 
 		return fmt.Errorf("该报警主机的通道数为 0：终端未上报路数，其型号也没有声明开关路数")
 	}
 	if in.AlarmChannel < 1 || in.AlarmChannel > channels {
-		return fmt.Errorf("通道号必须在 1 ~ %d 之间", channels)
+		return fmt.Errorf(i18n.TC(ctx, "通道号必须在 1 ~ %d 之间"), channels)
 	}
 
 	// 报警分区：必须存在；普通用户只能用自己创建的
@@ -414,7 +415,7 @@ func (s *Service) GetMapping(ctx context.Context, u *auth.User, id int64) (*Mapp
 		return nil, fmt.Errorf("查询报警映射: %w", err)
 	}
 	it.TerminalDeleted, it.AreaDeleted, it.MediaDeleted = !termOK, !areaOK, !mediaOK
-	decorateMapping(&it)
+	decorateMapping(ctx, &it)
 	return &it, nil
 }
 

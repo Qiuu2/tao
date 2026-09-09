@@ -54,6 +54,7 @@ import (
 	"strings"
 	"time"
 
+	"htweb/internal/i18n"
 	"htweb/internal/store"
 )
 
@@ -85,11 +86,11 @@ const enstateLimit = 1024
 
 const maxTasks = 200
 
-func actionText(v int) string {
+func actionText(ctx context.Context, v int) string {
 	if v == ActionEnable {
-		return "启用"
+		return i18n.TC(ctx, "启用")
 	}
-	return "停用"
+	return i18n.TC(ctx, "停用")
 }
 
 type Task struct {
@@ -197,7 +198,7 @@ func (s *Service) List(ctx context.Context, q Query) (*ListResult, error) {
 		return nil, err
 	}
 	for i := range items {
-		items[i].Tasks = fillTasks(raw[i], names)
+		items[i].Tasks = fillTasks(ctx, raw[i], names)
 	}
 	return &ListResult{Items: items, Total: total}, nil
 }
@@ -256,15 +257,15 @@ func parseRow(taskids, enstate string) []idAction {
 	return out
 }
 
-func fillTasks(pairs []idAction, names map[int64]Task) []Task {
+func fillTasks(ctx context.Context, pairs []idAction, names map[int64]Task) []Task {
 	out := make([]Task, 0, len(pairs))
 	for _, p := range pairs {
 		t, ok := names[p.id]
 		if !ok {
-			t = Task{TaskID: p.id, TaskName: "(任务已删除)", Missing: true}
+			t = Task{TaskID: p.id, TaskName: i18n.TC(ctx, "(任务已删除)"), Missing: true}
 		}
 		t.Action = p.action
-		t.ActionText = actionText(p.action)
+		t.ActionText = actionText(ctx, p.action)
 		out = append(out, t)
 	}
 	return out
@@ -293,7 +294,7 @@ func (s *Service) taskNames(ctx context.Context, ids map[int64]bool) (map[int64]
 		if err := rs.Scan(&t.TaskID, &t.TaskName, &t.TaskType, &t.Info); err != nil {
 			return nil, err
 		}
-		t.TypeText = typeText(t.TaskType)
+		t.TypeText = typeText(ctx, t.TaskType)
 		out[t.TaskID] = t
 	}
 	return out, rs.Err()
@@ -339,7 +340,7 @@ func (s *Service) Get(ctx context.Context, id int64) (*Item, error) {
 	if err != nil {
 		return nil, err
 	}
-	it.Tasks = fillTasks(pairs, names)
+	it.Tasks = fillTasks(ctx, pairs, names)
 	if t, err := time.ParseInLocation("2006-01-02 15:04:05",
 		it.StartDate+" "+it.StartTime, time.Local); err == nil {
 		it.Expired = t.Before(time.Now())
@@ -375,7 +376,7 @@ func (s *Service) validate(ctx context.Context, in *Input) error {
 		return fmt.Errorf("请至少选择一条任务")
 	}
 	if len(in.Tasks) > maxTasks {
-		return fmt.Errorf("一个启用计划最多绑定 %d 条任务", maxTasks)
+		return fmt.Errorf(i18n.TC(ctx, "一个启用计划最多绑定 %d 条任务"), maxTasks)
 	}
 	seen := map[int64]bool{}
 	ids := make([]int64, 0, len(in.Tasks))
@@ -408,10 +409,10 @@ func (s *Service) validate(ctx context.Context, in *Input) error {
 	// 截断会落在某个 id 中间，后台解析出一个**别的**任务 —— 这比报错危险得多。
 	taskCol, stateCol := serialize(in.Tasks)
 	if len(taskCol) > taskidLimit {
-		return fmt.Errorf("选中的任务过多，任务 ID 列表超出 %d 字节上限，请拆成多条计划", taskidLimit)
+		return fmt.Errorf(i18n.TC(ctx, "选中的任务过多，任务 ID 列表超出 %d 字节上限，请拆成多条计划"), taskidLimit)
 	}
 	if len(stateCol) > enstateLimit {
-		return fmt.Errorf("选中的任务过多，启停标志列表超出 %d 字节上限，请拆成多条计划", enstateLimit)
+		return fmt.Errorf(i18n.TC(ctx, "选中的任务过多，启停标志列表超出 %d 字节上限，请拆成多条计划"), enstateLimit)
 	}
 	return nil
 }
@@ -489,30 +490,30 @@ type PickTask struct {
 // typeText 把 tasktype 翻成人话。取值依据是 task 表 tasktype 列的注释
 // 「1-作息 2-文件 3-采播 4-电话 5-功放」，加上旧版 addmanager.html 里那串
 // if/elseif 用到的扩展类型。
-func typeText(t int) string {
+func typeText(ctx context.Context, t int) string {
 	switch t {
 	case 1:
-		return "作息方案"
+		return i18n.TC(ctx, "作息方案")
 	case 2, 7:
-		return "文件广播"
+		return i18n.TC(ctx, "文件广播")
 	case 3:
-		return "采播管理"
+		return i18n.TC(ctx, "采播管理")
 	case 4:
-		return "电话采播"
+		return i18n.TC(ctx, "电话采播")
 	case 5:
-		return "终端功放"
+		return i18n.TC(ctx, "终端功放")
 	case 9:
-		return "电源子任务"
+		return i18n.TC(ctx, "电源子任务")
 	case 10:
-		return "网络电台"
+		return i18n.TC(ctx, "网络电台")
 	case 13:
-		return "系统任务"
+		return i18n.TC(ctx, "系统任务")
 	case 15, 17, 19:
-		return "文字语音"
+		return i18n.TC(ctx, "文字语音")
 	case 24, 30:
-		return "led播放"
+		return i18n.TC(ctx, "led播放")
 	}
-	return fmt.Sprintf("类型 %d", t)
+	return fmt.Sprintf(i18n.TC(ctx, "类型 %d"), t)
 }
 
 // PickTasks 列出可以放进启用计划的任务。
@@ -543,7 +544,7 @@ func (s *Service) PickTasks(ctx context.Context, isAdmin bool, userID int64, key
 		if err := rs.Scan(&p.TaskID, &p.TaskName, &p.TaskType, &p.Info, &p.State); err != nil {
 			return nil, err
 		}
-		p.TypeText = typeText(p.TaskType)
+		p.TypeText = typeText(ctx, p.TaskType)
 		// task.projectstate：0 = 启用、1 = 停用
 		if p.State == 0 {
 			p.StateText = "启用"

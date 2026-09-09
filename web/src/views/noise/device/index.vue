@@ -24,56 +24,57 @@
       <template #tableHeader="scope">
         <div class="header-bar">
           <div class="header-left">
-            <el-button type="primary" :disabled="!canEdit" @click="openCreate">添加设备</el-button>
+            <el-button type="primary" :disabled="!canEdit" @click="openCreate">{{ $t("noise.addDevice") }}</el-button>
             <el-button :disabled="!canEdit || scope.selectedListIds.length !== 1" @click="openEditById(scope.selectedListIds)">
-              修改设备
+              {{ $t("noise.editDevice") }}
             </el-button>
             <el-button type="danger" :disabled="!canEdit || !scope.isSelected" @click="doDelete(scope.selectedListIds)">
-              删除设备
+              {{ $t("noise.deleteDevice") }}
             </el-button>
           </div>
           <div class="header-right">
-            <el-tag type="info" size="small" effect="plain">噪声值由后台采集回写，本页只读</el-tag>
+            <el-tag type="info" size="small" effect="plain">{{ $t("noise.readOnlyNote") }}</el-tag>
           </div>
         </div>
       </template>
 
       <template #dbvalue="s">
         <el-tag v-if="s.row.dbvalue > 0" size="small" effect="plain">{{ s.row.dbvalue }} dB</el-tag>
-        <span v-else class="muted">未采到</span>
+        <span v-else class="muted">{{ $t("noise.notSampled") }}</span>
       </template>
 
       <template #operation="s">
-        <el-button type="primary" link :icon="EditPen" :disabled="!canEdit" @click="openEdit(s.row)">修改</el-button>
-        <el-button type="danger" link :icon="Delete" :disabled="!canEdit" @click="doDelete([s.row.id])">删除</el-button>
+        <el-button type="primary" link :icon="EditPen" :disabled="!canEdit" @click="openEdit(s.row)">{{ $t("common.modify") }}</el-button>
+        <el-button type="danger" link :icon="Delete" :disabled="!canEdit" @click="doDelete([s.row.id])">{{ $t("common.delete") }}</el-button>
       </template>
     </ProTable>
 
     <el-dialog v-model="dlg.visible" :title="dlg.title" width="560px">
       <!-- 表单项与占位符照 :80 的「添加设备」弹窗 -->
       <el-form :model="form" label-width="120px">
-        <el-form-item label="设备地址名称" required>
-          <el-input v-model="form.name" maxlength="10" show-word-limit placeholder="请输入设备地址名称" />
+        <el-form-item :label='$t("noise.deviceAddrName")' required>
+          <el-input v-model="form.name" maxlength="10" show-word-limit :placeholder='$t("noise.addrNamePlaceholder")' />
         </el-form-item>
-        <el-form-item label="设备ip" required>
-          <el-input v-model="form.ip" placeholder="请输入设备IP" />
+        <el-form-item :label='$t("noise.deviceIp")' required>
+          <el-input v-model="form.ip" :placeholder='$t("noise.ipPlaceholder")' />
         </el-form-item>
-        <el-form-item label="设备地址" required>
+        <el-form-item :label='$t("noise.deviceAddr")' required>
           <el-input-number v-model="form.devaddr" :min="0" :max="255" controls-position="right" />
         </el-form-item>
-        <el-form-item label="发送通道">
+        <el-form-item :label='$t("noise.sendChannel")'>
           <el-input-number v-model="form.sendport" :min="0" :max="65535" controls-position="right" />
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="dlg.visible = false">取消</el-button>
-        <el-button type="primary" :loading="dlg.saving" @click="submit">提交</el-button>
+        <el-button @click="dlg.visible = false">{{ $t("common.cancel") }}</el-button>
+        <el-button type="primary" :loading="dlg.saving" @click="submit">{{ $t("common.submit") }}</el-button>
       </template>
     </el-dialog>
   </div>
 </template>
 
 <script setup lang="tsx" name="noiseDevice">
+import { useI18n } from "vue-i18n";
 import { Delete, EditPen } from "@element-plus/icons-vue";
 import { ElMessage, ElMessageBox } from "element-plus";
 import { computed, reactive, ref } from "vue";
@@ -89,6 +90,9 @@ import type { SoundDevice } from "@/api/modules/ninemod";
 import ProTable from "@/components/ProTable/index.vue";
 import { useAuthStore } from "@/stores/modules/auth";
 import type { ColumnProps, ProTableInstance } from "@/components/ProTable/interface";
+
+// 脚本里拼的文案用 t()；模板里的 $t 不用引入
+const { t } = useI18n();
 
 const authStore = useAuthStore();
 const canEdit = computed(() => !!(authStore.authButtonListGet as any)?.zone?.edit);
@@ -112,11 +116,11 @@ const onSortChange = ({ prop, order }: { prop: string; order: string | null }) =
 const columns = reactive<ColumnProps<SoundDevice>[]>([
   // 列清单照旧版 sounddevice_form.html：选项 | 设备ip | 设备名称 | 设备地址 | 设备噪声值
   { type: "selection", fixed: "left", width: 50 },
-  { prop: "ip", label: "设备ip", width: 200 },
-  { prop: "name", label: "设备名称", minWidth: 240 },
-  { prop: "devaddr", label: "设备地址", width: 140 },
-  { prop: "dbvalue", label: "设备噪声值", width: 150 },
-  { prop: "operation", label: "操作", fixed: "right", width: 140 }
+  { prop: "ip", label: t("noise.deviceIp"), width: 200 },
+  { prop: "name", label: t("noise.deviceName"), minWidth: 240 },
+  { prop: "devaddr", label: t("noise.deviceAddr"), width: 140 },
+  { prop: "dbvalue", label: t("noise.deviceNoise"), width: 150 },
+  { prop: "operation", label: t("common.operation"), fixed: "right", width: 140 }
 ]);
 
 const refresh = () => proTableRef.value?.getTableList();
@@ -126,32 +130,32 @@ const dlg = reactive({ visible: false, saving: false, isEdit: false, title: "", 
 
 const openCreate = () => {
   Object.assign(form, { name: "", ip: "", devaddr: 0, sendport: 0 });
-  Object.assign(dlg, { visible: true, saving: false, isEdit: false, title: "添加设备", id: 0 });
+  Object.assign(dlg, { visible: true, saving: false, isEdit: false, title: t("noise.addDevice"), id: 0 });
 };
 
 const openEdit = async (row: SoundDevice) => {
   const { data } = await getSoundDeviceApi(row.id);
   Object.assign(form, { name: data.name, ip: data.ip, devaddr: data.devaddr, sendport: data.sendport });
-  Object.assign(dlg, { visible: true, saving: false, isEdit: true, title: `修改噪声设备：${data.name}`, id: data.id });
+  Object.assign(dlg, { visible: true, saving: false, isEdit: true, title: t("noise.editDeviceTitle", { name: data.name }), id: data.id });
 };
 
 /** 工具栏上的「修改设备」：旧版是「勾一条再点」，这里保留同一套语义 */
 const openEditById = async (raw: (string | number)[]) => {
   const ids = toIds(raw);
-  if (ids.length !== 1) return ElMessage.warning("请勾选一条设备");
+  if (ids.length !== 1) return ElMessage.warning(t("noise.pickOneDevice"));
   const { data } = await getSoundDeviceApi(ids[0]);
   Object.assign(form, { name: data.name, ip: data.ip, devaddr: data.devaddr, sendport: data.sendport });
-  Object.assign(dlg, { visible: true, saving: false, isEdit: true, title: `修改噪声设备：${data.name}`, id: data.id });
+  Object.assign(dlg, { visible: true, saving: false, isEdit: true, title: t("noise.editDeviceTitle", { name: data.name }), id: data.id });
 };
 
 const submit = async () => {
-  if (!form.name.trim()) return ElMessage.warning("请输入设备名称");
-  if (!form.ip.trim()) return ElMessage.warning("请输入 IP 地址");
+  if (!form.name.trim()) return ElMessage.warning(t("noise.deviceNameRequired"));
+  if (!form.ip.trim()) return ElMessage.warning(t("noise.ipRequired"));
   dlg.saving = true;
   try {
     if (dlg.isEdit) await updateSoundDeviceApi(dlg.id, { ...form });
     else await createSoundDeviceApi({ ...form });
-    ElMessage.success("保存成功");
+    ElMessage.success(t("common.saveSuccess"));
     dlg.visible = false;
     refresh();
   } finally {
@@ -161,13 +165,13 @@ const submit = async () => {
 
 const doDelete = async (raw: (string | number)[]) => {
   const ids = toIds(raw);
-  if (!ids.length) return ElMessage.warning("请先勾选噪声设备");
-  await ElMessageBox.confirm(`确认删除选中的 ${ids.length} 台噪声设备？`, "删除噪声设备", {
+  if (!ids.length) return ElMessage.warning(t("noise.pickDeviceFirst"));
+  await ElMessageBox.confirm(t("noise.confirmDeleteDevices", { n: ids.length }), t("noise.deleteDeviceTitle"), {
     type: "warning",
-    confirmButtonText: "确认删除"
+    confirmButtonText: t("common.confirmDelete")
   });
   const { data } = await deleteSoundDevicesApi(ids);
-  ElMessage.success(`已删除 ${data.deleted} 台`);
+  ElMessage.success(t("noise.deletedDevicesN", { n: data.deleted }));
   refresh();
 };
 </script>

@@ -20,21 +20,21 @@
         <div class="header-bar">
           <!-- 按钮对齐 :80（页面规格.txt「遥控任务」）：添加映射 / 删除映射 -->
           <div class="header-left">
-            <el-button type="primary" :disabled="!canEdit" @click="openCreate">添加映射</el-button>
+            <el-button type="primary" :disabled="!canEdit" @click="openCreate">{{ $t("remote.addMapping") }}</el-button>
             <el-button type="danger" :disabled="!canEdit || !scope.isSelected" @click="doDelete(scope.selectedListIds)">
-              删除映射
+              {{ $t("remote.deleteMapping") }}
             </el-button>
           </div>
           <div class="header-right">
             <!-- 普通用户只看得到绑在自己任务上的键，说一句免得以为丢了数据 -->
             <el-tag v-if="scopeNote" type="info" size="small" effect="plain">{{ scopeNote }}</el-tag>
-            <el-tag type="info" size="small" effect="plain">一个键号只能配一次</el-tag>
+            <el-tag type="info" size="small" effect="plain">{{ $t("remote.keyOncePerCode") }}</el-tag>
           </div>
         </div>
       </template>
 
       <template #keyId="scope">
-        <el-tag size="small" effect="dark">{{ scope.row.keyId }} 键</el-tag>
+        <el-tag size="small" effect="dark">{{ $t("remote.keyNo", { n: scope.row.keyId }) }}</el-tag>
       </template>
 
       <template #tasks="scope">
@@ -52,7 +52,7 @@
             <span v-if="!t.missing" class="tag-sub">· {{ t.kindText }}</span>
           </el-tag>
         </template>
-        <span v-else class="muted">未绑定任务</span>
+        <span v-else class="muted">{{ $t("remote.noTaskBound") }}</span>
       </template>
     </ProTable>
 
@@ -60,16 +60,16 @@
     <el-dialog v-model="dlg.visible" :title="dlg.title" width="760px" top="6vh">
       <!-- 表单项与顺序照 :80 的「添加映射」弹窗：映射名称 / 映射按键 / 映射任务 -->
       <el-form :model="dlg.form" label-width="100px">
-        <el-form-item label="映射名称" required>
-          <el-input v-model="dlg.form.keyName" maxlength="10" show-word-limit placeholder="请输入映射名称" />
+        <el-form-item :label='$t("remote.mapName")' required>
+          <el-input v-model="dlg.form.keyName" maxlength="10" show-word-limit :placeholder='$t("remote.namePlaceholder")' />
         </el-form-item>
         <!--
           映射按键是下拉，1~8 —— 旧版 set_task_mapping.html 里就是
           `for(var i=1; i<=8; i++)` 写死八项，对应遥控器上的八个物理按键。
         -->
-        <el-form-item label="映射按键" required>
+        <el-form-item :label='$t("remote.mapKey")' required>
           <el-select v-model="dlg.form.keyId" class="fill" style="width: 160px">
-            <el-option v-for="k in 8" :key="k" :label="`${k} 键`" :value="k" />
+            <el-option v-for="k in 8" :key="k" :label='$t("remote.keyN", { n: k })' :value="k" />
           </el-select>
         </el-form-item>
 
@@ -80,11 +80,11 @@
           ⚠ 一个按键**只能选一个任务**。旧版是勾完了再 alert「只能选择一项」，
             这里直接做成单选：勾第二个时自动把上一个取消，压根选不出第二项。
         -->
-        <el-form-item label="映射任务" required>
+        <el-form-item :label='$t("remote.mapTask")' required>
           <div class="pick-bar">
             <el-input
               v-model="pickKeyword"
-              placeholder="任务名称搜索"
+              :placeholder='$t("remote.searchTaskName")'
               clearable
               size="small"
               :prefix-icon="Search"
@@ -111,7 +111,7 @@
               <span class="rk-node">
                 <span class="rk-label">{{ data.label }}</span>
                 <el-tag v-if="data.usedBy && data.usedBy !== dlg.originalKeyId" size="small" type="warning" effect="plain">
-                  已绑在 {{ data.usedBy }} 键
+                  {{ $t("remote.boundToKey", { n: data.usedBy }) }}
                 </el-tag>
                 <span v-if="data.count !== undefined" class="rk-count">{{ data.count }}</span>
               </span>
@@ -121,14 +121,15 @@
       </el-form>
 
       <template #footer>
-        <el-button @click="dlg.visible = false">取消</el-button>
-        <el-button type="primary" :loading="dlg.saving" @click="submit">确定</el-button>
+        <el-button @click="dlg.visible = false">{{ $t("common.cancel") }}</el-button>
+        <el-button type="primary" :loading="dlg.saving" @click="submit">{{ $t("common.confirm") }}</el-button>
       </template>
     </el-dialog>
   </div>
 </template>
 
 <script setup lang="tsx" name="remote">
+import { useI18n } from "vue-i18n";
 import { Search } from "@element-plus/icons-vue";
 import { ElMessage, ElMessageBox } from "element-plus";
 import { computed, nextTick, onMounted, reactive, ref } from "vue";
@@ -138,6 +139,9 @@ import type { RemoteKey, RemotePickTask } from "@/api/modules/basecfg";
 import ProTable from "@/components/ProTable/index.vue";
 import { useAuthStore } from "@/stores/modules/auth";
 import type { ColumnProps, ProTableInstance } from "@/components/ProTable/interface";
+
+// 脚本里拼的文案用 t()；模板里的 $t 不用引入
+const { t } = useI18n();
 
 const authStore = useAuthStore();
 const canEdit = computed(() => !!(authStore.authButtonListGet as any)?.remote?.edit);
@@ -161,12 +165,12 @@ const columns = reactive<ColumnProps<RemoteKey>[]>([
   // 列名照旧版 task_mapping/task_mapping_form.html 的表头：映射名称 | 映射按键 | 映射任务
   {
     prop: "keyName",
-    label: "映射名称",
+    label: t("remote.mapName"),
     minWidth: 200,
-    search: { el: "input", key: "keyword", props: { placeholder: "按映射名称搜索" } }
+    search: { el: "input", key: "keyword", props: { placeholder: t("remote.searchByMapName") } }
   },
-  { prop: "keyId", label: "映射按键", width: 130 },
-  { prop: "tasks", label: "映射任务", minWidth: 420 }
+  { prop: "keyId", label: t("remote.mapKey"), width: 130 },
+  { prop: "tasks", label: t("remote.mapTask"), minWidth: 420 }
 ]);
 
 const refresh = () => proTableRef.value?.getTableList();
@@ -260,7 +264,7 @@ const openCreate = async () => {
     visible: true,
     saving: false,
     isEdit: false,
-    title: "添加映射",
+    title: t("remote.addMapping"),
     originalKeyId: 0,
     form: { keyId: 1, keyName: "" }
   });
@@ -275,8 +279,8 @@ const openCreate = async () => {
 // 哪天要把修改加回来，补一列「操作」+ 一个 openEdit 即可。
 
 const submit = async () => {
-  if (!dlg.form.keyName.trim()) return ElMessage.warning("请输入名称");
-  if (!pickedTaskId.value) return ElMessage.warning("请选择一个任务");
+  if (!dlg.form.keyName.trim()) return ElMessage.warning(t("remote.nameRequired"));
+  if (!pickedTaskId.value) return ElMessage.warning(t("remote.pickOneTask"));
   const payload = {
     keyId: dlg.form.keyId,
     keyName: dlg.form.keyName.trim(),
@@ -286,7 +290,7 @@ const submit = async () => {
   dlg.saving = true;
   try {
     await createRemoteApi(payload);
-    ElMessage.success("保存成功");
+    ElMessage.success(t("common.saveSuccess"));
     dlg.visible = false;
     refresh();
   } finally {
@@ -298,13 +302,13 @@ const submit = async () => {
 
 const doDelete = async (raw: (string | number)[]) => {
   const ids = toIds(raw);
-  if (!ids.length) return ElMessage.warning("请先勾选遥控任务");
-  await ElMessageBox.confirm(`确认删除选中的 ${ids.length} 个遥控键？删除后按这些键将不再触发任何任务。`, "删除遥控任务", {
+  if (!ids.length) return ElMessage.warning(t("remote.pickFirst"));
+  await ElMessageBox.confirm(t("remote.confirmDeleteN", { n: ids.length }), t("remote.deleteRemoteTask"), {
     type: "warning",
-    confirmButtonText: "确认删除"
+    confirmButtonText: t("common.confirmDelete")
   });
   const { data } = await deleteRemotesApi(ids);
-  ElMessage.success(`已删除 ${data.deleted} 条绑定`);
+  ElMessage.success(t("remote.deletedN", { n: data.deleted }));
   refresh();
 };
 

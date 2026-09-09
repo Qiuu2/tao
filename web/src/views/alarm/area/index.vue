@@ -25,9 +25,9 @@
         <div class="header-bar">
           <div class="header-left">
             <!-- :80 这一页顶部只有「添加」一个按钮，删除放在行内操作里 -->
-            <el-button type="primary" :disabled="!canEdit" @click="openCreate">添加</el-button>
+            <el-button type="primary" :disabled="!canEdit" @click="openCreate">{{ $t("common.add") }}</el-button>
             <el-button type="danger" :disabled="!canEdit || !scope.isSelected" @click="openDelete(scope.selectedListIds)">
-              删除
+              {{ $t("common.delete") }}
             </el-button>
           </div>
           <div class="header-right">
@@ -37,17 +37,17 @@
       </template>
 
       <template #terminalCount="scope">
-        <el-tag size="small" effect="plain">{{ scope.row.terminalCount }} 台</el-tag>
+        <el-tag size="small" effect="plain">{{ $t("common.nTerminals", { n: scope.row.terminalCount }) }}</el-tag>
         <!-- 「报警映射」列已按严格对齐去掉，但删分区会连带删掉这些映射，
              所以把条数就地标在成员数旁边，删之前仍然看得见。 -->
         <el-tag v-if="scope.row.mappingCount" type="warning" size="small" effect="plain" class="ml6">
-          映射 {{ scope.row.mappingCount }}
+          {{ $t("alarmArea.mappingCount", { n: scope.row.mappingCount }) }}
         </el-tag>
       </template>
 
       <template #operation="scope">
         <el-button type="primary" link :icon="EditPen" :disabled="!canEdit || !scope.row.canModify" @click="openEdit(scope.row)">
-          修改
+          {{ $t("common.modify") }}
         </el-button>
         <el-button
           type="danger"
@@ -56,7 +56,7 @@
           :disabled="!canEdit || !scope.row.canModify"
           @click="openDelete([scope.row.id])"
         >
-          删除
+          {{ $t("common.delete") }}
         </el-button>
       </template>
     </ProTable>
@@ -65,13 +65,13 @@
     <el-dialog v-model="dlg.visible" :title="dlg.title" width="700px" top="6vh">
       <el-form :model="dlg.form" label-width="100px">
         <!-- 表单项与占位符照 :80 的「添加」弹窗：分区名称 / 描述 / 终端 -->
-        <el-form-item label="分区名称" required>
-          <el-input v-model="dlg.form.name" maxlength="15" show-word-limit placeholder="请输入分区名称" />
+        <el-form-item :label='$t("alarmArea.areaName")' required>
+          <el-input v-model="dlg.form.name" maxlength="15" show-word-limit :placeholder='$t("alarmArea.areaNameRequired")' />
         </el-form-item>
-        <el-form-item label="描述">
-          <el-input v-model="dlg.form.info" maxlength="15" show-word-limit placeholder="请输入描述" />
+        <el-form-item :label='$t("common.description")'>
+          <el-input v-model="dlg.form.info" maxlength="15" show-word-limit :placeholder='$t("alarmArea.infoPlaceholder")' />
         </el-form-item>
-        <el-form-item label="终端">
+        <el-form-item :label='$t("terminalCommon.terminal")'>
           <!--
             按**终端分区**（groupName）分组的树。
             ⚠ 这里分组用的不是「报警分区」—— 报警分区正是这个对话框在编辑的东西，
@@ -87,39 +87,41 @@
       </el-form>
 
       <template #footer>
-        <el-button @click="dlg.visible = false">取消</el-button>
-        <el-button type="primary" :loading="dlg.saving" @click="submit">确定</el-button>
+        <el-button @click="dlg.visible = false">{{ $t("common.cancel") }}</el-button>
+        <el-button type="primary" :loading="dlg.saving" @click="submit">{{ $t("common.confirm") }}</el-button>
       </template>
     </el-dialog>
 
     <!-- 删除影响面 -->
-    <el-dialog v-model="del.visible" title="删除报警分区" width="600px">
+    <el-dialog v-model="del.visible" :title='$t("alarmArea.deleteTitle")' width="600px">
       <el-alert type="error" :closable="false" show-icon class="mb12">
-        删除分区会<b>一并删除该分区下的全部报警映射</b>，成员终端会被移出分区。不可恢复。
+        {{ $t("alarmArea.deleteWarn") }}<b>{{ $t("alarmArea.deleteWarnBold") }}</b>{{ $t("alarmArea.deleteWarnTail") }}
       </el-alert>
 
       <el-table v-if="del.preview?.deletable.length" :data="del.preview.deletable" size="small" max-height="280">
-        <el-table-column prop="name" label="分区" min-width="140" />
-        <el-table-column label="影响面" min-width="280">
+        <el-table-column prop="name" :label='$t("alarmArea.area")' min-width="140" />
+        <el-table-column :label='$t("alarmArea.impact")' min-width="280">
           <template #default="{ row }">
-            <el-tag v-if="row.impact?.terminals" size="small" class="mr4">成员终端 {{ row.impact?.terminals }} 台</el-tag>
-            <el-tag v-if="row.impact?.alarmMappings" type="danger" size="small">
-              报警映射 {{ row.impact?.alarmMappings }} 条将被删除
+            <el-tag v-if="row.impact?.terminals" size="small" class="mr4">
+              {{ $t("alarmArea.memberTerminalsN", { n: row.impact?.terminals }) }}
             </el-tag>
-            <span v-if="!row.impact?.terminals && !row.impact?.alarmMappings" class="muted">空分区</span>
+            <el-tag v-if="row.impact?.alarmMappings" type="danger" size="small">
+              {{ $t("alarmArea.mappingsToDeleteN", { n: row.impact?.alarmMappings }) }}
+            </el-tag>
+            <span v-if="!row.impact?.terminals && !row.impact?.alarmMappings" class="muted">{{ $t("alarmArea.emptyArea") }}</span>
           </template>
         </el-table-column>
       </el-table>
 
       <el-alert v-if="del.preview?.blocked.length" type="warning" :closable="false" class="mt12">
-        以下分区不会被删除：
+        {{ $t("alarmArea.notDeleted") }}
         <div v-for="b in del.preview.blocked" :key="b.id">· {{ b.name || b.id }}：{{ b.detail }}</div>
       </el-alert>
 
       <template #footer>
-        <el-button @click="del.visible = false">取消</el-button>
+        <el-button @click="del.visible = false">{{ $t("common.cancel") }}</el-button>
         <el-button type="danger" :disabled="!del.preview?.deletable.length" :loading="del.saving" @click="submitDelete">
-          确认删除
+          {{ $t("common.confirmDelete") }}
         </el-button>
       </template>
     </el-dialog>
@@ -130,6 +132,8 @@
 import { Delete, EditPen } from "@element-plus/icons-vue";
 import { ElMessage, ElMessageBox, ElNotification } from "element-plus";
 import { computed, onMounted, reactive, ref } from "vue";
+// 这一页有个局部变量也叫 t（一台终端），所以 i18n 的 t 取个别名。
+import { useI18n } from "vue-i18n";
 
 import TerminalTree from "@/components/TerminalTree/index.vue";
 
@@ -147,6 +151,10 @@ import ProTable from "@/components/ProTable/index.vue";
 import { useAuthStore } from "@/stores/modules/auth";
 import type { ColumnProps, ProTableInstance } from "@/components/ProTable/interface";
 
+const { t } = useI18n();
+// terminalNodes 那个 map 的形参也叫 t（一台终端），会把 i18n 的 t 挡住，
+// 所以那一处用 i18nT 这个别名。
+const i18nT = t;
 const authStore = useAuthStore();
 const btn = computed(() => (authStore.authButtonListGet as any)?.alarm ?? {});
 const canEdit = computed(() => !!btn.value.area);
@@ -174,14 +182,14 @@ const columns = reactive<ColumnProps<AlarmArea>[]>([
   { type: "selection", fixed: "left", width: 50 },
   {
     prop: "name",
-    label: "分区名称",
+    label: t("alarmArea.areaName"),
     minWidth: 200,
-    search: { el: "input", key: "keyword", props: { placeholder: "按分区名称搜索" } }
+    search: { el: "input", key: "keyword", props: { placeholder: t("alarmArea.searchByAreaName") } }
   },
-  { prop: "info", label: "分区描述", minWidth: 220, showOverflowTooltip: true },
-  { prop: "terminalCount", label: "分区终端", width: 130 },
-  { prop: "createTime", label: "创建时间", width: 180 },
-  { prop: "operation", label: "操作", fixed: "right", width: 140 }
+  { prop: "info", label: t("alarmArea.areaInfo"), minWidth: 220, showOverflowTooltip: true },
+  { prop: "terminalCount", label: t("alarmArea.areaTerminals"), width: 130 },
+  { prop: "createTime", label: t("common.createTime"), width: 180 },
+  { prop: "operation", label: t("common.operation"), fixed: "right", width: 140 }
 ]);
 
 const dataCallback = (data: any) => {
@@ -208,8 +216,11 @@ const terminalNodes = computed(() =>
     ...t,
     name:
       t.currentAreaId > 0 && t.currentAreaId !== dlg.id
-        ? `${t.name || "终端 " + t.id}（已属于 ${t.currentAreaName || t.currentAreaId}）`
-        : t.name || `终端 ${t.id}`
+        ? i18nT("alarmArea.terminalInArea", {
+            name: t.name || i18nT("common.terminalNo", { id: t.id }),
+            area: t.currentAreaName || t.currentAreaId
+          })
+        : t.name || i18nT("common.terminalNo", { id: t.id })
   }))
 );
 
@@ -240,7 +251,7 @@ const openCreate = async () => {
     visible: true,
     saving: false,
     isEdit: false,
-    title: "添加",
+    title: t("common.add"),
     id: 0,
     form: { name: "", info: "" }
   });
@@ -254,7 +265,7 @@ const openEdit = async (row: AlarmArea) => {
     visible: true,
     saving: false,
     isEdit: true,
-    title: `修改报警分区：${data.name}`,
+    title: i18nT("alarmArea.editArea", { name: data.name }),
     id: data.id,
     form: { name: data.name, info: data.info }
   });
@@ -264,12 +275,12 @@ const openEdit = async (row: AlarmArea) => {
   const dropped = data.terminals.filter(t => t.deleted).length;
   await searchTerminals("");
   if (dropped) {
-    ElMessage.warning(`该分区里有 ${dropped} 台终端已被删除，已自动从成员列表中移除`);
+    ElMessage.warning(i18nT("alarmArea.droppedTerminals", { n: dropped }));
   }
 };
 
 const submit = async () => {
-  if (!dlg.form.name.trim()) return ElMessage.warning("请输入分区名称");
+  if (!dlg.form.name.trim()) return ElMessage.warning(t("alarmArea.areaNameRequired"));
   const payload = {
     name: dlg.form.name.trim(),
     info: dlg.form.info.trim(),
@@ -282,7 +293,7 @@ const submit = async () => {
     } else {
       await createAlarmAreaApi(payload);
     }
-    ElMessage.success("保存成功");
+    ElMessage.success(t("common.saveSuccess"));
     dlg.visible = false;
     refresh();
   } finally {
@@ -296,7 +307,7 @@ const del = reactive({ visible: false, saving: false, preview: null as AlarmArea
 
 const openDelete = async (raw: (string | number)[]) => {
   const ids = toIds(raw);
-  if (!ids.length) return ElMessage.warning("请先勾选报警分区");
+  if (!ids.length) return ElMessage.warning(t("alarmArea.pickAreaFirst"));
   const { data } = await previewDeleteAlarmAreasApi(ids);
   del.preview = data;
   del.visible = true;
@@ -307,9 +318,9 @@ const submitDelete = async () => {
   const mappings = del.preview!.deletable.reduce((n, d) => n + d.impact.alarmMappings, 0);
   if (mappings > 0) {
     await ElMessageBox.confirm(
-      `这次删除会连带删掉 <b>${mappings}</b> 条报警映射，对应通道触发时将不再播放任何内容。确认继续？`,
-      "二次确认",
-      { type: "warning", dangerouslyUseHTMLString: true, confirmButtonText: "确认删除" }
+      i18nT("alarmArea.confirmCascade", { n: mappings }),
+      t("common.doubleConfirm"),
+      { type: "warning", dangerouslyUseHTMLString: true, confirmButtonText: t("common.confirmDelete") }
     );
   }
   del.saving = true;
@@ -317,8 +328,12 @@ const submitDelete = async () => {
     const { data } = await deleteAlarmAreasApi(ids);
     del.visible = false;
     ElNotification({
-      title: "删除完成",
-      message: `分区 ${data.deleted.length} 个、映射 ${data.deletedMappings} 条，${data.resetTerminals} 台终端已移出分区`,
+      title: t("common.deleteDone"),
+      message: i18nT("alarmArea.deletedSummary", {
+        areas: data.deleted.length,
+        mappings: data.deletedMappings,
+        terminals: data.resetTerminals
+      }),
       type: "success"
     });
     refresh();
