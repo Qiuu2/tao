@@ -116,15 +116,15 @@ func (s *Service) Get(ctx context.Context, u *auth.User, k Kind, id int64) (*Det
 		return nil, ErrNoPermission
 	}
 
-	d.StateText = stateText(d.State)
-	d.ProjectText = projectText(d.ProjectState)
+	d.StateText = stateText(ctx, d.State)
+	d.ProjectText = projectText(ctx, d.ProjectState)
 	d.CycleText = i18n.CycleText(ctx, d.ExeModel)
-	d.LengthText = lengthText(d.TimeLengthType, d.TimeLength)
-	d.PlayModeText = playModeText(d.IntPlayLenTy)
-	d.TypeText = taskTypeText(d.TaskType)
+	d.LengthText = lengthText(ctx, d.TimeLengthType, d.TimeLength)
+	d.PlayModeText = playModeText(ctx, d.IntPlayLenTy)
+	d.TypeText = taskTypeText(ctx, d.TaskType)
 	d.CanModify = true
 	if k == KindAmplifier {
-		d.SwitchText = switchText(d.Cmd)
+		d.SwitchText = switchText(ctx, d.Cmd)
 	}
 
 	terms, err := s.taskTerminals(ctx, id)

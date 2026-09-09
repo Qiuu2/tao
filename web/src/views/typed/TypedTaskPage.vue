@@ -27,23 +27,25 @@
   <div class="table-box">
     <!-- led播放 多一层任务目录，工具栏上还有创建/修改/删除/复制目录 -->
     <div v-if="kind === 'led'" class="folder-bar">
-      <span class="folder-label">任务目录</span>
+      <span class="folder-label">{{ $t("typed.taskFolder") }}</span>
       <el-radio-group v-model="initParam.folderId" size="small" @change="refresh">
-        <el-radio-button :label="0">全部</el-radio-button>
+        <el-radio-button :label="0">{{ $t("common.all") }}</el-radio-button>
         <el-radio-button v-for="f in ledFolders" :key="f.id" :label="f.id"> {{ f.name }}（{{ f.taskCount }}） </el-radio-button>
       </el-radio-group>
       <div class="grow"></div>
-      <el-button size="small" :icon="FolderAdd" :disabled="!canEdit" @click="openFolderCreate">创建目录</el-button>
+      <el-button size="small" :icon="FolderAdd" :disabled="!canEdit" @click="openFolderCreate">{{
+        $t("typed.createFolder")
+      }}</el-button>
       <el-button size="small" :icon="EditPen" :disabled="!canEdit || !initParam.folderId" @click="openFolderRename">
-        修改目录
+        {{ $t("typed.editFolder") }}
       </el-button>
       <el-button size="small" :icon="Delete" :disabled="!canEdit || !initParam.folderId" @click="doFolderDelete">
-        删除目录
+        {{ $t("typed.deleteFolder") }}
       </el-button>
       <el-button size="small" :icon="CopyDocument" :disabled="!canEdit || ledFolders.length < 2" @click="openFolderCopy">
-        复制目录
+        {{ $t("typed.copyFolder") }}
       </el-button>
-      <el-button size="small" :icon="Setting" @click="devDlg.visible = true">LED 设备</el-button>
+      <el-button size="small" :icon="Setting" @click="devDlg.visible = true">{{ $t("typed.ledDevice") }}</el-button>
     </div>
 
     <ProTable
@@ -65,34 +67,34 @@
       <template #tableHeader="scope">
         <div class="header-bar">
           <div class="header-left">
-            <el-button type="primary" :disabled="!canEdit" @click="openCreate">添加</el-button>
+            <el-button type="primary" :disabled="!canEdit" @click="openCreate">{{ $t("common.add") }}</el-button>
             <el-button type="danger" :disabled="!canEdit || !scope.isSelected" @click="doDelete(scope.selectedListIds)">
-              删除
+              {{ $t("common.delete") }}
             </el-button>
             <el-button :disabled="!canEdit || !scope.isSelected" @click="doControl('start', scope.selectedListIds)">
-              执行
+              {{ $t("taskCommon.run") }}
             </el-button>
             <el-button :disabled="!canEdit || !scope.isSelected" @click="doControl('stop', scope.selectedListIds)">
-              停止
+              {{ $t("taskCommon.stop") }}
             </el-button>
             <template v-if="kind === 'led'">
               <el-button :disabled="!canEdit || !scope.isSelected" @click="doControl('pause', scope.selectedListIds)">
-                暂停
+                {{ $t("task.pause") }}
               </el-button>
               <el-button :disabled="!canEdit || !scope.isSelected" @click="doControl('resume', scope.selectedListIds)">
-                恢复
+                {{ $t("taskCommon.resume") }}
               </el-button>
             </template>
             <template v-if="kind !== 'amplifier'">
               <el-button :disabled="!canEdit || !scope.isSelected" @click="doState(scope.selectedListIds, true)">
-                启用
+                {{ $t("common.enable") }}
               </el-button>
               <el-button :disabled="!canEdit || !scope.isSelected" @click="doState(scope.selectedListIds, false)">
-                停用
+                {{ $t("common.disable") }}
               </el-button>
             </template>
             <el-button :disabled="!canEdit || !scope.isSelected" @click="openVolume(scope.selectedListIds)">
-              {{ kind === "led" ? "调整音量" : "任务音量" }}
+              {{ kind === "led" ? $t("terminalCommon.adjustVolume") : $t("task.taskVolume") }}
             </el-button>
           </div>
           <div class="header-right">
@@ -113,48 +115,50 @@
 
       <!-- 旧版的「终端属性 → 浏览终端」 -->
       <template #terminals="s">
-        <el-button link type="primary" @click="openTerminals(s.row)">终端({{ s.row.terminalCount }})</el-button>
+        <el-button link type="primary" @click="openTerminals(s.row)"
+          >{{ $t("terminalCommon.terminal") }}({{ s.row.terminalCount }})</el-button
+        >
       </template>
 
       <template #operation="s">
         <el-button type="primary" link :icon="EditPen" :disabled="!canEdit || !s.row.canModify" @click="openEdit(s.row)">
-          修改
+          {{ $t("common.modify") }}
         </el-button>
         <el-button type="danger" link :icon="Delete" :disabled="!canEdit || !s.row.canModify" @click="doDelete([s.row.taskId])">
-          删除
+          {{ $t("common.delete") }}
         </el-button>
       </template>
     </ProTable>
 
     <!-- 任务音量：这四类任务和文件广播同在 task 表里，直接用 /api/tasks/volume -->
-    <el-dialog v-model="vol.visible" title="任务音量" width="440px">
+    <el-dialog v-model="vol.visible" :title="$t('task.taskVolume')" width="440px">
       <el-slider v-model="vol.value" :min="0" :max="100" show-input />
       <template #footer>
-        <el-button @click="vol.visible = false">取消</el-button>
-        <el-button type="primary" :loading="vol.saving" @click="submitVolume">确定</el-button>
+        <el-button @click="vol.visible = false">{{ $t("common.cancel") }}</el-button>
+        <el-button type="primary" :loading="vol.saving" @click="submitVolume">{{ $t("common.confirm") }}</el-button>
       </template>
     </el-dialog>
 
     <!-- 浏览终端：旧版 displayterminal.php 那张表 -->
     <el-dialog v-model="termDlg.visible" :title="termDlg.title" width="820px" top="8vh">
       <el-table :data="termDlg.list" size="small" max-height="420">
-        <el-table-column prop="terminalname" label="终端名称" min-width="160" show-overflow-tooltip />
-        <el-table-column prop="typeName" label="终端类型" width="140" show-overflow-tooltip />
-        <el-table-column label="网络状态" width="100">
+        <el-table-column prop="terminalname" :label="$t('terminalCommon.terminalName')" min-width="160" show-overflow-tooltip />
+        <el-table-column prop="typeName" :label="$t('terminalCommon.terminalType')" width="140" show-overflow-tooltip />
+        <el-table-column :label="$t('terminalCommon.netState')" width="100">
           <template #default="{ row }">
             <el-tag :type="row.netstate === 1 ? 'success' : 'info'" size="small">
               {{ row.netstate === 1 ? "在线" : "离线" }}
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="设备状态" width="100">
+        <el-table-column :label="$t('terminalCommon.deviceState')" width="100">
           <template #default="{ row }">{{ row.devicestate === 1 ? "正常" : "空闲" }}</template>
         </el-table-column>
-        <el-table-column prop="ip" label="终端IP" width="150" />
-        <el-table-column prop="volume" label="音量" width="80" />
+        <el-table-column prop="ip" :label="$t('terminalCommon.terminalIp')" width="150" />
+        <el-table-column prop="volume" :label="$t('common.volume')" width="80" />
       </el-table>
       <template #footer>
-        <el-button @click="termDlg.visible = false">关闭</el-button>
+        <el-button @click="termDlg.visible = false">{{ $t("common.close") }}</el-button>
       </template>
     </el-dialog>
 
@@ -162,11 +166,11 @@
     <el-dialog v-model="dlg.visible" :title="dlg.title" width="900px" top="4vh">
       <el-form :model="form" label-width="110px">
         <!-- ---------- 任务属性 ---------- -->
-        <el-divider content-position="left">任务属性</el-divider>
+        <el-divider content-position="left">{{ $t("task.taskProps") }}</el-divider>
         <el-row :gutter="16">
           <el-col :span="12">
-            <el-form-item label="任务名称" required>
-              <el-input v-model="form.taskName" maxlength="60" show-word-limit placeholder="请输入任务名称" />
+            <el-form-item :label="$t('taskCommon.taskName')" required>
+              <el-input v-model="form.taskName" maxlength="60" show-word-limit :placeholder="$t('task.taskNameRequired')" />
               <div v-if="err.taskName" class="err">{{ err.taskName }}</div>
             </el-form-item>
           </el-col>
@@ -177,7 +181,7 @@
               写了非 0 值任务会直接从列表里消失（服务端 normPerKind() 里有完整说明）。
           -->
           <el-col v-if="kind !== 'amplifier'" :span="12">
-            <el-form-item label="预开电源">
+            <el-form-item :label="$t('taskCommon.prePower')">
               <el-select v-model="form.prepower" class="fill">
                 <el-option v-for="o in prepowerOptions" :key="o.value" :label="o.label" :value="o.value" />
               </el-select>
@@ -185,7 +189,7 @@
           </el-col>
 
           <el-col :span="12">
-            <el-form-item label="任务级别">
+            <el-form-item :label="$t('taskCommon.priority')">
               <el-select v-model="form.priority" class="fill">
                 <el-option v-for="p in priorityOptions" :key="p" :label="String(p)" :value="p" />
               </el-select>
@@ -193,10 +197,10 @@
           </el-col>
 
           <el-col v-if="kind !== 'amplifier'" :span="12">
-            <el-form-item label="发送模式">
+            <el-form-item :label="$t('taskCommon.sendMode')">
               <el-select v-model="form.datasendmodel" class="fill">
-                <el-option label="单 播" :value="0" />
-                <el-option label="组 播" :value="1" />
+                <el-option :label="$t('typed.unicastSpaced')" :value="0" />
+                <el-option :label="$t('typed.multicastSpaced')" :value="1" />
               </el-select>
             </el-form-item>
           </el-col>
@@ -209,10 +213,10 @@
             （提示音跟在 tts终端 下面，同在右列）。
           -->
           <el-col v-if="hasIntervalMode" :span="12">
-            <el-form-item label="播放模式">
+            <el-form-item :label="$t('task.playMode')">
               <el-select v-model="form.intervalMode" class="fill" @change="onIntervalModeChange">
-                <el-option label="普通模式" :value="0" />
-                <el-option label="间隔时间" :value="1" />
+                <el-option :label="$t('task.normalMode')" :value="0" />
+                <el-option :label="$t('task.intervalTime')" :value="1" />
               </el-select>
             </el-form-item>
           </el-col>
@@ -220,24 +224,29 @@
           <!-- 文字语音专属：声音模式 / 播放速率 / tts终端 / 提示音 -->
           <template v-if="kind === 'tts'">
             <el-col :span="12">
-              <el-form-item label="声音模式">
+              <el-form-item :label="$t('typed.voiceMode')">
                 <el-select v-model="form.musicmode" class="fill">
-                  <el-option label="女声" :value="0" />
-                  <el-option label="男声" :value="1" />
-                  <el-option label="英语男声" :value="2" />
-                  <el-option label="英语女声" :value="3" />
+                  <el-option :label="$t('typed.female')" :value="0" />
+                  <el-option :label="$t('typed.male')" :value="1" />
+                  <el-option :label="$t('typed.maleEn')" :value="2" />
+                  <el-option :label="$t('typed.femaleEn')" :value="3" />
                 </el-select>
               </el-form-item>
             </el-col>
             <el-col :span="12">
-              <el-form-item label="播放速率">
+              <el-form-item :label="$t('typed.playRate')">
                 <el-slider v-model="form.ttsSpeed" :min="0" :max="100" show-input size="small" />
               </el-form-item>
             </el-col>
             <el-col :span="12">
-              <el-form-item label="tts终端">
-                <el-select v-model="form.sourceTerminalId" class="fill" placeholder="请选择tts终端" @change="onSourceChange">
-                  <el-option :label="'请选择tts终端'" :value="0" />
+              <el-form-item :label="$t('typed.ttsTerminal')">
+                <el-select
+                  v-model="form.sourceTerminalId"
+                  class="fill"
+                  :placeholder="$t('typed.pickTtsTerminal')"
+                  @change="onSourceChange"
+                >
+                  <el-option :label="$t('typed.pickTtsTerminal')" :value="0" />
                   <el-option v-for="t in sourceTerminals" :key="t.id" :label="t.terminalname" :value="t.id" />
                 </el-select>
               </el-form-item>
@@ -245,9 +254,9 @@
             <!-- 旧版只有在 tts终端 选到服务器本机（typeid = 0）时才出现提示音。
                  offset 让它落在右列，跟在 tts终端 下面 -->
             <el-col v-if="sourceIsServer" :span="12" :offset="12">
-              <el-form-item label="提示音">
-                <el-select v-model="form.promptId" class="fill" placeholder="请选择提示音">
-                  <el-option label="请选择提示音" :value="0" />
+              <el-form-item :label="$t('typed.promptTone')">
+                <el-select v-model="form.promptId" class="fill" :placeholder="$t('typed.pickPromptTone')">
+                  <el-option :label="$t('typed.pickPromptTone')" :value="0" />
                   <el-option v-for="m in promptList" :key="m.id" :label="m.name" :value="m.id" />
                 </el-select>
               </el-form-item>
@@ -257,26 +266,26 @@
 
         <!-- 普通模式：循环次数 + 播放时长；间隔模式：间隔时长 + 间隔时长/每次循环次数 -->
         <template v-if="!hasIntervalMode || form.intervalMode === 0">
-          <el-form-item v-if="hasCycleTimes" label="循环次数">
+          <el-form-item v-if="hasCycleTimes" :label="$t('taskCommon.loopTimes')">
             <el-input-number v-model="form.timelength" :min="0" :max="10" controls-position="right" />
-            <span class="tip">0 是无限循环，最大 10 次</span>
+            <span class="tip">{{ $t("task.infiniteLoop") }}</span>
           </el-form-item>
-          <el-form-item label="播放时长">
+          <el-form-item :label="$t('taskCommon.playLength')">
             <HmsInput v-model="form.durationSec" />
           </el-form-item>
         </template>
         <template v-else>
-          <el-form-item label="间隔时长">
+          <el-form-item :label="$t('task.intervalPlayLength')">
             <HmsInput v-model="form.intervalS" />
           </el-form-item>
-          <el-form-item label="间隔方式">
+          <el-form-item :label="$t('typed.intervalMode')">
             <el-radio-group v-model="form.intPlayLenTy" class="len-group">
               <div class="len-line">
-                <el-radio :value="1">间隔时长</el-radio>
+                <el-radio :value="1">{{ $t("task.intervalPlayLength") }}</el-radio>
                 <HmsInput v-model="form.intPlayLenSec" :disabled="form.intPlayLenTy !== 1" />
               </div>
               <div class="len-line">
-                <el-radio :value="2">每次循环次数</el-radio>
+                <el-radio :value="2">{{ $t("typed.loopPerRound") }}</el-radio>
                 <el-input-number
                   :key="`cnt-${form.intPlayLenTy}`"
                   v-model="form.intPlayLenCount"
@@ -290,25 +299,25 @@
           </el-form-item>
         </template>
 
-        <el-form-item label="任务音量">
+        <el-form-item :label="$t('task.taskVolume')">
           <el-slider v-model="form.defaultvolume" :min="0" :max="100" show-input size="small" />
         </el-form-item>
 
         <!-- ---------- 执行时间 ---------- -->
-        <el-divider content-position="left">执行时间</el-divider>
+        <el-divider content-position="left">{{ $t("taskCommon.runTime") }}</el-divider>
         <el-row :gutter="16">
           <el-col :span="8">
-            <el-form-item label="播放时间" required>
+            <el-form-item :label="$t('taskCommon.playTime')" required>
               <el-time-picker v-model="form.playtime" value-format="HH:mm:ss" :clearable="false" class="fill" />
             </el-form-item>
           </el-col>
           <el-col :span="8">
-            <el-form-item label="开始日期" required>
+            <el-form-item :label="$t('common.startDate')" required>
               <el-date-picker
                 v-model="form.range[0]"
                 type="date"
                 value-format="YYYY-MM-DD"
-                placeholder="请选择开始日期"
+                :placeholder="$t('bell.pickStartDate')"
                 :clearable="false"
                 class="fill"
               />
@@ -316,12 +325,12 @@
             </el-form-item>
           </el-col>
           <el-col :span="8">
-            <el-form-item label="结束日期" required>
+            <el-form-item :label="$t('common.endDate')" required>
               <el-date-picker
                 v-model="form.range[1]"
                 type="date"
                 value-format="YYYY-MM-DD"
-                placeholder="请选择结束日期"
+                :placeholder="$t('bell.pickEndDate')"
                 :clearable="false"
                 class="fill"
               />
@@ -330,11 +339,11 @@
           </el-col>
         </el-row>
         <!-- 执行模式：每天 / 每星期 / 手动，选「每星期」才出现星期复选框（照旧版 displayweek） -->
-        <el-form-item label="执行模式">
+        <el-form-item :label="$t('taskCommon.exeMode')">
           <el-select v-model="form.runMode" style="width: 140px" @change="onRunModeChange">
-            <el-option label="每天" :value="1" />
-            <el-option label="每星期" :value="2" />
-            <el-option label="手动" :value="3" />
+            <el-option :label="$t('taskCommon.everyDay')" :value="1" />
+            <el-option :label="$t('taskCommon.everyWeek')" :value="2" />
+            <el-option :label="$t('taskCommon.manual')" :value="3" />
           </el-select>
           <el-checkbox-group v-if="form.runMode === 2" v-model="form.weekdays" class="wk-group">
             <el-checkbox v-for="(w, i) in WEEK" :key="i" :value="i">{{ w }}</el-checkbox>
@@ -343,38 +352,43 @@
 
         <!-- ---------- 音频设置（采播管理） ---------- -->
         <template v-if="kind === 'collect'">
-          <el-divider content-position="left">音频设置</el-divider>
+          <el-divider content-position="left">{{ $t("typed.audioSettings") }}</el-divider>
           <el-row :gutter="16">
             <el-col :span="12">
-              <el-form-item label="采播终端" required>
-                <el-select v-model="form.sourceTerminalId" class="fill" placeholder="请选择采播终端" @change="onSourceChange">
-                  <el-option :label="'请选择采播终端'" :value="0" />
+              <el-form-item :label="$t('typed.captureTerminal')" required>
+                <el-select
+                  v-model="form.sourceTerminalId"
+                  class="fill"
+                  :placeholder="$t('typed.pickCaptureTerminal')"
+                  @change="onSourceChange"
+                >
+                  <el-option :label="$t('typed.pickCaptureTerminal')" :value="0" />
                   <el-option v-for="t in sourceTerminals" :key="t.id" :label="t.terminalname" :value="t.id" />
                 </el-select>
                 <div v-if="err.source" class="err">{{ err.source }}</div>
               </el-form-item>
             </el-col>
             <el-col :span="12">
-              <el-form-item label="采样率">
+              <el-form-item :label="$t('typed.sampleRate')">
                 <el-select v-model="form.samplerate" class="fill">
                   <el-option v-for="r in SAMPLE_RATES" :key="r" :label="`${r}Hz`" :value="r" />
                 </el-select>
               </el-form-item>
             </el-col>
             <el-col :span="12">
-              <el-form-item label="终端通道">
+              <el-form-item :label="$t('typed.terminalChannel')">
                 <!-- 选项条数 = 所选采播终端型号的 switchcount，没选采播终端时是空的（同旧版） -->
                 <el-select
                   v-model="form.channel"
                   class="fill"
-                  :placeholder="form.sourceTerminalId ? '请选择终端通道' : '请先选择采播终端'"
+                  :placeholder="form.sourceTerminalId ? $t('typed.pickChannel') : $t('typed.pickCaptureFirst')"
                 >
                   <el-option v-for="c in channelOptions" :key="c.value" :label="c.label" :value="c.value" />
                 </el-select>
               </el-form-item>
             </el-col>
             <el-col :span="12">
-              <el-form-item label="比特率">
+              <el-form-item :label="$t('typed.bitrate')">
                 <el-select v-model="form.bandrate" class="fill">
                   <el-option v-for="b in BAND_RATES" :key="b" :label="`${b}Kbp/s`" :value="b" />
                 </el-select>
@@ -385,7 +399,7 @@
 
         <!-- ---------- 文字语音内容 ---------- -->
         <template v-if="kind === 'tts'">
-          <el-divider content-position="left">文字语音内容</el-divider>
+          <el-divider content-position="left">{{ $t("typed.ttsContent") }}</el-divider>
           <el-form-item label-width="0" required>
             <!-- 上限 800 个字（按字符数算，不是字节） -->
             <el-input
@@ -394,7 +408,7 @@
               :rows="8"
               :maxlength="TTS_TEXT_LIMIT"
               show-word-limit
-              placeholder="请输入播放文字"
+              :placeholder="$t('typed.playTextRequired')"
             />
             <div v-if="err.text" class="err">{{ err.text }}</div>
           </el-form-item>
@@ -405,19 +419,19 @@
             勾掉再保存，服务端会把已有的子任务删掉。
             这里没有「led设备列表」：字幕跟着本任务的终端走。
           -->
-          <el-divider content-position="left">led字幕</el-divider>
+          <el-divider content-position="left">{{ $t("task.ledSubtitle") }}</el-divider>
           <el-row :gutter="16">
             <el-col :span="12">
-              <el-form-item label="led播放">
-                <el-checkbox v-model="ledOn">上屏显示 led 字幕</el-checkbox>
+              <el-form-item :label="$t('task.ledPlay')">
+                <el-checkbox v-model="ledOn">{{ $t("task.ledShow") }}</el-checkbox>
               </el-form-item>
             </el-col>
             <el-col v-if="ledOn" :span="12">
-              <el-form-item label="Led速度">
+              <el-form-item :label="$t('task.ledSpeed')">
                 <el-select v-model="form.led.speed" style="width: 110px">
-                  <el-option v-for="n in [0, 1, 2, 3, 4, 5]" :key="n" :label="`${n} 级`" :value="n" />
+                  <el-option v-for="n in [0, 1, 2, 3, 4, 5]" :key="n" :label="$t('task.levelN', { n })" :value="n" />
                 </el-select>
-                <span class="tip">0 ~ 5 级</span>
+                <span class="tip">{{ $t("task.levels0to5") }}</span>
               </el-form-item>
             </el-col>
           </el-row>
@@ -428,7 +442,7 @@
               :rows="4"
               maxlength="2000"
               show-word-limit
-              placeholder="请输入Led字幕内容"
+              :placeholder="$t('typed.ledContentRequired')"
             />
             <div v-if="err.ledText" class="err">{{ err.ledText }}</div>
           </el-form-item>
@@ -436,21 +450,21 @@
 
         <!-- ---------- led字幕 ---------- -->
         <template v-if="kind === 'led'">
-          <el-divider content-position="left">led字幕</el-divider>
+          <el-divider content-position="left">{{ $t("task.ledSubtitle") }}</el-divider>
           <el-row :gutter="16">
             <el-col :span="12">
-              <el-form-item label="任务目录" required>
-                <el-select v-model="form.folderId" class="fill" placeholder="选择任务目录">
+              <el-form-item :label="$t('typed.taskFolder')" required>
+                <el-select v-model="form.folderId" class="fill" :placeholder="$t('typed.pickFolder')">
                   <el-option v-for="f in ledFolders" :key="f.id" :label="f.name" :value="f.id" />
                 </el-select>
               </el-form-item>
             </el-col>
             <el-col :span="12">
-              <el-form-item label="Led速度">
+              <el-form-item :label="$t('task.ledSpeed')">
                 <el-select v-model="form.led.speed" style="width: 110px">
-                  <el-option v-for="n in [0, 1, 2, 3, 4, 5]" :key="n" :label="`${n} 级`" :value="n" />
+                  <el-option v-for="n in [0, 1, 2, 3, 4, 5]" :key="n" :label="$t('task.levelN', { n })" :value="n" />
                 </el-select>
-                <span class="tip">0 ~ 5 级</span>
+                <span class="tip">{{ $t("task.levels0to5") }}</span>
               </el-form-item>
             </el-col>
           </el-row>
@@ -461,14 +475,14 @@
               :rows="8"
               maxlength="2000"
               show-word-limit
-              placeholder="请输入Led字幕内容"
+              :placeholder="$t('typed.ledContentRequired')"
             />
             <div v-if="err.ledText" class="err">{{ err.ledText }}</div>
           </el-form-item>
         </template>
 
         <!-- ---------- 终端列表 ---------- -->
-        <el-divider content-position="left">终端列表</el-divider>
+        <el-divider content-position="left">{{ $t("terminalCommon.terminalList") }}</el-divider>
         <el-form-item label-width="0">
           <TerminalTree
             v-model="selectedTerminals"
@@ -485,48 +499,48 @@
 
       <!-- 旧版这几张表单底下只有「提交」（终端功放还多一个「取消」） -->
       <template #footer>
-        <el-button @click="dlg.visible = false">取消</el-button>
-        <el-button type="primary" :loading="dlg.saving" @click="submit">提交</el-button>
+        <el-button @click="dlg.visible = false">{{ $t("common.cancel") }}</el-button>
+        <el-button type="primary" :loading="dlg.saving" @click="submit">{{ $t("common.submit") }}</el-button>
       </template>
     </el-dialog>
 
     <!-- ============ LED 目录：创建 / 修改 / 复制 ============ -->
     <el-dialog v-model="folderDlg.visible" :title="folderDlg.title" width="420px">
       <el-form label-width="90px">
-        <el-form-item label="目录名称" required>
-          <el-input v-model="folderDlg.name" maxlength="60" show-word-limit placeholder="请输入目录名称" />
+        <el-form-item :label="$t('typed.folderName')" required>
+          <el-input v-model="folderDlg.name" maxlength="60" show-word-limit :placeholder="$t('typed.folderNameRequired')" />
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="folderDlg.visible = false">取消</el-button>
-        <el-button type="primary" :loading="folderDlg.saving" @click="submitFolder">确定</el-button>
+        <el-button @click="folderDlg.visible = false">{{ $t("common.cancel") }}</el-button>
+        <el-button type="primary" :loading="folderDlg.saving" @click="submitFolder">{{ $t("common.confirm") }}</el-button>
       </template>
     </el-dialog>
 
-    <el-dialog v-model="copyDlg.visible" title="复制目录" width="460px">
+    <el-dialog v-model="copyDlg.visible" :title="$t('typed.copyFolder')" width="460px">
       <el-form label-width="90px">
-        <el-form-item label="源目录" required>
+        <el-form-item :label="$t('typed.sourceFolder')" required>
           <el-select v-model="copyDlg.fromId" class="fill">
             <el-option v-for="f in ledFolders" :key="f.id" :label="`${f.name}（${f.taskCount}）`" :value="f.id" />
           </el-select>
         </el-form-item>
-        <el-form-item label="目标目录" required>
+        <el-form-item :label="$t('typed.targetFolder')" required>
           <el-select v-model="copyDlg.toId" class="fill">
             <el-option v-for="f in ledFolders" :key="f.id" :label="`${f.name}（${f.taskCount}）`" :value="f.id" />
           </el-select>
         </el-form-item>
       </el-form>
-      <div class="dlg-note">源目录里的任务会整条复制到目标目录，任务名后面补「-副本」。</div>
+      <div class="dlg-note">{{ $t("typed.copyFolderNote") }}</div>
       <template #footer>
-        <el-button @click="copyDlg.visible = false">取消</el-button>
-        <el-button type="primary" :loading="copyDlg.saving" @click="submitCopy">确定</el-button>
+        <el-button @click="copyDlg.visible = false">{{ $t("common.cancel") }}</el-button>
+        <el-button type="primary" :loading="copyDlg.saving" @click="submitCopy">{{ $t("common.confirm") }}</el-button>
       </template>
     </el-dialog>
 
     <!-- ============ LED 设备管理 ============ -->
-    <el-dialog v-model="devDlg.visible" title="LED 设备" width="900px" top="6vh">
+    <el-dialog v-model="devDlg.visible" :title="$t('typed.ledDevice')" width="900px" top="6vh">
       <div class="dev-bar">
-        <el-button type="primary" :icon="CirclePlus" size="small" @click="openDev()">新建 LED 设备</el-button>
+        <el-button type="primary" :icon="CirclePlus" size="small" @click="openDev()">{{ $t("typed.newLedDevice") }}</el-button>
         <el-button type="danger" :icon="Delete" size="small" :disabled="!devSel.length" @click="deleteDevices">
           删除({{ devSel.length }})
         </el-button>
@@ -539,74 +553,80 @@
         @selection-change="r => (devSel = r.map((x: any) => x.id))"
       >
         <el-table-column type="selection" width="46" />
-        <el-table-column prop="id" label="编号" width="70" />
-        <el-table-column prop="name" label="名称" min-width="130" />
-        <el-table-column prop="ip" label="IP地址" width="140" />
-        <el-table-column label="尺寸" width="110">
+        <el-table-column prop="id" :label="$t('common.id')" width="70" />
+        <el-table-column prop="name" :label="$t('common.name')" min-width="130" />
+        <el-table-column prop="ip" :label="$t('common.ipAddress')" width="140" />
+        <el-table-column :label="$t('typed.screenSize')" width="110">
           <template #default="{ row }">{{ row.width }} × {{ row.height }}</template>
         </el-table-column>
-        <el-table-column prop="terminalname" label="所属终端" min-width="140" show-overflow-tooltip />
-        <el-table-column prop="sendport" label="端口" width="80" />
-        <el-table-column label="操作" width="90">
+        <el-table-column prop="terminalname" :label="$t('typed.ownerTerminal')" min-width="140" show-overflow-tooltip />
+        <el-table-column prop="sendport" :label="$t('typed.port')" width="80" />
+        <el-table-column :label="$t('common.operation')" width="90">
           <template #default="{ row }">
-            <el-button link type="primary" @click="openDev(row)">修改</el-button>
+            <el-button link type="primary" @click="openDev(row)">{{ $t("common.modify") }}</el-button>
           </template>
         </el-table-column>
       </el-table>
 
-      <el-dialog v-model="devForm.visible" :title="devForm.id ? '修改 LED 设备' : '新建 LED 设备'" width="560px" append-to-body>
+      <el-dialog
+        v-model="devForm.visible"
+        :title="devForm.id ? $t('typed.editLedDevice') : $t('typed.newLedDevice')"
+        width="560px"
+        append-to-body
+      >
         <el-form :model="devForm" label-width="110px">
-          <el-form-item label="名称" required>
+          <el-form-item :label="$t('common.name')" required>
             <el-input v-model="devForm.name" maxlength="21" show-word-limit />
           </el-form-item>
-          <el-form-item label="IP地址" required>
-            <el-input v-model="devForm.ip" placeholder="例如 192.168.2.90" />
+          <el-form-item :label="$t('common.ipAddress')" required>
+            <el-input v-model="devForm.ip" :placeholder="$t('typed.egIp')" />
           </el-form-item>
-          <el-form-item label="所属终端" required>
+          <el-form-item :label="$t('typed.ownerTerminal')" required>
             <TerminalTreeSelect v-model="devForm.terminalId" :terminals="terminals" />
           </el-form-item>
           <el-row :gutter="14">
             <el-col :span="12">
-              <el-form-item label="屏宽">
+              <el-form-item :label="$t('typed.screenWidth')">
                 <el-input-number v-model="devForm.width" :min="1" :max="4096" controls-position="right" />
               </el-form-item>
             </el-col>
             <el-col :span="12">
-              <el-form-item label="屏高">
+              <el-form-item :label="$t('typed.screenHeight')">
                 <el-input-number v-model="devForm.height" :min="1" :max="4096" controls-position="right" />
               </el-form-item>
             </el-col>
           </el-row>
           <el-row :gutter="14">
             <el-col :span="12">
-              <el-form-item label="设备号">
+              <el-form-item :label="$t('typed.deviceNo')">
                 <el-input-number v-model="devForm.devid" :min="0" controls-position="right" />
               </el-form-item>
             </el-col>
             <el-col :span="12">
-              <el-form-item label="发送端口">
+              <el-form-item :label="$t('typed.sendPort')">
                 <el-input-number v-model="devForm.sendport" :min="0" :max="65535" controls-position="right" />
               </el-form-item>
             </el-col>
           </el-row>
-          <el-form-item label="默认显示">
-            <el-input v-model="devForm.defaulttext" type="textarea" :rows="2" placeholder="选填" />
+          <el-form-item :label="$t('typed.defaultShow')">
+            <el-input v-model="devForm.defaulttext" type="textarea" :rows="2" :placeholder="$t('common.optional')" />
           </el-form-item>
         </el-form>
         <template #footer>
-          <el-button @click="devForm.visible = false">取消</el-button>
-          <el-button type="primary" :loading="devForm.saving" @click="submitDev">确定</el-button>
+          <el-button @click="devForm.visible = false">{{ $t("common.cancel") }}</el-button>
+          <el-button type="primary" :loading="devForm.saving" @click="submitDev">{{ $t("common.confirm") }}</el-button>
         </template>
       </el-dialog>
 
       <template #footer>
-        <el-button @click="devDlg.visible = false">关闭</el-button>
+        <el-button @click="devDlg.visible = false">{{ $t("common.close") }}</el-button>
       </template>
     </el-dialog>
   </div>
 </template>
 
 <script setup lang="tsx">
+import { useI18n } from "vue-i18n";
 import { CirclePlus, CopyDocument, Delete, EditPen, FolderAdd, Setting } from "@element-plus/icons-vue";
 import { ElMessage, ElMessageBox, ElNotification } from "element-plus";
 import { computed, onMounted, reactive, ref, watch } from "vue";
@@ -651,6 +671,9 @@ import TerminalTreeSelect from "@/components/TerminalTree/Select.vue";
 import { useAuthStore } from "@/stores/modules/auth";
 import type { ColumnProps, ProTableInstance } from "@/components/ProTable/interface";
 
+// 脚本里拼的文案用 t()；模板里的 $t 不用引入
+const { t } = useI18n();
+
 const props = defineProps<{ kind: TypedKind }>();
 
 const title = computed(() => KIND_TITLE[props.kind]);
@@ -665,7 +688,7 @@ const canEdit = computed(() => !!(authStore.authButtonListGet as any)?.[props.ki
 const toIds = (raw: (string | number)[]) => (raw ?? []).map(Number).filter(n => Number.isFinite(n) && n > 0);
 
 // exemodel 是周日打头的 7 位掩码，标签顺序要跟位次一致
-const WEEK = ["周日", "周一", "周二", "周三", "周四", "周五", "周六"];
+const WEEK = [t("week.sun"), t("week.mon"), t("week.tue"), t("week.wed"), t("week.thu"), t("week.fri"), t("week.sat")];
 
 /** 文字语音内容的上限：800 个字（按字符数算，与服务端一致） */
 const TTS_TEXT_LIMIT = 800;
@@ -677,8 +700,8 @@ const BAND_RATES = [8, 16, 32, 64, 128];
 // 预开电源：ok112 是 0~55 秒每 5 秒一档，再加 1~5 分钟，默认 2 分钟
 const prepowerOptions = (() => {
   const out: { label: string; value: number }[] = [];
-  for (let i = 0; i < 60; i += 5) out.push({ label: `${i}秒`, value: i });
-  for (let m = 1; m <= 5; m++) out.push({ label: `${m}分`, value: m * 60 });
+  for (let i = 0; i < 60; i += 5) out.push({ label: t("typed.secondsN", { n: i }), value: i });
+  for (let m = 1; m <= 5; m++) out.push({ label: t("typed.minutesN", { n: m }), value: m * 60 });
   return out;
 })();
 
@@ -705,69 +728,69 @@ const dataCallback = (data: any) => {
 //
 const COLS: Record<TypedKind, ColumnProps<TypedTask>[]> = {
   amplifier: [
-    { prop: "taskName", label: "终端功放任务", minWidth: 180 },
-    { prop: "cycleText", label: "播放周期", width: 130 },
-    { prop: "startdate", label: "起始日期", width: 110 },
-    { prop: "enddate", label: "结束日期", width: 110 },
-    { prop: "playtime", label: "执行时间", width: 100 },
-    { prop: "lengthText", label: "播放时长", width: 110 },
-    { prop: "defaultvolume", label: "任务音量", width: 90 },
-    { prop: "projectstate", label: "状态", width: 80 },
-    { prop: "userName", label: "所属用户", width: 120 },
-    { prop: "terminals", label: "终端属性", width: 110 }
+    { prop: "taskName", label: t("typed.ampTaskType"), minWidth: 180 },
+    { prop: "cycleText", label: t("taskCommon.cycle"), width: 130 },
+    { prop: "startdate", label: t("common.startDate"), width: 110 },
+    { prop: "enddate", label: t("common.endDate"), width: 110 },
+    { prop: "playtime", label: t("taskCommon.runTime"), width: 100 },
+    { prop: "lengthText", label: t("taskCommon.playLength"), width: 110 },
+    { prop: "defaultvolume", label: t("task.taskVolume"), width: 90 },
+    { prop: "projectstate", label: t("common.status"), width: 80 },
+    { prop: "userName", label: t("taskCommon.owner"), width: 120 },
+    { prop: "terminals", label: t("bell.terminalAttr"), width: 110 }
   ],
   collect: [
-    { prop: "taskName", label: "采播任务", minWidth: 150 },
-    { prop: "cycleText", label: "播放周期", width: 130 },
-    { prop: "lengthText", label: "采播时长", width: 110 },
-    { prop: "startdate", label: "起始日期", width: 110 },
-    { prop: "enddate", label: "结束日期", width: 110 },
-    { prop: "playtime", label: "执行时间", width: 100 },
-    { prop: "projectstate", label: "状态", width: 80 },
-    { prop: "cmdargs", label: "通道", width: 80 },
-    { prop: "samplerate", label: "采样率", width: 90 },
-    { prop: "bandrate", label: "比特率", width: 90 },
-    { prop: "priority", label: "任务级别", width: 90 },
-    { prop: "defaultvolume", label: "采播音量", width: 90 },
-    { prop: "userName", label: "所属用户", width: 110 },
-    { prop: "terminals", label: "终端属性", width: 110 }
+    { prop: "taskName", label: t("typed.captureTaskType"), minWidth: 150 },
+    { prop: "cycleText", label: t("taskCommon.cycle"), width: 130 },
+    { prop: "lengthText", label: t("typed.captureLength"), width: 110 },
+    { prop: "startdate", label: t("common.startDate"), width: 110 },
+    { prop: "enddate", label: t("common.endDate"), width: 110 },
+    { prop: "playtime", label: t("taskCommon.runTime"), width: 100 },
+    { prop: "projectstate", label: t("common.status"), width: 80 },
+    { prop: "cmdargs", label: t("typed.channel"), width: 80 },
+    { prop: "samplerate", label: t("typed.sampleRate"), width: 90 },
+    { prop: "bandrate", label: t("typed.bitrate"), width: 90 },
+    { prop: "priority", label: t("taskCommon.priority"), width: 90 },
+    { prop: "defaultvolume", label: t("typed.captureVolume"), width: 90 },
+    { prop: "userName", label: t("taskCommon.owner"), width: 110 },
+    { prop: "terminals", label: t("bell.terminalAttr"), width: 110 }
   ],
   tts: [
-    { prop: "taskName", label: "文字语音任务", minWidth: 160 },
-    { prop: "cycleText", label: "播放周期", width: 130 },
-    { prop: "startdate", label: "开始日期", width: 110 },
-    { prop: "enddate", label: "结束日期", width: 110 },
-    { prop: "playtime", label: "执行时间", width: 100 },
-    { prop: "lengthText", label: "播放时长", width: 110 },
-    { prop: "projectstate", label: "状态", width: 80 },
-    { prop: "playModeText", label: "播放模式", width: 100 },
-    { prop: "defaultvolume", label: "音量", width: 80 },
-    { prop: "priority", label: "任务级别", width: 90 },
-    { prop: "typeText", label: "任务类型", width: 100 },
-    { prop: "userName", label: "所属用户", width: 110 },
-    { prop: "terminals", label: "终端属性", width: 110 }
+    { prop: "taskName", label: t("typed.ttsTaskType"), minWidth: 160 },
+    { prop: "cycleText", label: t("taskCommon.cycle"), width: 130 },
+    { prop: "startdate", label: t("common.startDate"), width: 110 },
+    { prop: "enddate", label: t("common.endDate"), width: 110 },
+    { prop: "playtime", label: t("taskCommon.runTime"), width: 100 },
+    { prop: "lengthText", label: t("taskCommon.playLength"), width: 110 },
+    { prop: "projectstate", label: t("common.status"), width: 80 },
+    { prop: "playModeText", label: t("task.playMode"), width: 100 },
+    { prop: "defaultvolume", label: t("common.volume"), width: 80 },
+    { prop: "priority", label: t("taskCommon.priority"), width: 90 },
+    { prop: "typeText", label: t("typed.taskType"), width: 100 },
+    { prop: "userName", label: t("taskCommon.owner"), width: 110 },
+    { prop: "terminals", label: t("bell.terminalAttr"), width: 110 }
   ],
   led: [
-    { prop: "taskName", label: "LED广播任务", minWidth: 170 },
-    { prop: "cycleText", label: "播放周期", width: 130 },
-    { prop: "startdate", label: "开始日期", width: 110 },
-    { prop: "enddate", label: "结束日期", width: 110 },
-    { prop: "playtime", label: "执行时间", width: 100 },
-    { prop: "lengthText", label: "播放时长", width: 110 },
-    { prop: "projectstate", label: "状态", width: 80 },
-    { prop: "playModeText", label: "播放模式", width: 100 },
-    { prop: "defaultvolume", label: "音量", width: 80 },
-    { prop: "priority", label: "任务级别", width: 90 },
-    { prop: "userName", label: "所属用户", width: 110 },
-    { prop: "playfileid", label: "正在播放", width: 100 },
-    { prop: "terminals", label: "终端属性", width: 110 }
+    { prop: "taskName", label: t("typed.ledTaskType"), minWidth: 170 },
+    { prop: "cycleText", label: t("taskCommon.cycle"), width: 130 },
+    { prop: "startdate", label: t("common.startDate"), width: 110 },
+    { prop: "enddate", label: t("common.endDate"), width: 110 },
+    { prop: "playtime", label: t("taskCommon.runTime"), width: 100 },
+    { prop: "lengthText", label: t("taskCommon.playLength"), width: 110 },
+    { prop: "projectstate", label: t("common.status"), width: 80 },
+    { prop: "playModeText", label: t("task.playMode"), width: 100 },
+    { prop: "defaultvolume", label: t("common.volume"), width: 80 },
+    { prop: "priority", label: t("taskCommon.priority"), width: 90 },
+    { prop: "userName", label: t("taskCommon.owner"), width: 110 },
+    { prop: "playfileid", label: t("task.playing"), width: 100 },
+    { prop: "terminals", label: t("bell.terminalAttr"), width: 110 }
   ]
 };
 
 const columns = computed<ColumnProps<TypedTask>[]>(() => [
   { type: "selection", fixed: "left", width: 50 },
   ...COLS[props.kind],
-  { prop: "operation", label: "操作", fixed: "right", width: 130 }
+  { prop: "operation", label: t("common.operation"), fixed: "right", width: 130 }
 ]);
 
 const refresh = () => proTableRef.value?.getTableList();
@@ -969,7 +992,7 @@ const openCreate = async () => {
   if (props.kind !== "amplifier") form.prepower = 120;
   selectedTerminals.value = [];
   terminalAreas.value = {};
-  Object.assign(dlg, { visible: true, saving: false, isEdit: false, title: `添加${title.value}`, id: 0 });
+  Object.assign(dlg, { visible: true, saving: false, isEdit: false, title: t("typed.addTitle", { what: title.value }), id: 0 });
   await searchTerminals("");
 };
 
@@ -1030,11 +1053,11 @@ const openEdit = async (row: TypedTask) => {
     visible: true,
     saving: false,
     isEdit: true,
-    title: `修改${title.value}：${data.taskName}`,
+    title: t("typed.editTitle", { what: title.value, name: data.taskName }),
     id: data.taskId
   });
   await searchTerminals("");
-  if (dropped) ElMessage.warning(`该任务里有 ${dropped} 台终端已被删除，已自动移除`);
+  if (dropped) ElMessage.warning(t("typed.droppedTerminals", { n: dropped }));
 };
 
 // diffSec 算两个 HH:mm:ss 之间的秒差，跨零点按当天回绕处理（与后端 endTimeOf 对称）
@@ -1098,41 +1121,41 @@ const submit = async () => {
   clearErr();
   let bad = false;
   if (!form.taskName.trim()) {
-    err.taskName = "请输入任务名称";
+    err.taskName = t("task.taskNameRequired");
     bad = true;
   }
   if (!form.range?.[0]) {
-    err.startdate = "请选择开始日期";
+    err.startdate = t("bell.pickStartDate");
     bad = true;
   }
   if (!form.range?.[1]) {
-    err.enddate = "请选择结束日期";
+    err.enddate = t("bell.pickEndDate");
     bad = true;
   }
   if (props.kind === "collect" && !form.sourceTerminalId) {
-    err.source = "请选择采播终端";
+    err.source = t("typed.pickCaptureTerminal");
     bad = true;
   }
   if (props.kind === "tts" && !form.text.trim()) {
-    err.text = "请输入播放文字";
+    err.text = t("typed.playTextRequired");
     bad = true;
   }
   if ((props.kind === "led" || (props.kind === "tts" && ledOn.value)) && !form.led.text.trim()) {
-    err.ledText = "请输入Led字幕内容";
+    err.ledText = t("typed.ledContentRequired");
     bad = true;
   }
   if (!selectedTerminals.value.length) {
-    err.terminals = "请选择任务终端";
+    err.terminals = t("typed.pickTaskTerminal");
     bad = true;
   }
-  if (bad) return ElMessage.warning("带 * 的项还没填完");
+  if (bad) return ElMessage.warning(t("typed.starRequired"));
 
   dlg.saving = true;
   try {
     const body = buildBody() as any;
     if (dlg.isEdit) await updateTypedApi(props.kind, dlg.id, body);
     else await createTypedApi(props.kind, body);
-    ElMessage.success("保存成功");
+    ElMessage.success(t("common.saveSuccess"));
     dlg.visible = false;
     if (props.kind === "led") await loadLED();
     refresh();
@@ -1145,11 +1168,11 @@ const submit = async () => {
 
 const reportBlocked = (blocked: any[], okCount: number, what: string) => {
   if (!blocked?.length) {
-    ElMessage.success(`${what}成功（${okCount} 条）`);
+    ElMessage.success(t("typed.batchOk", { what, n: okCount }));
     return;
   }
   ElNotification({
-    title: `${what}：${okCount} 条成功，${blocked.length} 条被拦下`,
+    title: t("typed.batchPartial", { what, ok: okCount, blocked: blocked.length }),
     message: blocked.map(b => `· ${b.name || b.id}：${b.detail}`).join("\n"),
     type: okCount ? "warning" : "error",
     duration: 8000,
@@ -1158,15 +1181,15 @@ const reportBlocked = (blocked: any[], okCount: number, what: string) => {
 };
 
 const ACTION_TEXT: Record<TypedAction, string> = {
-  start: "执行",
-  stop: "停止",
-  pause: "暂停",
-  resume: "恢复"
+  start: t("taskCommon.run"),
+  stop: t("taskCommon.stop"),
+  pause: t("task.pause"),
+  resume: t("taskCommon.resume")
 };
 
 const doControl = async (action: TypedAction, raw: (string | number)[]) => {
   const ids = toIds(raw);
-  if (!ids.length) return ElMessage.warning("请先勾选任务");
+  if (!ids.length) return ElMessage.warning(t("taskCommon.pickTaskFirst"));
   const { data } = await controlTypedApi(props.kind, action, ids);
   reportBlocked(data.blocked, data.succeeded.length, ACTION_TEXT[action]);
   refresh();
@@ -1174,9 +1197,9 @@ const doControl = async (action: TypedAction, raw: (string | number)[]) => {
 
 const doState = async (raw: (string | number)[], enable: boolean) => {
   const ids = toIds(raw);
-  if (!ids.length) return ElMessage.warning("请先勾选任务");
+  if (!ids.length) return ElMessage.warning(t("taskCommon.pickTaskFirst"));
   const { data } = await setTypedStateApi(props.kind, ids, enable);
-  reportBlocked(data.blocked, data.succeeded.length, enable ? "启用" : "停用");
+  reportBlocked(data.blocked, data.succeeded.length, enable ? t("common.enable") : t("common.disable"));
   refresh();
 };
 
@@ -1185,7 +1208,7 @@ const vol = reactive({ visible: false, saving: false, ids: [] as number[], value
 
 const openVolume = (raw: (string | number)[]) => {
   const ids = toIds(raw);
-  if (!ids.length) return ElMessage.warning("请先勾选任务");
+  if (!ids.length) return ElMessage.warning(t("taskCommon.pickTaskFirst"));
   vol.ids = ids;
   vol.value = 80;
   vol.visible = true;
@@ -1196,7 +1219,7 @@ const submitVolume = async () => {
   try {
     const { data } = await setTaskVolumeApi(vol.ids, vol.value);
     vol.visible = false;
-    reportBlocked(data.blocked, data.succeeded.length, "设置音量");
+    reportBlocked(data.blocked, data.succeeded.length, t("terminalCommon.setVolume"));
     refresh();
   } finally {
     vol.saving = false;
@@ -1205,14 +1228,13 @@ const submitVolume = async () => {
 
 const doDelete = async (raw: (string | number)[]) => {
   const ids = toIds(raw);
-  if (!ids.length) return ElMessage.warning("请先勾选任务");
-  await ElMessageBox.confirm(
-    `确认删除选中的 ${ids.length} 条${title.value}任务？会连带清掉终端绑定、遥控绑定与离线副本，不可恢复。`,
-    "删除任务",
-    { type: "warning", confirmButtonText: "确认删除" }
-  );
+  if (!ids.length) return ElMessage.warning(t("taskCommon.pickTaskFirst"));
+  await ElMessageBox.confirm(t("typed.confirmDeleteTasks", { n: ids.length, what: title.value }), t("taskCommon.deleteTask"), {
+    type: "warning",
+    confirmButtonText: t("common.confirmDelete")
+  });
   const { data } = await deleteTypedApi(props.kind, ids);
-  reportBlocked(data.blocked, data.deleted.length, "删除");
+  reportBlocked(data.blocked, data.deleted.length, t("common.delete"));
   if (props.kind === "led") await loadLED();
   refresh();
 };
@@ -1223,7 +1245,7 @@ const termDlg = reactive({ visible: false, title: "", list: [] as TypedTerminal[
 
 const openTerminals = async (row: TypedTask) => {
   const { data } = await getTypedApi(props.kind, row.taskId);
-  termDlg.title = `${row.taskName} 的终端`;
+  termDlg.title = t("typed.terminalsOf", { name: row.taskName });
   termDlg.list = data.terminals ?? [];
   termDlg.visible = true;
 };
@@ -1233,22 +1255,22 @@ const openTerminals = async (row: TypedTask) => {
 const folderDlg = reactive({ visible: false, saving: false, title: "", name: "", id: 0 });
 
 const openFolderCreate = () => {
-  Object.assign(folderDlg, { visible: true, saving: false, title: "创建目录", name: "", id: 0 });
+  Object.assign(folderDlg, { visible: true, saving: false, title: t("typed.createFolder"), name: "", id: 0 });
 };
 
 const openFolderRename = () => {
   const f = ledFolders.value.find(x => x.id === initParam.folderId);
-  if (!f) return ElMessage.warning("请先在上面选中一个目录");
-  Object.assign(folderDlg, { visible: true, saving: false, title: "修改目录", name: f.name, id: f.id });
+  if (!f) return ElMessage.warning(t("typed.pickFolderAbove"));
+  Object.assign(folderDlg, { visible: true, saving: false, title: t("typed.editFolder"), name: f.name, id: f.id });
 };
 
 const submitFolder = async () => {
-  if (!folderDlg.name.trim()) return ElMessage.warning("请输入目录名称");
+  if (!folderDlg.name.trim()) return ElMessage.warning(t("typed.folderNameRequired"));
   folderDlg.saving = true;
   try {
     if (folderDlg.id) await renameLedFolderApi(folderDlg.id, folderDlg.name.trim());
     else await createLedFolderApi(folderDlg.name.trim());
-    ElMessage.success("保存成功");
+    ElMessage.success(t("common.saveSuccess"));
     folderDlg.visible = false;
     await loadLED();
     refresh();
@@ -1259,13 +1281,13 @@ const submitFolder = async () => {
 
 const doFolderDelete = async () => {
   const f = ledFolders.value.find(x => x.id === initParam.folderId);
-  if (!f) return ElMessage.warning("请先在上面选中一个目录");
-  await ElMessageBox.confirm(`确认删除目录「${f.name}」？目录里的 ${f.taskCount} 条任务会一起被删除，不可恢复。`, "删除目录", {
+  if (!f) return ElMessage.warning(t("typed.pickFolderAbove"));
+  await ElMessageBox.confirm(t("typed.confirmDeleteFolder", { name: f.name, n: f.taskCount }), t("typed.deleteFolder"), {
     type: "warning",
-    confirmButtonText: "确认删除"
+    confirmButtonText: t("common.confirmDelete")
   });
   await deleteLedFolderApi(f.id);
-  ElMessage.success("已删除");
+  ElMessage.success(t("common.deleted"));
   initParam.folderId = 0;
   await loadLED();
   refresh();
@@ -1281,12 +1303,12 @@ const openFolderCopy = () => {
 };
 
 const submitCopy = async () => {
-  if (!copyDlg.fromId || !copyDlg.toId) return ElMessage.warning("请选择源目录与目标目录");
-  if (copyDlg.fromId === copyDlg.toId) return ElMessage.warning("源目录与目标目录不能是同一个");
+  if (!copyDlg.fromId || !copyDlg.toId) return ElMessage.warning(t("typed.pickBothFolders"));
+  if (copyDlg.fromId === copyDlg.toId) return ElMessage.warning(t("typed.sameFolder"));
   copyDlg.saving = true;
   try {
     const { data } = await copyLedFolderApi(copyDlg.fromId, copyDlg.toId);
-    ElMessage.success(`已复制 ${data.copied} 条任务`);
+    ElMessage.success(t("typed.copiedTasks", { n: data.copied }));
     copyDlg.visible = false;
     await loadLED();
     refresh();
@@ -1347,7 +1369,7 @@ const submitDev = async () => {
     };
     if (devForm.id) await updateLedDeviceApi(devForm.id, body);
     else await createLedDeviceApi(body);
-    ElMessage.success("保存成功");
+    ElMessage.success(t("common.saveSuccess"));
     devForm.visible = false;
     await loadLED();
   } finally {
@@ -1356,12 +1378,12 @@ const submitDev = async () => {
 };
 
 const deleteDevices = async () => {
-  await ElMessageBox.confirm(`确认删除选中的 ${devSel.value.length} 块 LED 屏？会连带清掉它们在任务里的绑定。`, "删除 LED 设备", {
+  await ElMessageBox.confirm(t("typed.confirmDeleteScreens", { n: devSel.value.length }), t("typed.deleteLedDevice"), {
     type: "warning",
-    confirmButtonText: "确认删除"
+    confirmButtonText: t("common.confirmDelete")
   });
   const { data } = await deleteLedDevicesApi(devSel.value);
-  ElMessage.success(`已删除 ${data.deleted} 块`);
+  ElMessage.success(t("typed.deletedScreens", { n: data.deleted }));
   devSel.value = [];
   await loadLED();
 };

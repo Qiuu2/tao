@@ -330,15 +330,15 @@ func (s *Service) List(ctx context.Context, u *auth.User, k Kind, q Query) (*Lis
 			&it.IntervalS, &it.IntPlayLen, &it.IntPlayLenTy); err != nil {
 			return nil, fmt.Errorf("扫描%s任务行: %w", sp.Title, err)
 		}
-		it.StateText = stateText(it.State)
-		it.ProjectText = projectText(it.ProjectState)
+		it.StateText = stateText(ctx, it.State)
+		it.ProjectText = projectText(ctx, it.ProjectState)
 		it.CycleText = i18n.CycleText(ctx, it.ExeModel)
-		it.LengthText = lengthText(it.TimeLengthType, it.TimeLength)
+		it.LengthText = lengthText(ctx, it.TimeLengthType, it.TimeLength)
 		it.CanModify = u.IsAdmin || it.UserID == u.ID
-		it.PlayModeText = playModeText(it.IntPlayLenTy)
-		it.TypeText = taskTypeText(it.TaskType)
+		it.PlayModeText = playModeText(ctx, it.IntPlayLenTy)
+		it.TypeText = taskTypeText(ctx, it.TaskType)
 		if k == KindAmplifier {
-			it.SwitchText = switchText(it.Cmd)
+			it.SwitchText = switchText(ctx, it.Cmd)
 		}
 		items = append(items, it)
 		ids = append(ids, it.TaskID)
@@ -438,66 +438,71 @@ func placeholders(ids []int64) (string, []interface{}) {
 
 // ---------- 文案 ----------
 
-func stateText(v int) string {
+func stateText(ctx context.Context, v int) string {
+	l := i18n.From(ctx)
 	switch v {
 	case 0:
-		return "准备"
+		return i18n.T(l, "准备")
 	case 1:
-		return "执行中"
+		return i18n.T(l, "执行中")
 	case 2:
-		return "已停止"
+		return i18n.T(l, "已停止")
 	case 3:
-		return "立即执行"
+		return i18n.T(l, "立即执行")
 	}
-	return fmt.Sprintf("状态 %d", v)
+	return fmt.Sprintf(i18n.T(l, "状态 %d"), v)
 }
 
-func projectText(v int) string {
+func projectText(ctx context.Context, v int) string {
+	l := i18n.From(ctx)
 	if v == StateEnabled {
-		return "启用"
+		return i18n.T(l, "启用")
 	}
-	return "停用"
+	return i18n.T(l, "停用")
 }
 
-func switchText(cmd int64) string {
+func switchText(ctx context.Context, cmd int64) string {
+	l := i18n.From(ctx)
 	// task.cmd 列注释：「类型为5时（0：打开，1：关闭）」
 	if cmd == 1 {
-		return "关闭"
+		return i18n.T(l, "关闭")
 	}
-	return "打开"
+	return i18n.T(l, "打开")
 }
 
 // playModeText 是旧版列表里的「播放模式」一列。
 // 判据是 intplaylengthtype：普通模式落库是 0，间隔模式是 1（按时长）或 2（按次数）。
-func playModeText(ty int) string {
+func playModeText(ctx context.Context, ty int) string {
+	l := i18n.From(ctx)
 	if ty == 0 {
-		return "普通模式"
+		return i18n.T(l, "普通模式")
 	}
-	return "间隔时间"
+	return i18n.T(l, "间隔时间")
 }
 
 // taskTypeText 是旧版文字语音列表里的「任务类型」一列。
 // tasktype 的中文名取自旧版 addmanager.html 里那串 if/elseif。
-func taskTypeText(t int) string {
+func taskTypeText(ctx context.Context, t int) string {
+	l := i18n.From(ctx)
 	switch t {
 	case 1:
-		return "作息方案"
+		return i18n.T(l, "作息方案")
 	case 2:
-		return "文件广播"
+		return i18n.T(l, "文件广播")
 	case 3:
-		return "采播管理"
+		return i18n.T(l, "采播管理")
 	case 4:
-		return "电话采播"
+		return i18n.T(l, "电话采播")
 	case 5:
-		return "终端功放"
+		return i18n.T(l, "终端功放")
 	case 10:
-		return "网络电台"
+		return i18n.T(l, "网络电台")
 	case 15, 17, 19:
-		return "文字语音"
+		return i18n.T(l, "文字语音")
 	case 24, 30:
 		return "led播放"
 	}
-	return fmt.Sprintf("类型 %d", t)
+	return fmt.Sprintf(i18n.T(l, "类型 %d"), t)
 }
 
 // exemodel 是周日打头的 7 位掩码（第 1 位 = 周日），标签顺序要跟它对齐。
@@ -505,7 +510,8 @@ var weekNames = [7]string{"日", "一", "二", "三", "四", "五", "六"}
 
 // lengthText 把播放时长翻成人话。
 // timelengthtype：1 = 按时间（秒），其它 = 按循环次数（列注释写的是 2）。
-func lengthText(t, v int) string {
+func lengthText(ctx context.Context, t, v int) string {
+	l := i18n.From(ctx)
 	if t == 1 {
 		if v <= 0 {
 			return "—"
@@ -513,17 +519,17 @@ func lengthText(t, v int) string {
 		h, m, s := v/3600, (v%3600)/60, v%60
 		switch {
 		case h > 0:
-			return fmt.Sprintf("%d小时%d分%d秒", h, m, s)
+			return fmt.Sprintf(i18n.T(l, "%d小时%d分%d秒"), h, m, s)
 		case m > 0:
-			return fmt.Sprintf("%d分%d秒", m, s)
+			return fmt.Sprintf(i18n.T(l, "%d分%d秒"), m, s)
 		default:
-			return fmt.Sprintf("%d秒", s)
+			return fmt.Sprintf(i18n.T(l, "%d秒"), s)
 		}
 	}
 	if v <= 0 {
 		return "—"
 	}
-	return fmt.Sprintf("循环 %d 次", v)
+	return fmt.Sprintf(i18n.T(l, "循环 %d 次"), v)
 }
 
 // ---------- 启停 ----------
