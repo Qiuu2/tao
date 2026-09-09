@@ -34,37 +34,37 @@
       <template #tableHeader="scope">
         <div class="header-bar">
           <div class="header-left">
-            <el-button type="primary" :disabled="!btn.add" @click="openCreate">添加方案</el-button>
+            <el-button type="primary" :disabled="!btn.add" @click="openCreate">{{ $t("bell.addPlan") }}</el-button>
             <el-button type="danger" :disabled="!btn.delete || !scope.isSelected" @click="batchCmd('delete', scope.selectedList)">
-              删除方案
+              {{ $t("bell.deletePlan") }}
             </el-button>
             <el-button
               type="primary"
               :disabled="!btn.control || !scope.isSelected"
               @click="batchCmd('enable', scope.selectedList)"
             >
-              启用方案
+              {{ $t("bell.enablePlan") }}
             </el-button>
             <el-button
               type="danger"
               :disabled="!btn.control || !scope.isSelected"
               @click="batchCmd('disable', scope.selectedList)"
             >
-              停用方案
+              {{ $t("bell.disablePlan") }}
             </el-button>
             <el-button
               type="warning"
               :disabled="!btn.edit || scope.selectedList.length !== 1"
               @click="openVolume(scope.selectedList)"
             >
-              调整音量
+              {{ $t("terminalCommon.adjustVolume") }}
             </el-button>
             <el-button
               type="primary"
               :disabled="!btn.copy || scope.selectedList.length !== 1"
               @click="batchCmd('copy', scope.selectedList)"
             >
-              复制方案
+              {{ $t("bell.copyPlan") }}
             </el-button>
             <el-button
               type="warning"
@@ -72,14 +72,14 @@
               :disabled="!btn.edit || scope.selectedList.length !== 1"
               @click="openBatch(scope.selectedList[0])"
             >
-              批量修改
+              {{ $t("bell.batchEdit") }}
             </el-button>
             <el-button
               type="primary"
               :disabled="!btn.edit || scope.selectedList.length !== 1"
               @click="openSchedule(scope.selectedList[0])"
             >
-              智能排课
+              {{ $t("bell.smartSchedule") }}
             </el-button>
           </div>
           <div class="header-right">
@@ -93,7 +93,7 @@
         <!-- ⚠ 必须用可选链：el-table-column 会拿 row = {} 试跑一次插槽 -->
         <el-tooltip v-if="scope.row.duplicateTimes?.length" placement="top">
           <template #content>
-            以下时刻有多个条目同时打铃：<br />
+            {{ $t("bell.dupTimes") }}<br />
             {{ scope.row.duplicateTimes.join("、") }}
           </template>
           <el-icon class="warn-icon"><WarningFilled /></el-icon>
@@ -102,15 +102,15 @@
 
       <template #projectstate="scope">
         <!-- 0 = 启用、1 = 停用，与 audioserver.sql 的列注释相反 -->
-        <el-tag v-if="scope.row.projectstate === 0" type="success" size="small">启用</el-tag>
-        <el-tag v-else type="info" size="small">停用</el-tag>
-        <el-tooltip v-if="scope.row.mixedState" content="方案内各条目的启停状态不一致，这里显示的是多数派" placement="top">
-          <el-tag type="warning" size="small" effect="plain" class="mixed-tag">不一致</el-tag>
+        <el-tag v-if="scope.row.projectstate === 0" type="success" size="small">{{ $t("common.enable") }}</el-tag>
+        <el-tag v-else type="info" size="small">{{ $t("common.disable") }}</el-tag>
+        <el-tooltip v-if="scope.row.mixedState" :content="$t('bell.stateMixedTip')" placement="top">
+          <el-tag type="warning" size="small" effect="plain" class="mixed-tag">{{ $t("bell.inconsistent") }}</el-tag>
         </el-tooltip>
       </template>
 
       <template #itemCount="scope">
-        <el-tag size="small" effect="plain">{{ scope.row.itemCount }} 条</el-tag>
+        <el-tag size="small" effect="plain">{{ $t("bell.entryCount", { n: scope.row.itemCount }) }}</el-tag>
         <el-tag v-if="scope.row.powerSubTasks" size="small" type="info" effect="plain" class="mixed-tag">
           +{{ scope.row.powerSubTasks }} 功放
         </el-tag>
@@ -128,16 +128,18 @@
         只能改，不能靠「删掉重建」——重建会连同方案里的全部条目一起丢。
       -->
       <template #operation="scope">
-        <el-button type="primary" link :icon="EditPen" :disabled="!btn.edit" @click="openEdit(scope.row)">修改</el-button>
+        <el-button type="primary" link :icon="EditPen" :disabled="!btn.edit" @click="openEdit(scope.row)">{{
+          $t("common.modify")
+        }}</el-button>
       </template>
     </ProTable>
 
     <!-- 调整音量：整个方案改一次，功放子任务一起改 -->
-    <el-dialog v-model="vol.visible" title="调整音量" width="440px">
+    <el-dialog v-model="vol.visible" :title="$t('terminalCommon.adjustVolume')" width="440px">
       <el-slider v-model="vol.value" :min="0" :max="100" show-input />
       <template #footer>
-        <el-button @click="vol.visible = false">取消</el-button>
-        <el-button type="primary" :loading="vol.saving" @click="submitVolume">确定</el-button>
+        <el-button @click="vol.visible = false">{{ $t("common.cancel") }}</el-button>
+        <el-button type="primary" :loading="vol.saving" @click="submitVolume">{{ $t("common.confirm") }}</el-button>
       </template>
     </el-dialog>
 
@@ -146,38 +148,40 @@
       对应旧版「统一播放时间」页（sechotime.php）——那一页也是先按 playtime 排好序，
       勾中若干条再统一改，只不过旧版改的是星期，这里改的是起止日期。
     -->
-    <el-dialog v-model="sched.visible" :title="`智能排课：${sched.planName}`" width="940px" top="6vh">
+    <el-dialog v-model="sched.visible" :title="$t('bell.smartScheduleOf', { name: sched.planName })" width="940px" top="6vh">
       <div class="sched-head">
         <div class="sched-sum">
           <span class="sched-plan">{{ sched.planName }}</span>
           <el-tag size="small" effect="plain">{{ sched.list.length }} 个课时</el-tag>
           <el-tag size="small" type="info" effect="plain">当前 {{ sched.rangeText }}</el-tag>
-          <el-tag v-if="sched.mixed" size="small" type="warning" effect="plain">各课时日期不一致</el-tag>
+          <el-tag v-if="sched.mixed" size="small" type="warning" effect="plain">{{ $t("bell.datesInconsistent") }}</el-tag>
         </div>
         <div class="sched-pick">
-          <span class="sched-label">新日期时间段</span>
+          <span class="sched-label">{{ $t("bell.newDateRange") }}</span>
           <el-date-picker
             v-model="sched.range"
             type="daterange"
             value-format="YYYY-MM-DD"
-            range-separator="至"
-            start-placeholder="开始日期"
-            end-placeholder="结束日期"
+            :range-separator="$t('common.to')"
+            :start-placeholder="$t('common.startDate')"
+            :end-placeholder="$t('common.endDate')"
             :clearable="false"
             style="width: 300px"
           />
-          <span class="sched-note">勾中的课时会一起改到这个日期段，打铃时间与铃声不变</span>
+          <span class="sched-note">{{ $t("bell.sameDateRangeNote") }}</span>
         </div>
         <!-- 星期照旧版 sechotime.php 那页：周日排在第一个，与 exemodel 的位序一致 -->
         <div class="sched-pick">
-          <span class="sched-label">新执行星期</span>
+          <span class="sched-label">{{ $t("bell.newWeekdays") }}</span>
           <el-checkbox-group v-model="sched.weekdays">
             <el-checkbox v-for="(w, i) in weekLabels" :key="i" :value="i">{{ w }}</el-checkbox>
           </el-checkbox-group>
           <el-divider direction="vertical" />
-          <el-button link type="primary" @click="sched.weekdays = [0, 1, 2, 3, 4, 5, 6]">每天</el-button>
-          <el-button link type="primary" @click="sched.weekdays = [1, 2, 3, 4, 5]">工作日</el-button>
-          <span class="sched-note">默认是方案现在的星期，不想改就别动</span>
+          <el-button link type="primary" @click="sched.weekdays = [0, 1, 2, 3, 4, 5, 6]">{{
+            $t("taskCommon.everyDay")
+          }}</el-button>
+          <el-button link type="primary" @click="sched.weekdays = [1, 2, 3, 4, 5]">{{ $t("bell.workday") }}</el-button>
+          <span class="sched-note">{{ $t("bell.weekdayDefaultNote") }}</span>
         </div>
       </div>
 
@@ -192,19 +196,19 @@
         @selection-change="rows => (sched.checked = rows as BellItem[])"
       >
         <el-table-column type="selection" width="42" align="center" />
-        <el-table-column type="index" label="序号" width="56" align="center" />
-        <el-table-column label="作息时间" width="112" align="center">
+        <el-table-column type="index" :label="$t('common.index')" width="56" align="center" />
+        <el-table-column :label="$t('bell.bellTime')" width="112" align="center">
           <template #default="{ row }">
             <span class="time-cell">{{ row.playtime }}</span>
-            <el-tooltip v-if="row.duplicateTime" content="方案内还有别的课时排在同一时刻" placement="top">
+            <el-tooltip v-if="row.duplicateTime" :content="$t('bell.sameTimeTip')" placement="top">
               <el-icon class="warn-icon"><WarningFilled /></el-icon>
             </el-tooltip>
           </template>
         </el-table-column>
-        <el-table-column prop="taskname" label="课时名称" min-width="118" show-overflow-tooltip />
-        <el-table-column label="铃声" min-width="116">
+        <el-table-column prop="taskname" :label="$t('bell.lessonName')" min-width="118" show-overflow-tooltip />
+        <el-table-column :label="$t('bell.tone')" min-width="116">
           <template #default="{ row }">
-            <span v-if="!row.media?.length" class="muted">未设置</span>
+            <span v-if="!row.media?.length" class="muted">{{ $t("bell.notSet") }}</span>
             <el-tag
               v-for="m in row.media"
               :key="m.mediaId"
@@ -217,16 +221,16 @@
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="播放时长" width="96" align="center">
+        <el-table-column :label="$t('taskCommon.playLength')" width="96" align="center">
           <template #default="{ row }">
-            {{ row.timelengthtype === 1 ? lenText(row.timelength) : `${row.timelength} 次` }}
+            {{ row.timelengthtype === 1 ? lenText(row.timelength) : t("term.loopUnit", { n: row.timelength }) }}
           </template>
         </el-table-column>
-        <el-table-column label="执行" width="148" align="center">
+        <el-table-column :label="$t('taskCommon.run')" width="148" align="center">
           <template #default="{ row }">
             <div :class="{ 'date-chg': isChecked(row) && schedMask !== row.exemodel }">
-              <span v-if="row.exemodel === '1111111'" class="muted">每天</span>
-              <span v-else-if="row.exemodel === '0000000'" class="muted">手动</span>
+              <span v-if="row.exemodel === '1111111'" class="muted">{{ $t("taskCommon.everyDay") }}</span>
+              <span v-else-if="row.exemodel === '0000000'" class="muted">{{ $t("taskCommon.manual") }}</span>
               <template v-else>
                 <span v-for="(w, i) in weekLabels" :key="i" class="wk" :class="{ on: row.exemodel?.[i] === '1' }">
                   {{ w }}
@@ -237,21 +241,23 @@
             <div v-if="isChecked(row) && schedMask !== row.exemodel" class="date-new">→ {{ schedWeekText }}</div>
           </template>
         </el-table-column>
-        <el-table-column label="当前日期段" width="176" align="center">
+        <el-table-column :label="$t('bell.currentRange')" width="176" align="center">
           <template #default="{ row }">
             <span :class="{ 'date-chg': isChecked(row) }">{{ row.startdate }} ~ {{ row.enddate }}</span>
             <div v-if="isChecked(row) && sched.range?.[0]" class="date-new">→ {{ sched.range[0] }} ~ {{ sched.range[1] }}</div>
           </template>
         </el-table-column>
-        <template #empty><span class="dlg-note">这个方案还没有课时</span></template>
+        <template #empty
+          ><span class="dlg-note">{{ $t("bell.planNoLesson") }}</span></template
+        >
       </el-table>
 
       <template #footer>
         <span class="sched-foot">已勾选 {{ sched.checked.length }} / {{ sched.list.length }}</span>
-        <el-button type="primary" :loading="sched.saving" @click="submitSchedule">确定</el-button>
-        <el-button @click="schedTableRef?.toggleAllSelection()">全选</el-button>
-        <el-button @click="schedTableRef?.clearSelection()">取消</el-button>
-        <el-button @click="sched.visible = false">返回</el-button>
+        <el-button type="primary" :loading="sched.saving" @click="submitSchedule">{{ $t("common.confirm") }}</el-button>
+        <el-button @click="schedTableRef?.toggleAllSelection()">{{ $t("common.selectAll") }}</el-button>
+        <el-button @click="schedTableRef?.clearSelection()">{{ $t("common.cancel") }}</el-button>
+        <el-button @click="sched.visible = false">{{ $t("bell.goBack") }}</el-button>
       </template>
     </el-dialog>
 
@@ -279,27 +285,29 @@
           新建时仍按 0 提交；修改时沿用方案里原有的值，不会被清掉。
       -->
       <el-form ref="planFormRef" :model="dlg.form" :rules="planRules" label-width="90px">
-        <el-divider content-position="left">任务配置</el-divider>
+        <el-divider content-position="left">{{ $t("bell.taskConfig") }}</el-divider>
 
         <el-row :gutter="16">
           <el-col :span="12">
             <!-- 旧版 maxlength="8" -->
-            <el-form-item label="方案名称" prop="planName">
+            <el-form-item :label="$t('bell.planName')" prop="planName">
               <el-input
                 v-model="dlg.form.planName"
                 maxlength="8"
                 show-word-limit
                 :disabled="!!dlg.savedPlanName"
-                placeholder="请输入方案名称"
+                :placeholder="$t('bell.planNamePlaceholder')"
               />
               <!-- 已经有课时入库了就锁住方案名：方案是靠名字归组的，这时改名等于另起一个方案 -->
-              <span v-if="dlg.savedPlanName" class="dlg-note">已有课时入库，方案名不能再改</span>
+              <span v-if="dlg.savedPlanName" class="dlg-note">{{ $t("bell.planNameLocked") }}</span>
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="方案任务">
-              <el-button type="primary" plain :icon="CirclePlus" @click="addItemRow">添加任务</el-button>
-              <el-button type="danger" plain :icon="Delete" @click="removeSelectedItems">删除任务</el-button>
+            <el-form-item :label="$t('bell.planTasks')">
+              <el-button type="primary" plain :icon="CirclePlus" @click="addItemRow">{{ $t("bell.addLesson") }}</el-button>
+              <el-button type="danger" plain :icon="Delete" @click="removeSelectedItems">{{
+                $t("taskCommon.deleteTask")
+              }}</el-button>
               <span class="dlg-note ml8">{{ itemCountNote }}</span>
             </el-form-item>
           </el-col>
@@ -308,33 +316,33 @@
         <el-row :gutter="16">
           <el-col :span="12">
             <!-- prepower 的单位是秒不是分钟；选项与默认值（15 秒）都照旧版 -->
-            <el-form-item label="预开电源">
+            <el-form-item :label="$t('taskCommon.prePower')">
               <el-select v-model="dlg.form.playback.prepower" class="fill">
                 <el-option v-for="o in prepowerOptions" :key="o.value" :label="o.label" :value="o.value" />
               </el-select>
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="任务级别">
+            <el-form-item :label="$t('taskCommon.priority')">
               <el-select v-model="dlg.form.playback.priority" style="width: 110px">
                 <el-option v-for="p in priorityOptions" :key="p.value" :label="p.label" :value="p.value" />
               </el-select>
-              <span class="dlg-note ml8">（10最高）</span>
+              <span class="dlg-note ml8">{{ $t("bell.highest10") }}</span>
             </el-form-item>
           </el-col>
         </el-row>
 
         <el-row :gutter="16">
           <el-col :span="12">
-            <el-form-item label="作息音量">
+            <el-form-item :label="$t('bell.bellVolume')">
               <el-slider v-model="dlg.form.playback.defaultvolume" :min="0" :max="100" show-input />
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="发送模式">
+            <el-form-item :label="$t('taskCommon.sendMode')">
               <el-radio-group v-model="dlg.form.playback.datasendmodel">
-                <el-radio :value="0">单播</el-radio>
-                <el-radio :value="1">组播</el-radio>
+                <el-radio :value="0">{{ $t("taskCommon.unicast") }}</el-radio>
+                <el-radio :value="1">{{ $t("term.multicast") }}</el-radio>
               </el-radio-group>
             </el-form-item>
           </el-col>
@@ -347,20 +355,20 @@
         -->
         <el-row :gutter="16">
           <el-col :span="12">
-            <el-form-item label="LED播放">
-              <el-checkbox v-model="dlg.form.ledOn">开启 LED 字幕</el-checkbox>
+            <el-form-item :label="$t('task.ledPlay')">
+              <el-checkbox v-model="dlg.form.ledOn">{{ $t("bell.openLed") }}</el-checkbox>
             </el-form-item>
           </el-col>
           <el-col v-if="dlg.form.ledOn" :span="12">
-            <el-form-item label="LED速度">
+            <el-form-item :label="$t('task.ledSpeed')">
               <el-select v-model="dlg.form.ledSpeed" style="width: 110px">
-                <el-option v-for="n in [0, 1, 2, 3, 4, 5]" :key="n" :label="`${n} 级`" :value="n" />
+                <el-option v-for="n in [0, 1, 2, 3, 4, 5]" :key="n" :label="$t('task.levelN', { n })" :value="n" />
               </el-select>
-              <span class="dlg-note ml8">0 ~ 5 级</span>
+              <span class="dlg-note ml8">{{ $t("task.levels0to5") }}</span>
             </el-form-item>
           </el-col>
         </el-row>
-        <el-form-item v-if="dlg.form.ledOn" label="LED字幕" prop="ledText">
+        <el-form-item v-if="dlg.form.ledOn" :label="$t('task.ledSubtitle')" prop="ledText">
           <!-- 多行只是为了长句子好读好改；存库时换行会被去掉（旧版 do.php 也是这么处理的） -->
           <el-input
             v-model="dlg.form.ledText"
@@ -368,20 +376,32 @@
             :rows="3"
             maxlength="200"
             show-word-limit
-            placeholder="要在 LED 屏上滚动的文字"
+            :placeholder="$t('term.ledScrollText')"
             @input="planFormRef?.clearValidate('ledText')"
           />
         </el-form-item>
 
         <el-row :gutter="16">
           <el-col :span="12">
-            <el-form-item label="开始日期" prop="startdate">
-              <el-date-picker v-model="dateRange[0]" type="date" value-format="YYYY-MM-DD" placeholder="开始日期" class="fill" />
+            <el-form-item :label="$t('common.startDate')" prop="startdate">
+              <el-date-picker
+                v-model="dateRange[0]"
+                type="date"
+                value-format="YYYY-MM-DD"
+                :placeholder="$t('common.startDate')"
+                class="fill"
+              />
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="结束日期" prop="enddate">
-              <el-date-picker v-model="dateRange[1]" type="date" value-format="YYYY-MM-DD" placeholder="结束日期" class="fill" />
+            <el-form-item :label="$t('common.endDate')" prop="enddate">
+              <el-date-picker
+                v-model="dateRange[1]"
+                type="date"
+                value-format="YYYY-MM-DD"
+                :placeholder="$t('common.endDate')"
+                class="fill"
+              />
             </el-form-item>
           </el-col>
         </el-row>
@@ -391,10 +411,10 @@
           （旧版 select#exemodel 的 onChange="displayweek(this)"）。
           每天 = 七位全 1。
         -->
-        <el-form-item label="执行模式" prop="weekdays">
+        <el-form-item :label="$t('taskCommon.exeMode')" prop="weekdays">
           <el-select v-model="runMode" style="width: 140px" @change="onRunModeChange">
-            <el-option label="每天" :value="1" />
-            <el-option label="每星期" :value="2" />
+            <el-option :label="$t('taskCommon.everyDay')" :value="1" />
+            <el-option :label="$t('taskCommon.everyWeek')" :value="2" />
           </el-select>
           <el-checkbox-group v-if="runMode === 2" v-model="weekdays" class="ml8">
             <el-checkbox v-for="(w, i) in weekLabels" :key="i" :value="i">{{ w }}</el-checkbox>
@@ -408,14 +428,14 @@
           直接存成一条打铃任务；存过的行按钮变「修改」，再点就是改这一条。
           「删除」同样是真删：已经入库的行连库里的任务一起删，没入库的只去掉这一行。
         -->
-        <el-divider content-position="left">方案任务</el-divider>
+        <el-divider content-position="left">{{ $t("bell.planTasks") }}</el-divider>
         <!--
           批量修改专用的「统一设置」栏，位置照旧版 modifybellall.html：
           它把三样东西摆在课时表头上 —— 作息音乐、播放时长，各自带一个「启用」勾选框，
           勾了才会把这个统一值刷到所有勾中的课时上，没勾就保持各行原样。
         -->
         <div v-if="dlg.mode === 'batch'" class="batch-bar">
-          <el-checkbox v-model="batch.enableMedia">统一作息音乐</el-checkbox>
+          <el-checkbox v-model="batch.enableMedia">{{ $t("bell.unifiedMusic") }}</el-checkbox>
           <el-select
             v-model="batch.mediaId"
             filterable
@@ -425,16 +445,16 @@
             :disabled="!batch.enableMedia"
             :remote-method="searchMedia"
             :loading="mediaLoading"
-            placeholder="媒体名称搜索"
+            :placeholder="$t('common.searchMediaName')"
             style="width: 220px"
           >
             <el-option v-for="m in medias" :key="m.id" :label="m.name" :value="m.id" />
           </el-select>
           <el-divider direction="vertical" />
-          <el-checkbox v-model="batch.enableLen">统一播放时长</el-checkbox>
+          <el-checkbox v-model="batch.enableLen">{{ $t("bell.unifiedLength") }}</el-checkbox>
           <el-select v-model="batch.lenType" size="small" :disabled="!batch.enableLen" style="width: 74px">
-            <el-option label="时长" :value="1" />
-            <el-option label="次数" :value="2" />
+            <el-option :label="$t('common.duration')" :value="1" />
+            <el-option :label="$t('bell.times')" :value="2" />
           </el-select>
           <el-time-picker
             v-if="batch.lenType === 1"
@@ -442,7 +462,7 @@
             value-format="HH:mm:ss"
             size="small"
             :disabled="!batch.enableLen"
-            placeholder="时:分:秒"
+            :placeholder="$t('bell.hhmmss')"
             style="width: 116px"
           />
           <template v-else>
@@ -457,7 +477,7 @@
               :controls="false"
               style="width: 70px"
             />
-            <span class="dlg-note">次</span>
+            <span class="dlg-note">{{ $t("term.times") }}</span>
           </template>
         </div>
         <el-table
@@ -469,15 +489,15 @@
           @selection-change="onItemSelectionChange"
         >
           <el-table-column type="selection" width="40" align="center" />
-          <el-table-column type="index" label="序号" width="46" align="center" />
+          <el-table-column type="index" :label="$t('common.index')" width="46" align="center" />
           <el-table-column min-width="120">
-            <template #header><span class="req-star">*</span> 课时名称</template>
+            <template #header><span class="req-star">*</span> {{ $t("bell.lessonName") }}</template>
             <template #default="{ row, $index }">
               <el-input
                 v-model="row.taskname"
                 size="small"
                 maxlength="12"
-                placeholder="课时名称"
+                :placeholder="$t('bell.lessonName')"
                 :class="{ 'is-bad': itemErrors[$index]?.taskname }"
                 @input="itemErrors[$index] && (itemErrors[$index].taskname = '')"
               />
@@ -485,7 +505,7 @@
             </template>
           </el-table-column>
           <el-table-column width="110">
-            <template #header><span class="req-star">*</span> 作息时间</template>
+            <template #header><span class="req-star">*</span> {{ $t("bell.bellTime") }}</template>
             <template #default="{ row, $index }">
               <el-time-picker
                 v-model="row.playtime"
@@ -499,7 +519,7 @@
               <div v-if="itemErrors[$index]?.playtime" class="cell-err">{{ itemErrors[$index].playtime }}</div>
             </template>
           </el-table-column>
-          <el-table-column label="作息音乐" min-width="134">
+          <el-table-column :label="$t('bell.bellMusic')" min-width="134">
             <template #default="{ row }">
               <span v-if="dlg.mode === 'batch'" :class="{ muted: !batchMediaName(row) }">{{
                 batchMediaName(row) || "未设置"
@@ -516,7 +536,7 @@
                 size="small"
                 :remote-method="searchMedia"
                 :loading="mediaLoading"
-                placeholder="媒体名称搜索"
+                :placeholder="$t('common.searchMediaName')"
                 class="fill"
               >
                 <el-option v-for="m in medias" :key="m.id" :label="m.name" :value="m.id" />
@@ -524,20 +544,20 @@
             </template>
           </el-table-column>
           <!-- 旧版「播放时长」是个弹层：选时长就是 时/分/秒 三个下拉，选次数是 00~99 -->
-          <el-table-column label="播放时长" width="204">
+          <el-table-column :label="$t('taskCommon.playLength')" width="204">
             <template #default="{ row }">
               <span v-if="dlg.mode === 'batch'">{{ batchLenText(row) }}</span>
               <div v-else class="len-cell">
                 <el-select v-model="row.timelengthtype" size="small" style="width: 74px" @change="onLenTypeChange(row)">
-                  <el-option label="时长" :value="1" />
-                  <el-option label="次数" :value="2" />
+                  <el-option :label="$t('common.duration')" :value="1" />
+                  <el-option :label="$t('bell.times')" :value="2" />
                 </el-select>
                 <el-time-picker
                   v-if="row.timelengthtype === 1"
                   v-model="row.lengthhms"
                   value-format="HH:mm:ss"
                   size="small"
-                  placeholder="时:分:秒"
+                  :placeholder="$t('bell.hhmmss')"
                   style="width: 116px"
                 />
                 <template v-else>
@@ -549,27 +569,33 @@
                     :controls="false"
                     style="width: 78px"
                   />
-                  <span class="dlg-note">次</span>
+                  <span class="dlg-note">{{ $t("term.times") }}</span>
                 </template>
               </div>
             </template>
           </el-table-column>
           <!-- 旧版每行三个按钮：添加(已入库则是修改) / 复制 / 删除 -->
-          <el-table-column label="操作" width="152" align="center">
+          <el-table-column :label="$t('common.operation')" width="152" align="center">
             <template #default="{ row, $index }">
               <el-button link type="primary" :loading="row.busy" @click="saveOneItem($index)">
                 {{ row.taskid ? "修改" : "添加" }}
               </el-button>
-              <el-button v-if="dlg.mode !== 'batch'" link type="primary" @click="copyItemRow($index)">复制</el-button>
-              <el-button link type="danger" @click="removeItemAt($index)">删除</el-button>
+              <el-button v-if="dlg.mode !== 'batch'" link type="primary" @click="copyItemRow($index)">{{
+                $t("common.copy")
+              }}</el-button>
+              <el-button link type="danger" @click="removeItemAt($index)">{{ $t("common.delete") }}</el-button>
             </template>
           </el-table-column>
-          <template #empty><span class="dlg-note">还没有课时，点「添加任务」加一条</span></template>
+          <template #empty
+            ><span class="dlg-note">{{ $t("bell.noLessonYet") }}</span></template
+          >
         </el-table>
         <div v-if="itemsError" class="cell-err mt6">{{ itemsError }}</div>
         <el-divider content-position="left">
-          终端列表
-          <el-checkbox v-if="dlg.mode === 'batch'" v-model="batch.enableTerminal" class="ml8">统一终端列表</el-checkbox>
+          {{ $t("terminalCommon.terminalList") }}
+          <el-checkbox v-if="dlg.mode === 'batch'" v-model="batch.enableTerminal" class="ml8">{{
+            $t("bell.unifiedTerminals")
+          }}</el-checkbox>
         </el-divider>
         <el-form-item label-width="0" prop="terminals">
           <TerminalTree
@@ -586,38 +612,44 @@
 
       <template #footer>
         <template v-if="dlg.mode === 'batch'">
-          <el-button type="primary" :loading="dlg.saving" @click="submitBatch">修改</el-button>
-          <el-button @click="selectAllItems">全选</el-button>
-          <el-button @click="clearItemSelection">取消</el-button>
+          <el-button type="primary" :loading="dlg.saving" @click="submitBatch">{{ $t("common.modify") }}</el-button>
+          <el-button @click="selectAllItems">{{ $t("common.selectAll") }}</el-button>
+          <el-button @click="clearItemSelection">{{ $t("common.cancel") }}</el-button>
         </template>
-        <el-button @click="closeDialog">返回</el-button>
+        <el-button @click="closeDialog">{{ $t("bell.goBack") }}</el-button>
       </template>
     </el-dialog>
 
     <!-- 删除确认 -->
-    <el-dialog v-model="del.visible" title="删除作息方案" width="560px">
+    <el-dialog v-model="del.visible" :title="$t('bell.deletePlanTitle')" width="560px">
       <el-alert type="error" :closable="false" class="mb12"> 将删除方案「{{ del.planName }}」的全部内容，不可恢复。 </el-alert>
       <el-descriptions :column="2" border size="small">
-        <el-descriptions-item label="打铃条目">{{ del.impact?.items ?? 0 }} 条</el-descriptions-item>
-        <el-descriptions-item label="功放子任务">{{ del.impact?.powerSubTasks ?? 0 }} 条</el-descriptions-item>
-        <el-descriptions-item label="铃声关联">{{ del.impact?.mediaRows ?? 0 }} 行</el-descriptions-item>
-        <el-descriptions-item label="终端关联">{{ del.impact?.terminalRows ?? 0 }} 行</el-descriptions-item>
-        <el-descriptions-item label="快捷键关联">{{ del.impact?.keyMapRows ?? 0 }} 行</el-descriptions-item>
-        <el-descriptions-item label="离线任务关联">{{ del.impact?.offlineTaskRows ?? 0 }} 行</el-descriptions-item>
+        <el-descriptions-item :label="$t('bell.bellItems')">{{
+          $t("bell.entryCount", { n: del.impact?.items ?? 0 })
+        }}</el-descriptions-item>
+        <el-descriptions-item :label="$t('bell.powerSubTasks')">{{
+          $t("bell.entryCount", { n: del.impact?.powerSubTasks ?? 0 })
+        }}</el-descriptions-item>
+        <el-descriptions-item :label="$t('bell.toneLinks')">{{ del.impact?.mediaRows ?? 0 }} 行</el-descriptions-item>
+        <el-descriptions-item :label="$t('bell.terminalLinks')">{{ del.impact?.terminalRows ?? 0 }} 行</el-descriptions-item>
+        <el-descriptions-item :label="$t('bell.shortcutLinks')">{{ del.impact?.keyMapRows ?? 0 }} 行</el-descriptions-item>
+        <el-descriptions-item :label="$t('bell.offlineLinks')">{{ del.impact?.offlineTaskRows ?? 0 }} 行</el-descriptions-item>
       </el-descriptions>
       <el-alert v-if="del.impact?.sameNameOtherTasks" type="warning" :closable="false" class="mt12">
-        库里还有 {{ del.impact.sameNameOtherTasks }} 条任务的名称也叫「{{ del.planName }}」，但它们不属于本方案。
-        <b>新版不会删除它们</b> —— 旧版会连它们一起删掉。
+        库里还有 {{ $t("bell.entryCount", { n: del.impact.sameNameOtherTasks }) }}任务的名称也叫「{{
+          del.planName
+        }}」，但它们不属于本方案。 <b>{{ $t("bell.newKeepsThem") }}</b> {{ $t("bell.oldWouldDelete") }}
       </el-alert>
       <template #footer>
-        <el-button @click="del.visible = false">取消</el-button>
-        <el-button type="danger" :loading="del.busy" @click="confirmDelete">确认删除</el-button>
+        <el-button @click="del.visible = false">{{ $t("common.cancel") }}</el-button>
+        <el-button type="danger" :loading="del.busy" @click="confirmDelete">{{ $t("common.confirmDelete") }}</el-button>
       </template>
     </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts" name="bellPlan">
+import { useI18n } from "vue-i18n";
 import { computed, nextTick, reactive, ref } from "vue";
 import { ElMessage, ElMessageBox } from "element-plus";
 import type { ElTable, FormInstance, FormRules } from "element-plus";
@@ -652,6 +684,9 @@ import {
   type TaskTerminalOption
 } from "@/api/modules/task";
 
+// 脚本里拼的文案用 t()；模板里的 $t 不用引入
+const { t } = useI18n();
+
 const authStore = useAuthStore();
 const btn = computed(() => (authStore.authButtonListGet as any)?.bell ?? {});
 
@@ -668,17 +703,17 @@ const initParam = reactive({ orderBy: "", order: "" });
  *   整串**错位一天**：新 Web 里勾「周一到周五」存出来是 1111100，
  *   旧系统和后台 C 服务读到的是「周日到周四」。
  */
-const weekLabels = ["日", "一", "二", "三", "四", "五", "六"];
+const weekLabels = [t("week.sun"), t("week.mon"), t("week.tue"), t("week.wed"), t("week.thu"), t("week.fri"), t("week.sat")];
 /** 旧界面的提前开电源下拉：0、5、10 … 55 秒，默认选中 15 秒 */
 const prepowerSeconds = Array.from({ length: 12 }, (_, i) => i * 5);
 /** 0~55 秒 + 1~5 分钟；旧库里若存着别的秒数（例如 1 秒），把它也列进来 */
 const prepowerOptions = computed(() => {
   const list = [
-    ...prepowerSeconds.map(s => ({ value: s, label: `${s} 秒` })),
-    ...[1, 2, 3, 4, 5].map(m => ({ value: m * 60, label: `${m} 分钟` }))
+    ...prepowerSeconds.map(s => ({ value: s, label: t("term.secondUnit", { n: s }) })),
+    ...[1, 2, 3, 4, 5].map(m => ({ value: m * 60, label: t("task.minutesN", { n: m }) }))
   ];
   const cur = dlg.form.playback.prepower;
-  if (!list.some(o => o.value === cur)) list.push({ value: cur, label: `${cur} 秒` });
+  if (!list.some(o => o.value === cur)) list.push({ value: cur, label: t("term.secondUnit", { n: cur }) });
   return list.sort((a, b) => a.value - b.value);
 });
 
@@ -700,18 +735,18 @@ const columns = reactive<ColumnProps<BellPlan>[]>([
   { type: "selection", fixed: "left", width: 50 },
   {
     prop: "planName",
-    label: "方案名称",
+    label: t("bell.planNameSearch"),
     minWidth: 220,
     sortable: "custom",
-    search: { el: "input", key: "keyword", props: { placeholder: "按方案名称搜索" } }
+    search: { el: "input", key: "keyword", props: { placeholder: t("bell.searchByPlanName") } }
   },
-  { prop: "startdate", label: "起始日期", width: 130, sortable: "custom" },
-  { prop: "enddate", label: "结束日期", width: 130, sortable: "custom" },
-  { prop: "projectstate", label: "状态", width: 110, sortable: "custom" },
-  { prop: "itemCount", label: "任务数", width: 110, sortable: "custom" },
+  { prop: "startdate", label: t("common.startDate"), width: 130, sortable: "custom" },
+  { prop: "enddate", label: t("common.endDate"), width: 130, sortable: "custom" },
+  { prop: "projectstate", label: t("common.status"), width: 110, sortable: "custom" },
+  { prop: "itemCount", label: t("bell.taskCount"), width: 110, sortable: "custom" },
   // 旧版 BellManager/bellManager_form.html 的表头里「任务数」后面还有一列「所属用户」
-  { prop: "ownerUserName", label: "所属用户", width: 110 },
-  { prop: "operation", label: "终端属性", fixed: "right", width: 200 }
+  { prop: "ownerUserName", label: t("taskCommon.owner"), width: 110 },
+  { prop: "operation", label: t("bell.terminalAttr"), fixed: "right", width: 200 }
 ]);
 
 const dataCallback = (data: any) => {
@@ -775,7 +810,7 @@ const priorityOptions = computed(() => {
   // 否则下拉框只显示一个数字，看不出它已经超出范围（后端也会拦下）
   const cur = dlg.form.playback.priority;
   if (!list.some(o => o.value === cur)) {
-    list.push({ value: cur, label: `${cur}（超出你的可选范围 ${lo}~${hi}）` });
+    list.push({ value: cur, label: t("bell.outOfRange", { v: cur, lo, hi }) });
     list.sort((a, b) => a.value - b.value);
   }
   return list;
@@ -882,7 +917,7 @@ const afterItemsDeleted = (planRemoved: boolean) => {
   if (!planRemoved) return;
   dlg.savedPlanName = "";
   if (dlg.isEdit) {
-    ElMessage.warning("方案的最后一个课时已删除，方案随之不存在了");
+    ElMessage.warning(t("bell.lastLessonGone"));
     dlg.visible = false;
   }
 };
@@ -896,7 +931,7 @@ const removeItemAt = async (idx: number) => {
   if (!row) return;
   if (row.taskid && currentPlanName.value) {
     try {
-      await ElMessageBox.confirm(`「${row.taskname}」已经存进数据库，删除会把这个课时从库里一并删掉。`, "删除课时", {
+      await ElMessageBox.confirm(t("bell.lessonInDbDelete", { name: row.taskname }), t("bell.deleteLesson"), {
         type: "warning"
       });
     } catch {
@@ -913,16 +948,18 @@ const removeItemAt = async (idx: number) => {
 const selectedItems = ref<ItemRow[]>([]);
 const onItemSelectionChange = (rows: ItemRow[]) => (selectedItems.value = rows);
 const itemCountNote = computed(() =>
-  selectedItems.value.length ? `共 ${dlg.items.length} 条，已勾选 ${selectedItems.value.length} 条` : `共 ${dlg.items.length} 条`
+  selectedItems.value.length
+    ? t("bell.totalItemsSelected", { n: dlg.items.length, sel: selectedItems.value.length })
+    : t("bell.totalItems", { n: dlg.items.length })
 );
 const removeSelectedItems = async () => {
-  if (!selectedItems.value.length) return ElMessage.warning("请先勾选要删除的课时");
+  if (!selectedItems.value.length) return ElMessage.warning(t("bell.pickLessonsToDelete"));
   const savedIds = selectedItems.value.filter(r => r.taskid).map(r => r.taskid);
   if (savedIds.length && currentPlanName.value) {
     try {
       await ElMessageBox.confirm(
-        `勾选的 ${selectedItems.value.length} 个课时里有 ${savedIds.length} 个已经存进数据库，删除会把它们从库里一并删掉。`,
-        "删除课时",
+        t("bell.someLessonsInDb", { n: selectedItems.value.length, saved: savedIds.length }),
+        t("bell.deleteLesson"),
         { type: "warning" }
       );
     } catch {
@@ -941,7 +978,7 @@ const removeSelectedItems = async () => {
   itemErrors.value = errs;
   selectedItems.value = [];
   itemsError.value = "";
-  ElMessage.success(`已删除 ${removed} 个课时`);
+  ElMessage.success(t("bell.removedLessons", { n: removed }));
 };
 
 /* ---------------- 必填校验 ----------------
@@ -965,8 +1002,8 @@ const planRules: FormRules = {
       trigger: ["blur", "change"],
       validator: (_r, _v, cb) => {
         const v = dlg.form.planName.trim();
-        if (!v) return cb(new Error("请输入方案名称"));
-        if (!isNameOk(v)) return cb(new Error("方案名称只能是中文、字母或数字"));
+        if (!v) return cb(new Error(t("bell.planNamePlaceholder")));
+        if (!isNameOk(v)) return cb(new Error(t("bell.planNameCharset")));
         cb();
       }
     }
@@ -975,7 +1012,7 @@ const planRules: FormRules = {
     {
       required: true,
       trigger: "change",
-      validator: (_r, _v, cb) => (dateRange.value?.[0] ? cb() : cb(new Error("请选择开始日期")))
+      validator: (_r, _v, cb) => (dateRange.value?.[0] ? cb() : cb(new Error(t("bell.pickStartDate"))))
     }
   ],
   enddate: [
@@ -984,8 +1021,8 @@ const planRules: FormRules = {
       trigger: "change",
       validator: (_r, _v, cb) => {
         const [a, b] = dateRange.value ?? [];
-        if (!b) return cb(new Error("请选择结束日期"));
-        if (a && a > b) return cb(new Error("开始日期不能大于结束日期"));
+        if (!b) return cb(new Error(t("bell.pickEndDate")));
+        if (a && a > b) return cb(new Error(t("bell.startAfterEnd")));
         cb();
       }
     }
@@ -994,22 +1031,21 @@ const planRules: FormRules = {
     {
       required: true,
       trigger: "blur",
-      validator: (_r, _v, cb) =>
-        dlg.form.ledOn && !dlg.form.ledText.trim() ? cb(new Error("勾了 LED 播放就要填字幕内容")) : cb()
+      validator: (_r, _v, cb) => (dlg.form.ledOn && !dlg.form.ledText.trim() ? cb(new Error(t("bell.ledContentRequired"))) : cb())
     }
   ],
   weekdays: [
     {
       required: true,
       trigger: "change",
-      validator: (_r, _v, cb) => (runMode.value === 2 && !weekdays.value.length ? cb(new Error("请选择星期")) : cb())
+      validator: (_r, _v, cb) => (runMode.value === 2 && !weekdays.value.length ? cb(new Error(t("bell.pickWeekday"))) : cb())
     }
   ],
   terminals: [
     {
       required: true,
       trigger: "change",
-      validator: (_r, _v, cb) => (selectedTerminalIds.value.length ? cb() : cb(new Error("请至少选择一个终端")))
+      validator: (_r, _v, cb) => (selectedTerminalIds.value.length ? cb() : cb(new Error(t("bell.atLeastOneTerminal"))))
     }
   ]
 };
@@ -1030,15 +1066,15 @@ const validateItemAt = (idx: number) => {
   itemErrors.value[idx] = err;
   const name = (it.taskname ?? "").trim();
   if (!name) {
-    err.taskname = "请输入课时名称";
+    err.taskname = t("bell.lessonNameRequired");
   } else if (!isNameOk(name)) {
-    err.taskname = "只能是中文、字母或数字";
+    err.taskname = t("bell.onlyHanziLetterDigit");
   } else {
     // 后端按 (info, taskname) 定位条目，方案内重名会互相覆盖
     const dup = dlg.items.findIndex((o, i) => i !== idx && (o.taskname ?? "").trim() === name);
-    if (dup >= 0) err.taskname = `与第 ${dup + 1} 行重名`;
+    if (dup >= 0) err.taskname = t("bell.dupWithRow", { n: dup + 1 });
   }
-  if (!/^\d{2}:\d{2}:\d{2}$/.test(it.playtime ?? "")) err.playtime = "请选择作息时间";
+  if (!/^\d{2}:\d{2}:\d{2}$/.test(it.playtime ?? "")) err.playtime = t("bell.pickBellTime");
   return !err.taskname && !err.playtime;
 };
 
@@ -1047,7 +1083,7 @@ const validateItems = () => {
   itemsError.value = "";
   itemErrors.value = dlg.items.map(() => emptyItemError());
   if (!dlg.items.length && !currentPlanName.value) {
-    itemsError.value = "请至少添加一个课时";
+    itemsError.value = t("bell.atLeastOneLesson");
     return false;
   }
   let ok = true;
@@ -1074,7 +1110,7 @@ const saveOneItem = async (idx: number) => {
   try {
     if (row.taskid && currentPlanName.value) {
       await updateBellItemApi(currentPlanName.value, row.taskid, itemPayload(row));
-      ElMessage.success(`课时「${row.taskname.trim()}」已保存`);
+      ElMessage.success(t("bell.lessonSaved", { name: row.taskname.trim() }));
     } else if (!currentPlanName.value) {
       const res = await createBellPlanApi({
         planName: dlg.form.planName.trim(),
@@ -1086,12 +1122,12 @@ const saveOneItem = async (idx: number) => {
       });
       dlg.savedPlanName = res.data.planName;
       row.taskid = res.data.taskIds?.[0] ?? 0;
-      ElMessage.success(`方案「${res.data.planName}」已创建，课时「${row.taskname.trim()}」已入库`);
+      ElMessage.success(t("bell.planCreatedWithLesson", { plan: res.data.planName, lesson: row.taskname.trim() }));
       (res.data.warnings ?? []).forEach(w => ElMessage.warning(w));
     } else {
       const res = await addBellItemApi(currentPlanName.value, itemPayload(row));
       row.taskid = res.data.taskIds?.[0] ?? 0;
-      ElMessage.success(`课时「${row.taskname.trim()}」已入库`);
+      ElMessage.success(t("bell.lessonStored", { name: row.taskname.trim() }));
       (res.data.warnings ?? []).forEach(w => ElMessage.warning(w));
     }
     refresh();
@@ -1132,7 +1168,7 @@ const vol = reactive({ visible: false, saving: false, planName: "", value: 80 })
 
 const openVolume = (raw: Record<string, any>[]) => {
   const rows = (raw ?? []) as unknown as BellPlan[];
-  if (rows.length !== 1) return ElMessage.warning("请只勾选一个方案");
+  if (rows.length !== 1) return ElMessage.warning(t("bell.pickOnlyOnePlan"));
   vol.planName = rows[0].planName;
   // 列表行里没带音量（那是方案级属性，在详情里），默认给 80，用户自己拖
   vol.value = 80;
@@ -1144,7 +1180,7 @@ const submitVolume = async () => {
   try {
     const { data } = await setBellPlanVolumeApi(vol.planName, vol.value);
     vol.visible = false;
-    ElMessage.success(`已把「${data.planName}」的音量改成 ${data.volume}，影响 ${data.affectedTasks} 条`);
+    ElMessage.success(t("bell.volumeChanged", { name: data.planName, vol: data.volume, n: data.affectedTasks }));
     refresh();
   } finally {
     vol.saving = false;
@@ -1175,8 +1211,8 @@ const schedMask = computed(() => {
   return arr.join("");
 });
 const schedWeekText = computed(() => {
-  if (schedMask.value === "1111111") return "每天";
-  if (!sched.weekdays.length) return "未选";
+  if (schedMask.value === "1111111") return t("taskCommon.everyDay");
+  if (!sched.weekdays.length) return t("bell.unselected");
   return [...sched.weekdays]
     .sort((a, b) => a - b)
     .map(i => weekLabels[i])
@@ -1211,11 +1247,11 @@ const openSchedule = async (raw: Record<string, any>) => {
 };
 
 const submitSchedule = async () => {
-  if (!sched.checked.length) return ElMessage.warning("请先勾选要改的课时");
+  if (!sched.checked.length) return ElMessage.warning(t("bell.pickLessonsToChange"));
   const [start, end] = sched.range ?? [];
-  if (!start || !end) return ElMessage.warning("请选择新的日期时间段");
-  if (start > end) return ElMessage.warning("开始日期不能晚于结束日期");
-  if (!sched.weekdays.length) return ElMessage.warning("请至少选择一个执行星期");
+  if (!start || !end) return ElMessage.warning(t("bell.pickNewRange"));
+  if (start > end) return ElMessage.warning(t("bell.startLaterThanEnd"));
+  if (!sched.weekdays.length) return ElMessage.warning(t("bell.atLeastOneWeekday"));
 
   sched.saving = true;
   try {
@@ -1225,7 +1261,7 @@ const submitSchedule = async () => {
       enddate: end,
       exemodel: schedMask.value
     });
-    ElMessage.success(`已把 ${data.changed} 个课时改到 ${start} ~ ${end}（${schedWeekText.value}）`);
+    ElMessage.success(t("bell.movedLessons", { n: data.changed, start, end, week: schedWeekText.value }));
     // 就地刷新，好让「当前日期段」这一列立刻显示新值
     await openSchedule({ planName: sched.planName });
     refresh();
@@ -1243,7 +1279,7 @@ const openCreate = async () => {
     saving: false,
     mode: "create",
     isEdit: false,
-    title: "添加方案",
+    title: t("bell.addPlan"),
     originalName: "",
     applyTerminals: true,
     mixedAttrs: [],
@@ -1282,7 +1318,7 @@ const openEdit = async (row: BellPlan, mode: "edit" | "batch" = "edit") => {
     saving: false,
     mode,
     isEdit: true,
-    title: `${mode === "batch" ? "批量修改" : "修改方案"}：${data.planName}`,
+    title: `${mode === "batch" ? t("bell.batchEdit") : t("bell.editPlan")} · ${data.planName}`,
     originalName: data.planName,
     // 旧版 modifybell.html 的「确定」是连终端一起写回去的
     applyTerminals: true,
@@ -1413,10 +1449,10 @@ const saveAllPending = async () => {
       }
       const upd = await flushHeader();
       const parts: string[] = [];
-      if (pending.length) parts.push(`新增 ${pending.length} 个课时`);
-      if (upd?.affectedRows) parts.push(`更新 ${upd.affectedRows} 行`);
-      if (upd?.renamed) parts.push("方案已改名");
-      ElMessage.success(parts.length ? `已${parts.join("，")}` : "方案已保存");
+      if (pending.length) parts.push(t("bell.pendingLessons", { n: pending.length }));
+      if (upd?.affectedRows) parts.push(t("bell.updatedRows", { n: upd.affectedRows }));
+      if (upd?.renamed) parts.push(t("bell.planRenamed"));
+      ElMessage.success(parts.length ? `${parts.join("，")}` : t("bell.planSaved"));
     } else {
       const res = await createBellPlanApi({
         planName: dlg.form.planName.trim(),
@@ -1429,7 +1465,7 @@ const saveAllPending = async () => {
       dlg.items.forEach((it, i) => (it.taskid = res.data.taskIds?.[i] ?? 0));
       dlg.savedPlanName = res.data.planName;
       markHeaderClean();
-      ElMessage.success(`已创建 ${res.data.createdItems} 个条目`);
+      ElMessage.success(t("bell.createdItems", { n: res.data.createdItems }));
       (res.data.warnings ?? []).forEach(w => ElMessage.warning(w));
     }
     refresh();
@@ -1450,11 +1486,13 @@ const closeDialog = async () => {
   const pending = dlg.items.filter(it => !it.taskid).length;
   const dirty = headerDirty.value;
   if (currentPlanName.value && (dirty || pending)) {
-    const what = [dirty ? "方案属性有改动" : "", pending ? `${pending} 行课时还没添加` : ""].filter(Boolean).join("，");
+    const what = [dirty ? t("bell.planPropsChanged") : "", pending ? t("bell.pendingRows", { n: pending }) : ""]
+      .filter(Boolean)
+      .join("，");
     try {
-      await ElMessageBox.confirm(`${what}，返回后不会保存。`, "还有没保存的改动", {
-        confirmButtonText: "保存并返回",
-        cancelButtonText: "直接返回",
+      await ElMessageBox.confirm(t("bell.willNotSave", { what }), t("bell.unsavedChanges"), {
+        confirmButtonText: t("bell.saveAndBack"),
+        cancelButtonText: t("bell.backDirectly"),
         distinguishCancelAndClose: true,
         type: "warning"
       });
@@ -1467,9 +1505,9 @@ const closeDialog = async () => {
     if (!(await saveAllPending())) return;
   } else if (!currentPlanName.value && hasAnyInput()) {
     try {
-      await ElMessageBox.confirm("方案还没有任何课时入库，返回后填的内容会丢弃。", "还没有保存", {
-        confirmButtonText: "保存并返回",
-        cancelButtonText: "直接返回",
+      await ElMessageBox.confirm(t("bell.noLessonSavedNote"), t("bell.notSavedYet"), {
+        confirmButtonText: t("bell.saveAndBack"),
+        cancelButtonText: t("bell.backDirectly"),
         distinguishCancelAndClose: true,
         type: "warning"
       });
@@ -1503,8 +1541,8 @@ const batchMediaName = (row: ItemRow) => {
   return ids.map(id => medias.value.find(m => m.id === id)?.name ?? `#${id}`).join("、");
 };
 const batchLenText = (row: ItemRow) => {
-  if (batch.enableLen) return batch.lenType === 1 ? batch.lenHms : `${batch.lenTimes} 次`;
-  return row.timelengthtype === 1 ? row.lengthhms : `${row.timelength} 次`;
+  if (batch.enableLen) return batch.lenType === 1 ? batch.lenHms : t("term.loopUnit", { n: batch.lenTimes });
+  return row.timelengthtype === 1 ? row.lengthhms : t("term.loopUnit", { n: row.timelength });
 };
 
 const selectAllItems = () => dlg.items.forEach(r => itemTableRef.value?.toggleRowSelection(r, true));
@@ -1520,8 +1558,8 @@ const submitBatch = async () => {
   if (!formOk) return;
   const picked = selectedItems.value.filter(r => r.taskid);
   const fresh = selectedItems.value.filter(r => !r.taskid);
-  if (!picked.length && !fresh.length) return ElMessage.warning("请先勾选要修改的课时");
-  if (batch.enableMedia && !batch.mediaId) return ElMessage.warning("勾了「统一作息音乐」，请选择一个铃声");
+  if (!picked.length && !fresh.length) return ElMessage.warning(t("bell.pickLessonsToEdit"));
+  if (batch.enableMedia && !batch.mediaId) return ElMessage.warning(t("bell.pickOneTone"));
   let ok = true;
   selectedItems.value.forEach(r => {
     const i = dlg.items.indexOf(r);
@@ -1546,9 +1584,9 @@ const submitBatch = async () => {
       }
     }
     const upd = await flushHeader();
-    const parts = [`已修改 ${picked.length} 个课时`];
-    if (fresh.length) parts.push(`新增 ${fresh.length} 个`);
-    if (upd?.renamed) parts.push("方案已改名");
+    const parts = [t("bell.editedLessons", { n: picked.length })];
+    if (fresh.length) parts.push(t("bell.freshCount", { n: fresh.length }));
+    if (upd?.renamed) parts.push(t("bell.planRenamed"));
     ElMessage.success(parts.join("，"));
     dlg.visible = false;
     refresh();
@@ -1573,7 +1611,7 @@ const del = reactive({
 // rows 来自 ProTable 的 selectedList，它的类型是宽松的 Record，这里收窄一次。
 const batchCmd = async (cmd: string, raw: Record<string, any>[]) => {
   const rows = (raw ?? []) as unknown as BellPlan[];
-  if (!rows.length) return ElMessage.warning("请先勾选方案");
+  if (!rows.length) return ElMessage.warning(t("bell.pickPlanFirst"));
   if (cmd === "copy") {
     return onMoreCmd("copy", rows[0]);
   }
@@ -1581,9 +1619,9 @@ const batchCmd = async (cmd: string, raw: Record<string, any>[]) => {
     // 删除要看影响面弹窗，一次处理一条；多选时只对第一条打开，
     // 免得连开一串确认框把人淹掉。
     if (rows.length > 1) {
-      await ElMessageBox.confirm(`一次只能删一个方案。先处理「${rows[0].planName}」，其余的删完再来。`, "逐个删除", {
+      await ElMessageBox.confirm(t("bell.deleteOneAtATime", { name: rows[0].planName }), t("bell.deleteOneByOne"), {
         type: "warning",
-        confirmButtonText: "继续"
+        confirmButtonText: t("bell.continueWord")
       });
     }
     return onMoreCmd("delete", rows[0]);
@@ -1597,22 +1635,24 @@ const onMoreCmd = async (cmd: string | number | object, row: BellPlan) => {
     case "disable": {
       const enable = cmd === "enable";
       const { data } = await setBellPlanStateApi(row.planName, enable);
-      ElMessage.success(`${enable ? "已启用" : "已停止"}，影响 ${data.affectedTasks} 行`);
+      ElMessage.success(
+        t("bell.stateChanged", { state: enable ? t("bell.enabledWord") : t("bell.stoppedWord"), n: data.affectedTasks })
+      );
       if (data.offlineStateReset) {
-        ElMessage.warning("该方案原本有条目正在离线传输，启停已把离线状态一并复位");
+        ElMessage.warning(t("bell.offlineReset"));
       }
       refresh();
       break;
     }
     case "copy": {
-      const { value } = await ElMessageBox.prompt("新方案名称", "复制方案", {
-        inputValue: `${row.planName}-副本`,
-        inputValidator: v => (v && v.trim() ? true : "名称不能为空")
+      const { value } = await ElMessageBox.prompt(t("bell.newPlanName"), t("bell.copyPlan"), {
+        inputValue: t("bell.copySuffix", { name: row.planName }),
+        inputValidator: v => (v && v.trim() ? true : t("bell.nameEmpty"))
       });
       const { data } = await copyBellPlanApi(row.planName, value.trim());
       ElMessage.success(
-        `已复制 ${data.copiedItems} 个条目、${data.copiedPowerSubTasks} 条功放子任务、` +
-          `${data.copiedMediaRows} 条铃声、${data.copiedTerminalRows} 条终端关联`
+        t("bell.copiedItems", { items: data.copiedItems, power: data.copiedPowerSubTasks }) +
+          t("bell.copiedRows", { media: data.copiedMediaRows, terms: data.copiedTerminalRows })
       );
       refresh();
       break;
@@ -1632,7 +1672,7 @@ const confirmDelete = async () => {
   del.busy = true;
   try {
     const { data } = await deleteBellPlanApi(del.planName);
-    ElMessage.success(`已删除 ${data.items} 个条目、${data.powerSubTasks} 条功放子任务`);
+    ElMessage.success(t("bell.deletedItems", { items: data.items, power: data.powerSubTasks }));
     del.visible = false;
     refresh();
   } finally {
