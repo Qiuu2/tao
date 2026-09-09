@@ -5,6 +5,7 @@ import NProgress from "@/config/nprogress";
 import { initDynamicRouter } from "@/routers/modules/dynamicRouter";
 import { errorRouter, staticRouter } from "@/routers/modules/staticRouter";
 import { useAuthStore } from "@/stores/modules/auth";
+import { appTitle } from "@/languages";
 import { useUserStore } from "@/stores/modules/user";
 
 const mode = import.meta.env.VITE_ROUTER_MODE;
@@ -48,7 +49,8 @@ router.beforeEach(async (to, from, next) => {
   NProgress.start();
 
   // 2.动态设置标题
-  const title = import.meta.env.VITE_GLOB_APP_TITLE;
+  // 浏览器标签页标题也跟着界面语言走
+  const title = appTitle();
   document.title = to.meta.title ? `${to.meta.title} - ${title}` : title;
 
   // 3.判断是访问登陆页，有 Token 就在当前页面，没有 Token 重置路由到登陆页

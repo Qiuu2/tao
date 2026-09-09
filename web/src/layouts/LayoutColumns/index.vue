@@ -49,6 +49,7 @@
 </template>
 
 <script setup lang="ts" name="layoutColumns">
+import { appTitle } from "@/languages";
 import { computed, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 
@@ -59,7 +60,8 @@ import SubMenu from "@/layouts/components/Menu/SubMenu.vue";
 import { useAuthStore } from "@/stores/modules/auth";
 import { useGlobalStore } from "@/stores/modules/global";
 
-const title = import.meta.env.VITE_GLOB_APP_TITLE;
+// 产品名跟着界面语言走，见 languages/index.ts 的 appTitle
+const title = computed(() => appTitle());
 
 const route = useRoute();
 const router = useRouter();

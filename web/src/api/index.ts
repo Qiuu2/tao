@@ -6,6 +6,7 @@ import { showFullScreenLoading, tryHideFullScreenLoading } from "@/components/Lo
 import { LOGIN_URL } from "@/config";
 import { ResultEnum } from "@/enums/httpEnum";
 import router from "@/routers";
+import { useGlobalStore } from "@/stores/modules/global";
 import { useUserStore } from "@/stores/modules/user";
 
 import { AxiosCanceler } from "./helper/axiosCancel";
@@ -49,6 +50,9 @@ class RequestHttp {
         if (config.loading) showFullScreenLoading();
         if (config.headers && typeof config.headers.set === "function") {
           config.headers.set("x-access-token", userStore.token);
+          // 告诉后端用哪种语言回提示。后端返回的 msg 会直接弹给用户看，
+          // 只切前端不带上这个头，英文界面下一报错就冒出一句中文。
+          config.headers.set("Accept-Language", useGlobalStore().language);
         }
         return config;
       },

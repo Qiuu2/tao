@@ -9,7 +9,7 @@
         <div class="login-logo">
           <img class="login-icon" src="@/assets/images/logo.svg" alt="" />
           <!-- 产品名统一取 .env 的 VITE_GLOB_APP_TITLE，别再写死模板名 -->
-          <h2 class="logo-text">{{ appTitle }}</h2>
+          <h2 class="logo-text">{{ title }}</h2>
         </div>
         <!--
           注册状态提示。旧版 login.php 在渲染登录页之前先查 registerflag，
@@ -25,6 +25,8 @@
 </template>
 
 <script setup lang="ts" name="login">
+import { computed } from "vue";
+import { appTitle } from "@/languages";
 import { onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
 
@@ -34,7 +36,8 @@ import SwitchDark from "@/components/SwitchDark/index.vue";
 import LoginForm from "./components/LoginForm.vue";
 
 // 与侧边栏 Logo、浏览器标签页标题同源，改产品名只改 .env 一处
-const appTitle = import.meta.env.VITE_GLOB_APP_TITLE;
+// 登录页大标题：与侧边栏 Logo、标签页标题同源，跟着界面语言走
+const title = computed(() => appTitle());
 
 /*
   注册状态。这个接口是公开的（登录之前就要用），只回状态与剩余天数，不含机器码。

@@ -15,6 +15,9 @@
  * 专门比对两边的键集合。
  */
 export default {
+  app: {
+    title: "IP数字网络广播系统"
+  },
   common: {
     confirm: "确定",
     cancel: "取消",

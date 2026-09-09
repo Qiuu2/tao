@@ -56,7 +56,44 @@ type Page struct {
 	Total    int64       `json:"total"`
 }
 
+// translator 由 i18n 的 ResponseWriter 包装器实现。
+//
+// 这里用接口而不是直接 import i18n，是为了不让 httpx（最底层的响应工具）
+// 依赖 i18n —— 否则 i18n 想用 httpx 的错误码就成了循环依赖。
+type translator interface {
+	// Language 返回 "zh" / "en"
+	Language() string
+	// Translate 把一句中文换成该语言的说法；没有对应翻译就原样返回
+	Translate(zh string) string
+}
+
+// langOf 顺着 ResponseWriter 的包装链找那个知道语言的。
+//
+// 中间件会包好几层（审计的 sniffWriter 就是一层），所以要按标准库
+// http.ResponseController 那套 Unwrap 约定一路问下去。
+// 一层都问不到就返回 nil —— 那时按中文输出，不报错。
+// 少一层 Unwrap 的后果是「这个接口的提示还是中文」，而不是整个响应坏掉。
+func langOf(w http.ResponseWriter) translator {
+	for i := 0; i < 8; i++ { // 防御性上限：包装链不该有这么深，成环就更不该
+		if t, ok := w.(translator); ok {
+			return t
+		}
+		u, ok := w.(interface{ Unwrap() http.ResponseWriter })
+		if !ok {
+			return nil
+		}
+		w = u.Unwrap()
+	}
+	return nil
+}
+
 func write(w http.ResponseWriter, status int, e Envelope) {
+	// msg 是直接弹给用户看的，按界面语言翻一次。
+	// 翻不了的原样输出 —— 英文界面上出现一句中文是「这条还没配翻译」，
+	// 看得见、能补；而这总好过为了整齐返回一个用户看不懂的键名。
+	if t := langOf(w); t != nil {
+		e.Msg = t.Translate(e.Msg)
+	}
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.Header().Set("Cache-Control", "no-store")
 	w.WriteHeader(status)

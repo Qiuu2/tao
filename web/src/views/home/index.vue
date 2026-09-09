@@ -241,7 +241,7 @@
         <el-table-column :label="$t('common.status')" width="110">
           <template #default="{ row }">
             <el-tag :type="row.enabledToday ? 'success' : 'info'" size="small" effect="plain">
-              {{ row.enabledToday ? "当天启用" : "当天停用" }}
+              {{ row.enabledToday ? $t("dash.onToday") : $t("dash.offToday") }}
             </el-tag>
           </template>
         </el-table-column>

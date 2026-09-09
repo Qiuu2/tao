@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"htweb/internal/auth"
+	"htweb/internal/i18n"
 	"htweb/internal/store"
 	"htweb/internal/task"
 )
@@ -60,6 +61,10 @@ func (s *Service) Overview(ctx context.Context, u *auth.User) (*Overview, error)
 		if err := rows.Scan(&c.Type, &c.Total, &online); err != nil {
 			return nil, err
 		}
+		// 终端型号是产品词汇（不是用户起的名字），要跟着界面语言走。
+		// 分组、排序仍按库里的中文原文做 —— 翻译只发生在最后这一步，
+		// 免得英文下把两个原本不同的型号并成一组。
+		c.Type = i18n.TC(ctx, c.Type)
 		c.Online = int(online.Int64)
 		c.Offline = c.Total - c.Online
 		out.Total += c.Total
@@ -123,7 +128,9 @@ func (s *Service) Config(ctx context.Context) (*Config, error) {
 		out.QuickTasks = append(out.QuickTasks, pick(known, id))
 	}
 	for _, slot := range EmergencySlots {
-		e := EmergencySlot{Key: slot.Key, Name: slot.Name}
+		// 槽位名是固定的产品词汇（地震/疏散/警戒/消防），跟着界面语言走。
+		// key 不翻 —— 那是存进 dashboard.json 的标识，翻了历史数据就对不上了。
+		e := EmergencySlot{Key: slot.Key, Name: i18n.TC(ctx, slot.Name)}
 		if id := st.Emergency[slot.Key]; id > 0 {
 			t := pick(known, id)
 			e.Task = &t
@@ -218,7 +225,7 @@ func (s *Service) loadTasks(ctx context.Context, ids []int64) (map[int64]BoundTa
 		if err := rows.Scan(&t.TaskID, &t.TaskName, &t.PlayTime, &t.State); err != nil {
 			return nil, err
 		}
-		t.StateText = stateText(t.State)
+		t.StateText = i18n.TC(ctx, stateText(t.State))
 		out[t.TaskID] = t
 	}
 	return out, rows.Err()
@@ -457,8 +464,10 @@ func (s *Service) Browse(ctx context.Context, u *auth.User, q BrowseQuery) (*Bro
 		i++
 		it.Index = i
 		it.Weekdays = parseWeekdays(mask)
-		it.CycleText = cycleText(mask)
-		it.StateText = stateText(it.State)
+		it.CycleText = i18n.CycleText(ctx, mask)
+		it.StateText = i18n.TC(ctx, stateText(it.State))
+		// 「(未分组)」是 SQL 里的兜底值，不是用户起的分组名，所以要翻
+		it.FolderName = i18n.TC(ctx, it.FolderName)
 		out.Items = append(out.Items, it)
 	}
 	return out, rows.Err()
@@ -476,21 +485,6 @@ func parseWeekdays(mask string) []int {
 
 // exemodel 是周日打头的 7 位掩码（第 1 位 = 周日），标签顺序要跟它对齐。
 var weekNames = [7]string{"日", "一", "二", "三", "四", "五", "六"}
-
-func cycleText(mask string) string {
-	days := parseWeekdays(mask)
-	switch len(days) {
-	case 0:
-		return "手动"
-	case 7:
-		return "每天"
-	}
-	parts := make([]string, 0, len(days))
-	for _, d := range days {
-		parts = append(parts, weekNames[d-1])
-	}
-	return "周" + strings.Join(parts, "、")
-}
 
 // ---------- 小工具 ----------
 

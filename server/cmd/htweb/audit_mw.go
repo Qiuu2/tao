@@ -244,6 +244,13 @@ func (s *sniffWriter) Write(b []byte) (int, error) {
 	return s.ResponseWriter.Write(b)
 }
 
+// Unwrap 让下层能顺着包装链找到真正的 ResponseWriter。
+//
+// 这是标准库 http.ResponseController 的约定。httpx 靠它找到 i18n 的
+// 语言包装器 —— 不实现的话，凡是走审计中间件的接口（也就是所有写接口）
+// 提示都会退回中文，而且不报错，只是英文界面上突然冒出一句中文。
+func (s *sniffWriter) Unwrap() http.ResponseWriter { return s.ResponseWriter }
+
 func (s *sniffWriter) success() bool {
 	if s.done {
 		return s.ok

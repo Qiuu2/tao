@@ -63,3 +63,20 @@ export function menuTitle(name: string | undefined, fallback: string): string {
   const key = `menu.${name}`;
   return i18n.global.te(key) ? (i18n.global.t(key) as string) : fallback;
 }
+
+/**
+ * 产品名。中文取 .env 里的 VITE_GLOB_APP_TITLE，英文取字典里的 app.title。
+ *
+ * ⚠ 产品名要不要翻是个**商业决定**，不是技术决定 —— 很多产品的名字
+ * 在任何语言下都保持原样（那是品牌）。这里做成可翻的，是因为用户明确说了
+ * 「终端型号等所有都需要改」；真要保持中文原名，把 en.ts 里 app.title
+ * 改回中文即可，代码一行都不用动。
+ *
+ * 侧边栏 Logo、登录页大标题、浏览器标签页标题共用这一个，
+ * 免得三处各写一份、改了名字漏掉其中一处。
+ */
+export function appTitle(): string {
+  const key = "app.title";
+  if (i18n.global.te(key)) return i18n.global.t(key) as string;
+  return import.meta.env.VITE_GLOB_APP_TITLE;
+}

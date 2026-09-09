@@ -35,6 +35,7 @@
 </template>
 
 <script setup lang="ts" name="layoutTransverse">
+import { appTitle } from "@/languages";
 import { computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
 
@@ -43,7 +44,8 @@ import Main from "@/layouts/components/Main/index.vue";
 import SubMenu from "@/layouts/components/Menu/SubMenu.vue";
 import { useAuthStore } from "@/stores/modules/auth";
 
-const title = import.meta.env.VITE_GLOB_APP_TITLE;
+// 产品名跟着界面语言走，见 languages/index.ts 的 appTitle
+const title = computed(() => appTitle());
 
 const route = useRoute();
 const router = useRouter();

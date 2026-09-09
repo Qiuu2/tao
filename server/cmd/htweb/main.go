@@ -37,6 +37,7 @@ import (
 	"htweb/internal/folder"
 	"htweb/internal/holiday"
 	"htweb/internal/httpx"
+	"htweb/internal/i18n"
 	"htweb/internal/logs"
 	"htweb/internal/media"
 	"htweb/internal/notify"
@@ -806,7 +807,10 @@ func (a *app) routes() http.Handler {
 	// —— 前端静态文件 ——
 	rawMux.Handle("/", a.staticHandler())
 
-	return logging(rawMux)
+	// i18n 包在最外层：它要把 ResponseWriter 包一层（httpx 靠它决定
+	// msg 用哪种语言），也要把语言塞进 context（业务层拼展示文案时要用）。
+	// 放最外层才能覆盖所有路由，包括静态文件和健康检查那种不走认证的。
+	return logging(i18n.Middleware(rawMux))
 }
 
 // auditMux 是 http.ServeMux 的一层薄包装：注册时按路由模式查一次

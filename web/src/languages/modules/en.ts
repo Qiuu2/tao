@@ -4,6 +4,9 @@
  * phrase in an otherwise English page and raises no error. See i18n.test.ts.
  */
 export default {
+  app: {
+    title: "IP Network Broadcast System"
+  },
   common: {
     confirm: "OK",
     cancel: "Cancel",

@@ -43,6 +43,7 @@ import (
 	"strings"
 
 	"htweb/internal/auth"
+	"htweb/internal/i18n"
 	"htweb/internal/notify"
 	"htweb/internal/store"
 )
@@ -331,7 +332,7 @@ func (s *Service) List(ctx context.Context, u *auth.User, k Kind, q Query) (*Lis
 		}
 		it.StateText = stateText(it.State)
 		it.ProjectText = projectText(it.ProjectState)
-		it.CycleText = cycleText(it.ExeModel)
+		it.CycleText = i18n.CycleText(ctx, it.ExeModel)
 		it.LengthText = lengthText(it.TimeLengthType, it.TimeLength)
 		it.CanModify = u.IsAdmin || it.UserID == u.ID
 		it.PlayModeText = playModeText(it.IntPlayLenTy)
@@ -501,30 +502,6 @@ func taskTypeText(t int) string {
 
 // exemodel 是周日打头的 7 位掩码（第 1 位 = 周日），标签顺序要跟它对齐。
 var weekNames = [7]string{"日", "一", "二", "三", "四", "五", "六"}
-
-// cycleText 把 exemodel 的 7 位掩码翻成人话。
-// 位序与作息方案一致：第 0 位是周日 …… 第 6 位是周六。
-func cycleText(mask string) string {
-	if len(mask) != 7 {
-		return "—"
-	}
-	if mask == "0000000" {
-		return "手动"
-	}
-	if mask == "1111111" {
-		return "每天"
-	}
-	var on []string
-	for i := 0; i < 7; i++ {
-		if mask[i] == '1' {
-			on = append(on, weekNames[i])
-		}
-	}
-	if len(on) == 0 {
-		return "手动"
-	}
-	return "周" + strings.Join(on, "、")
-}
 
 // lengthText 把播放时长翻成人话。
 // timelengthtype：1 = 按时间（秒），其它 = 按循环次数（列注释写的是 2）。

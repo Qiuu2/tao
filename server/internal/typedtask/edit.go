@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"htweb/internal/auth"
+	"htweb/internal/i18n"
 	"htweb/internal/notify"
 	"htweb/internal/store"
 )
@@ -117,7 +118,7 @@ func (s *Service) Get(ctx context.Context, u *auth.User, k Kind, id int64) (*Det
 
 	d.StateText = stateText(d.State)
 	d.ProjectText = projectText(d.ProjectState)
-	d.CycleText = cycleText(d.ExeModel)
+	d.CycleText = i18n.CycleText(ctx, d.ExeModel)
 	d.LengthText = lengthText(d.TimeLengthType, d.TimeLength)
 	d.PlayModeText = playModeText(d.IntPlayLenTy)
 	d.TypeText = taskTypeText(d.TaskType)

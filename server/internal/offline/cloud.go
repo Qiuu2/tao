@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"htweb/internal/auth"
+	"htweb/internal/i18n"
 	"htweb/internal/store"
 )
 
@@ -438,27 +439,6 @@ var weekNames = [7]string{"日", "一", "二", "三", "四", "五", "六"}
 
 // cycleText / lengthText 与 typedtask 包里那两份同口径，
 // 只是离线副本这边独立取一份，免得两个包互相依赖。
-func cycleText(mask string) string {
-	if len(mask) != 7 {
-		return "—"
-	}
-	switch mask {
-	case "0000000":
-		return "手动"
-	case "1111111":
-		return "每天"
-	}
-	var on []string
-	for i := 0; i < 7; i++ {
-		if mask[i] == '1' {
-			on = append(on, weekNames[i])
-		}
-	}
-	if len(on) == 0 {
-		return "手动"
-	}
-	return "周" + strings.Join(on, "、")
-}
 
 func lengthText(t, v int) string {
 	if v <= 0 {
@@ -598,7 +578,7 @@ func (s *Service) ListTransferTasks(ctx context.Context, u *auth.User, q Transfe
 		}
 		t.TypeText = typeText(t.TaskType)
 		t.StateText = StateText[State(t.State)]
-		t.CycleText = cycleText(t.ExeModel)
+		t.CycleText = i18n.CycleText(ctx, t.ExeModel)
 		t.LengthText = lengthText(t.TimeLengthType, t.TimeLength)
 		// ⚠ offlinetask.projectstate 与 task 同源：0 = 启用、1 = 停用
 		if t.ProjectState == 0 {
