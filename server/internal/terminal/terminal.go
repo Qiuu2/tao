@@ -515,6 +515,8 @@ func (s *Service) TypeOptions(ctx context.Context) ([]TypeOption, error) {
 			return nil, err
 		}
 		o.IsDecode, o.IsEncode = d == 1, e == 1
+		// 型号名是产品词汇，跟着请求语言走（与终端列表那一处同一条规则）
+		o.Name = i18n.TC(ctx, o.Name)
 		out = append(out, o)
 	}
 	return out, rs.Err()

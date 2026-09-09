@@ -32,6 +32,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"htweb/internal/i18n"
 	"net"
 	"strings"
 )
@@ -147,14 +148,14 @@ type Params struct {
 	ReadOnly  ReadOnly  `json:"readonly"`
 }
 
-func modelText(m int) string {
+func modelText(ctx context.Context, m int) string {
 	switch m {
 	case 1:
-		return "主服务器"
+		return i18n.TC(ctx, "主服务器")
 	case 2:
-		return "备机"
+		return i18n.TC(ctx, "备机")
 	default:
-		return fmt.Sprintf("未知(%d)", m)
+		return fmt.Sprintf(i18n.TC(ctx, "未知(%d)"), m)
 	}
 }
 
@@ -200,7 +201,7 @@ func (s *Service) Get(ctx context.Context) (*Params, error) {
 		return nil, fmt.Errorf("读取服务器参数: %w", err)
 	}
 	p.ReadOnly.TryStartDate, p.ReadOnly.TryEndDate = trystart.String, tryend.String
-	p.HA.ModelText = modelText(p.HA.Model)
+	p.HA.ModelText = modelText(ctx, p.HA.Model)
 	// name 同时出现在 ReadOnly（版本页展示）和 HA（主备页可改）两处，
 	// 是同一列的两个视图，不是两份数据。
 	p.HA.Name = p.ReadOnly.Name
@@ -442,8 +443,8 @@ func (s *Service) Save(ctx context.Context, in Input) (*SaveResult, error) {
 	}
 
 	return &SaveResult{Updated: true,
-		RequiresRestart: len(restartReasons(before, in)) > 0,
-		RestartReasons:  restartReasons(before, in)}, nil
+		RequiresRestart: len(restartReasons(ctx, before, in)) > 0,
+		RestartReasons:  restartReasons(ctx, before, in)}, nil
 }
 
 // syncServerConfig 维护 serverconfig 那一行。
@@ -474,7 +475,7 @@ func syncServerConfig(ctx context.Context, tx *sql.Tx, soundDetect, fuzaMima int
 //
 // 新版只写数据库，不去动系统配置、不去重启任何服务 ——
 // 旧版那套 `sed -i '行号c ...'` 改 Apache 配置的做法（D-209）已彻底放弃。
-func restartReasons(before *Params, in Input) []string {
+func restartReasons(ctx context.Context, before *Params, in Input) []string {
 	var out []string
 	if before.Ports.WebPort != in.Ports.WebPort {
 		out = append(out, fmt.Sprintf(
@@ -506,7 +507,7 @@ func restartReasons(before *Params, in Input) []string {
 	}
 	if before.HA.Model != in.HA.Model {
 		out = append(out, fmt.Sprintf("服务器模式由「%s」改为「%s」：会立刻影响所有人的只读判定",
-			modelText(before.HA.Model), modelText(in.HA.Model)))
+			modelText(ctx, before.HA.Model), modelText(ctx, in.HA.Model)))
 	}
 	if before.Multicast.IP != in.Multicast.IP {
 		out = append(out, "组播 IP 变更：需要重启后台服务")

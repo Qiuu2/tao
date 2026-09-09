@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"htweb/internal/auth"
+	"htweb/internal/i18n"
 	"htweb/internal/store"
 )
 
@@ -206,7 +207,7 @@ func (s *Service) fillShortcutTargets(ctx context.Context, keys []ShortcutKey, k
 		}
 		tg.Deleted = !exists
 		if tg.Deleted {
-			tg.TerminalName = "(终端已删除)"
+			tg.TerminalName = i18n.TC(ctx, "(终端已删除)")
 		}
 		byKey[keyID] = append(byKey[keyID], tg)
 	}

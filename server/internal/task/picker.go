@@ -125,6 +125,7 @@ func (s *Service) TerminalOptions(ctx context.Context, u *auth.User, keyword str
 		if err := rs.Scan(&o.ID, &o.Name, &o.TypeName, &o.GroupID, &o.NetState, &o.SwitchCount); err != nil {
 			return nil, err
 		}
+		o.TypeName = i18n.TC(ctx, o.TypeName)
 		if o.GroupID > 0 {
 			groupIDs[o.GroupID] = true
 		}
@@ -178,7 +179,7 @@ func (s *Service) fillOptionGroupNames(ctx context.Context, opts []TerminalOptio
 		if n, ok := names[opts[i].GroupID]; ok {
 			opts[i].GroupName = n
 		} else {
-			opts[i].GroupName = "(分区已删除)"
+			opts[i].GroupName = i18n.TC(ctx, "(分区已删除)")
 		}
 	}
 	return nil

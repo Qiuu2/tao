@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"htweb/internal/auth"
+	"htweb/internal/i18n"
 	"htweb/internal/store"
 	"htweb/internal/task"
 )
@@ -186,7 +187,7 @@ func (s *Service) Get(ctx context.Context, u *auth.User, planName string) (*Deta
 			&a.start, &a.end, &a.exe, &a.vol, &a.pri, &a.pre, &a.snd, &a.rnd); err != nil {
 			return nil, err
 		}
-		it.StateText = stateText(it.ProjectState)
+		it.StateText = stateText(ctx, it.ProjectState)
 		it.StartDate, it.EndDate, it.ExeModel = a.start, a.end, a.exe
 		it.Media = []task.MediaItem{}
 		ids = append(ids, it.TaskID)
@@ -455,6 +456,7 @@ func (s *Service) fillPlanTerminals(ctx context.Context, d *Detail, sampleTaskID
 			&t.IP, &t.Volume); err != nil {
 			return err
 		}
+		t.TypeName = i18n.TC(ctx, t.TypeName)
 		if !exists {
 			t.Deleted, t.TerminalName = true, "(终端已删除)"
 		}

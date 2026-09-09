@@ -492,6 +492,7 @@ func (s *Service) GetGroup(ctx context.Context, u *auth.User, id int64) (*GroupD
 			rs.Close()
 			return nil, err
 		}
+		t.TypeName = i18n.TC(ctx, t.TypeName)
 		t.Deleted = !exists
 		if t.Deleted {
 			t.TerminalName = i18n.TC(ctx, "(终端已删除)")
@@ -977,6 +978,7 @@ func (s *Service) TerminalOptions(ctx context.Context, u *auth.User, keyword str
 			&t.IP, &t.NetState, &t.GroupID, &t.GroupName); err != nil {
 			return nil, err
 		}
+		t.TypeName = i18n.TC(ctx, t.TypeName)
 		out = append(out, t)
 	}
 	return out, rs.Err()

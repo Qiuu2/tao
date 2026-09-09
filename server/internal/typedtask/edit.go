@@ -209,9 +209,10 @@ func (s *Service) taskTerminals(ctx context.Context, taskID int64) ([]DetailTerm
 			&t.DeviceState, &t.IP, &t.Volume); err != nil {
 			return nil, err
 		}
+		t.TypeName = i18n.TC(ctx, t.TypeName)
 		t.Deleted = !exists
 		if t.Deleted {
-			t.TerminalName = "(终端已删除)"
+			t.TerminalName = i18n.TC(ctx, "(终端已删除)")
 		}
 		out = append(out, t)
 	}
@@ -866,6 +867,7 @@ func (s *Service) TerminalOptions(ctx context.Context, u *auth.User, keyword str
 			&o.IP, &o.NetState, &o.GroupID, &o.GroupName, &o.SwitchCount); err != nil {
 			return nil, err
 		}
+		o.TypeName = i18n.TC(ctx, o.TypeName)
 		out = append(out, o)
 	}
 	return out, rs.Err()
@@ -932,6 +934,7 @@ func (s *Service) SourceTerminals(ctx context.Context, k Kind) ([]TerminalOption
 			&o.IP, &o.NetState, &o.GroupID, &o.GroupName, &o.SwitchCount); err != nil {
 			return nil, err
 		}
+		o.TypeName = i18n.TC(ctx, o.TypeName)
 		out = append(out, o)
 	}
 	return out, rs.Err()

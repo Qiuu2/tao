@@ -419,7 +419,7 @@ func (s *Service) fillCollectSource(ctx context.Context, items []Item) error {
 		if n, ok := names[items[i].Cmd]; ok {
 			items[i].SourceName = n
 		} else {
-			items[i].SourceName = "(终端已删除)"
+			items[i].SourceName = i18n.TC(ctx, "(终端已删除)")
 		}
 	}
 	return nil

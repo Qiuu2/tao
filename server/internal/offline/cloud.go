@@ -121,6 +121,7 @@ func (s *Service) ListCloudTerminals(ctx context.Context, u *auth.User, q CloudQ
 			&c.MediaCount, &c.TaskCount, &c.Transferring); err != nil {
 			return nil, fmt.Errorf("扫描云广播终端行: %w", err)
 		}
+		c.TypeName = i18n.TC(ctx, c.TypeName)
 		items = append(items, c)
 	}
 	if err := rs.Err(); err != nil {
@@ -736,6 +737,7 @@ func (s *Service) TransferDetail(ctx context.Context, u *auth.User, taskID int64
 			&t.IP, &t.NetState, &t.State, &t.Area); err != nil {
 			return nil, err
 		}
+		t.TypeName = i18n.TC(ctx, t.TypeName)
 		t.Deleted = !exists
 		if t.Deleted {
 			t.TerminalName = i18n.TC(ctx, "(终端已删除)")

@@ -422,7 +422,7 @@ func (s *Service) fillMedia(ctx context.Context, items []Item, ids []int64) erro
 		}
 		mi.Deleted = !exists
 		if mi.Deleted {
-			mi.Name = "(媒体已删除)"
+			mi.Name = i18n.TC(ctx, "(媒体已删除)")
 		}
 		byTask[taskID] = append(byTask[taskID], mi)
 	}
@@ -470,9 +470,10 @@ func (s *Service) fillTerminals(ctx context.Context, items []Item, ids []int64) 
 			&ti.NetState, &ti.TaskState, &ti.IP, &ti.Volume); err != nil {
 			return err
 		}
+		ti.TypeName = i18n.TC(ctx, ti.TypeName)
 		ti.Deleted = !exists
 		if ti.Deleted {
-			ti.TerminalName = "(终端已删除)"
+			ti.TerminalName = i18n.TC(ctx, "(终端已删除)")
 		}
 		byTask[taskID] = append(byTask[taskID], ti)
 	}

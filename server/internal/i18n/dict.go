@@ -417,6 +417,8 @@ var codeDict = map[string]string{
 	"请先选择要删除的遥控任务":                            "Select the remote tasks to delete first",
 
 	// ——— 注册服务 ———
+	"主服务器":      "Primary server",
+	"备机":        "Standby server",
 	"服务器已注册":    "This server is licensed",
 	"服务器在试用期":   "This server is in its trial period",
 	"服务器没有注册":   "This server is not licensed",

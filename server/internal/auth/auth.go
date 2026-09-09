@@ -23,6 +23,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"htweb/internal/i18n"
 	"net/http"
 	"strings"
 	"sync"
@@ -362,7 +363,7 @@ func (m *Manager) loadRights(ctx context.Context, u *User) error {
 	if errors.Is(err, sql.ErrNoRows) {
 		// 用户组被删但用户还在 —— 旧系统级联删除有缺陷会造成这种情况（D-45）。
 		// 这里降级为「无任何权限」，而不是让登录失败。
-		u.UsergroupName = "(用户组已删除)"
+		u.UsergroupName = i18n.TC(ctx, "(用户组已删除)")
 		return nil
 	}
 	if err != nil {

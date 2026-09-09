@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"htweb/internal/i18n"
 	"strings"
 
 	"htweb/internal/auth"
@@ -212,6 +213,7 @@ func (s *Service) scanFolderTerminals(ctx context.Context, q string, args ...int
 			&t.NetState, &t.DeviceState, &t.TaskState, &t.IP, &t.Volume); err != nil {
 			return nil, fmt.Errorf("读取终端: %w", err)
 		}
+		t.TypeName = i18n.TC(ctx, t.TypeName)
 		out = append(out, t)
 	}
 	return out, rs.Err()

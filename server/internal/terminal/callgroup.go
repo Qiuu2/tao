@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"htweb/internal/i18n"
 	"strings"
 
 	"htweb/internal/auth"
@@ -203,6 +204,7 @@ func (s *Service) GetCallGroup(ctx context.Context, groupID int64) (*CallGroupDe
 			&m.GroupID, &m.GroupName, &m.Missing); err != nil {
 			return nil, fmt.Errorf("读取分区成员: %w", err)
 		}
+		m.TypeName = i18n.TC(ctx, m.TypeName)
 		out.Members = append(out.Members, m)
 	}
 	return out, rs.Err()
@@ -262,6 +264,7 @@ func (s *Service) callGroupCandidates(ctx context.Context, u *auth.User,
 			&c.IP, &c.NetState, &c.GroupID, &c.GroupName); err != nil {
 			return nil, fmt.Errorf("读取候选终端: %w", err)
 		}
+		c.TypeName = i18n.TC(ctx, c.TypeName)
 		// 型号排除表放在这里过而不是写进 SQL：判据是一张常量表，
 		// 拼成 NOT IN (...) 只会让这条本就很长的查询更难读。
 		if in(callGroupMemberExclude, c.TypeID) {

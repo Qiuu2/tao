@@ -6,6 +6,7 @@ import (
 
 	"htweb/internal/auth"
 	"htweb/internal/folder"
+	"htweb/internal/i18n"
 	"htweb/internal/store"
 )
 
@@ -318,6 +319,7 @@ func (s *Service) AreaTerminalOptions(ctx context.Context, u *auth.User, keyword
 			&o.NetState, &o.CurrentAreaID, &o.CurrentAreaName); err != nil {
 			return nil, err
 		}
+		o.TypeName = i18n.TC(ctx, o.TypeName)
 		if o.GroupID > 0 {
 			groupIDs[o.GroupID] = true
 		}
@@ -362,11 +364,11 @@ func (s *Service) fillGroupNames(ctx context.Context, opts []TerminalOption, ids
 	for i := range opts {
 		switch {
 		case opts[i].GroupID == 0:
-			opts[i].GroupName = "(未分区)"
+			opts[i].GroupName = i18n.TC(ctx, "(未分区)")
 		case names[opts[i].GroupID] != "":
 			opts[i].GroupName = names[opts[i].GroupID]
 		default:
-			opts[i].GroupName = "(分区已删除)"
+			opts[i].GroupName = i18n.TC(ctx, "(分区已删除)")
 		}
 	}
 	return nil

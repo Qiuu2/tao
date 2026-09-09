@@ -286,9 +286,10 @@ func (s *Service) areaTerminals(ctx context.Context, areaID int64) ([]AreaTermin
 			&t.TerminalName, &t.TypeName, &t.NetState); err != nil {
 			return nil, err
 		}
+		t.TypeName = i18n.TC(ctx, t.TypeName)
 		t.Deleted = !exists
 		if t.Deleted {
-			t.TerminalName = "(终端已删除)"
+			t.TerminalName = i18n.TC(ctx, "(终端已删除)")
 		}
 		out = append(out, t)
 	}

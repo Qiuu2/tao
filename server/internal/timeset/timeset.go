@@ -55,6 +55,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"htweb/internal/i18n"
 	"net"
 	"os"
 	"strconv"
@@ -143,7 +144,7 @@ func (s *Service) Get(ctx context.Context) (*State, error) {
 		switch {
 		case err == sql.ErrNoRows:
 			st.GPSTerminalMissing = true
-			st.GPSTerminalName = "(终端已删除)"
+			st.GPSTerminalName = i18n.TC(ctx, "(终端已删除)")
 		case err != nil:
 			return nil, fmt.Errorf("查询校时终端: %w", err)
 		default:
@@ -317,6 +318,7 @@ func (s *Service) Terminals(ctx context.Context, keyword string) ([]TerminalOpti
 			&o.GroupID, &o.GroupName); err != nil {
 			return nil, err
 		}
+		o.TypeName = i18n.TC(ctx, o.TypeName)
 		out = append(out, o)
 	}
 	return out, rs.Err()

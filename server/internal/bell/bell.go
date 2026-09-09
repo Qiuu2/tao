@@ -58,6 +58,7 @@ import (
 	"strings"
 
 	"htweb/internal/auth"
+	"htweb/internal/i18n"
 	"htweb/internal/store"
 	"htweb/internal/task"
 )
@@ -230,7 +231,7 @@ func (s *Service) List(ctx context.Context, u *auth.User, q ListQuery) (*ListRes
 			return nil, err
 		}
 		p.MixedState = minState != maxState
-		p.StateText = stateText(p.ProjectState)
+		p.StateText = stateText(ctx, p.ProjectState)
 		p.DuplicateTimes = []string{}
 		names = append(names, p.PlanName)
 		if p.OwnerUserID > 0 {
@@ -254,11 +255,11 @@ func (s *Service) List(ctx context.Context, u *auth.User, q ListQuery) (*ListRes
 	return out, nil
 }
 
-func stateText(v int) string {
+func stateText(ctx context.Context, v int) string {
 	if v == task.StateEnabled {
-		return "启用"
+		return i18n.TC(ctx, "启用")
 	}
-	return "停用"
+	return i18n.TC(ctx, "停用")
 }
 
 // fillOwners 用 LEFT JOIN 的等价做法补创建者名。

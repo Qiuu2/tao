@@ -46,6 +46,7 @@ import (
 	"strings"
 
 	"htweb/internal/auth"
+	"htweb/internal/i18n"
 	"htweb/internal/store"
 )
 
@@ -294,9 +295,10 @@ func (s *Service) members(ctx context.Context, zoneID int64) ([]Member, error) {
 			&m.TypeName, &m.IP, &m.NetState); err != nil {
 			return nil, err
 		}
+		m.TypeName = i18n.TC(ctx, m.TypeName)
 		m.Deleted = !exists
 		if m.Deleted {
-			m.TerminalName = "(终端已删除)"
+			m.TerminalName = i18n.TC(ctx, "(终端已删除)")
 		}
 		out = append(out, m)
 	}
@@ -833,6 +835,7 @@ func (s *Service) PickTerminals(ctx context.Context, u *auth.User, keyword strin
 		if err := rs.Scan(&o.ID, &o.Name, &o.IP, &o.TypeName, &o.NetState, &o.CurrentZoneID); err != nil {
 			return nil, err
 		}
+		o.TypeName = i18n.TC(ctx, o.TypeName)
 		if o.CurrentZoneID > 0 {
 			zoneIDs[o.CurrentZoneID] = true
 		}
