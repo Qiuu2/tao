@@ -44,6 +44,16 @@
           <li>对接方每个请求带上请求头 <code class="mono">X-API-Key: 那串密钥</code></li>
           <li>接口地址以 <code class="mono">{{ base }}{{ spec?.prefix }}</code> 开头</li>
         </ol>
+        <!-- 寻址这件事必须说在最前面：媒体名和终端名在库里没有唯一索引，
+             是真的可以重名的。照着名字对接的人，会在上线之后才第一次撞上
+             「找到多个同名终端」—— 那时候没人记得当初是抄的哪段示例。 -->
+        <p class="lead addr">
+          <b>寻址：能用编号就用编号。</b>
+          媒体、终端、分区、任务、分组都同时认<b>编号</b>和名字，但只有编号是唯一的 ——
+          媒体名和终端名在库里没有唯一约束，真的可以重名，重了接口只能报错要你改用编号。
+          编号从对应的查询接口里拿（终端状态、媒体列表、任务列表）。
+          只有<b>作息方案</b>是例外：它根本没有编号，只能用名字。
+        </p>
       </div>
       <div class="intro-side">
         <el-button type="primary" :icon="Download" @click="downloadSpec">下载 OpenAPI 文件</el-button>
@@ -216,6 +226,28 @@
           </div>
 
           <div v-else-if="!current.freeform && current.body !== undefined && current.body !== ''" class="try-body">
+            <!-- 分场景示例：点一下就填进下面的请求体。
+                 字段全部可选的接口（修改任务）靠一段示例说不清 ——
+                 给一段写满 30 个字段的 JSON，照抄下来是把每一项都覆盖一遍，
+                 而人只是想改个时长。 -->
+            <div v-if="current.examples?.length" class="cases">
+              <div class="cases-head">我想…（点一下就填进下面）</div>
+              <div class="cases-chips">
+                <el-button
+                  v-for="ex in current.examples"
+                  :key="ex.title"
+                  size="small"
+                  :type="pickedCase === ex.title ? 'primary' : ''"
+                  :plain="pickedCase !== ex.title"
+                  @click="useExample(ex)"
+                >
+                  {{ ex.title }}
+                </el-button>
+              </div>
+              <el-alert v-if="pickedDesc" type="info" :closable="false" class="cases-desc">
+                <template #title><RichText :text="pickedDesc" /></template>
+              </el-alert>
+            </div>
             <div class="try-body-head">
               <span>请求体（JSON）</span>
               <el-button link type="primary" size="small" @click="resetBody">恢复示例</el-button>
@@ -328,7 +360,7 @@ import { useRouter } from "vue-router";
 
 import RichText from "./RichText.vue";
 import { getApiSpecApi } from "@/api/modules/openapispec";
-import type { ApiSpec, SpecEndpoint, SpecGroup } from "@/api/modules/openapispec";
+import type { ApiSpec, SpecEndpoint, SpecExample, SpecGroup } from "@/api/modules/openapispec";
 import { useUserStore } from "@/stores/modules/user";
 
 const router = useRouter();
@@ -385,7 +417,7 @@ const sections = computed(() => [
   {
     key: "curated",
     title: "常用接口",
-    hint: "名字寻址、参数是人话、路径带版本号，只增不改。集成优先用这些。",
+    hint: "编号寻址（名字也认）、参数是人话、路径带版本号，只增不改。集成优先用这些。",
     groups: visibleGroups.value.filter(g => g.section === "curated")
   },
   {
@@ -419,13 +451,28 @@ const select = (ep: SpecEndpoint, group?: SpecGroup) => {
   Object.keys(paramValues).forEach(k => delete paramValues[k]);
   (ep.params ?? []).forEach(p => (paramValues[p.name] = p.example ?? ""));
   bodyText.value = ep.body ?? "";
+  pickedCase.value = "";
+  pickedDesc.value = "";
   // 没有逐参数说明的：路径本身可编辑，预填原样（含 {id} 这类占位）
   freePath.value = currentPrefix.value + ep.path;
+};
+
+/** 选中的场景示例（只是个高亮标记，请求体仍然可以随手改）。 */
+const pickedCase = ref("");
+const pickedDesc = ref("");
+
+const useExample = (ex: SpecExample) => {
+  bodyText.value = ex.body;
+  bodyErr.value = "";
+  pickedCase.value = ex.title;
+  pickedDesc.value = ex.desc;
 };
 
 const resetBody = () => {
   bodyText.value = current.value?.body ?? "";
   bodyErr.value = "";
+  pickedCase.value = "";
+  pickedDesc.value = "";
 };
 
 /** 把路径占位换成填的值，并拼上非空的 query。 */
@@ -609,6 +656,15 @@ onMounted(async () => {
     margin: 0 0 10px;
     line-height: 1.8;
     color: var(--el-text-color-regular);
+  }
+  .addr {
+    margin: 10px 0 0;
+    padding: 8px 12px;
+    font-size: 13px;
+    line-height: 1.9;
+    background: var(--el-fill-color-lighter);
+    border-left: 3px solid var(--el-color-primary);
+    border-radius: 4px;
   }
   .steps {
     margin: 0;
@@ -823,6 +879,28 @@ onMounted(async () => {
     width: 110px;
     font-size: 13px;
     text-align: right;
+  }
+  .cases {
+    margin-bottom: 12px;
+    padding: 10px 12px;
+    background: var(--el-fill-color-lighter);
+    border-radius: 6px;
+  }
+  .cases-head {
+    margin-bottom: 8px;
+    font-size: 13px;
+    color: var(--el-text-color-regular);
+  }
+  .cases-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .cases-chips :deep(.el-button + .el-button) {
+    margin-left: 0;
+  }
+  .cases-desc {
+    margin-top: 10px;
   }
   .try-body {
     margin-top: 12px;

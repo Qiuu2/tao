@@ -83,8 +83,8 @@ type TerminalBrief struct {
 	// devicestate 由 PUT /api/terminals/start|stop 控制，是运行状态，不是电源。
 	// 叫 powerOn 会让集成方以为能靠它判断设备通没通电，而那是另一回事
 	// （断电的终端表现为 netstate 离线）。名字错的字段比没有这个字段更坏。
-	Running   bool   `json:"running"`
-	RunState  string `json:"runStateText"`
+	Running  bool   `json:"running"`
+	RunState string `json:"runStateText"`
 }
 
 // MediaBrief 是媒体文件。
@@ -291,15 +291,15 @@ func (s *Service) ListTerminals(ctx context.Context, u *auth.User, q ListQuery) 
 		online := it.NetState == 1
 		playing := online && it.TaskState == 1
 		out = append(out, TerminalBrief{
-			ID:         it.ID,
-			Name:       it.TerminalName,
-			Type:       it.TypeName,
-			Zone:       it.GroupName,
-			IP:         it.IP,
-			Online:     online,
-			Playing:    playing,
-			StateText:  terminalStateText(online, playing),
-			Volume:     it.Volume,
+			ID:        it.ID,
+			Name:      it.TerminalName,
+			Type:      it.TypeName,
+			Zone:      it.GroupName,
+			IP:        it.IP,
+			Online:    online,
+			Playing:   playing,
+			StateText: terminalStateText(online, playing),
+			Volume:    it.Volume,
 			// 措辞与界面终端列表一致（已启动 / 已停止），别自造一套说法
 			Running:  it.DeviceState == 1,
 			RunState: map[bool]string{true: "已启动", false: "已停止"}[it.DeviceState == 1],

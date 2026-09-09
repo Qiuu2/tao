@@ -88,7 +88,7 @@ type app struct {
 	registers *register.Service
 
 	// openAPI 是开发者接口（/openapi/v1）。它不是第二套业务逻辑 ——
-	// 只多了一层密钥认证和名字寻址，动作仍交给上面那些 service。
+	// 只多了一层密钥认证和编号/名字寻址，动作仍交给上面那些 service。
 	openAPI *openapi.Service
 }
 
@@ -755,7 +755,7 @@ func (a *app) routes() http.Handler {
 	// —— 开发者接口 /openapi/v1（业务域十五）——
 	//
 	// 与 /api 的三点不同，见 internal/openapi 的包注释：
-	// 凭据是 X-API-Key（落库、可吊销）、寻址名字优先、路径带版本号。
+	// 凭据是 X-API-Key（落库、可吊销）、寻址 id 与名字都认（对外推荐 id）、路径带版本号。
 	// 相同的是权限：认证之后注入的是同一个 auth.User，
 	// 权限位、可见范围、备机只读全部照旧生效。
 	//

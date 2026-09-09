@@ -29,7 +29,7 @@ import (
 //
 // 代价要说清楚，而且必须写进对外文档：**/api 这一组跟着界面走**。
 // 页面改版时它可能变。要一份不会变的合同，用 /openapi/v1 那 15 个
-// （名字寻址、参数是人话、只增不改）。两组的定位不同，不是重复。
+// （编号寻址、参数是人话、只增不改）。两组的定位不同，不是重复。
 
 // exposedAPI 是一个开放给密钥调用的接口。
 type exposedAPI struct {
@@ -55,11 +55,11 @@ type exposedGroup struct {
 // 每一条都要写清楚为什么。写不出理由的，说明它其实该开放。
 var keyDenied = map[string]string{
 	// —— 会话本身 ——
-	"POST /api/login":  "登录是给人用的。程序有密钥，不需要也不应该拿账号密码换会话",
-	"POST /api/logout": "密钥没有会话可以登出，调它没有任何意义",
-	"GET /api/captcha": "验证码是给人看的图片",
-	"GET /api/auth/me":  "会话自省。密钥要看自己是谁，用 /openapi/v1 那边的接口",
-	"GET /api/menu/list": "左侧菜单，纯界面的东西",
+	"POST /api/login":       "登录是给人用的。程序有密钥，不需要也不应该拿账号密码换会话",
+	"POST /api/logout":      "密钥没有会话可以登出，调它没有任何意义",
+	"GET /api/captcha":      "验证码是给人看的图片",
+	"GET /api/auth/me":      "会话自省。密钥要看自己是谁，用 /openapi/v1 那边的接口",
+	"GET /api/menu/list":    "左侧菜单，纯界面的东西",
 	"GET /api/auth/buttons": "按钮置灰用的，纯界面的东西",
 
 	// —— 破坏力最大的那几个 ——
@@ -67,13 +67,13 @@ var keyDenied = map[string]string{
 	// 这几条不是「权限不够」，而是「不该由程序发起」：
 	// 它们都会中断广播、或者让数据不可逆地消失，出事时必须能回答
 	// 「是谁点的」—— 而密钥背后是一个程序，答不上来。
-	"POST /api/server/factory-reset":  "恢复出厂：清空全库。必须有人在界面上确认",
+	"POST /api/server/factory-reset":        "恢复出厂：清空全库。必须有人在界面上确认",
 	"GET /api/server/factory-reset/preview": "恢复出厂的预览，跟着上面一起关",
-	"POST /api/backups/restore":       "恢复备份等价于任意 SQL 执行",
-	"POST /api/backups/upload":        "上传备份包，与恢复配套",
-	"POST /api/server/reboot":         "重启服务器，会中断正在播的广播",
-	"POST /api/server/version":        "换版本会重建容器、中断广播",
-	"POST /api/offline/purge-all":     "四条无 WHERE 的 DELETE",
+	"POST /api/backups/restore":             "恢复备份等价于任意 SQL 执行",
+	"POST /api/backups/upload":              "上传备份包，与恢复配套",
+	"POST /api/server/reboot":               "重启服务器，会中断正在播的广播",
+	"POST /api/server/version":              "换版本会重建容器、中断广播",
+	"POST /api/offline/purge-all":           "四条无 WHERE 的 DELETE",
 
 	// —— 注册服务 ——
 	"GET /api/register":        "服务器注册是装机环节，不是集成环节",
@@ -103,14 +103,14 @@ var keyDenied = map[string]string{
 	"PUT /api/assistant/settings":   "改别人的界面偏好，程序没有理由做这件事",
 
 	// —— 其它纯界面的东西 ——
-	"GET /api/health":                 "探活接口，本来就不需要凭据",
-	"GET /api/openapi/spec":           "接口目录，给界面渲染用",
-	"GET /api/openapi/openapi.json":   "OpenAPI 文档，登录后在界面上下载",
-	"GET /api/dashboard/config":      "首页三块可配置区域的当前配置，纯界面的东西",
-	"PUT /api/dashboard/shortcuts":   "改的是所有人看到的首页快捷入口，该由人在界面上决定",
-	"PUT /api/dashboard/quick-tasks": "改的是所有人看到的首页快捷任务，该由人在界面上决定",
-	"PUT /api/dashboard/emergency":   "首页那个紧急广播按钮绑什么，该由人在界面上决定",
-	"GET /api/media/{id}/stream":      "音频流，浏览器 <audio> 用的；下载走 /download",
+	"GET /api/health":                  "探活接口，本来就不需要凭据",
+	"GET /api/openapi/spec":            "接口目录，给界面渲染用",
+	"GET /api/openapi/openapi.json":    "OpenAPI 文档，登录后在界面上下载",
+	"GET /api/dashboard/config":        "首页三块可配置区域的当前配置，纯界面的东西",
+	"PUT /api/dashboard/shortcuts":     "改的是所有人看到的首页快捷入口，该由人在界面上决定",
+	"PUT /api/dashboard/quick-tasks":   "改的是所有人看到的首页快捷任务，该由人在界面上决定",
+	"PUT /api/dashboard/emergency":     "首页那个紧急广播按钮绑什么，该由人在界面上决定",
+	"GET /api/media/{id}/stream":       "音频流，浏览器 <audio> 用的；下载走 /download",
 	"GET /api/backups/{name}/download": "备份包下载，浏览器 window.open 用的",
 }
 
@@ -469,7 +469,7 @@ func keyGate(pattern string, next http.HandlerFunc) http.HandlerFunc {
 // APICatalog 把开放清单渲染成接口平台要的结构。
 //
 // 与 openapi.Catalog() 那 15 个**合并**成一份目录给前端：
-// 前面是「常用接口」（名字寻址、参数是人话、路径带版本号、只增不改），
+// 前面是「常用接口」（编号寻址、参数是人话、路径带版本号、只增不改），
 // 后面是「全部功能接口」（跟着界面走）。两组的定位不同，不是重复。
 func APICatalog() []openapi.Group {
 	groups := make([]openapi.Group, 0, len(exposedGroups))

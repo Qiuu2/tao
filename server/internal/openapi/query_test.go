@@ -1,7 +1,9 @@
 package openapi
 
 import (
+	"encoding/json"
 	"reflect"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -304,6 +306,179 @@ func TestTaskDetailMirrorsCreateFields(t *testing.T) {
 		"multicast", "localFirst", "weekdays"} {
 		if !strings.Contains(detail.Sample, must) {
 			t.Errorf("任务详情的响应示例里没有 %q —— 新建时能填的，详情就该能读回来", must)
+		}
+	}
+}
+
+// findEndpoint 在目录里按 ID 找一条接口。
+func findEndpoint(t *testing.T, id string) Endpoint {
+	t.Helper()
+	for _, g := range Catalog().Groups {
+		for _, ep := range g.Endpoints {
+			if ep.ID == id {
+				return ep
+			}
+		}
+	}
+	t.Fatalf("目录里找不到 %s", id)
+	return Endpoint{}
+}
+
+// 「修改任务」必须把新建时能填的每一个字段都列出来。
+//
+// # 为什么写这个
+//
+// 用户的原话是「还有修改任务这是什么呀？如果我要修改任务时长怎么办」——
+// 当时这条接口一个字段说明都没有，只有一段 {"volume": 55}。
+// 对接方看到那一段，合理的结论是「这个接口只能改音量」，
+// 于是想改时长就只能删掉重建：任务编号丢了，删和建之间还有一段空窗。
+//
+// 新建能填的，修改都能改。这件事必须由测试保证，因为**漏一个字段没有症状**：
+// 接口照常工作，只是平台上看不见它。
+func TestUpdateTaskDocumentsEveryCreatableField(t *testing.T) {
+	create := findEndpoint(t, "tasks.create")
+	update := findEndpoint(t, "tasks.update")
+
+	has := map[string]bool{}
+	for _, f := range update.Fields {
+		has[f.Name] = true
+		if f.Desc == "" {
+			t.Errorf("修改任务的字段 %q 没有说明", f.Name)
+		}
+		if f.Required {
+			t.Errorf("修改任务的 %q 标成了必填 —— 改任务是「只写要改的」，"+
+				"没有必填字段；标了必填会让人以为每次都得把它带上", f.Name)
+		}
+	}
+	for _, f := range create.Fields {
+		if !has[f.Name] {
+			t.Errorf("新建任务里有 %q，修改任务里没有 —— 它其实是能改的，"+
+				"漏在这儿会让人以为只能删掉重建", f.Name)
+		}
+	}
+}
+
+// 「怎么改时长」必须有一段能照抄的示例。
+//
+// 这是用户直接问出来的那个问题。答案是一行 {"seconds": 900}，
+// 但它得**出现在平台上**，而不是只存在于某个人的脑子里。
+func TestUpdateTaskShowsHowToChangeDuration(t *testing.T) {
+	update := findEndpoint(t, "tasks.update")
+	if len(update.Examples) < 5 {
+		t.Fatalf("修改任务只有 %d 段场景示例 —— 全字段可选的接口靠一段示例说不清，"+
+			"改时长、改音量、换终端各是一段", len(update.Examples))
+	}
+	var duration bool
+	for _, e := range update.Examples {
+		if strings.Contains(e.Body, `"seconds"`) {
+			duration = true
+		}
+		if e.Title == "" || e.Desc == "" || e.Body == "" {
+			t.Errorf("场景示例有空项：%+v", e)
+		}
+	}
+	if !duration {
+		t.Error(`修改任务没有一段「改时长」的示例 —— 用户问的就是这个`)
+	}
+	// 改时长会连带重算结束时刻，这件事不写出来就是个坑：
+	// 任务会变成「时长 15 分钟、结束时刻还写着 10 分钟那会儿」。
+	joined := strings.Join(update.Notes, "\n")
+	if !strings.Contains(joined, "endTime") {
+		t.Error("修改任务没说清改时长时 endTime 会怎么样")
+	}
+}
+
+// 每一段示例请求体都必须是**真的 JSON**。
+//
+// 示例是拿来照抄的。抄下来发不出去的示例比没有示例更坏 ——
+// 对接方会先怀疑自己，再怀疑接口，最后才怀疑文档。
+func TestEveryExampleBodyIsValidJSON(t *testing.T) {
+	for _, g := range Catalog().Groups {
+		for _, ep := range g.Endpoints {
+			if ep.Body != "" {
+				var v any
+				if err := json.Unmarshal([]byte(ep.Body), &v); err != nil {
+					t.Errorf("%s（%s）的请求体示例不是合法 JSON：%v", ep.ID, ep.Summary, err)
+				}
+			}
+			for _, e := range ep.Examples {
+				var v any
+				if err := json.Unmarshal([]byte(e.Body), &v); err != nil {
+					t.Errorf("%s 的场景示例「%s」不是合法 JSON：%v", ep.ID, e.Title, err)
+				}
+			}
+			if ep.Sample != "" {
+				var v any
+				if err := json.Unmarshal([]byte(ep.Sample), &v); err != nil {
+					t.Errorf("%s（%s）的响应示例不是合法 JSON：%v", ep.ID, ep.Summary, err)
+				}
+			}
+		}
+	}
+}
+
+// 能用编号寻址的地方，说明里必须**把编号写在前面**。
+//
+// # 为什么
+//
+// 用户的原话是「能用id的要用id，id是唯一的」。这不是偏好问题：
+// media.name 和 terminal.terminalname 在库里**没有唯一索引**（核过 SHOW INDEX），
+// 应用层也只对分区名、任务分组名、媒体目录名做了重名拦截。
+// 也就是说终端和媒体真的可以重名，而重名带来的报错会在对接方上线之后
+// 才第一次出现 —— 那时候没人记得当初是照着一段用名字的示例抄的。
+//
+// 作息方案是唯一的反例：它没有编号，只能用名字，这一点也要说出来。
+func TestIDAddressingIsRecommended(t *testing.T) {
+	// 这些接口的这些字段，说明里必须出现「编号」。
+	want := map[string][]string{
+		"tasks.create": {"media", "terminals", "zones", "folder"},
+		"tasks.update": {"media", "terminals", "zones", "folder"},
+		"play.start":   {"media", "terminals", "zones"},
+	}
+	for id, fields := range want {
+		ep := findEndpoint(t, id)
+		desc := map[string]string{}
+		for _, f := range ep.Fields {
+			desc[f.Name] = f.Desc
+		}
+		for _, name := range fields {
+			d, ok := desc[name]
+			if !ok {
+				t.Errorf("%s 没有字段 %q", id, name)
+				continue
+			}
+			if !strings.Contains(d, "编号") {
+				t.Errorf("%s 的 %q 说明里没提编号 —— 名字不唯一，"+
+					"照着名字对接的人会在上线之后才撞上重名：%s", id, name, d)
+			}
+		}
+	}
+
+	// 按编号寻址的路径参数，Example 要给一个编号而不是留空或给名字。
+	for _, id := range []string{"tasks.get", "tasks.update", "tasks.delete"} {
+		ep := findEndpoint(t, id)
+		for _, p := range ep.Params {
+			if p.Name != "ref" {
+				continue
+			}
+			if !strings.Contains(p.Desc, "编号") {
+				t.Errorf("%s 的 ref 说明里没提编号：%s", id, p.Desc)
+			}
+			if _, err := strconv.Atoi(p.Example); err != nil {
+				t.Errorf("%s 的 ref 预填值是 %q —— 应该给一个编号，"+
+					"「试一试」里预填什么，对接方就照着写什么", id, p.Example)
+			}
+		}
+	}
+
+	// 作息方案没有编号，这件事必须写在它的路径参数上，
+	// 否则「能用 id 就用 id」这条规矩到这儿会让人以为是我们漏了。
+	for _, id := range []string{"schedules.get", "schedules.state", "schedules.delete"} {
+		ep := findEndpoint(t, id)
+		for _, p := range ep.Params {
+			if p.Name == "name" && !strings.Contains(p.Desc, "没有编号") {
+				t.Errorf("%s 的 name 参数没说清「方案没有编号」", id)
+			}
 		}
 	}
 }

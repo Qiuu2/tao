@@ -21,6 +21,14 @@ export interface SpecField {
   desc: string;
 }
 
+/** 一段具名的场景示例。 */
+export interface SpecExample {
+  title: string;
+  /** 这一段做了什么、以及顺带影响了什么 */
+  desc: string;
+  body: string;
+}
+
 export interface SpecEndpoint {
   id: string;
   method: string;
@@ -33,6 +41,13 @@ export interface SpecEndpoint {
   fields?: SpecField[];
   /** 请求体示例（JSON 文本） */
   body?: string;
+  /**
+   * 分场景的请求体示例：「我要干这一件事，请求体长这样」。
+   *
+   * 字段全部可选的接口（修改任务）才有。给一段写满 30 个字段的 JSON，
+   * 对接方照抄下来就是把每一项都覆盖一遍 —— 而他只是想改个时长。
+   */
+  examples?: SpecExample[];
   /** 响应示例（JSON 文本，不含 code/msg 信封） */
   sample?: string;
   /**

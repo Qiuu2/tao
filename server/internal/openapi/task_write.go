@@ -306,7 +306,11 @@ func (s *Service) toTaskInput(ctx context.Context, u *auth.User, in TaskInput, o
 		return nil, err
 	}
 	if endTime == "" {
-		endTime = defaultEndTime(playTime, lenTy, length, old)
+		// 调用方给了 seconds 或 loopTimes 就算「动了时长」；
+		// 给了 playTime 就算「挪了开播时刻」。两者都会让原来的结束时刻失效。
+		lengthChanged := in.Seconds > 0 || in.LoopTimes > 0
+		playTimeChanged := in.PlayTime != ""
+		endTime = defaultEndTime(playTime, lenTy, length, old, lengthChanged, playTimeChanged)
 	}
 
 	folderID, err := s.pickFolder(ctx, u, in.Folder, old)
@@ -789,22 +793,75 @@ func (s *Service) mediaSeconds(ctx context.Context, ids []int64) int {
 	return total
 }
 
-// defaultEndTime 按开始时刻 + 时长推出结束时刻。
+// defaultEndTime 在调用方没给 endTime 时推一个出来。
 //
-// 只有「按秒数」能算得准；按循环次数播时算不出来，退回原值或开始时刻 + 1 小时。
-func defaultEndTime(playTime string, lenTy, length int, old *task.Detail) string {
-	if old != nil && old.EndTime != "" {
+// # 改任务时的规矩：动了时长或挪了开播时刻就重算，都没动就保持原样
+//
+// 「把时长从 10 分钟改成 15 分钟」如果只改 timelength、不动 endtime，
+// 就会留下一条自相矛盾的任务：时长说 15 分钟，结束时刻还写着 10 分钟那会儿。
+//
+// 挪开播时刻更糟。一条 09:50→10:05 的任务，只传 {"playTime": "10:05"}，
+// 如果结束时刻不跟着走，就变成 10:05 开始、10:05 结束 —— 一条**零长度**的任务。
+// 调用方明明只是想把它推迟一刻钟。
+//
+// 所以这两件事任何一件发生了，结束时刻都要跟着算；都没发生（只改了音量之类）
+// 就保持原值，免得把结束时刻悄悄挪了。
+//
+// # 按遍数循环时算不出确定的秒数
+//
+// 那时退而求其次：如果只是挪了开播时刻，就把原来的结束时刻**平移同样的差**，
+// 播放窗口的长度保持不变 —— 这比留一个早于开播时刻的结束时刻强得多。
+// 实在没有可依据的旧值，才落到「开播时刻 + 1 小时」。
+//
+// # 越过午夜一律截到 23:59:59，不回绕
+//
+// endtime 是一个**时刻**（HH:MM:SS），没有「第二天」这个概念。
+// 09:50 播 24 小时，回绕出来是 09:50 —— 读到的人只会以为这是条零长度任务；
+// 23:50 播 20 分钟回绕成 00:10，看起来就是结束早于开始。
+// 老系统在这里也是截断的（ok112 的 do.php：`if($getendhour>=24) $getendtime="23:59:59"`），
+// 底层排期读的是同一列，所以照它来。
+func defaultEndTime(playTime string, lenTy, length int, old *task.Detail,
+	lengthChanged, playTimeChanged bool) string {
+
+	if old != nil && old.EndTime != "" && !lengthChanged && !playTimeChanged {
 		return old.EndTime
 	}
-	base, err := time.Parse("15:04:05", playTime)
-	if err != nil {
+	base, ok := secondsOfDay(playTime)
+	if !ok {
 		return playTime
 	}
-	add := time.Hour
+	// 按秒数播：结束时刻就是开播时刻 + 时长，算得准。
 	if lenTy == 1 && length > 0 {
-		add = time.Duration(length) * time.Second
+		return clockOfDay(base + length)
 	}
-	return base.Add(add).Format("15:04:05")
+	// 按遍数播：算不准。只挪了开播时刻的话，把旧的结束时刻平移同样的差，
+	// 播放窗口的长度保持不变。
+	if old != nil && old.EndTime != "" {
+		oldStart, ok1 := secondsOfDay(old.PlayTime)
+		oldEnd, ok2 := secondsOfDay(old.EndTime)
+		if ok1 && ok2 && oldEnd > oldStart {
+			return clockOfDay(base + (oldEnd - oldStart))
+		}
+		return old.EndTime
+	}
+	return clockOfDay(base + 3600)
+}
+
+// secondsOfDay 把 HH:MM:SS 变成当天的第几秒。
+func secondsOfDay(v string) (int, bool) {
+	t, err := time.Parse("15:04:05", v)
+	if err != nil {
+		return 0, false
+	}
+	return t.Hour()*3600 + t.Minute()*60 + t.Second(), true
+}
+
+// clockOfDay 把「当天的第几秒」写回 HH:MM:SS，越过午夜截到 23:59:59。
+func clockOfDay(sec int) string {
+	if sec >= 24*3600 {
+		return "23:59:59"
+	}
+	return fmt.Sprintf("%02d:%02d:%02d", sec/3600, sec%3600/60, sec%60)
 }
 
 // projectStateOf：0 = 启用、1 = 停用（BR：与直觉相反）。
@@ -1060,10 +1117,10 @@ type TaskDetail struct {
 	LoopTimes int           `json:"loopTimes"`
 	Interval  *TaskInterval `json:"interval"`
 
-	Volume     int  `json:"volume"`
-	Priority   int  `json:"priority"`
-	PrePower   int  `json:"prePower"`
-	Enabled bool `json:"enabled"`
+	Volume   int  `json:"volume"`
+	Priority int  `json:"priority"`
+	PrePower int  `json:"prePower"`
+	Enabled  bool `json:"enabled"`
 	// ⚠ 详情里**没有** running（此刻在不在播）—— task.Detail 不带执行状态，
 	//   硬填一个 false 就是在撒谎。要知道在不在播，查任务列表的 running。
 	Sequential bool `json:"sequential"`
@@ -1085,11 +1142,11 @@ type TaskTerminalInfo struct {
 
 // TaskLEDOut 是读回来的 LED 字幕。形状与写入时的 TaskLED 一致。
 type TaskLEDOut struct {
-	Text    string           `json:"text"`
-	Name    string           `json:"name"`
-	Speed   int              `json:"speed"`
-	Mode    int              `json:"mode"`
-	Devices []TaskLEDDevOut  `json:"devices"`
+	Text    string          `json:"text"`
+	Name    string          `json:"name"`
+	Speed   int             `json:"speed"`
+	Mode    int             `json:"mode"`
+	Devices []TaskLEDDevOut `json:"devices"`
 }
 
 // TaskLEDDevOut 是一块 LED 屏。

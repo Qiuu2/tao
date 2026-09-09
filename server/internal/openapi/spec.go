@@ -44,6 +44,23 @@ type Field struct {
 	Desc     string `json:"desc"`
 }
 
+// Example 是一个具名的场景示例：「我要干这一件事，请求体长这样」。
+//
+// # 为什么「修改任务」不能只给一段全字段示例
+//
+// 修改任务的字段**全部可选**，给一段把 30 个字段都写满的 JSON，
+// 对接方照抄下来就是把每一项都覆盖一遍 —— 他想改的只是时长。
+// 那段示例看起来最全，实际上没法直接用，还很危险。
+//
+// 所以分场景各给一段**最小**请求体：改时长就那一行，改音量就那一行。
+// 照抄能用，才叫示例。
+type Example struct {
+	Title string `json:"title"`
+	// Desc 说这一段**做了什么、以及顺带影响了什么**。
+	Desc string `json:"desc"`
+	Body string `json:"body"`
+}
+
 // Endpoint 是一个接口。
 type Endpoint struct {
 	ID      string `json:"id"`
@@ -57,7 +74,10 @@ type Endpoint struct {
 	Params []Param `json:"params"`
 	Fields []Field `json:"fields"`
 	Body   string  `json:"body"`
-	Sample string  `json:"sample"`
+	// Examples 是几段分场景的请求体，界面上点一下就填进「试一试」。
+	// 只有全字段可选的接口（修改任务）才需要它 —— 见 Example 的注释。
+	Examples []Example `json:"examples"`
+	Sample   string    `json:"sample"`
 	// Returns 逐条解释**响应示例里每个字段是什么**。
 	//
 	// ⚠ 光贴一段示例 JSON 是不够的：`"priority": 8` 里的 8 是什么意思？
@@ -295,7 +315,7 @@ func codeTables() []CodeTable {
 
 // 两类接口的分区标记。
 const (
-	// SectionCurated 是 /openapi/v1 那一组：名字寻址、参数是人话、
+	// SectionCurated 是 /openapi/v1 那一组：编号寻址（名字也认）、参数是人话、
 	// 路径带版本号、**只增不改**。集成时优先用它。
 	SectionCurated = "curated"
 	// SectionFull 是全部功能接口（/api）：界面用什么，它就是什么，
@@ -314,7 +334,7 @@ func groupQuery() Group {
 				Desc:    "有哪些终端、在不在线、正在播什么、音量多少。集成方最常调的一个 —— 下发广播之前先看看设备在不在。",
 				Right:   "有效密钥即可",
 				Params: []Param{
-					{Name: "zone", In: "query", Type: "string", Desc: "只看某个分区的。名字或编号都行", Example: ""},
+					{Name: "zone", In: "query", Type: "int/string", Desc: "只看某个分区的。**分区编号**或分区名都行（分区名不会重复，两种都安全）", Example: ""},
 					{Name: "keyword", In: "query", Type: "string", Desc: "按终端名搜", Example: ""},
 					{Name: "pageNum", In: "query", Type: "int", Desc: "页码，从 1 开始", Example: "1"},
 					{Name: "pageSize", In: "query", Type: "int", Desc: "每页几条，默认 20、最大 200", Example: "20"},
@@ -428,7 +448,7 @@ func groupQuery() Group {
 				Summary: "作息方案清单",
 				Desc:    "有哪些作息方案，每个里面有几条铃、几条是启用的。",
 				Right:   "有效密钥即可",
-				Sample: `[{ "name": "春季作息", "tasks": 7, "enabled": 7 }]`,
+				Sample:  `[{ "name": "春季作息", "tasks": 7, "enabled": 7 }]`,
 				Returns: []Field{
 					{Name: "[].name", Type: "string", Desc: "方案名。⚠ 方案**没有编号**，这个名字就是它的身份，寻址只能用它"},
 					{Name: "[].tasks", Type: "int", Desc: "方案里一共有几条打铃"},
@@ -443,7 +463,7 @@ func groupQuery() Group {
 				Right:   "有效密钥即可",
 				Params: []Param{
 					{Name: "name", In: "path", Type: "string", Required: true,
-						Desc: "方案名。界面会自动做 URL 编码", Example: "春季作息"},
+						Desc: "方案名。⚠ 方案**没有编号**，名字就是它的身份，这里只能写名字。界面会自动做 URL 编码", Example: "春季作息"},
 				},
 				Sample: `{
   "name": "春季作息", "volume": 66, "priority": 10,
@@ -504,52 +524,21 @@ func groupQuery() Group {
 func groupTask() Group {
 	return Group{
 		Name: "任务",
-		Desc: "文件广播任务的增删改启停。新建是一次调用带齐媒体、终端、任务信息 —— 与界面「新建任务」那一屏对应。",
+		Desc: "文件广播任务的增删改启停。新建是一次调用带齐媒体、终端、任务信息 —— 与界面「新建任务」那一屏对应。媒体、终端、分区、任务本身都**用编号寻址**最稳（编号唯一，名字不一定）。",
 		Endpoints: []Endpoint{
 			{
 				ID: "tasks.create", Method: "POST", Path: "/tasks",
 				Summary: "新建任务",
 				Desc:    "一次调用把播放清单、终端/分区、时间与音量一起收下。不用先建任务再挂媒体再挂终端 —— 那样中间任何一步失败都会留下一条残缺的任务，它在界面上看着正常，到点却什么都不播。",
 				Right:   "任务管理（taskpriv）",
-				Fields: []Field{
-					{Name: "name", Type: "string", Required: true, Desc: "任务名称，最多 45 字"},
-					{Name: "folder", Type: "string/int", Desc: "所属分组，名字或编号。不给落到你看得见的第一个分组"},
-					{Name: "media", Type: "数组", Desc: "媒体清单，**按数组顺序播**。每项写名字或编号"},
-					{Name: "terminals", Type: "数组", Desc: "播到哪些终端。每项可以只写名字/编号，也可以写 { \"terminal\": \"A101教室音箱\", \"area\": \"11110000\" } 来指定区域掩码"},
-					{Name: "zones", Type: "数组", Desc: "播到哪些分区，会展开成终端。与 terminals 取并集去重"},
-					{Name: "playTime", Type: "string", Required: true, Desc: "播放时间（每天几点开播）。09:50 或 09:50:00"},
-					{Name: "endTime", Type: "string", Desc: "结束时间。不给就按 playTime + 时长自动算"},
-					{Name: "startDate", Type: "string", Desc: "开始日期。不给默认今天"},
-					{Name: "endDate", Type: "string", Desc: "结束日期。不给默认一年后"},
-					{Name: "weekdays", Type: "数组", Desc: "执行模式：1=周一 … 7=周日。**留空 = 手动**，不是「每天」；要每天就写 [1,2,3,4,5,6,7]"},
-					{Name: "disableDay", Type: "string", Desc: "当天停用：这一天不执行，YYYY-MM-DD。留空 = 没有例外日"},
-					{Name: "seconds", Type: "int", Desc: "时长（秒）。与 loopTimes 二选一；都不给按媒体自身总时长算"},
-					{Name: "loopTimes", Type: "int", Desc: "循环次数。与 seconds 二选一。⚠ 填 0 是**无限循环**，不是「不循环」"},
-					{Name: "interval", Type: "对象", Desc: "间隔播放（界面「播放模式 → 间隔时间」）。不给 = 普通模式，从头播到尾"},
-					{Name: "interval.everySeconds", Type: "int", Desc: "间隔长度：每隔多少秒响一次"},
-					{Name: "interval.playSeconds", Type: "int", Desc: "间隔时长：每次响多少秒。与 playTimes 二选一"},
-					{Name: "interval.playTimes", Type: "int", Desc: "间隔次数：每次把清单播几遍，最多 99。与 playSeconds 二选一"},
-					{Name: "volume", Type: "int", Desc: "任务音量 0~100，默认 80"},
-					{Name: "priority", Type: "int", Desc: "任务级别 10~109。⚠ **数字小的优先级高**；不给取你能用的最低一档"},
-					{Name: "prePower", Type: "int", Desc: "预开电源：提前多少秒开功放，0~3600"},
-					{Name: "sequential", Type: "bool", Desc: "true 顺序播（默认）、false 随机播"},
-					{Name: "multicast", Type: "bool", Desc: "发送模式：true 组播、false 单播（默认）。组播要求交换机支持，没把握别动"},
-					{Name: "localFirst", Type: "bool", Desc: "本地优先播放：终端上已下发过这个媒体就放本地那份，断网也能响。默认关"},
-					{Name: "enabled", Type: "bool", Desc: "建完是启用还是停用，默认启用"},
-					{Name: "led", Type: "对象", Desc: "LED 字幕。不给或正文为空 = 不上屏。⚠ 改任务时传 null 会**删掉**原有字幕"},
-					{Name: "led.text", Type: "string", Desc: "字幕正文，最多 1024 字"},
-					{Name: "led.name", Type: "string", Desc: "字幕子任务名。留空跟主任务同名"},
-					{Name: "led.speed", Type: "int", Desc: "Led 速度 0~10"},
-					{Name: "led.mode", Type: "int", Desc: "Led 显示模式 0~10"},
-					{Name: "led.devices", Type: "数组", Desc: "上到哪几块屏。每项 { terminal, deviceId }；deviceId 在「led播放 → LED 屏设备」里看"},
-				},
+				Fields:  taskFields(),
 				Body: `{
   "name": "课间音乐",
-  "folder": "admin",
+  "folder": 1,
 
-  "media": ["大课间.mp3", "10.起床号.mp3"],
-  "terminals": [{ "terminal": "A101教室音箱", "area": "11110000" }],
-  "zones": ["教学楼"],
+  "media": [124, 125],
+  "terminals": [2, { "terminal": 1, "area": "11110000" }],
+  "zones": [1],
 
   "playTime": "09:50",
   "endTime": "10:00:00",
@@ -573,16 +562,18 @@ func groupTask() Group {
     "text": "课间休息，请到操场活动",
     "speed": 5,
     "mode": 0,
-    "devices": [{ "terminal": "A101教室音箱", "deviceId": 1 }]
+    "devices": [{ "terminal": 1, "deviceId": 1 }]
   }
 }`,
-				Sample: `{ "id": 70230, "mediaCount": 1, "terminalCount": 4 }`,
+				Sample: `{ "id": 70230, "mediaCount": 2, "terminalCount": 4 }`,
 				Returns: []Field{
 					{Name: "id", Type: "int", Desc: "任务编号。之后改它、启停它、删它都用这个（也可以继续用任务名）"},
 					{Name: "mediaCount", Type: "int", Desc: "实际写进去几条媒体"},
 					{Name: "terminalCount", Type: "int", Desc: "实际写进去几台终端。⚠ **对一下这个数** —— 给了分区的话它是展开后的终端数，比你传的条目多是正常的"},
 				},
 				Notes: []string{
+					"示例里的数字都是**编号**：folder 1 = 任务分组「admin」，media 124/125 = 两条媒体（在「媒体列表」查），terminal 1/2 = 两台终端（在「终端状态」查），zone 1 = 分区「教学楼」。写名字也认，但见下一条。",
+					"⚠ **能用编号就用编号**。终端名和媒体名在库里**没有唯一约束**，是真的可以重名的 —— 重名时接口只能报错让你改用编号，而这个错会在你上线之后才出现。分区名、任务分组名、媒体目录名建的时候就挡了重名，用名字是安全的；作息方案则相反，它根本没有编号，只能用名字。",
 					"⚠ weekdays 留空 = 手动任务，永远不会自动响。想每天响要写 [1,2,3,4,5,6,7]。默认成「每天」太危险 —— 少写一个字段就变成每天全校广播。",
 					"⚠ 分区是在写入那一刻展开成终端的。建完任务再往分区里加终端，这条任务不会自动带上它 —— 加了终端要重新调一次「修改任务」。",
 					"不给 priority 时取最低一档，会被别的广播压住。要它优先就自己填一个小数字。",
@@ -595,8 +586,10 @@ func groupTask() Group {
 				Desc:    "一条任务的全貌 —— 建任务时能填的每一项，这里都能读回来。建完之后用它核对「我填的那些真的写进去了吗」；列表接口给的是摘要，间隔播放、LED 字幕、终端区域掩码都不在里面。",
 				Right:   "有效密钥即可",
 				Params: []Param{
-					{Name: "ref", In: "path", Type: "string", Required: true,
-						Desc: "任务名或编号", Example: ""},
+					// 预填一个演示库里**真实存在**的任务：这一条是只读的，
+					// 点「试一试」要能看见真返回 —— 那是这个平台比静态文档强的地方。
+					{Name: "ref", In: "path", Type: "int/string", Required: true,
+						Desc: "**任务编号**（推荐，唯一），也认任务名", Example: "1008"},
 				},
 				Sample: `{
   "id": 70230, "name": "课间音乐", "note": "", "folderId": 1,
@@ -637,21 +630,32 @@ func groupTask() Group {
 			{
 				ID: "tasks.update", Method: "PUT", Path: "/tasks/{ref}",
 				Summary: "修改任务",
-				Desc:    "只写要改的字段，没给的保持原样。",
-				Right:   "任务管理（taskpriv）",
+				Desc: "改一条已经存在的任务。新建时能填的每一项这里都能改：时长、音量、播放时刻、星期、媒体清单、终端、LED 字幕……" +
+					"**只写要改的那几个字段**，没写的保持原样 —— 所以「把时长改成 15 分钟」就是一行 {\"seconds\": 900}，不用把整条任务重发一遍。",
+				Right: "任务管理（taskpriv）",
 				Params: []Param{
-					{Name: "ref", In: "path", Type: "string", Required: true,
-						Desc: "任务名或编号", Example: "课间音乐"},
+					{Name: "ref", In: "path", Type: "int/string", Required: true,
+						Desc: "要改哪条任务：**任务编号**（推荐，唯一），也认任务名。编号从新建任务的返回值或「任务列表」里拿",
+						// 预填的是「新建任务」示例返回的那个编号，库里并不存在 ——
+						// 这一条会真的改动数据，预填一个真实编号等于给误点铺路。
+						Example: "70230"},
 				},
-				Body:   `{ "volume": 55 }`,
-				Sample: `{ "id": 70230, "mediaCount": 1, "terminalCount": 4 }`,
+				Fields:   taskUpdateFields(),
+				Body:     `{ "seconds": 900 }`,
+				Examples: taskUpdateExamples(),
+				Sample:   `{ "id": 70230, "mediaCount": 2, "terminalCount": 4 }`,
 				Returns: []Field{
-					{Name: "id", Type: "int", Desc: "任务编号。之后改它、启停它、删它都用这个（也可以继续用任务名）"},
-					{Name: "mediaCount", Type: "int", Desc: "实际写进去几条媒体"},
-					{Name: "terminalCount", Type: "int", Desc: "实际写进去几台终端。⚠ **对一下这个数** —— 给了分区的话它是展开后的终端数，比你传的条目多是正常的"},
+					{Name: "id", Type: "int", Desc: "任务编号。就是你要改的那条"},
+					{Name: "mediaCount", Type: "int", Desc: "改完之后这条任务挂着几条媒体。没动 media 时它是原来的条数，不是 0"},
+					{Name: "terminalCount", Type: "int", Desc: "改完之后挂着几台终端。⚠ **对一下这个数** —— 给了分区的话它是展开后的终端数，比你传的条目多是正常的"},
 				},
 				Notes: []string{
-					"⚠ 清单类字段（media / terminals / zones）给了就是整体替换，不是追加。传 media: [\"A.mp3\"] 会把原来的清单换成只有 A.mp3。不传则保持原样。",
+					"⚠ 清单类字段（media / terminals / zones）给了就是**整体替换**，不是追加。传 media: [124] 会把原来的清单换成只剩这一条；不传则保持原样。想在原有基础上加一条，先用「任务详情」读出现在有哪些，加上再整体传回来。",
+					"⚠ terminals 与 zones 是**同一个位置**：这两个里只要有一个给了值，终端清单就整体重算。只传 zones 会把原来单独挂着的终端也一起换掉。",
+					"⚠ 改了时长（seconds / loopTimes）**或**挪了开播时刻（playTime），结束时刻 endTime 都会跟着重算。这是必要的：只挪开播时刻不动结束时刻，一条 09:50→10:05 的任务传了 playTime: \"10:05\" 就变成 10:05 开始、10:05 结束 —— 一条零长度的任务。不想让它自动算就在同一次请求里自己给一个 endTime。两样都没动（比如只改音量）时 endTime 一动不动。",
+					"按遍数播（loopTimes）算不出确定的秒数：那时挪开播时刻会把原来的播放窗口**整体平移**，长度不变。另外越过午夜一律截到 23:59:59 —— endTime 是个时刻，没有「第二天」。",
+					"⚠ 不传 led 是**保持原样**；要取消字幕得显式传 led: { \"text\": \"\" }。",
+					"改之前先调一次「任务详情」（GET /tasks/{ref}）：它返回的形状和这里的入参一致，读出来改两个值再 PUT 回去最稳。",
 				},
 				Danger: true,
 			},
@@ -664,7 +668,11 @@ func groupTask() Group {
 					{Name: "action", In: "path", Type: "枚举", Required: true,
 						Desc: "start / stop / enable / disable", Example: "stop"},
 				},
-				Body: `{ "tasks": ["课间音乐"] }`,
+				Fields: []Field{
+					{Name: "tasks", Type: "数组", Required: true,
+						Desc: "要操作哪几条任务。每项写**任务编号**（推荐，唯一），也认任务名。一次可以给多条 —— 能做的会做掉，做不了的在 blocked 里逐条给原因"},
+				},
+				Body: `{ "tasks": [1008, 1010] }`,
 				Sample: `{
   "succeeded": [{ "id": 1008, "name": "升旗仪式-国歌" }],
   "blocked":   [{ "id": 1010, "name": "课间轻音乐", "reason": "只能操作自己创建的任务" }]
@@ -685,8 +693,10 @@ func groupTask() Group {
 				Desc:    "连带清掉这条任务的媒体清单与终端清单。也支持 DELETE /tasks 带 {\"tasks\":[...]} 批量删。",
 				Right:   "任务管理（taskpriv）",
 				Params: []Param{
-					{Name: "ref", In: "path", Type: "string", Required: true,
-						Desc: "任务名或编号", Example: ""},
+					{Name: "ref", In: "path", Type: "int/string", Required: true,
+						// 预填一个库里没有的编号。删除接口预填真实编号，
+						// 迟早有人点了确认才反应过来。
+						Desc: "**任务编号**（推荐，唯一），也认任务名", Example: "70230"},
 				},
 				Sample: `{ "succeeded": [{ "id": 70230, "name": "课间音乐" }], "blocked": [] }`,
 				Returns: []Field{
@@ -695,6 +705,154 @@ func groupTask() Group {
 				},
 				Danger: true,
 			},
+		},
+	}
+}
+
+// taskFields 是任务的字段表 —— 新建和修改共用这一份。
+//
+// # 为什么不分成两份
+//
+// 新建能填的每一项，修改都能改。分开写两份，改了一边忘了另一边，
+// 平台上就会出现「新建里有、修改里没有」的字段 —— 而它其实是能改的。
+// 对接方照着那份缺了字段的说明，会以为「这一项建完就定死了」，
+// 于是绕远路：删掉重建一条。那会丢掉任务编号，也会在删和建之间留一个
+// 什么都不播的空窗。
+//
+// # 寻址一律**编号优先**
+//
+// media / terminals / zones / folder 都既认编号也认名字，但说明里一律
+// 把编号写在前面 —— 因为 media.name 和 terminal.terminalname 在库里
+// **没有唯一索引**（核过 SHOW INDEX），是真的可以重名的。
+// 界面上也只有分区名、任务分组名、媒体目录名在新建时挡了重名。
+// 名字重了接口只能报错要求改用编号，而这个错往往在上线之后才出现。
+func taskFields() []Field {
+	return []Field{
+		{Name: "name", Type: "string", Required: true, Desc: "任务名称，最多 45 字"},
+		{Name: "folder", Type: "int/string", Desc: "所属分组：**分组编号**，也认分组名（分组名建的时候挡了重名，用名字安全）。不给落到你看得见的第一个分组"},
+		{Name: "media", Type: "数组", Desc: "媒体清单，**按数组顺序播**。每项写**媒体编号**（推荐，唯一），也认媒体名 —— ⚠ 但媒体名没有唯一约束，可以重名，重了会报错要你改用编号。编号在「媒体列表」里查"},
+		{Name: "terminals", Type: "数组", Desc: "播到哪些终端。每项写**终端编号**（推荐，唯一），也认终端名（⚠ 同样可以重名）；要指定区域掩码就写成 { \"terminal\": 1, \"area\": \"11110000\" }。编号在「终端状态」里查"},
+		{Name: "zones", Type: "数组", Desc: "播到哪些分区，会展开成终端。每项写**分区编号**或分区名（分区名不会重复，用名字安全）。与 terminals 取并集去重"},
+		{Name: "playTime", Type: "string", Required: true, Desc: "播放时间（每天几点开播）。09:50 或 09:50:00"},
+		{Name: "endTime", Type: "string", Desc: "结束时间。不给就按 playTime + 时长自动算"},
+		{Name: "startDate", Type: "string", Desc: "开始日期。不给默认今天"},
+		{Name: "endDate", Type: "string", Desc: "结束日期。不给默认一年后"},
+		{Name: "weekdays", Type: "数组", Desc: "执行模式：1=周一 … 7=周日。**留空 = 手动**，不是「每天」；要每天就写 [1,2,3,4,5,6,7]"},
+		{Name: "disableDay", Type: "string", Desc: "当天停用：这一天不执行，YYYY-MM-DD。留空 = 没有例外日"},
+		{Name: "seconds", Type: "int", Desc: "时长（秒），最多 86400。与 loopTimes 二选一；都不给按媒体自身总时长算"},
+		{Name: "loopTimes", Type: "int", Desc: "循环次数：把整个清单播几遍。与 seconds 二选一。⚠ 填 0 是**无限循环**，不是「不循环」"},
+		{Name: "interval", Type: "对象", Desc: "间隔播放（界面「播放模式 → 间隔时间」）。不给 = 普通模式，从头播到尾"},
+		{Name: "interval.everySeconds", Type: "int", Desc: "间隔长度：每隔多少秒响一次"},
+		{Name: "interval.playSeconds", Type: "int", Desc: "间隔时长：每次响多少秒。与 playTimes 二选一"},
+		{Name: "interval.playTimes", Type: "int", Desc: "间隔次数：每次把清单播几遍，最多 99。与 playSeconds 二选一"},
+		{Name: "volume", Type: "int", Desc: "任务音量 0~100，默认 80"},
+		{Name: "priority", Type: "int", Desc: "任务级别 10~109。⚠ **数字小的优先级高**；不给取你能用的最低一档"},
+		{Name: "prePower", Type: "int", Desc: "预开电源：提前多少秒开功放，0~3600"},
+		{Name: "sequential", Type: "bool", Desc: "true 顺序播（默认）、false 随机播"},
+		{Name: "multicast", Type: "bool", Desc: "发送模式：true 组播、false 单播（默认）。组播要求交换机支持，没把握别动"},
+		{Name: "localFirst", Type: "bool", Desc: "本地优先播放：终端上已下发过这个媒体就放本地那份，断网也能响。默认关"},
+		{Name: "enabled", Type: "bool", Desc: "建完是启用还是停用，默认启用"},
+		{Name: "led", Type: "对象", Desc: "LED 字幕。不给或正文为空 = 不上屏。⚠ 改任务时传 null 会**删掉**原有字幕"},
+		{Name: "led.text", Type: "string", Desc: "字幕正文，最多 1024 字"},
+		{Name: "led.name", Type: "string", Desc: "字幕子任务名。留空跟主任务同名"},
+		{Name: "led.speed", Type: "int", Desc: "Led 速度 0~10"},
+		{Name: "led.mode", Type: "int", Desc: "Led 显示模式 0~10"},
+		{Name: "led.devices", Type: "数组", Desc: "上到哪几块屏。每项 { terminal, deviceId }；terminal 同上，写**终端编号**最稳；deviceId 在「led播放 → LED 屏设备」里看"},
+	}
+}
+
+// taskUpdateSemantics 是**只在「修改任务」下才成立**的那些话。
+//
+// 新建时「不传就是默认值」，修改时「不传就是保持原样」—— 同一个字段，
+// 两种语境下要说的完全不是一回事。改任务的人最想知道的恰恰是这一句：
+// 我不写它，它会不会被清掉？
+var taskUpdateSemantics = map[string]string{
+	"name":       "改任务名，最多 45 字。不传就不改名",
+	"seconds":    "改成按时长播，单位秒，最多 86400。**改任务时长就是改这一个字段**：{\"seconds\": 900} = 播 15 分钟。⚠ 结束时刻 endTime 会跟着重算；不想让它动就同时给一个 endTime。与 loopTimes 只能给一个",
+	"loopTimes":  "改成按遍数播：把整个清单循环几遍。给了它就把原来的按秒时长换掉。⚠ 0 是**无限循环**，不是「不循环」。与 seconds 只能给一个。⚠ 开着间隔播放的任务只能按秒，用 seconds",
+	"media":      "改播放清单，**按数组顺序播**。⚠ 给了就是**整体替换**，不是追加。每项写**媒体编号**（推荐，唯一），也认媒体名 —— 但媒体名可以重名。不传保持原样",
+	"terminals":  "改播到哪些终端。⚠ **整体替换**。每项写**终端编号**（推荐，唯一）或终端名；要改区域掩码写成 { \"terminal\": 1, \"area\": \"11110000\" }。terminals 与 zones 有一个给了值，终端清单就整体重算",
+	"zones":      "改播到哪些分区，会展开成终端。每项写**分区编号**或分区名。⚠ 与 terminals 是同一个位置：只传 zones 也会把原来单独挂的终端一起换掉",
+	"weekdays":   "改哪几天播：1=周一 … 7=周日。⚠ 传空数组 [] 会把它变成**手动任务**，以后永远不会自动响。不传才是保持原样",
+	"enabled":    "启用 / 停用这条任务。false = 以后都不响（只想让今天这一次别响，用「启停任务」的 stop）",
+	"led":        "改 LED 字幕。⚠ **不传 = 保持原样**；要取消字幕得显式传 { \"text\": \"\" }（或 null）。传了就是整体替换整段字幕设置",
+	"interval":   "改间隔播放。传了就整体替换；不传保持原样",
+	"folder":     "换到别的任务分组：**分组编号**，也认分组名。不传保持原样",
+	"disableDay": "改「当天停用」的那一天，YYYY-MM-DD。传空串清掉它",
+	"endTime":    "结束时间。不给且这次改了时长的话，会按「播放时刻 + 新时长」自动重算",
+}
+
+// taskUpdateFields 把新建的字段表翻成修改用的：**全部可选**，
+// 并把语义不同的那些换成修改语境下的说法。
+func taskUpdateFields() []Field {
+	src := taskFields()
+	out := make([]Field, 0, len(src))
+	for _, f := range src {
+		f.Required = false // 修改任务没有必填字段：只写要改的
+		if d, ok := taskUpdateSemantics[f.Name]; ok {
+			f.Desc = d
+		}
+		out = append(out, f)
+	}
+	return out
+}
+
+// taskUpdateExamples 是「我要干这件事」到请求体的对照。
+//
+// ⚠ 每一段都是**最小**请求体，照抄就能用。不要在这里放全字段示例 ——
+// 对接方照抄一段写满 30 个字段的 JSON，等于把每一项都覆盖一遍，
+// 而他只是想改个时长。
+func taskUpdateExamples() []Example {
+	return []Example{
+		{
+			Title: "改时长：改成播 15 分钟",
+			Desc:  "最常问的一个。时长就是 seconds 这一个字段，单位是秒。结束时刻会跟着重算成 播放时刻 + 900 秒 —— 想自己定就在同一次请求里加一个 \"endTime\"。",
+			Body:  `{ "seconds": 900 }`,
+		},
+		{
+			Title: "改时长：改成把清单播 3 遍",
+			Desc:  "按遍数播而不是按秒。给了 loopTimes 就把原来的按秒时长换掉，两者只能有一个。⚠ 写 0 是无限循环。⚠ 这条任务如果开着**间隔播放**，只能按秒（用 seconds）—— 间隔播放要拿总时长来排，接口会明确报错告诉你。",
+			Body:  `{ "loopTimes": 3 }`,
+		},
+		{
+			Title: "改音量",
+			Desc:  "0~100。其它一律不动。",
+			Body:  `{ "volume": 55 }`,
+		},
+		{
+			Title: "改播放时刻和星期",
+			Desc:  "改成每周一到周五 10:05 播。⚠ weekdays 传空数组会变成手动任务，永远不再自动响。",
+			Body:  `{ "playTime": "10:05", "weekdays": [1, 2, 3, 4, 5] }`,
+		},
+		{
+			Title: "换终端",
+			Desc:  "⚠ 整体替换：原来挂的终端全部换成这三台，不是再加三台。数字是终端编号，在「终端状态」里查。要保留原有的，先用「任务详情」读出来再连同新的一起传。",
+			Body:  `{ "terminals": [1, 2, 8] }`,
+		},
+		{
+			Title: "给某台终端指定区域",
+			Desc:  "掩码每一位对应一路输出，1 = 出声。这里是「只走前四路」。同样是整体替换终端清单。",
+			Body:  `{ "terminals": [{ "terminal": 1, "area": "11110000" }] }`,
+		},
+		{
+			Title: "换播放的媒体",
+			Desc:  "⚠ 整体替换播放清单，按数组顺序播。数字是媒体编号，在「媒体列表」里查。",
+			Body:  `{ "media": [124, 125] }`,
+		},
+		{
+			Title: "改成间隔播放",
+			Desc:  "每隔 5 分钟响 30 秒，直到任务时长走完。不想要间隔了就把 interval 整个去掉重新传其它字段 —— 传 null 即可。",
+			Body:  `{ "interval": { "everySeconds": 300, "playSeconds": 30 } }`,
+		},
+		{
+			Title: "停用这条任务",
+			Desc:  "以后都不响，任务还在。只想让今天这一次别响，用「启停任务」的 stop。",
+			Body:  `{ "enabled": false }`,
+		},
+		{
+			Title: "取消 LED 字幕",
+			Desc:  "⚠ 正文留空才是取消。**不传 led 是保持原样** —— 只改音量不会把字幕带掉。",
+			Body:  `{ "led": { "text": "" } }`,
 		},
 	}
 }
@@ -710,15 +868,15 @@ func groupPlay() Group {
 				Desc:    "告警联动最常用的一个：门禁/消防那边一触发，直接让指定区域出声。",
 				Right:   "任务管理（taskpriv）",
 				Fields: []Field{
-					{Name: "media", Type: "string/int", Required: true, Desc: "播什么。一个媒体"},
-					{Name: "terminals", Type: "数组", Desc: "播到哪些终端"},
-					{Name: "zones", Type: "数组", Desc: "播到哪些分区。与 terminals 至少给一个"},
+					{Name: "media", Type: "int/string", Required: true, Desc: "播什么，一个媒体。写**媒体编号**（推荐，唯一），也认媒体名 —— ⚠ 媒体名可以重名，重了会报错要你改用编号。编号在「媒体列表」里查"},
+					{Name: "terminals", Type: "数组", Desc: "播到哪些终端。每项写**终端编号**（推荐，唯一）或终端名。编号在「终端状态」里查"},
+					{Name: "zones", Type: "数组", Desc: "播到哪些分区，会展开成终端。每项写**分区编号**或分区名（分区名不会重复）。与 terminals 至少给一个"},
 					{Name: "volume", Type: "int", Desc: "0~100，默认 80"},
 					{Name: "seconds", Type: "int", Desc: "最多播多久。不给按媒体自身时长，还不行兜底 300 秒"},
 				},
 				Body: `{
-  "media": "中华人民共和国国歌.mp3",
-  "zones": ["室外操场"],
+  "media": 138,
+  "zones": [3],
   "volume": 90
 }`,
 				Sample: `{
@@ -739,6 +897,7 @@ func groupPlay() Group {
 					{Name: "endTime", Type: "string", Desc: "停止时间。还在播时是空串"},
 				},
 				Notes: []string{
+					"示例里的 138 是媒体编号（在「媒体列表」查）、3 是分区编号（在「全部功能接口 → 终端分区」查）。写名字也认，但媒体名可以重名 —— 告警联动这种没人盯着的场景，用编号才不会某天突然报「找到多个同名媒体」。",
 					"把返回的 playId 记下来，停止时要用。",
 					"⚠ 以**最高优先级**下发，会压住正在播的排期任务。这是有意的 —— 它是你此刻主动要求的。上课时间请谨慎。",
 					"⚠ 这个真的会让喇叭响。",
@@ -752,7 +911,7 @@ func groupPlay() Group {
 				Right:   "任务管理（taskpriv）",
 				Params: []Param{
 					{Name: "playId", In: "path", Type: "int", Required: true,
-						Desc: "立即播放返回的 playId", Example: ""},
+						Desc: "立即播放返回的 playId。也能在「还在播的立即播放」里查到", Example: "1"},
 				},
 				Sample: `{ "playId": 1, "state": "stopped", "endTime": "2026-09-08 08:01:24" }`,
 				Returns: []Field{
@@ -778,9 +937,10 @@ func groupSchedule() Group {
 				Right:   "作息方案（bellpriv）",
 				Fields: []Field{
 					{Name: "name", Type: "string", Required: true, Desc: "方案名"},
-					{Name: "terminals", Type: "数组", Desc: "打到哪些终端"},
-					{Name: "zones", Type: "数组", Desc: "打到哪些分区。与 terminals 至少给一个"},
+					{Name: "terminals", Type: "数组", Desc: "打到哪些终端。每项写**终端编号**（推荐，唯一）或终端名"},
+					{Name: "zones", Type: "数组", Desc: "打到哪些分区，会展开成终端。每项写**分区编号**或分区名。与 terminals 至少给一个"},
 					{Name: "items", Type: "数组", Required: true, Desc: "打铃条目，至少一条。每条：playTime 必填、media 必填、name/seconds/loopTimes 可选"},
+					{Name: "items[].media", Type: "数组", Desc: "这一条播什么。每项写**媒体编号**（推荐，唯一）或媒体名 —— ⚠ 媒体名可以重名"},
 					{Name: "weekdays", Type: "数组", Desc: "留空 = 周一到周五（注意与新建任务不同）"},
 					{Name: "startDate", Type: "string", Desc: "生效起始日，默认今天"},
 					{Name: "endDate", Type: "string", Desc: "生效结束日，默认一年后"},
@@ -790,12 +950,12 @@ func groupSchedule() Group {
 				},
 				Body: `{
   "name": "夏季作息",
-  "zones": ["教学楼"],
+  "zones": [1],
   "weekdays": [1, 2, 3, 4, 5],
   "volume": 75,
   "items": [
-    { "name": "早读预备",   "playTime": "07:20", "media": ["10.起床号.mp3"], "seconds": 30 },
-    { "name": "第一节下课", "playTime": "09:50", "media": ["04.爱的纪念（下课）.mp3"] }
+    { "name": "早读预备",   "playTime": "07:20", "media": [125], "seconds": 30 },
+    { "name": "第一节下课", "playTime": "09:50", "media": [126] }
   ]
 }`,
 				Sample: `{ "name": "夏季作息", "itemCount": 2, "taskIds": [70232, 70233], "warnings": [] }`,
@@ -806,6 +966,7 @@ func groupSchedule() Group {
 					{Name: "warnings", Type: "数组", Desc: "⚠ **要看一眼**。「建成了，但有件事你该知道」，比如同一时刻排了两条铃。不拦截，但空数组才是完全干净"},
 				},
 				Notes: []string{
+					"示例里的 1 是分区编号（教学楼）、125 / 126 是媒体编号。方案本身是个例外：它**没有编号**，name 就是它的身份，之后启停、删除、查详情都只能用这个名字。",
 					"⚠ weekdays 留空时这里默认**周一到周五**，而新建任务那边默认「手动」。不是笔误：作息方案天然是上课日打铃，建一个永不触发的方案没有意义；而文件广播任务建来手动触发是常见用法。两边都别漏填。",
 					"warnings 是「建成了，但有件事你该知道」，比如同一时刻排了两条铃。不拦截，但要看。",
 				},
@@ -818,7 +979,7 @@ func groupSchedule() Group {
 				Right:   "作息方案（bellpriv）",
 				Params: []Param{
 					{Name: "name", In: "path", Type: "string", Required: true,
-						Desc: "方案名", Example: ""},
+						Desc: "方案名。⚠ 方案**没有编号**，名字就是它的身份，这里只能写名字", Example: ""},
 				},
 				Body:   `{ "enabled": false }`,
 				Sample: `{ "name": "夏季作息", "affectedTasks": 2 }`,
@@ -835,7 +996,7 @@ func groupSchedule() Group {
 				Right:   "作息方案（bellpriv）",
 				Params: []Param{
 					{Name: "name", In: "path", Type: "string", Required: true,
-						Desc: "方案名", Example: ""},
+						Desc: "方案名。⚠ 方案**没有编号**，名字就是它的身份，这里只能写名字", Example: ""},
 				},
 				Sample: `{ "name": "夏季作息", "affectedTasks": 2 }`,
 				Returns: []Field{
@@ -899,14 +1060,26 @@ func OpenAPIJSON(baseURL string) ([]byte, error) {
 				},
 			}
 			if ep.Body != "" {
+				media := map[string]any{
+					"schema":  map[string]any{"type": "object"},
+					"example": rawJSON(ep.Body),
+				}
+				// 分场景示例也带进标准文档里 —— Postman / Apifox 会把它们
+				// 渲染成一个下拉，跟我们自己界面上那排场景是同一份东西。
+				// 只在自己界面上有、导出去就没了的话，两边会各写各的。
+				if len(ep.Examples) > 0 {
+					exs := map[string]any{}
+					for _, e := range ep.Examples {
+						exs[e.Title] = map[string]any{
+							"summary": e.Title, "description": e.Desc,
+							"value": rawJSON(e.Body),
+						}
+					}
+					media["examples"] = exs
+				}
 				op["requestBody"] = map[string]any{
 					"required": true,
-					"content": map[string]any{
-						"application/json": map[string]any{
-							"schema":  map[string]any{"type": "object"},
-							"example": rawJSON(ep.Body),
-						},
-					},
+					"content":  map[string]any{"application/json": media},
 				}
 			}
 			paths[full][strings.ToLower(ep.Method)] = op
@@ -956,8 +1129,11 @@ const openAPIIntro = `广播系统的对外接口。
 认证：请求头 ` + "`" + HeaderAPIKey + "`" + `，值是在界面「用户管理 → 开发者密钥」发放的密钥。
 密钥的权限完全等于它归属账号的权限。
 
-寻址：媒体、终端、分区、任务都可以**直接写名字**，不必先查编号；作息方案只能写名字（它没有编号）。
-只精确匹配，绝不猜 —— 对不上会报错并提示相近的名字。
+寻址：**能用编号就用编号** —— 编号是唯一的，名字不一定。
+媒体名和终端名在库里没有唯一约束，是真的可以重名的；分区名、任务分组名、媒体目录名在新建时挡了重名，用名字安全。
+媒体、终端、分区、任务、分组都同时认编号和名字，编号从对应的查询接口里拿。
+作息方案是唯一的例外：它根本没有编号，只能用名字。
+名字只精确匹配，绝不猜 —— 对不上会报错并提示相近的名字。
 
 返回：HTTP 状态码恒为 200，看 body 里的 code。
 200 成功 / 40001 请求填错了 / 401 密钥无效 / 40301 权限不够 / 40401 找不到对象 / 50001 服务器出错。`
