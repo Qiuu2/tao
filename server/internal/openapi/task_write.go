@@ -173,10 +173,55 @@ var (
 )
 
 // TaskSaved 是写入成功后的回执。
+//
+// # 为什么回执里要带上这条任务「现在是什么样」
+//
+// 这两个接口有一批字段是**服务端替调用方定的**：没给 endTime 就按
+// 播放时刻 + 时长算，没给时长就按媒体总长算，没给 priority 就取最低一档，
+// 没给分组就落到第一个分组。只回一个 {id, mediaCount, terminalCount}，
+// 调用方无从知道服务端替他决定了什么 —— 尤其是**改时长会连带重算结束时刻**
+// 这件事，回执不说，他就只能等到某天发现广播比预期多响了五分钟。
+//
+// 所以把这些「服务端定下来的」值回给他。想看全貌仍然是「任务详情」——
+// 这里只列服务端可能自作主张的那几项，不重复一份详情。
 type TaskSaved struct {
 	ID        int64 `json:"id"`
 	Media     int   `json:"mediaCount"`
 	Terminals int   `json:"terminalCount"`
+
+	// —— 下面这些是**实际存进去的值**，不是你传的原文 ——
+	Name      string `json:"name"`
+	FolderID  int64  `json:"folderId"`
+	PlayTime  string `json:"playTime"`
+	EndTime   string `json:"endTime"`
+	Seconds   int    `json:"seconds"`
+	LoopTimes int    `json:"loopTimes"`
+	Volume    int    `json:"volume"`
+	Priority  int    `json:"priority"`
+	Enabled   bool   `json:"enabled"`
+}
+
+// savedOf 把「实际写进去的那份 task.Input」翻成回执。
+//
+// 取的是 spec（落库的那一份）而不是调用方传来的 in —— 两者的差正是
+// 这个回执存在的理由。
+func savedOf(res *task.SaveResult, spec *task.Input) *TaskSaved {
+	out := &TaskSaved{
+		ID: res.TaskID, Media: res.MediaCount, Terminals: res.TerminalCount,
+		Name: spec.TaskName, FolderID: spec.FolderID,
+		PlayTime: spec.PlayTime, EndTime: spec.EndTime,
+		Volume: spec.Volume, Priority: spec.Priority,
+		// projectstate 0 才是启用（BR：与直觉相反），这里翻成正常的布尔
+		Enabled: spec.ProjectState == 0,
+	}
+	// 库里 timelength 一列共用：类型 1 是秒、2 是循环次数。
+	// 回执里分开给，免得调用方还要自己看 timelengthtype 才知道 900 是什么。
+	if spec.TimeLengthTy == 1 {
+		out.Seconds = spec.TimeLength
+	} else {
+		out.LoopTimes = spec.TimeLength
+	}
+	return out
 }
 
 // CreateTask 新建一条文件广播任务。
@@ -195,7 +240,7 @@ func (s *Service) CreateTask(ctx context.Context, u *auth.User, in TaskInput) (*
 	// 新增走 state=4 且必须带 volume —— 后台服务据此加载任务并设初始音量。
 	// 漏掉这一步的表现是：任务在界面上建好了，到点却不响。
 	s.notifier.TaskSaved(ctx, notify.TaskAdded, res.TaskID, res.Volume)
-	return &TaskSaved{ID: res.TaskID, Media: res.MediaCount, Terminals: res.TerminalCount}, nil
+	return savedOf(res, spec), nil
 }
 
 // UpdateTask 改一条已有任务。
@@ -225,7 +270,7 @@ func (s *Service) UpdateTask(ctx context.Context, u *auth.User, ref Ref, in Task
 		return nil, err
 	}
 	s.notifier.TaskSaved(ctx, notify.TaskUpdated, res.TaskID, res.Volume)
-	return &TaskSaved{ID: res.TaskID, Media: res.MediaCount, Terminals: res.TerminalCount}, nil
+	return savedOf(res, spec), nil
 }
 
 // toTaskInput 把「人话」翻译成 task.Input。

@@ -565,13 +565,28 @@ func groupTask() Group {
     "devices": [{ "terminal": 1, "deviceId": 1 }]
   }
 }`,
-				Sample: `{ "id": 70230, "mediaCount": 2, "terminalCount": 4 }`,
+				Sample: `{
+  "id": 70230, "mediaCount": 2, "terminalCount": 4,
+  "name": "课间音乐", "folderId": 1,
+  "playTime": "09:50:00", "endTime": "10:05:00",
+  "seconds": 900, "loopTimes": 0,
+  "volume": 70, "priority": 20, "enabled": true
+}`,
 				Returns: []Field{
-					{Name: "id", Type: "int", Desc: "任务编号。之后改它、启停它、删它都用这个（也可以继续用任务名）"},
+					{Name: "id", Type: "int", Desc: "任务编号。之后改它、启停它、删它都用这个"},
 					{Name: "mediaCount", Type: "int", Desc: "实际写进去几条媒体"},
 					{Name: "terminalCount", Type: "int", Desc: "实际写进去几台终端。⚠ **对一下这个数** —— 给了分区的话它是展开后的终端数，比你传的条目多是正常的"},
+					{Name: "name / folderId", Type: "混合", Desc: "存下来的任务名与所属分组编号。没给 folder 时它是服务端替你挑的那个分组"},
+					{Name: "playTime", Type: "string", Desc: "每天几点开播 HH:MM:SS"},
+					{Name: "endTime", Type: "string", Desc: "几点结束。⚠ **这一项常常是服务端算的** —— 没传 endTime 时按「开播时刻 + 时长」算；改任务时只要动了时长或挪了开播时刻，它也会跟着重算。对一眼这个值，别等到广播比预期多响五分钟才发现"},
+					{Name: "seconds", Type: "int", Desc: "按秒播时的时长。⚠ 与 loopTimes **只有一个非零** —— 库里共用一列，这里替你分开了。都没传时它是按媒体总时长算出来的"},
+					{Name: "loopTimes", Type: "int", Desc: "按遍数播时的循环次数"},
+					{Name: "volume", Type: "int", Desc: "存下来的音量 0~100。没传时是默认的 80"},
+					{Name: "priority", Type: "int", Desc: "存下来的任务级别。⚠ 没传时取的是你能用的**最低**一档（数字最大），会被别的广播压住"},
+					{Name: "enabled", Type: "bool", Desc: "存完是启用还是停用。库里 projectstate 0 才是启用，这里已经翻成正常的布尔"},
 				},
 				Notes: []string{
+					"回执里除了编号，还有**服务端替你定下来的那几项**（endTime / seconds / priority / folderId / volume）—— 这些是你没传时它自己决定的值，建完对一眼比事后查库快。要看全貌用「任务详情」。",
 					"示例里的数字都是**编号**：folder 1 = 任务分组「admin」，media 124/125 = 两条媒体（在「媒体列表」查），terminal 1/2 = 两台终端（在「终端状态」查），zone 1 = 分区「教学楼」。写名字也认，但见下一条。",
 					"⚠ **能用编号就用编号**。终端名和媒体名在库里**没有唯一约束**，是真的可以重名的 —— 重名时接口只能报错让你改用编号，而这个错会在你上线之后才出现。分区名、任务分组名、媒体目录名建的时候就挡了重名，用名字是安全的；作息方案则相反，它根本没有编号，只能用名字。",
 					"⚠ weekdays 留空 = 手动任务，永远不会自动响。想每天响要写 [1,2,3,4,5,6,7]。默认成「每天」太危险 —— 少写一个字段就变成每天全校广播。",
@@ -643,11 +658,24 @@ func groupTask() Group {
 				Fields:   taskUpdateFields(),
 				Body:     `{ "seconds": 900 }`,
 				Examples: taskUpdateExamples(),
-				Sample:   `{ "id": 70230, "mediaCount": 2, "terminalCount": 4 }`,
+				Sample: `{
+  "id": 70230, "mediaCount": 2, "terminalCount": 4,
+  "name": "课间音乐", "folderId": 1,
+  "playTime": "09:50:00", "endTime": "10:05:00",
+  "seconds": 900, "loopTimes": 0,
+  "volume": 70, "priority": 20, "enabled": true
+}`,
 				Returns: []Field{
-					{Name: "id", Type: "int", Desc: "任务编号。就是你要改的那条"},
+					{Name: "id", Type: "int", Desc: "任务编号。就是你刚改的那条"},
 					{Name: "mediaCount", Type: "int", Desc: "改完之后这条任务挂着几条媒体。没动 media 时它是原来的条数，不是 0"},
 					{Name: "terminalCount", Type: "int", Desc: "改完之后挂着几台终端。⚠ **对一下这个数** —— 给了分区的话它是展开后的终端数，比你传的条目多是正常的"},
+					{Name: "name / folderId", Type: "混合", Desc: "改完之后的任务名与所属分组编号"},
+					{Name: "playTime", Type: "string", Desc: "改完之后每天几点开播"},
+					{Name: "endTime", Type: "string", Desc: "⚠ **改完之后的结束时刻，最该对的一项**。传了 seconds 或 playTime 而没传 endTime 时，它是服务端替你重算的 —— 回执不给出来的话，你要等到广播比预期多响五分钟才会发现"},
+					{Name: "seconds", Type: "int", Desc: "改完之后按秒播的时长。⚠ 与 loopTimes 只有一个非零；传了 loopTimes 之后这里会变成 0，那是正常的（换了播法）"},
+					{Name: "loopTimes", Type: "int", Desc: "改完之后的循环遍数"},
+					{Name: "volume / priority", Type: "int", Desc: "改完之后的音量与任务级别（数字小的优先）"},
+					{Name: "enabled", Type: "bool", Desc: "改完之后启没启用"},
 				},
 				Notes: []string{
 					"⚠ 清单类字段（media / terminals / zones）给了就是**整体替换**，不是追加。传 media: [124] 会把原来的清单换成只剩这一条；不传则保持原样。想在原有基础上加一条，先用「任务详情」读出现在有哪些，加上再整体传回来。",
@@ -655,6 +683,7 @@ func groupTask() Group {
 					"⚠ 改了时长（seconds / loopTimes）**或**挪了开播时刻（playTime），结束时刻 endTime 都会跟着重算。这是必要的：只挪开播时刻不动结束时刻，一条 09:50→10:05 的任务传了 playTime: \"10:05\" 就变成 10:05 开始、10:05 结束 —— 一条零长度的任务。不想让它自动算就在同一次请求里自己给一个 endTime。两样都没动（比如只改音量）时 endTime 一动不动。",
 					"按遍数播（loopTimes）算不出确定的秒数：那时挪开播时刻会把原来的播放窗口**整体平移**，长度不变。另外越过午夜一律截到 23:59:59 —— endTime 是个时刻，没有「第二天」。",
 					"⚠ 不传 led 是**保持原样**；要取消字幕得显式传 led: { \"text\": \"\" }。",
+					"回执里带的是**改完之后实际存进去的值**，不是你传的原文。传 {\"seconds\": 900} 回来的 endTime 就是服务端算的那个 —— 这是确认「服务端替我改了什么」最快的办法。",
 					"改之前先调一次「任务详情」（GET /tasks/{ref}）：它返回的形状和这里的入参一致，读出来改两个值再 PUT 回去最稳。",
 				},
 				Danger: true,

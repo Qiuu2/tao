@@ -482,3 +482,46 @@ func TestIDAddressingIsRecommended(t *testing.T) {
 		}
 	}
 }
+
+// 写任务的回执必须把**服务端替调用方定下来的**那些值回出来。
+//
+// # 为什么
+//
+// 用户的原话是「修改任务的响应示例是什么」——他在平台上找不到，
+// 而找到了也看不出什么：原来的回执只有 {id, mediaCount, terminalCount}。
+//
+// 这几个接口有一批字段是服务端自己决定的：没给 endTime 就按开播时刻 + 时长算，
+// 没给时长就按媒体总长算，没给 priority 就取最低一档。其中最要命的是
+// **改时长会连带重算结束时刻** —— 回执不说，调用方要等到某天发现广播
+// 比预期多响了五分钟才知道。
+//
+// 所以回执里必须有它们，示例里也必须看得见。
+func TestTaskWriteReceiptShowsServerDecisions(t *testing.T) {
+	// 服务端可能自作主张的那几项。
+	must := []string{"endTime", "seconds", "priority", "volume", "folderId"}
+	for _, id := range []string{"tasks.create", "tasks.update"} {
+		ep := findEndpoint(t, id)
+		for _, f := range must {
+			if !strings.Contains(ep.Sample, `"`+f+`"`) {
+				t.Errorf("%s 的响应示例里没有 %q —— 它是服务端替调用方定的值，"+
+					"回执不给出来，对方没有别的办法知道", id, f)
+			}
+		}
+		// 逐字段说明也要跟上，而且 endTime 那一条要说清它可能是算出来的。
+		desc := map[string]string{}
+		for _, r := range ep.Returns {
+			for _, name := range strings.Split(r.Name, " / ") {
+				desc[strings.TrimSpace(name)] = r.Desc
+			}
+		}
+		for _, f := range must {
+			if _, ok := desc[f]; !ok {
+				t.Errorf("%s 的响应示例里有 %q，却没有对应的字段说明 ——"+
+					"贴一段 JSON 不解释，等于让人猜", id, f)
+			}
+		}
+		if !strings.Contains(desc["endTime"], "算") {
+			t.Errorf("%s 的 endTime 说明没提它可能是服务端算出来的：%s", id, desc["endTime"])
+		}
+	}
+}

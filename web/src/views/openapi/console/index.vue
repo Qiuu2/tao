@@ -42,7 +42,9 @@
             页发一把密钥，把生成的那串抄给对接方
           </li>
           <li>对接方每个请求带上请求头 <code class="mono">X-API-Key: 那串密钥</code></li>
-          <li>接口地址以 <code class="mono">{{ base }}{{ spec?.prefix }}</code> 开头</li>
+          <li>
+            接口地址以 <code class="mono">{{ base }}{{ spec?.prefix }}</code> 开头
+          </li>
         </ol>
         <!-- 寻址这件事必须说在最前面：媒体名和终端名在库里没有唯一索引，
              是真的可以重名的。照着名字对接的人，会在上线之后才第一次撞上
@@ -51,8 +53,7 @@
           <b>寻址：能用编号就用编号。</b>
           媒体、终端、分区、任务、分组都同时认<b>编号</b>和名字，但只有编号是唯一的 ——
           媒体名和终端名在库里没有唯一约束，真的可以重名，重了接口只能报错要你改用编号。
-          编号从对应的查询接口里拿（终端状态、媒体列表、任务列表）。
-          只有<b>作息方案</b>是例外：它根本没有编号，只能用名字。
+          编号从对应的查询接口里拿（终端状态、媒体列表、任务列表）。 只有<b>作息方案</b>是例外：它根本没有编号，只能用名字。
         </p>
       </div>
       <div class="intro-side">
@@ -125,13 +126,15 @@
           <el-tag size="small" effect="plain" class="right-tag">需要：{{ current.right }}</el-tag>
         </div>
         <h3 class="detail-title">{{ current.summary }}</h3>
-        <p v-if="current.desc" class="detail-desc">{{ current.desc }}</p>
+        <!-- 目录里的说明和 Notes 用的是同一套 **加粗** 记法，
+             这里也得走 RichText —— 否则用户看到的是一串字面星号。 -->
+        <p v-if="current.desc" class="detail-desc"><RichText :text="current.desc" /></p>
 
         <!-- 全功能那一组要把「跟着界面走」说在前面，别让人把集成建在会变的路径上 -->
         <el-alert
           v-if="current.freeform"
           type="info"
-            :closable="false"
+          :closable="false"
           class="note"
           title="这是「全部功能接口」里的一条 —— 界面自己用的那套接口"
           description="它覆盖到这个页面功能的每一个动作，但参数就是界面在用的那套，这里没有逐条抄（抄了势必抄错、也跟不上改动）。要看确切参数，用浏览器开发者工具看一次界面发的请求最准。另外这一组跟着界面走，页面改版时可能变；能用「常用接口」解决的，优先用那边。"
@@ -170,12 +173,29 @@
           </el-table>
         </template>
 
-        <!-- 请求体字段 -->
+        <!-- 请求体字段。
+             字段多的接口（修改任务 30 个）默认只摊开前 8 行 —— 一张 30 行的表
+             会把它后面的「响应示例」推到两屏以外，等于那一节不存在。
+             想改时长的人要的是上面那排场景，不是把 30 行读一遍。 -->
         <template v-if="current.fields?.length">
-          <h4 class="sec">请求体字段</h4>
-          <el-table :data="current.fields" size="small" class="param-table">
+          <h4 class="sec">
+            请求体字段
+            <el-button
+              v-if="current.fields.length > FIELD_PEEK"
+              link
+              type="primary"
+              size="small"
+              class="sec-more"
+              @click="allFields = !allFields"
+            >
+              {{ allFields ? "只看前 " + FIELD_PEEK + " 个" : "展开全部 " + current.fields.length + " 个字段" }}
+            </el-button>
+          </h4>
+          <el-table :data="shownFields" size="small" class="param-table">
             <el-table-column label="名称" width="150">
-              <template #default="{ row }"><span class="mono">{{ row.name }}</span></template>
+              <template #default="{ row }"
+                ><span class="mono">{{ row.name }}</span></template
+              >
             </el-table-column>
             <el-table-column prop="type" label="类型" width="90" />
             <el-table-column label="必填" width="70">
@@ -188,6 +208,38 @@
               <template #default="{ row }"><RichText :text="row.desc" /></template>
             </el-table-column>
           </el-table>
+          <div v-if="!allFields && current.fields.length > FIELD_PEEK" class="more-hint">
+            还有 {{ current.fields.length - FIELD_PEEK }} 个字段没显示 ——
+            <el-link type="primary" :underline="false" @click="allFields = true">全部展开</el-link>
+          </div>
+        </template>
+
+        <!-- 响应示例 + 逐字段说明。
+             放在「试一试」**之前**：「我会拿到什么」是按发送之前的问题，
+             放在发送按钮下面等于要人先发一次才知道该期待什么。
+             修改任务这一条尤其明显 —— 它上面有 30 行字段表和十个场景，
+             示例落在三屏以外，等于不存在。 -->
+        <template v-if="current.sample">
+          <h4 class="sec">响应示例（data 部分）</h4>
+          <pre class="mono sample">{{ current.sample }}</pre>
+        </template>
+
+        <!-- 光有示例不够：示例里每个值是什么意思，必须写出来。
+             `"priority": 8` 的 8 是什么？数字大就优先吗（反过来）？
+             猜错了不报错，只会在错误的那天广播。 -->
+        <template v-if="current.returns?.length">
+          <h4 class="sec">响应字段说明</h4>
+          <el-table :data="current.returns" size="small" class="param-table">
+            <el-table-column label="字段" width="210">
+              <template #default="{ row }"
+                ><span class="mono">{{ row.name }}</span></template
+              >
+            </el-table-column>
+            <el-table-column prop="type" label="类型" width="80" />
+            <el-table-column label="是什么" min-width="320">
+              <template #default="{ row }"><RichText :text="row.desc" /></template>
+            </el-table-column>
+          </el-table>
         </template>
 
         <!-- 试一试 -->
@@ -197,7 +249,12 @@
                路径里的 {id} 之类要自己换成真值，query 也直接写在后面。 -->
           <div v-if="current.freeform" class="try-row">
             <label class="try-label">请求路径</label>
-            <el-input v-model="freePath" size="small" class="mono" placeholder="/api/... 路径里的 {id} 换成真值，query 直接写在后面" />
+            <el-input
+              v-model="freePath"
+              size="small"
+              class="mono"
+              placeholder="/api/... 路径里的 {id} 换成真值，query 直接写在后面"
+            />
           </div>
 
           <div v-else-if="current.params?.length" class="try-params">
@@ -265,12 +322,7 @@
           </div>
 
           <div class="try-bar">
-            <el-button
-              :type="current.danger ? 'danger' : 'primary'"
-              :loading="sending"
-              :disabled="!apiKey"
-              @click="send"
-            >
+            <el-button :type="current.danger ? 'danger' : 'primary'" :loading="sending" :disabled="!apiKey" @click="send">
               {{ current.danger ? "执行（会真的生效）" : "发送请求" }}
             </el-button>
             <span v-if="!apiKey" class="muted">先在上面粘一把密钥</span>
@@ -281,9 +333,7 @@
 
           <div v-if="resp" class="resp">
             <div class="resp-head">
-              <el-tag :type="resp.ok ? 'success' : 'danger'" size="small" effect="dark">
-                code {{ resp.code }}
-              </el-tag>
+              <el-tag :type="resp.ok ? 'success' : 'danger'" size="small" effect="dark"> code {{ resp.code }} </el-tag>
               <span class="muted">{{ resp.ms }} ms</span>
               <span v-if="resp.msg" class="resp-msg" :class="{ bad: !resp.ok }">{{ resp.msg }}</span>
             </div>
@@ -291,28 +341,6 @@
             <div v-if="!resp.ok" class="resp-help">{{ codeHelp(resp.code) }}</div>
           </div>
         </div>
-
-        <!-- 响应示例 + 逐字段说明 -->
-        <template v-if="current.sample">
-          <h4 class="sec">响应示例（data 部分）</h4>
-          <pre class="mono sample">{{ current.sample }}</pre>
-        </template>
-
-        <!-- 光有示例不够：示例里每个值是什么意思，必须写出来。
-             `"priority": 8` 的 8 是什么？数字大就优先吗（反过来）？
-             猜错了不报错，只会在错误的那天广播。 -->
-        <template v-if="current.returns?.length">
-          <h4 class="sec">响应字段说明</h4>
-          <el-table :data="current.returns" size="small" class="param-table">
-            <el-table-column label="字段" width="210">
-              <template #default="{ row }"><span class="mono">{{ row.name }}</span></template>
-            </el-table-column>
-            <el-table-column prop="type" label="类型" width="80" />
-            <el-table-column label="是什么" min-width="320">
-              <template #default="{ row }"><RichText :text="row.desc" /></template>
-            </el-table-column>
-          </el-table>
-        </template>
       </div>
 
       <div class="card detail placeholder" v-else>从左边挑一个接口</div>
@@ -453,9 +481,18 @@ const select = (ep: SpecEndpoint, group?: SpecGroup) => {
   bodyText.value = ep.body ?? "";
   pickedCase.value = "";
   pickedDesc.value = "";
+  allFields.value = false;
   // 没有逐参数说明的：路径本身可编辑，预填原样（含 {id} 这类占位）
   freePath.value = currentPrefix.value + ep.path;
 };
+
+/** 字段表默认摊开几行。超过就折起来，留一个带总数的按钮。 */
+const FIELD_PEEK = 8;
+const allFields = ref(false);
+const shownFields = computed(() => {
+  const f = current.value?.fields ?? [];
+  return allFields.value ? f : f.slice(0, FIELD_PEEK);
+});
 
 /** 选中的场景示例（只是个高亮标记，请求体仍然可以随手改）。 */
 const pickedCase = ref("");
@@ -879,6 +916,15 @@ onMounted(async () => {
     width: 110px;
     font-size: 13px;
     text-align: right;
+  }
+  .sec-more {
+    margin-left: 10px;
+    font-weight: normal;
+  }
+  .more-hint {
+    margin-top: 6px;
+    font-size: 12px;
+    color: var(--el-text-color-secondary);
   }
   .cases {
     margin-bottom: 12px;
