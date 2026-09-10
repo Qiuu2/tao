@@ -110,11 +110,14 @@ export interface TaskDetail {
  * LED 字幕子任务（:80 表单里的「led播放 / Led字幕 / Led速度」）。
  *
  * ⚠ 它不是一个开关列，而是另建一条 tasktype = 30 的任务，
- *   sec_task_id 指回主任务，除任务名外整行照抄主任务。
+ *   sec_task_id 指回主任务，整行照抄主任务（名字也一样）。
  */
 export interface TaskLEDSub {
-  /** 留空则与主任务同名 */
-  name: string;
+  /**
+   * 子任务名。**只在读的时候有**：保存时服务端一律填成主任务名，
+   * 传什么都不算数，所以表单上没有这一栏。
+   */
+  name?: string;
   text: string;
   speed: number;
   ledmode: number;

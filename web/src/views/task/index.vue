@@ -471,22 +471,16 @@
 
         <template v-if="ledOn">
           <el-divider content-position="left">{{ $t("task.ledSubtitle") }}</el-divider>
-          <!-- 名称与速度并成一行，速度排在字幕上面 -->
-          <el-row :gutter="16">
-            <el-col :span="12">
-              <el-form-item :label="$t('task.ledTaskName')">
-                <el-input v-model="dlg.form.led.name" maxlength="8" show-word-limit :placeholder="$t('task.sameAsTask')" />
-              </el-form-item>
-            </el-col>
-            <el-col :span="12">
-              <el-form-item :label="$t('task.ledSpeed')">
-                <el-select v-model="dlg.form.led.speed" style="width: 110px">
-                  <el-option v-for="n in [0, 1, 2, 3, 4, 5]" :key="n" :label="$t('task.levelN', { n })" :value="n" />
-                </el-select>
-                <span class="form-tip">{{ $t("task.levels0to5") }}</span>
-              </el-form-item>
-            </el-col>
-          </el-row>
+          <!--
+            没有「LED任务名称」这一栏：LED 子任务跟主任务同名，由服务端填。
+            两个名字分开维护只会让人对着两处一样的东西发愣。
+          -->
+          <el-form-item :label="$t('task.ledSpeed')">
+            <el-select v-model="dlg.form.led.speed" style="width: 110px">
+              <el-option v-for="n in [0, 1, 2, 3, 4, 5]" :key="n" :label="$t('task.levelN', { n })" :value="n" />
+            </el-select>
+            <span class="form-tip">{{ $t("task.levels0to5") }}</span>
+          </el-form-item>
           <el-form-item :label="$t('task.ledSubtitle')" required>
             <el-input
               v-model="dlg.form.led.text"
@@ -935,7 +929,8 @@ const emptyForm = () => ({
   },
   power: { prepower: 0, datasendmodel: 0 },
   // LED 字幕子任务。ledOn 关掉时不提交这一段（后端据此删掉已有的子任务）。
-  led: { name: "", text: "", speed: 0, ledmode: 0 }
+  // 没有 name：子任务跟主任务同名，服务端自己填。
+  led: { text: "", speed: 0, ledmode: 0 }
 });
 
 const dlg = reactive({
@@ -1090,7 +1085,6 @@ const openEdit = async (row: TaskRow) => {
       },
       power: { prepower: data.prepower, datasendmodel: data.datasendmodel },
       led: {
-        name: data.led?.name ?? "",
         text: data.led?.text ?? "",
         speed: data.led?.speed ?? 0,
         ledmode: data.led?.ledmode ?? 0
@@ -1140,7 +1134,7 @@ const submit = async () => {
     },
     // 关掉 led播放 就传 null —— 服务端据此删掉已有的 LED 子任务
     // 不带 devices：LED 屏清单已经不在表单上了，服务端见 devices 缺省就保留原有绑定
-    led: ledOn.value ? { ...f.led, name: f.led.name.trim(), text: f.led.text.trim() } : null,
+    led: ledOn.value ? { ...f.led, text: f.led.text.trim() } : null,
     // sort 按数组下标给，服务端还会再规整一次
     media: selectedMediaIds.value.map((id, i) => ({ mediaId: id, sort: i })),
     terminals: selectedTerminalIds.value.map(id => ({

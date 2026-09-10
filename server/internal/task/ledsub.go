@@ -62,16 +62,17 @@ func NormalizeLEDText(s string) string {
 }
 
 func (in *LEDSub) normalize(mainName string) error {
-	in.Name = strings.TrimSpace(in.Name)
+	// LED 子任务跟主任务同名，调用方传什么都不算数 ——
+	// 表单上已经没有这一栏了，两个名字分开维护只会让人对着两处一样的东西发愣。
+	in.Name = mainName
 	in.Text = NormalizeLEDText(in.Text)
-	if in.Name == "" {
-		in.Name = mainName
-	}
+	// 下面两条是冲着**主任务名**去的了。措辞也照这个改 ——
+	// 说「LED 任务名称」的话，人在表单上根本找不到那一栏，不知道该改哪儿。
 	if len(in.Name) > 255 {
-		return fmt.Errorf("LED 任务名称过长：按 UTF-8 计 %d 字节，上限 255 字节", len(in.Name))
+		return fmt.Errorf("任务名称过长：按 UTF-8 计 %d 字节，上限 255 字节（LED 子任务要跟着用这个名字）", len(in.Name))
 	}
 	if strings.ContainsAny(in.Name, "?&=") {
-		return fmt.Errorf("LED 任务名称不能包含 ? & = 这三个字符")
+		return fmt.Errorf("勾了 led播放 时，任务名称不能包含 ? & = 这三个字符（LED 子任务要跟着用这个名字）")
 	}
 	if len(in.Text) > ledTextLimit {
 		return fmt.Errorf("Led字幕过长：按 UTF-8 计 %d 字节，上限 %d 字节（约 341 个汉字）",
