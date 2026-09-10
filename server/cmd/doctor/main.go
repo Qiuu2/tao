@@ -18,6 +18,9 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+	"unicode"
+
+	"htweb/internal/i18n"
 
 	_ "github.com/go-sql-driver/mysql"
 )
@@ -53,6 +56,7 @@ func main() {
 	checkScale(db)
 	checkMediaFiles(db, *root)
 	checkDirtyData(db)
+	checkI18nCoverage(db)
 
 	fmt.Println("\n================ 体检结束 ================")
 }
@@ -283,6 +287,57 @@ func checkDirtyData(db *sql.DB) {
 			fmt.Sprintf("系统预置文件夹(id 1~9)存在数: %d/9", sysFolders),
 			"→ 缺失会影响 BR-21 的保护逻辑与树渲染")
 	}
+}
+
+// checkI18nCoverage 看库里那些**会显示给人看的名字**在英文字典里有没有对应。
+//
+// # 为什么要在这里查
+//
+// 终端型号是从 terminaltype 表读出来的（terminal.typeid → terminaltype.id → name），
+// 不是代码里写死的。字典用中文原文当键，所以现网加一行新型号、或者把某一行改了名，
+// 那一条就查不到英文了 —— 而**这件事不会报错**，英文界面上只是冒出一句中文。
+// 单元测试查不了（要连库），只能在这里查。
+//
+// 名字本来就不含中文的（"MP3"）跳过：它中英一样，没什么可翻的。
+func checkI18nCoverage(db *sql.DB) {
+	section("英文版：库里的展示词汇有没有对应译文")
+
+	rs, err := db.Query(`SELECT DISTINCT COALESCE(name,'') FROM terminaltype WHERE COALESCE(name,'') <> ''`)
+	if err != nil {
+		warn("查询终端型号", err)
+		return
+	}
+	defer rs.Close()
+
+	var total int
+	var missing []string
+	for rs.Next() {
+		var name string
+		if err := rs.Scan(&name); err != nil {
+			warn("读取终端型号", err)
+			return
+		}
+		if !hasHan(name) {
+			continue // "MP3" 这种本来就是英文
+		}
+		total++
+		if i18n.T(i18n.EN, name) == name {
+			missing = append(missing, name)
+		}
+	}
+	status(len(missing) == 0,
+		fmt.Sprintf("终端型号(terminaltype.name)有译文: %d/%d", total-len(missing), total),
+		"→ 缺的这几个在英文界面上会显示中文：\n        "+strings.Join(missing, "、")+
+			"\n      补到 server/internal/i18n/dict.go 的 dataDict 里")
+}
+
+func hasHan(s string) bool {
+	for _, r := range s {
+		if unicode.Is(unicode.Han, r) {
+			return true
+		}
+	}
+	return false
 }
 
 // ---------- 输出小工具 ----------
