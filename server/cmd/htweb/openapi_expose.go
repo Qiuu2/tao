@@ -378,6 +378,7 @@ var exposedGroups = []exposedGroup{
 		Desc: "校时、NTP/GPS、服务器参数。⚠ 重启、换版本、恢复出厂**不开放**给密钥，见文档。",
 		APIs: []exposedAPI{
 			{"GET /api/time", "服务器时间与时区", "登录即可", false},
+			{"GET /api/time/now", "只取当前服务器时间", "登录即可", false},
 			{"GET /api/time/terminals", "可校时的终端", "登录即可", false},
 			{"PUT /api/time/ntp", "设置 NTP 校时", "serverpriv", true},
 			{"PUT /api/time/gps", "设置 GPS 校时终端", "serverpriv", true},

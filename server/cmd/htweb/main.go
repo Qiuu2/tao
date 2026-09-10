@@ -628,6 +628,9 @@ func (a *app) routes() http.Handler {
 	// NTP 与 GPS 校时终端是服务器级配置，按 serverpriv；
 	// 给终端下发校时指令是终端操作，按 terminalpriv。
 	mux.HandleFunc("GET /api/time", req(a.handleTimeGet))
+	// 顶栏那个走秒的钟每 3 分钟同步一次。单开一条轻接口，不复用 GET /api/time ——
+	// 后者要探系统时钟能力（可能 fork sudo）、查两次库，每 3 分钟付一次不值当。
+	mux.HandleFunc("GET /api/time/now", req(a.handleTimeNow))
 	mux.HandleFunc("GET /api/time/terminals", req(a.handleTimeTerminals))
 	mux.HandleFunc("PUT /api/time/ntp", srv(a.handleTimeSetNTP))
 	mux.HandleFunc("PUT /api/time/gps", srv(a.handleTimeSetGPS))

@@ -184,6 +184,7 @@ export default {
     newShortcut: "New shortcut",
     added: "Added",
     startSent: "Start command sent",
+    starting: "Starting",
     stopSent: "Stop command sent",
     shortcutLabelRequired: "Enter a label",
     memory: "Memory",
@@ -1877,6 +1878,9 @@ export default {
     logout: "Sign out",
     logoutConfirm: "Sign out of this account?",
     logoutDone: "Signed out",
-    searchMenu: "Search menu"
+    searchMenu: "Search menu",
+    serverTimeTip: "Server time (not this computer's)",
+    serverTimeTipZone: "Server time (not this computer's), time zone {zone}",
+    lastSync: "Last synced at {time}"
   }
 };

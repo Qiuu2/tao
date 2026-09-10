@@ -452,6 +452,14 @@ func (a *app) handleTimeGet(w http.ResponseWriter, r *http.Request) {
 	httpx.OK(w, st)
 }
 
+// handleTimeNow 只回一个当前服务器时间，给顶栏那个走秒的钟用。
+//
+// 不走 failTime：这条路上没有可失败的东西（不查库、不 fork），
+// 有个 error 分支反而让人以为它会失败。
+func (a *app) handleTimeNow(w http.ResponseWriter, r *http.Request) {
+	httpx.OK(w, a.times.Now())
+}
+
 func (a *app) handleTimeTerminals(w http.ResponseWriter, r *http.Request) {
 	list, err := a.times.Terminals(r.Context(), r.URL.Query().Get("keyword"))
 	if err != nil {

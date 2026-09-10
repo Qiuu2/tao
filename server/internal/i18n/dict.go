@@ -937,6 +937,7 @@ var codeDict = map[string]string{
 	"声场分区里的终端":                "Terminals in a sound-field zone",
 	"恢复前的结构比对":                "Schema comparison before restoring",
 	"服务器时间与时区":                "Server time and time zone",
+	"只取当前服务器时间":               "Just the current server time",
 	"目录里有哪些终端":                "Which terminals a folder holds",
 	"看有没有日期重叠":                "Check for overlapping dates",
 	"给方案加一条打铃":                "Add a bell entry to a schedule",

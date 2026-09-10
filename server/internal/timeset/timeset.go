@@ -364,3 +364,34 @@ func (s *Service) SyncTargets(ctx context.Context, ids []int64) ([]int64, error)
 	}
 	return out, nil
 }
+
+// Now 是**只取当前服务器时间**的那一条，给顶栏那个走秒的钟用。
+//
+// 与 Get 分开是因为 Get 太重：它要探系统时钟能力（读 /proc、试 sudo）、
+// 查 serverbaseparam、再问一次数据库的 NOW()。顶栏每 3 分钟同步一次，
+// 每次都付那套代价没有道理，而且探 sudo 那一步在没配免密的机器上还会 fork 一个进程。
+//
+// 这里不查库：**要的是这台 Web 服务器的时间**。数据库和它对不对得上是
+// 「时间设置」那一页的事（State.DBTimeDiff），顶栏那个钟只负责报一个时间。
+type NowState struct {
+	// ServerTime 是给人看的字面值，已按服务器本地时区格式化。
+	ServerTime string `json:"serverTime"`
+	// EpochMS 是同一时刻的毫秒时间戳。前端拿它和自己的 Date.now() 求差，
+	// 之后本地走秒 —— 这样浏览器的钟不准也不影响显示。
+	EpochMS int64 `json:"epochMs"`
+	// Timezone / OffsetMinutes 是服务器时区，前端不做任何换算，
+	// 只在鼠标悬停时说明「这是服务器时间，东八区」。
+	Timezone      string `json:"timezone"`
+	OffsetMinutes int    `json:"offsetMinutes"`
+}
+
+func (s *Service) Now() NowState {
+	now := time.Now()
+	zone, offset := now.Zone()
+	return NowState{
+		ServerTime:    now.Format("2006-01-02 15:04:05"),
+		EpochMS:       now.UnixMilli(),
+		Timezone:      zone,
+		OffsetMinutes: offset / 60,
+	}
+}

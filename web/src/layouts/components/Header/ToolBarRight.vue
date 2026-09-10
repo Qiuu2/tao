@@ -1,5 +1,7 @@
 <template>
   <div class="tool-bar-ri">
+    <!-- 服务器时钟摆在图标组左边：它是一直在动的东西，挨着按钮会抢注意力 -->
+    <ServerClock />
     <div class="header-icon">
       <AssemblySize id="assemblySize" />
       <Language id="language" />
@@ -22,6 +24,7 @@ import Avatar from "./components/Avatar.vue";
 import Fullscreen from "./components/Fullscreen.vue";
 import Language from "./components/Language.vue";
 import SearchMenu from "./components/SearchMenu.vue";
+import ServerClock from "./components/ServerClock.vue";
 import ThemeSetting from "./components/ThemeSetting.vue";
 
 const userStore = useUserStore();

@@ -209,6 +209,23 @@ export interface TimeTerminal {
 }
 
 export const getTimeStateApi = () => http.get<TimeState>(PORT1 + `/api/time`, {}, { loading: false });
+
+/**
+ * 顶栏那个走秒的钟每 3 分钟同步一次用的轻接口。
+ *
+ * 与 getTimeStateApi 分开：后者要探系统时钟能力（可能 fork sudo）、查两次库，
+ * 每 3 分钟付一次那个代价没有道理。
+ */
+export interface ServerNow {
+  /** 服务器本地时区下的字面值，YYYY-MM-DD HH:mm:ss */
+  serverTime: string;
+  /** 同一时刻的毫秒时间戳。拿它和本地 Date.now() 求差，之后本地走秒 */
+  epochMs: number;
+  timezone: string;
+  offsetMinutes: number;
+}
+
+export const getServerNowApi = () => http.get<ServerNow>(PORT1 + `/api/time/now`, {}, { loading: false });
 export const getTimeTerminalsApi = (keyword = "") =>
   http.get<TimeTerminal[]>(PORT1 + `/api/time/terminals`, { keyword }, { loading: false });
 export const setNtpApi = (ntpserver: string) =>

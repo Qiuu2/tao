@@ -116,11 +116,25 @@
           <div v-else class="task-grid">
             <div v-for="t in cfg.quickTasks" :key="t.taskId" class="task-card">
               <div class="task-name" :class="{ danger: t.missing }">{{ t.taskName }}</div>
-              <div class="task-sub">{{ t.missing ? `ID ${t.taskId}` : `${t.playtime} · ${t.stateText}` }}</div>
+              <div class="task-sub">
+                <template v-if="t.missing">ID {{ t.taskId }}</template>
+                <template v-else>
+                  {{ t.playtime }} ·
+                  <span :class="['task-state', { running: isRunning(t) }]">
+                    <i v-if="isRunning(t)" class="run-dot" />{{ stateTextOf(t) }}
+                  </span>
+                </template>
+              </div>
               <div class="task-ops">
-                <el-button size="small" type="success" :disabled="t.missing" @click="runTask(t.taskId)">{{
-                  $t("dash.run")
-                }}</el-button>
+                <el-button
+                  size="small"
+                  type="success"
+                  :disabled="t.missing"
+                  :loading="pendingStart.has(t.taskId)"
+                  @click="runTask(t.taskId)"
+                >
+                  {{ $t("dash.run") }}
+                </el-button>
                 <el-button size="small" type="danger" :disabled="t.missing" @click="stopTask(t.taskId)">{{
                   $t("dash.stop")
                 }}</el-button>
@@ -295,7 +309,6 @@
         <el-button type="primary" :loading="qd.busy" @click="saveQuick">{{ $t("common.confirm") }}</el-button>
       </template>
     </el-dialog>
-
   </div>
 </template>
 
@@ -474,12 +487,52 @@ const loadFolders = async () => {
   }
 };
 
-/* ---------------- 任务执行 ---------------- */
+/* ---------------- 任务执行与状态轮询 ----------------
+
+  `task.state` 归后台 C 服务所有 —— 界面只发命令、只读状态，从不自己写。
+  这带来一个时间差：点「执行」之后到 state 真的变成 1，中间隔着
+  C 服务下一次扫表，快的一两秒，慢的说不准。
+
+  所以两件事分开做：
+
+  1. **每 3 秒拉一次真实状态**（只取 quickTasks 这一段）。
+     这样不光自己点的能看见，别人点的、作息方案到点自动跑的、
+     助手下发的，也一样会在卡片上出现 —— 「是不是在执行中」问的是任务本身，
+     不是「我刚才那一下成没成」。
+  2. **点完立刻标一个「启动中」**，等第一次轮询把真状态带回来再让位。
+     没有这一步的话，点完的头三秒卡片纹丝不动，人会以为没点上。
+
+  ⚠ 这个「启动中」有兜底：15 秒内 C 服务还没把它变成执行中，就把标记撤掉，
+  让卡片回到真实状态。停在一个「启动中」上不动，比直接显示「准备」更误导。
+*/
+
+/** task.state：1 = 执行中，3 = 启动中。口径与后端 stateText 一致 */
+const STATE_RUNNING = 1;
+const STATE_STARTING = 3;
+/** 轮询间隔 */
+const QUICK_POLL_MS = 3000;
+/** 「启动中」这个本地标记最多挂多久 */
+const PENDING_MAX_MS = 15000;
+
+/** taskId -> 点下「执行」的本地时刻 */
+const pendingStart = ref(new Map<number, number>());
+
+const isRunning = (row: { state: number; taskId: number }) =>
+  row.state === STATE_RUNNING || row.state === STATE_STARTING || pendingStart.value.has(row.taskId);
+
+// ⚠ 形参不能叫 t —— 这个文件里 t 是 i18n 的翻译函数，叫 t 就把它遮掉了，
+// 下面那句 t("dash.starting") 会变成「拿任务对象当函数调」。
+const stateTextOf = (row: { state: number; taskId: number; stateText: string }) =>
+  pendingStart.value.has(row.taskId) && row.state !== STATE_RUNNING ? t("dash.starting") : row.stateText;
 
 const runTask = async (id: number) => {
   const { data } = await controlTaskApi("start", [id]);
-  if (data.blocked?.length) ElMessage.warning(data.blocked[0].detail);
-  else ElMessage.success(t("dash.startSent"));
+  if (data.blocked?.length) {
+    ElMessage.warning(data.blocked[0].detail);
+    return; // 被挡下了就不该显示「启动中」——它根本没启动
+  }
+  ElMessage.success(t("dash.startSent"));
+  pendingStart.value.set(id, Date.now());
   refreshLight();
 };
 
@@ -487,13 +540,40 @@ const stopTask = async (id: number) => {
   const { data } = await controlTaskApi("stop", [id]);
   if (data.blocked?.length) ElMessage.warning(data.blocked[0].detail);
   else ElMessage.success(t("dash.stopSent"));
+  // 停止不标本地状态：它没有「启动中」那种中间态，等轮询把真状态带回来就行
+  pendingStart.value.delete(id);
   refreshLight();
 };
 
 const refreshLight = async () => {
   const { data } = await getDashConfigApi();
   cfg.value = data;
+  syncPending();
   loadTasks();
+};
+
+/** 只刷快捷任务那一段。轮询走这条，不动 shortcuts —— 那边可能正开着编辑模式 */
+const pollQuickTasks = async () => {
+  if (!cfg.value?.quickTasks.length) return;
+  try {
+    const { data } = await getDashConfigApi();
+    if (cfg.value) cfg.value.quickTasks = data.quickTasks;
+    syncPending();
+  } catch {
+    // 拉不到就保持上一次的显示，下一轮再试。3 秒一次，不值得为一次失败弹提示
+  }
+};
+
+/** 真状态到位、或者等太久了，就把本地那个「启动中」标记撤掉 */
+const syncPending = () => {
+  if (!pendingStart.value.size) return;
+  const now = Date.now();
+  const next = new Map(pendingStart.value);
+  for (const [id, at] of pendingStart.value) {
+    const row = cfg.value?.quickTasks.find(q => q.taskId === id);
+    if (!row || row.state === STATE_RUNNING || now - at > PENDING_MAX_MS) next.delete(id);
+  }
+  pendingStart.value = next;
 };
 
 /* ---------------- 快捷入口 ---------------- */
@@ -628,6 +708,7 @@ const stopEmergency = (slot: EmergencySlot) => sendEmergency(slot, true);
 /* ---------------- 生命周期 ---------------- */
 
 let timer: number | undefined;
+let quickTimer: number | undefined;
 
 onMounted(async () => {
   syncTheme();
@@ -635,9 +716,14 @@ onMounted(async () => {
   loadPerf();
   // CPU 与网速都是两次采样的差值，第一次没有基准，5 秒后第二次才有数
   timer = window.setInterval(loadPerf, 5000);
+  // 快捷任务的执行状态。这一条查的是 task 表里那几个 id，很轻
+  quickTimer = window.setInterval(pollQuickTasks, QUICK_POLL_MS);
 });
 
-onUnmounted(() => timer && window.clearInterval(timer));
+onUnmounted(() => {
+  if (timer) window.clearInterval(timer);
+  if (quickTimer) window.clearInterval(quickTimer);
+});
 </script>
 
 <style scoped lang="scss">
@@ -865,6 +951,40 @@ onUnmounted(() => timer && window.clearInterval(timer));
   margin: 2px 0 8px;
   font-size: 12px;
   color: var(--el-text-color-secondary);
+}
+
+/*
+  执行中的状态字上色 + 一个会呼吸的圆点。
+  ⚠ 颜色不单独承载信息：字本身就写着「执行中」，圆点只是让人一眼扫到。
+*/
+.task-state.running {
+  font-weight: 600;
+  color: var(--el-color-success);
+}
+.run-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-right: 4px;
+  vertical-align: 1px;
+  background: var(--el-color-success);
+  border-radius: 50%;
+  animation: run-pulse 1.4s ease-in-out infinite;
+}
+@keyframes run-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.25;
+  }
+}
+/* 跟随系统「减少动态效果」设置：闪烁对前庭敏感的人不友好 */
+@media (prefers-reduced-motion: reduce) {
+  .run-dot {
+    animation: none;
+  }
 }
 
 /* 紧急广播 */

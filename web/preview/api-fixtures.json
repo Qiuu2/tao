@@ -738,7 +738,32 @@
   "msg": "ok",
   "data": {
    "shortcuts": [],
-   "quickTasks": [],
+   "quickTasks": [
+    {
+     "taskId": 1009,
+     "taskName": "消防疏散演练",
+     "playtime": "15:00:00",
+     "state": 0,
+     "stateText": "准备",
+     "missing": false
+    },
+    {
+     "taskId": 1012,
+     "taskName": "晚自习预备",
+     "playtime": "18:50:00",
+     "state": 1,
+     "stateText": "执行中",
+     "missing": false
+    },
+    {
+     "taskId": 1010,
+     "taskName": "课间轻音乐",
+     "playtime": "09:45:00",
+     "state": 0,
+     "stateText": "准备",
+     "missing": false
+    }
+   ],
    "emergency": [
     {
      "key": "quake",
@@ -15206,5 +15231,15 @@
     "isAdmin": false
    }
   ]
+ },
+ "GET /api/time/now": {
+  "code": 200,
+  "msg": "ok",
+  "data": {
+   "serverTime": "2026-09-10 16:36:46",
+   "epochMs": 1789029406000,
+   "timezone": "CST",
+   "offsetMinutes": 480
+  }
  }
 }

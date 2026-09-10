@@ -190,6 +190,7 @@ export default {
     newShortcut: "新增快捷入口",
     added: "已添加",
     startSent: "已下发启动",
+    starting: "启动中",
     stopSent: "已下发停止",
     shortcutLabelRequired: "请填写显示名称",
     memory: "内存",
@@ -1883,6 +1884,9 @@ export default {
     logout: "退出登录",
     logoutConfirm: "确定要退出登录吗？",
     logoutDone: "退出登录成功！",
-    searchMenu: "菜单搜索"
+    searchMenu: "菜单搜索",
+    serverTimeTip: "服务器时间（不是本机时间）",
+    serverTimeTipZone: "服务器时间（不是本机时间），时区 {zone}",
+    lastSync: "上次对时：{time}"
   }
 };
