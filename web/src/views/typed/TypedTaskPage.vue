@@ -451,23 +451,17 @@
         <!-- ---------- led字幕 ---------- -->
         <template v-if="kind === 'led'">
           <el-divider content-position="left">{{ $t("task.ledSubtitle") }}</el-divider>
-          <el-row :gutter="16">
-            <el-col :span="12">
-              <el-form-item :label="$t('typed.taskFolder')" required>
-                <el-select v-model="form.folderId" class="fill" :placeholder="$t('typed.pickFolder')">
-                  <el-option v-for="f in ledFolders" :key="f.id" :label="f.name" :value="f.id" />
-                </el-select>
-              </el-form-item>
-            </el-col>
-            <el-col :span="12">
-              <el-form-item :label="$t('task.ledSpeed')">
-                <el-select v-model="form.led.speed" style="width: 110px">
-                  <el-option v-for="n in [0, 1, 2, 3, 4, 5]" :key="n" :label="$t('task.levelN', { n })" :value="n" />
-                </el-select>
-                <span class="tip">{{ $t("task.levels0to5") }}</span>
-              </el-form-item>
-            </el-col>
-          </el-row>
+          <!--
+            没有「任务目录」这一栏：照 ok112 —— 它的 ledtaskadd.php 是从地址栏
+            接 folderid 的（`ledtaskadd.php?folderid=…`），表单上从来没有这个选择框。
+            新建就落在**页头正选着的那个目录**里，修改则留在原处。
+          -->
+          <el-form-item :label="$t('task.ledSpeed')">
+            <el-select v-model="form.led.speed" style="width: 110px">
+              <el-option v-for="n in [0, 1, 2, 3, 4, 5]" :key="n" :label="$t('task.levelN', { n })" :value="n" />
+            </el-select>
+            <span class="tip">{{ $t("task.levels0to5") }}</span>
+          </el-form-item>
           <el-form-item label-width="0" required>
             <el-input
               v-model="form.led.text"
@@ -975,6 +969,12 @@ const resetForm = () => {
 };
 
 const openCreate = async () => {
+  // led播放 的任务必须落在某个目录里（后端也这么校验）。页头停在「全部」上时
+  // 没有「当前目录」可用 —— 与其替人挑一个（多半不是他想要的那个），
+  // 不如说清楚要先选一个。表单上已经没有这一栏了，选目录只在页头。
+  if (props.kind === "led" && !initParam.folderId) {
+    return ElMessage.warning(t("typed.pickFolderFirst"));
+  }
   resetForm();
   clearErr();
   const today = new Date().toISOString().slice(0, 10);
@@ -988,7 +988,7 @@ const openCreate = async () => {
   await loadSources();
   if (props.kind === "led") {
     await loadLED();
-    form.folderId = initParam.folderId || ledFolders.value[0]?.id || 0;
+    form.folderId = initParam.folderId;
   }
   if (props.kind !== "amplifier") form.prepower = 120;
   selectedTerminals.value = [];

@@ -758,7 +758,7 @@ export default {
     copyFolder: "Copy folder",
     sourceFolder: "Source folder",
     targetFolder: "Target folder",
-    pickFolder: "Choose a task folder",
+    pickFolderFirst: "Pick an LED task folder above first — the new task goes into it",
     copyFolderNote: "Every task in the source folder is copied to the target folder, with “(copy)” appended to the name.",
     sameFolder: "The source and target folders cannot be the same",
     pickBothFolders: "Choose both a source and a target folder",

@@ -766,7 +766,7 @@ export default {
     copyFolder: "复制目录",
     sourceFolder: "源目录",
     targetFolder: "目标目录",
-    pickFolder: "选择任务目录",
+    pickFolderFirst: "请先在上面选一个 LED 任务目录，新建的任务会放进去",
     copyFolderNote: "源目录里的任务会整条复制到目标目录，任务名后面补「-副本」。",
     sameFolder: "源目录与目标目录不能是同一个",
     pickBothFolders: "请选择源目录与目标目录",
