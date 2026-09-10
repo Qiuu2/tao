@@ -101,11 +101,6 @@ const (
 	RunStateNow     = 3 // 立即执行
 )
 
-// Running 表示这条任务此刻在播。
-func Running(state int) bool {
-	return state == RunStateRunning || state == RunStateNow
-}
-
 type Service struct {
 	db *sql.DB
 }
@@ -376,21 +371,8 @@ func decorate(ctx context.Context, it *Item) {
 		it.StateText = fmt.Sprintf(i18n.T(l, "未知(%d)"), it.State)
 	}
 
-	// 「正在播放」只在真的在播的时候给名字。
-	//
-	// playfileid 是后台广播服务写的，停下来之后**不见得会清**（旧版 PHP 从头到尾
-	// 没碰过这一列）。不判一下的话，一条早就停了的任务会一直挂着上一首的歌名，
-	// 而这一列的名字就叫「正在播放」—— 看的人会当成它此刻在响。
-	// 原始的 playfileid 仍旧原样带出去，需要的人自己判。
-	switch {
-	case !Running(it.State):
-		it.PlayingName = ""
-	case it.PlayFileID > 0 && it.PlayingName == "":
-		// 在跑、也有媒体号，但 media 表里查不到这一行 —— 多半是这个媒体被删了
-		// （删媒体不会回头去清任务的 playfileid）。这时候留白会让人以为「没在播」，
-		// 而实际上后台正拿着一个指向空处的号。说清楚比装作无事发生好。
-		it.PlayingName = i18n.T(l, "(媒体已删除)")
-	}
+	// 「正在播放」= 拿 playfileid（就是 media.id）去媒体表取到的名字，
+	// 取不到就空着。判断到此为止 —— SQL 里那个 LEFT JOIN 已经把活干完了。
 	// BR-164：1 = 按秒数，2 = 按循环次数
 	// 「播放 N 秒 / 循环 N 次」这类量词句，中英语序不同，
 	// 所以翻的是**格式串**再 Sprintf，而不是拿拼好的成品去查字典。

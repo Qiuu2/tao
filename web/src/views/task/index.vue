@@ -193,11 +193,9 @@
         </template>
 
         <!--
-          正在播放列 = **此刻在放的那首歌的名字**，照 ok112 拿 task.playfileid
-          去媒体表对名字。原来这一列显示的是任务状态，与列名对不上。
-
-          ⚠ 名字只在任务真的在跑时才有（服务端按 state 判过了）：playfileid 是
-            后台 C 服务写的，停下来不见得会清，挂着上一首的名字会让人以为还在响。
+          正在播放列 = 拿 task.playfileid（就是 media.id）取到的媒体名，
+          照 ok112。原来这一列显示的是任务状态，与列名对不上。
+          取不到名字（没在播、或者那个媒体已经删了）就显示「—」。
         -->
         <template #playingName="scope">
           <span v-if="scope.row.playingName" class="playing" :title="scope.row.playingName">
