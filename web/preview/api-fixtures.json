@@ -449,6 +449,20 @@
       },
       "name": "noiseZone",
       "path": "/noise/zone"
+     },
+     {
+      "component": "/noise/task/index",
+      "meta": {
+       "icon": "AlarmClock",
+       "isAffix": false,
+       "isFull": false,
+       "isHide": false,
+       "isKeepAlive": true,
+       "isLink": "",
+       "title": "声场任务"
+      },
+      "name": "noiseTask",
+      "path": "/noise/task"
      }
     ],
     "meta": {
@@ -624,6 +638,9 @@
     "delete": true
    },
    "remote": {
+    "edit": true
+   },
+   "sound": {
     "edit": true
    },
    "task": {
@@ -12991,6 +13008,40 @@
        "method": "GET",
        "path": "/api/typed-tasks/prompts",
        "summary": "文字语音的提示音清单",
+       "desc": "",
+       "right": "登录即可",
+       "params": null,
+       "fields": null,
+       "body": "",
+       "examples": null,
+       "sample": "",
+       "returns": null,
+       "notes": null,
+       "danger": false,
+       "freeform": true
+      },
+      {
+       "id": "get:/api/sound-tasks/tree",
+       "method": "GET",
+       "path": "/api/sound-tasks/tree",
+       "summary": "声场分区树（终端 + 噪声设备）",
+       "desc": "",
+       "right": "登录即可",
+       "params": null,
+       "fields": null,
+       "body": "",
+       "examples": null,
+       "sample": "",
+       "returns": null,
+       "notes": null,
+       "danger": false,
+       "freeform": true
+      },
+      {
+       "id": "get:/api/sound-tasks/db-template",
+       "method": "GET",
+       "path": "/api/sound-tasks/db-template",
+       "summary": "默认噪声值",
        "desc": "",
        "right": "登录即可",
        "params": null,

@@ -68,6 +68,7 @@ const (
 	KindCollect   Kind = "collect"   // 采播管理
 	KindTTS       Kind = "tts"       // 文字语音
 	KindLED       Kind = "led"       // LED 播放
+	KindSound     Kind = "sound"     // 声场任务（噪声检测那一组下面）
 )
 
 // projectstate 的两个取值。
@@ -137,6 +138,17 @@ var specs = map[Kind]spec{
 		ByFolder:     true,
 		Title:        "LED 播放",
 	},
+	KindSound: {
+		// 旧版 zhaoshentaskmanager.php 的列表条件就是一句 tasktype IN (25)。
+		// 这里另外带上 channel / sec_task_id 两条 —— 与同一张表里其它类别的口径一致，
+		// 免得将来有人往 25 上挂子任务时列表跟着乱。
+		Types:        []int{25},
+		NewType:      25,
+		Extra:        ` AND COALESCE(t.channel,0) = 0 AND COALESCE(t.sec_task_id,0) = 0`,
+		NeedMedia:    true,
+		NeedTerminal: true,
+		Title:        "声场任务",
+	},
 }
 
 func ParseKind(s string) (Kind, bool) {
@@ -197,6 +209,10 @@ type Item struct {
 	// ⚠ 终端功放不用这两项，理由见 edit.go 的 normPerKind()。
 	Prepower      int `json:"prepower"`
 	DataSendModel int `json:"datasendmodel"`
+	// PlayingName 是此刻在放的那首歌（task.playfileid 就是 media.id，由后台
+	// 广播服务写）。旧版这几张列表的「正在播放」列显示的就是它，
+	// 与文件广播那边同一个口径 —— 取不到名字就空着。
+	PlayingName string `json:"playingName"`
 
 	// 以下是按类别填的附加信息，用不到的留空。
 	// 功放：cmd 0=打开 1=关闭，cmdargs=通道号
@@ -306,9 +322,11 @@ func (s *Service) List(ctx context.Context, u *auth.User, k Kind, q Query) (*Lis
 		       COALESCE(t.samplerate,0), COALESCE(t.playfileid,0),
 		       COALESCE(t.prepower,0), COALESCE(t.datasendmodel,0),
 		       COALESCE(t.interval_s,0), COALESCE(t.intplaylength,0),
-		       COALESCE(t.intplaylengthtype,0)
+		       COALESCE(t.intplaylengthtype,0),
+		       COALESCE(pm.name,'')
 		FROM task t
-		LEFT JOIN book_admin b ON b.id = t.task_user_id`+where+
+		LEFT JOIN book_admin b ON b.id = t.task_user_id
+		LEFT JOIN media pm ON pm.id = t.playfileid`+where+
 		" ORDER BY "+order+" LIMIT ? OFFSET ?", listArgs...)
 	if err != nil {
 		return nil, fmt.Errorf("查询%s任务: %w", sp.Title, err)
@@ -327,7 +345,7 @@ func (s *Service) List(ctx context.Context, u *auth.User, k Kind, q Query) (*Lis
 			&it.UserID, &it.UserName, &it.TerminalCount,
 			&it.Priority, &it.BandRate, &it.SampleRate, &it.PlayFileID,
 			&it.Prepower, &it.DataSendModel,
-			&it.IntervalS, &it.IntPlayLen, &it.IntPlayLenTy); err != nil {
+			&it.IntervalS, &it.IntPlayLen, &it.IntPlayLenTy, &it.PlayingName); err != nil {
 			return nil, fmt.Errorf("扫描%s任务行: %w", sp.Title, err)
 		}
 		it.StateText = stateText(ctx, it.State)
@@ -863,6 +881,10 @@ func (s *Service) Delete(ctx context.Context, u *auth.User, k Kind, ids []int64)
 	for _, stmt := range []string{
 		`DELETE FROM terminaloftask WHERE taskid IN (` + ph + `)`,
 		`DELETE FROM mediaoftask WHERE taskid IN (` + ph + `)`,
+		// 声场任务的探头噪声值。⚠ 带上 taskid <> 0：那六行 taskid=0 是全站共用的
+		// 默认噪声模板，跟着任务一起删掉的话，「设置默认噪声」之前就再也回不来了。
+		// 对其它四类是空操作，不必分支。
+		`DELETE FROM soundtask WHERE taskid IN (` + ph + `) AND taskid <> 0`,
 		`DELETE FROM terminalkeymaptask WHERE taskid IN (` + ph + `)`,
 		// 旧版各 del 函数都漏了这张（D-221）
 		`DELETE FROM shortcutkeytask WHERE mediaid IN (` + ph + `)`,

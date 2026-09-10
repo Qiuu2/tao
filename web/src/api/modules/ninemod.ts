@@ -8,14 +8,15 @@ import type { SwitchLayout } from "./task";
    终端功放 / 采播管理 / 文字语音 / LED 播放（共用 typed-tasks）
    ================================================================== */
 
-export type TypedKind = "amplifier" | "collect" | "tts" | "led";
+export type TypedKind = "amplifier" | "collect" | "tts" | "led" | "sound";
 
-/** 四类任务的页面标题。存的是 i18n 键 —— 这是模块级常量，取不到 setup 里的 t()。 */
+/** 五类任务的页面标题。存的是 i18n 键 —— 这是模块级常量，取不到 setup 里的 t()。 */
 export const KIND_TITLE: Record<TypedKind, string> = {
   amplifier: "menu.amplifier",
   collect: "menu.collect",
   tts: "menu.tts",
-  led: "menu.led"
+  led: "menu.led",
+  sound: "menu.noiseTask"
 };
 
 export interface TypedTask {
@@ -52,6 +53,8 @@ export interface TypedTask {
   bandrate: number;
   samplerate: number;
   playfileid: number;
+  /** 此刻在放的那首歌（playfileid → media.name）。取不到就是空串 */
+  playingName: string;
   /** 预开电源（秒）。⚠ 终端功放恒 0，那一列在功放这边是列表筛选的判据 */
   prepower: number;
   /** 发送模式：0 = 单播、1 = 组播 */
@@ -122,6 +125,9 @@ export interface TypedDetail extends TypedTask {
   ttsSpeed: number;
   promptId: number;
   led?: LedDetail;
+  /** 声场任务：任务的媒体清单与已标定的噪声设备 */
+  media?: { mediaId: number; name: string; deleted: boolean }[];
+  soundDevices?: SoundDeviceRef[];
   /** 当前用户被允许的任务等级区间 */
   priorityMin: number;
   priorityMax: number;
@@ -179,7 +185,62 @@ export interface TypedSaveBody {
   datasendmodel: number;
   terminals: { terminalId: number; area: string; groupId: number }[];
   led: { text: string; speed: number; ledmode: number; devices: { terminalId: number; deviceId: number }[] } | null;
+  /** 声场任务：要播的媒体（旧版那棵树是单选，所以正常只有一条） */
+  mediaIds: number[];
+  /** 声场任务：选中的噪声设备连同各自六档音量下的噪声值 */
+  soundDevices: SoundDeviceRef[];
 }
+
+/* ---------------- 声场任务 ---------------- */
+
+/**
+ * 一个被选中的噪声设备，连同它那六档噪声值。
+ *
+ * dbValues 的下标对应 SOUND_VOLUME_STEPS —— 意思是「音量开到 N% 时，
+ * 这个探头量到的环境噪声该是多少 dB」，后台据此把音量调上去或调下来。
+ */
+export interface SoundDeviceRef {
+  deviceId: number;
+  groupId: number;
+  dbValues: number[];
+  /** 只在回读时有 */
+  deviceName?: string;
+  deleted?: boolean;
+}
+
+/** 六档音量。**写死的** —— 旧版从表单到 SQL 到后台服务全按这六个数排。 */
+export const SOUND_VOLUME_STEPS = [0, 20, 40, 60, 80, 100];
+
+export interface SoundTreeTerminal {
+  id: number;
+  name: string;
+  typeName: string;
+  netstate: number;
+}
+export interface SoundTreeDevice {
+  id: number;
+  name: string;
+  ip: string;
+}
+/** 一个声场分区：底下同时挂广播终端和噪声设备，与旧版那棵树一致 */
+export interface SoundTreeGroup {
+  id: number;
+  name: string;
+  terminals: SoundTreeTerminal[];
+  devices: SoundTreeDevice[];
+}
+
+export const getSoundTreeApi = (keyword = "") =>
+  http.get<SoundTreeGroup[]>(PORT1 + `/api/sound-tasks/tree`, { keyword }, { loading: false });
+
+export const getSoundDBTemplateApi = () =>
+  http.get<{ volumes: number[]; dbValues: number[] }>(PORT1 + `/api/sound-tasks/db-template`, {}, { loading: false });
+
+export const setSoundDBTemplateApi = (dbValues: number[]) =>
+  http.put<{ count: number }>(PORT1 + `/api/sound-tasks/db-template`, { dbValues });
+
+export const applySoundDBTemplateApi = (ids: number[]) =>
+  http.put<{ updated: number }>(PORT1 + `/api/sound-tasks/apply-db-template`, { ids });
 
 export const getTypedListApi = (kind: TypedKind, params: any) =>
   http.get<ResPage<TypedTask> & { scopeNote: string }>(PORT1 + `/api/typed-tasks/${kind}`, params);

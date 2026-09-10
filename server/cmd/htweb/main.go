@@ -686,6 +686,16 @@ func (a *app) routes() http.Handler {
 	mux.HandleFunc("PUT /api/typed-tasks/{kind}/project-state", typ(a.handleTypedProjectState))
 	mux.HandleFunc("DELETE /api/typed-tasks/{kind}", typ(a.handleTypedDelete))
 
+	// 声场任务专属（噪声检测那一组下面，旧版 zhaoshentaskmanager.php）。
+	//
+	// ⚠ 这三条**不能**放在 /api/typed-tasks/{kind}/… 底下：那个 kind 段会把
+	//   "sound-tree" 之类的字面量也当成一个类别名收进去，与 {kind}/{id} 撞车。
+	//   另起一段路径，权限跟着 taskpriv —— 与旧版 have_rights("taskpriv") 一致。
+	mux.HandleFunc("GET /api/sound-tasks/tree", req(a.handleSoundTree))
+	mux.HandleFunc("GET /api/sound-tasks/db-template", req(a.handleSoundDBTemplate))
+	mux.HandleFunc("PUT /api/sound-tasks/db-template", tsk(a.handleSoundSetDBTemplate))
+	mux.HandleFunc("PUT /api/sound-tasks/apply-db-template", tsk(a.handleSoundApplyDBTemplate))
+
 	// LED 专属：任务分组与 LED 屏设备。跟 led播放 同一把钥匙（PrivLed），
 	// 不再跟着 taskpriv —— 只给文件广播权限的人不该能改 LED 分组和 LED 屏。
 	ledg := func(h http.HandlerFunc) http.HandlerFunc {
@@ -1121,6 +1131,7 @@ func (a *app) handleMenu(w http.ResponseWriter, r *http.Request) {
 	menus = append(menus, group("/noise", "noise", "Odometer", "噪声检测",
 		menu("/noise/device", "noiseDevice", "/noise/device/index", "Cpu", "噪声设备"),
 		menu("/noise/zone", "noiseZone", "/noise/zone/index", "Grid", "声场分区"),
+		menu("/noise/task", "noiseTask", "/noise/task/index", "AlarmClock", "声场任务"),
 	))
 
 	// —— 用户管理 ——
@@ -1261,6 +1272,9 @@ func (a *app) handleButtons(w http.ResponseWriter, r *http.Request) {
 		"collect":   {"edit": canCollect},
 		"tts":       {"edit": canTts},
 		"led":       {"edit": canLed},
+		// 声场任务跟着 taskpriv —— 旧版 zhaoshentaskmanager.php 判的就是
+		// have_rights("taskpriv")，路由上那道门也是同一把。
+		"sound": {"edit": canTask},
 		// 启用管理与文字语音同一个权限位（旧版 displayenablemanager.php 用的是 ttspriv）
 		"enable": {"edit": canTts},
 		"time": {

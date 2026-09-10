@@ -15,6 +15,26 @@
  * 专门比对两边的键集合。
  */
 export default {
+  sound: {
+    setDefaultNoise: "设置默认噪声",
+    applyDefaultNoise: "应用默认噪声",
+    applyConfirm: "会把默认噪声值刷到选中的 {n} 条任务的每一个噪声设备上，覆盖已经标定好的值。确定要继续吗？",
+    applied: "已更新 {n} 条噪声值",
+    defaultNoiseNote: "这是全站共用的一份基准：新挑一个噪声设备时先拿它填上。改它不影响已经建好的任务，要刷过去请用列表上的「应用默认噪声」。",
+    noiseNote: "意思是「音量开到这一档时，这个设备量到的环境噪声该是多少 dB」，后台据此把音量调上去或调下来。",
+    atVolume: "音量 {v} —— 噪声值",
+    deviceNoiseTitle: "{name} · 噪声值",
+    device: "噪声设备",
+    notPicked: "未选中",
+    pickDeviceFirst: "先在树上勾中这个噪声设备，再设它的噪声值",
+    pickMedia: "请选择要播放的媒体",
+    pickDevice: "请至少勾一个噪声设备",
+    pickedCount: "已选 {t} 台终端、{d} 个噪声设备",
+    zoneCount: "{t} 台终端 / {d} 个噪声设备",
+    searchTreePlaceholder: "搜索终端或噪声设备名称",
+    noZone: "还没有声场分区，先去「声场分区」建一个",
+    droppedDevices: "有 {n} 个噪声设备已被删除，没有回填"
+  },
   app: {
     title: "IP数字网络广播系统"
   },
@@ -29,6 +49,7 @@ export default {
     stopped: "已停止",
     loadingShort: "加载中…",
     selectedN: "已选 {n} 台",
+    selectedMediaN: "已选 {n} 个媒体文件",
     zoneBit: "分区{n}",
     powerBit: "电源{n}",
     terminalNo: "终端 {id}",
@@ -1817,6 +1838,7 @@ export default {
     noise: "噪声检测",
     noiseDevice: "噪声设备",
     noiseZone: "声场分区",
+    noiseTask: "声场任务",
     user: "用户管理",
     userList: "用户",
     userGroup: "用户组",

@@ -59,12 +59,11 @@
         </span>
       </template>
     </el-tree>
-    <p class="mt-sum">已选 {{ modelValue.length }} 个媒体文件</p>
+    <p class="mt-sum">{{ $t("common.selectedMediaN", { n: modelValue.length }) }}</p>
   </div>
 </template>
 
 <script setup lang="ts" name="MediaTree">
-import { useI18n } from "vue-i18n";
 import { Folder, Search } from "@element-plus/icons-vue";
 import { nextTick, onMounted, ref, watch } from "vue";
 
@@ -80,9 +79,6 @@ interface MediaNode {
   children?: MediaNode[];
 }
 
-// 脚本里拼的文案用 t()；模板里的 $t 不用引入
-const { t } = useI18n();
-
 const props = withDefaults(
   defineProps<{
     /** 选中的媒体 id */
@@ -93,8 +89,14 @@ const props = withDefaults(
      * 光有 id 显示不出名字，所以调用方把已选项的名字一并传进来。
      */
     selectedNames?: { mediaId: number; name: string }[];
+    /**
+     * 是否多选。默认多选；传 false 表示**只能选一个** —— 勾中一个会把别的取消，
+     * 与 ok112 声场任务那棵媒体树的 toncheck 行为一致
+     * （先把所有节点取消，再勾中这一个）。
+     */
+    multiple?: boolean;
   }>(),
-  { height: "260px", selectedNames: () => [] }
+  { height: "260px", selectedNames: () => [], multiple: true }
 );
 
 const emit = defineEmits<{ (e: "update:modelValue", v: number[]): void }>();
@@ -162,8 +164,14 @@ const loadNode = async (node: any, resolve: (data: MediaNode[]) => void) => {
 };
 
 /** 取值只认叶子，且必须带 mediaId —— 文件夹节点不是可选项 */
-const onCheck = () => {
-  const picked = (treeRef.value?.getCheckedNodes(true) ?? []) as MediaNode[];
+const onCheck = (data: MediaNode) => {
+  let picked = (treeRef.value?.getCheckedNodes(true) ?? []) as MediaNode[];
+  // 单选：只留刚点的这一个，把树上其余的勾去掉。
+  // ⚠ 要在 emit 之前就把树改回来 —— 先 emit 再改的话，树上会有一瞬间是两个勾。
+  if (!props.multiple && data?.mediaId !== undefined) {
+    picked = [data];
+    treeRef.value?.setCheckedKeys([mediaKey(data.mediaId)], false);
+  }
   emit(
     "update:modelValue",
     picked.filter(n => n.mediaId !== undefined).map(n => n.mediaId as number)

@@ -47,6 +47,9 @@ type Detail struct {
 	PromptID  int64      `json:"promptId"`
 	// LED 专用
 	LED *LEDDetail `json:"led,omitempty"`
+	// 声场任务专用
+	Media        []SoundMedia     `json:"media,omitempty"`
+	SoundDevices []SoundDeviceRef `json:"soundDevices,omitempty"`
 	// PriorityMin / PriorityMax 是当前用户被允许的任务等级区间，供界面直接约束下拉。
 	PriorityMin int `json:"priorityMin"`
 	PriorityMax int `json:"priorityMax"`
@@ -172,6 +175,13 @@ func (s *Service) Get(ctx context.Context, u *auth.User, k Kind, id int64) (*Det
 			return nil, err
 		}
 		d.LED = led
+	case KindSound:
+		if d.Media, err = s.mediaOf(ctx, id); err != nil {
+			return nil, err
+		}
+		if d.SoundDevices, err = s.soundDevicesOf(ctx, id); err != nil {
+			return nil, err
+		}
 	}
 	// 采播与文字语音的 cmd 都是终端 id：采播是音源终端，文字语音是 TTS 采播终端。
 	// 放在 switch 外面，因为 KindTTS 在上面已经占了一个分支。
@@ -279,6 +289,11 @@ type Input struct {
 	PromptID  int64 // 提示音媒体 id（tts 终端选服务器时才有），0 = 不用
 	// LED
 	LED *LEDInput
+
+	// 声场任务。MediaIDs 是要播的媒体（旧版那棵媒体树是单选，正常只有一条）；
+	// SoundDevices 是选中的噪声探头连同各自的六档噪声值，见 sound.go。
+	MediaIDs     []int64
+	SoundDevices []SoundDeviceRef
 }
 
 // normPerKind 把「预开电源 / 任务等级 / 发送模式」收敛到各类别允许的取值。
@@ -316,8 +331,9 @@ func normPerKind(k Kind, in *Input) {
 		in.BandRate = 0
 	}
 
-	// 间隔播放只有文字语音与 led播放 有（旧版表单里的「播放模式：普通 / 间隔时间」）
-	if k != KindTTS && k != KindLED {
+	// 间隔播放：文字语音 / led播放 / 声场任务 三类有
+	// （旧版这三张表单里都有「播放模式：普通 / 间隔时间」那个下拉）
+	if k != KindTTS && k != KindLED && k != KindSound {
 		in.IntervalS, in.IntPlayLen, in.IntPlayLenTy = 0, 0, 0
 	}
 	if in.IntPlayLenTy != 1 && in.IntPlayLenTy != 2 {
@@ -328,6 +344,11 @@ func normPerKind(k Kind, in *Input) {
 	// 文字语音的全局参数只有文字语音用得上
 	if k != KindTTS {
 		in.Text, in.MusicMode, in.TTSSpeed, in.PromptID = "", 0, 0, 0
+	}
+
+	// 媒体与噪声探头只有声场任务用得上
+	if k != KindSound {
+		in.MediaIDs, in.SoundDevices = nil, nil
 	}
 }
 
@@ -463,6 +484,11 @@ func (s *Service) validate(ctx context.Context, u *auth.User, k Kind, in *Input,
 		}
 		if n == 0 {
 			return fmt.Errorf("LED 任务分组不存在，请重新选择")
+		}
+	}
+	if k == KindSound {
+		if err := s.validateSound(ctx, in); err != nil {
+			return err
 		}
 	}
 	_ = sp
@@ -800,6 +826,8 @@ func (s *Service) writeExtras(ctx context.Context, tx *sql.Tx, k Kind, taskID in
 		return writeSentences(ctx, tx, taskID, in)
 	case KindLED:
 		return writeLED(ctx, tx, taskID, in)
+	case KindSound:
+		return writeSound(ctx, tx, taskID, in)
 	}
 	return nil
 }
@@ -810,6 +838,8 @@ func (s *Service) clearExtras(ctx context.Context, tx *sql.Tx, k Kind, taskID in
 		return clearSentences(ctx, tx, taskID)
 	case KindLED:
 		return clearLED(ctx, tx, taskID)
+	case KindSound:
+		return clearSound(ctx, tx, taskID)
 	}
 	return nil
 }

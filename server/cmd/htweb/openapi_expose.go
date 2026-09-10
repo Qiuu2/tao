@@ -106,10 +106,16 @@ var keyDenied = map[string]string{
 	"PUT /api/assistant/settings":   "改别人的界面偏好，程序没有理由做这件事",
 
 	// —— 其它纯界面的东西 ——
-	"GET /api/health":                "探活接口，本来就不需要凭据",
-	"GET /api/openapi/spec":          "接口目录，给界面渲染用",
-	"GET /api/openapi/openapi.json":  "OpenAPI 文档，登录后在界面上下载",
-	"GET /api/dashboard/config":      "首页三块可配置区域的当前配置，纯界面的东西",
+	"GET /api/health":               "探活接口，本来就不需要凭据",
+	"GET /api/openapi/spec":         "接口目录，给界面渲染用",
+	"GET /api/openapi/openapi.json": "OpenAPI 文档，登录后在界面上下载",
+	"GET /api/dashboard/config":     "首页三块可配置区域的当前配置，纯界面的东西",
+	// 默认噪声值是全站共用的一份基准（soundtask 里 taskid=0 那六行），
+	// 改一次会影响之后所有新建的声场任务；应用默认噪声还会当场覆盖已有任务的
+	// 现场标定值。这两件事都该有人对着界面确认，不适合挂在密钥后面。
+	"PUT /api/sound-tasks/db-template":       "改的是全站共用的默认噪声基准，该由人在界面上决定",
+	"PUT /api/sound-tasks/apply-db-template": "会覆盖选中任务里已经标定好的噪声值，该由人在界面上决定",
+
 	"PUT /api/dashboard/shortcuts":   "改的是所有人看到的首页快捷入口，该由人在界面上决定",
 	"PUT /api/dashboard/quick-tasks": "改的是所有人看到的首页快捷任务，该由人在界面上决定",
 	// 紧急广播是「按下去全场喇叭就响」的动作，而且 UDP 发出去撤不回来。
@@ -264,6 +270,8 @@ var exposedGroups = []exposedGroup{
 			{"GET /api/typed-tasks/{kind}/sources", "建这类任务时的可选音源", "登录即可", false},
 			{"GET /api/typed-tasks/terminals", "可选终端", "登录即可", false},
 			{"GET /api/typed-tasks/prompts", "文字语音的提示音清单", "登录即可", false},
+			{"GET /api/sound-tasks/tree", "声场分区树（终端 + 噪声设备）", "登录即可", false},
+			{"GET /api/sound-tasks/db-template", "默认噪声值", "登录即可", false},
 			{"POST /api/typed-tasks/{kind}", "新建分类任务", "按类别（powerplay/admpriv/ttspriv/telephonepriv）", true},
 			{"PUT /api/typed-tasks/{kind}/{id}", "修改分类任务", "按类别", true},
 			{"PUT /api/typed-tasks/{kind}/control/{action}", "启停分类任务", "按类别", true},

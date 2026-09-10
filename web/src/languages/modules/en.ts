@@ -4,6 +4,29 @@
  * phrase in an otherwise English page and raises no error. See i18n.test.ts.
  */
 export default {
+  sound: {
+    setDefaultNoise: "Set default noise",
+    applyDefaultNoise: "Apply default noise",
+    applyConfirm:
+      "This overwrites the calibrated values on every noise device of the {n} selected task(s) with the default levels. Continue?",
+    applied: "{n} noise value(s) updated",
+    defaultNoiseNote:
+      "A site-wide baseline used to prefill a newly picked noise device. Changing it leaves existing tasks alone — use “Apply default noise” in the list to push it out.",
+    noiseNote:
+      "It means “at this volume step, the ambient noise this device should read, in dB”. The service turns the volume up or down against it.",
+    atVolume: "Volume {v} — noise level",
+    deviceNoiseTitle: "{name} · noise levels",
+    device: "Noise device",
+    notPicked: "Not selected",
+    pickDeviceFirst: "Tick this noise device in the tree first, then set its levels",
+    pickMedia: "Choose the media to play",
+    pickDevice: "Tick at least one noise device",
+    pickedCount: "{t} terminal(s), {d} noise device(s) selected",
+    zoneCount: "{t} terminal(s) / {d} noise device(s)",
+    searchTreePlaceholder: "Search terminal or noise device name",
+    noZone: "No sound-field zones yet — create one under “Sound-field zones”",
+    droppedDevices: "{n} noise device(s) were deleted and are not restored"
+  },
   app: {
     title: "IP Network Broadcast System"
   },
@@ -18,6 +41,7 @@ export default {
     stopped: "Stopped",
     loadingShort: "Loading…",
     selectedN: "{n} selected",
+    selectedMediaN: "{n} media file(s) selected",
     zoneBit: "Zone {n}",
     powerBit: "Power {n}",
     terminalNo: "Terminal {id}",
@@ -1809,6 +1833,7 @@ export default {
     noise: "Noise monitoring",
     noiseDevice: "Noise devices",
     noiseZone: "Sound-field zones",
+    noiseTask: "Sound-field tasks",
     user: "Users",
     userList: "Accounts",
     userGroup: "User groups",

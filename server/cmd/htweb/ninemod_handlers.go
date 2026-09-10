@@ -101,6 +101,68 @@ func (a *app) handleTypedSources(w http.ResponseWriter, r *http.Request) {
 	httpx.OK(w, list)
 }
 
+// handleSoundTree 是声场任务挑终端用的那棵树：一层声场分区，
+// 底下同时挂这个分区里的广播终端和噪声探头 —— 与旧版
+// get_zhaoshenggrouped_terminal() 拼出来的树一致。
+func (a *app) handleSoundTree(w http.ResponseWriter, r *http.Request) {
+	list, err := a.typed.SoundTree(r.Context(), auth.From(r.Context()),
+		r.URL.Query().Get("keyword"))
+	if err != nil {
+		a.failTyped(w, "查询声场分区", err)
+		return
+	}
+	httpx.OK(w, list)
+}
+
+// handleSoundDBTemplate 读默认噪声值（soundtask 里 taskid = 0 那六行）。
+func (a *app) handleSoundDBTemplate(w http.ResponseWriter, r *http.Request) {
+	vals, err := a.typed.DBTemplate(r.Context())
+	if err != nil {
+		a.failTyped(w, "查询默认噪声值", err)
+		return
+	}
+	httpx.OK(w, map[string]interface{}{
+		"volumes":  typedtask.SoundVolumeSteps,
+		"dbValues": vals,
+	})
+}
+
+type soundDBReq struct {
+	DBValues []float64 `json:"dbValues"`
+}
+
+// handleSoundSetDBTemplate 保存默认噪声值，对应旧版列表上的「设置默认噪声」。
+func (a *app) handleSoundSetDBTemplate(w http.ResponseWriter, r *http.Request) {
+	var in soundDBReq
+	if !httpx.DecodeJSON(w, r, &in) {
+		return
+	}
+	if err := a.typed.SetDBTemplate(r.Context(), in.DBValues); err != nil {
+		a.failTyped(w, "保存默认噪声值", err)
+		return
+	}
+	httpx.OK(w, map[string]interface{}{"count": len(in.DBValues)})
+}
+
+type soundApplyReq struct {
+	IDs []int64 `json:"ids"`
+}
+
+// handleSoundApplyDBTemplate 把默认噪声值刷到选中任务的所有探头上，
+// 对应旧版列表上的「应用默认噪声」。
+func (a *app) handleSoundApplyDBTemplate(w http.ResponseWriter, r *http.Request) {
+	var in soundApplyReq
+	if !httpx.DecodeJSON(w, r, &in) {
+		return
+	}
+	n, err := a.typed.ApplyDBTemplate(r.Context(), auth.From(r.Context()), in.IDs)
+	if err != nil {
+		a.failTyped(w, "应用默认噪声值", err)
+		return
+	}
+	httpx.OK(w, map[string]interface{}{"updated": n})
+}
+
 // handleTypedPrompts 是文字语音的「提示音」下拉（旧版写死的 9 号媒体目录）。
 func (a *app) handleTypedPrompts(w http.ResponseWriter, r *http.Request) {
 	list, err := a.typed.PromptMedia(r.Context())
@@ -150,6 +212,10 @@ type typedReq struct {
 
 	Terminals []typedtask.Terminal `json:"terminals"`
 	LED       *typedtask.LEDInput  `json:"led"`
+
+	// 声场任务：要播的媒体（旧版那棵树是单选）+ 选中的噪声探头及其六档噪声值
+	MediaIDs     []int64                    `json:"mediaIds"`
+	SoundDevices []typedtask.SoundDeviceRef `json:"soundDevices"`
 }
 
 func (t typedReq) toInput() typedtask.Input {
@@ -165,6 +231,7 @@ func (t typedReq) toInput() typedtask.Input {
 		IntervalS: t.IntervalS, IntPlayLen: t.IntPlayLen, IntPlayLenTy: t.IntPlayLenTy,
 		Text: t.Text, MusicMode: t.MusicMode, TTSSpeed: t.TTSSpeed, PromptID: t.PromptID,
 		Terminals: t.Terminals, LED: t.LED,
+		MediaIDs: t.MediaIDs, SoundDevices: t.SoundDevices,
 	}
 }
 
