@@ -189,8 +189,15 @@ type Notify struct {
 // notify 发文本报文到 serverbaseparam.webport，这里发结构体的内存布局到 8885。
 // 详见 internal/sdkudp 的包说明。
 type SDK struct {
-	// Host 后台广播服务地址。默认走本机回环 —— 厂商示例里写的是 docker 里的
-	// 主机名 audioserver，新版跑在宿主上，用已发布的回环端口。
+	// Host 后台广播服务地址。
+	//
+	// **留空（默认）= 跟着浏览器打开页面的地址走**：后台服务和 Web 跑在同一台
+	// 机器上，那台机器就是运维在地址栏里敲的那个地址。写死回环只在「人坐在
+	// 服务器前面用 localhost 打开」时才对，从别的机器打开就发错地方了，
+	// 而 UDP 不报错，表现是「点了没反应」。详见 sdkudp.Sender.Host。
+	//
+	// 只有后台服务和 Web **不在同一台机器**时才填（比如广播服务在容器里、
+	// Web 在宿主上）。填了就完全不看请求。
 	Host string `yaml:"host"`
 	// Port SDK 命令端口，默认 8885。
 	Port int `yaml:"port"`
@@ -232,7 +239,7 @@ func Default() *Config {
 		},
 		Media:  Media{Root: "/opt/apps/a9000", MaxUploadMB: 300, FFmpeg: "/opt/apps/a9000/bin/ffmpeg"},
 		Notify: Notify{Host: "127.0.0.1", Port: 0, Enabled: true},
-		SDK:    SDK{Host: "127.0.0.1", Port: 8885, Enabled: true},
+		SDK:    SDK{Port: 8885, Enabled: true}, // Host 留空 = 跟着页面地址走
 		Auth:   Auth{TTL: 8 * time.Hour, CaptchaEnabled: true},
 		Assistant: Assistant{
 			Enabled:      false,
@@ -264,9 +271,9 @@ func (c *Config) validate() error {
 	if c.SDK.Port <= 0 {
 		c.SDK.Port = 8885
 	}
-	if strings.TrimSpace(c.SDK.Host) == "" {
-		c.SDK.Host = "127.0.0.1"
-	}
+	// ⚠ SDK.Host **不给兜底值**：留空是有意义的取值 ——
+	// 「跟着浏览器打开页面的地址走」。在这里填成 127.0.0.1 会把这条路堵死。
+	c.SDK.Host = strings.TrimSpace(c.SDK.Host)
 	if c.Auth.TTL <= 0 {
 		c.Auth.TTL = 8 * time.Hour
 	}
