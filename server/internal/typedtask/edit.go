@@ -13,6 +13,7 @@ import (
 	"htweb/internal/i18n"
 	"htweb/internal/notify"
 	"htweb/internal/store"
+	"htweb/internal/termswitch"
 )
 
 // 新建 / 修改。四种类别共用同一套 task 行的写入，差异在：
@@ -829,6 +830,8 @@ type TerminalOption struct {
 	// SwitchCount 是这台终端的分区/通道数（terminaltype.switchcount）。
 	// 旧版据它决定要不要弹分区勾选表，见 get_terminaltype.php。
 	SwitchCount int `json:"switchCount"`
+	// Switches 说明这几路里哪些是电源、哪些是分区，见 internal/termswitch。
+	Switches termswitch.Layout `json:"switches"`
 }
 
 // TerminalOptions 列出可加入任务的终端。
@@ -868,6 +871,7 @@ func (s *Service) TerminalOptions(ctx context.Context, u *auth.User, keyword str
 			return nil, err
 		}
 		o.TypeName = i18n.TC(ctx, o.TypeName)
+		o.Switches = termswitch.Of(int64(o.TypeID), o.SwitchCount)
 		out = append(out, o)
 	}
 	return out, rs.Err()
@@ -935,6 +939,7 @@ func (s *Service) SourceTerminals(ctx context.Context, k Kind) ([]TerminalOption
 			return nil, err
 		}
 		o.TypeName = i18n.TC(ctx, o.TypeName)
+		o.Switches = termswitch.Of(int64(o.TypeID), o.SwitchCount)
 		out = append(out, o)
 	}
 	return out, rs.Err()

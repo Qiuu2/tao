@@ -3741,9 +3741,14 @@
     "typeName": "一体化音箱",
     "ip": "192.168.2.11",
     "netstate": 1,
-    "groupId": 1,
-    "groupName": "教学楼",
-    "switchCount": 0
+    "groupId": 0,
+    "groupName": "",
+    "switchCount": 0,
+    "switches": {
+     "kind": "",
+     "power": 0,
+     "zone": 0
+    }
    },
    {
     "id": 2,
@@ -3754,7 +3759,12 @@
     "netstate": 1,
     "groupId": 1,
     "groupName": "教学楼",
-    "switchCount": 0
+    "switchCount": 0,
+    "switches": {
+     "kind": "",
+     "power": 0,
+     "zone": 0
+    }
    },
    {
     "id": 4,
@@ -3765,7 +3775,12 @@
     "netstate": 1,
     "groupId": 1,
     "groupName": "教学楼",
-    "switchCount": 0
+    "switchCount": 0,
+    "switches": {
+     "kind": "",
+     "power": 0,
+     "zone": 0
+    }
    },
    {
     "id": 5,
@@ -3776,7 +3791,12 @@
     "netstate": 1,
     "groupId": 1,
     "groupName": "教学楼",
-    "switchCount": 0
+    "switchCount": 0,
+    "switches": {
+     "kind": "",
+     "power": 0,
+     "zone": 0
+    }
    },
    {
     "id": 6,
@@ -3787,7 +3807,12 @@
     "netstate": 1,
     "groupId": 2,
     "groupName": "办公区",
-    "switchCount": 1
+    "switchCount": 1,
+    "switches": {
+     "kind": "",
+     "power": 0,
+     "zone": 0
+    }
    },
    {
     "id": 7,
@@ -3798,7 +3823,12 @@
     "netstate": 1,
     "groupId": 2,
     "groupName": "办公区",
-    "switchCount": 8
+    "switchCount": 8,
+    "switches": {
+     "kind": "amplifier",
+     "power": 8,
+     "zone": 0
+    }
    },
    {
     "id": 8,
@@ -3809,7 +3839,12 @@
     "netstate": 1,
     "groupId": 3,
     "groupName": "室外操场",
-    "switchCount": 0
+    "switchCount": 0,
+    "switches": {
+     "kind": "",
+     "power": 0,
+     "zone": 0
+    }
    },
    {
     "id": 10,
@@ -3820,7 +3855,12 @@
     "netstate": 1,
     "groupId": 4,
     "groupName": "宿舍楼",
-    "switchCount": 0
+    "switchCount": 0,
+    "switches": {
+     "kind": "",
+     "power": 0,
+     "zone": 0
+    }
    },
    {
     "id": 11,
@@ -3831,7 +3871,12 @@
     "netstate": 1,
     "groupId": 2,
     "groupName": "办公区",
-    "switchCount": 0
+    "switchCount": 0,
+    "switches": {
+     "kind": "",
+     "power": 0,
+     "zone": 0
+    }
    },
    {
     "id": 20,
@@ -3842,7 +3887,12 @@
     "netstate": 1,
     "groupId": 2,
     "groupName": "办公区",
-    "switchCount": 16
+    "switchCount": 16,
+    "switches": {
+     "kind": "",
+     "power": 0,
+     "zone": 0
+    }
    },
    {
     "id": 902,
@@ -3853,7 +3903,12 @@
     "netstate": 1,
     "groupId": 0,
     "groupName": "",
-    "switchCount": 1
+    "switchCount": 1,
+    "switches": {
+     "kind": "",
+     "power": 0,
+     "zone": 0
+    }
    },
    {
     "id": 3,
@@ -3864,7 +3919,12 @@
     "netstate": 0,
     "groupId": 1,
     "groupName": "教学楼",
-    "switchCount": 0
+    "switchCount": 0,
+    "switches": {
+     "kind": "",
+     "power": 0,
+     "zone": 0
+    }
    },
    {
     "id": 9,
@@ -3875,7 +3935,12 @@
     "netstate": 0,
     "groupId": 3,
     "groupName": "室外操场",
-    "switchCount": 0
+    "switchCount": 0,
+    "switches": {
+     "kind": "",
+     "power": 0,
+     "zone": 0
+    }
    }
   ]
  },
@@ -4675,10 +4740,15 @@
     "id": 1,
     "name": "A101教室音箱",
     "typeName": "一体化音箱",
-    "groupId": 1,
-    "groupName": "教学楼",
+    "groupId": 0,
+    "groupName": "(未分区)",
     "netstate": 1,
-    "switchCount": 0
+    "switchCount": 0,
+    "switches": {
+     "kind": "",
+     "power": 0,
+     "zone": 0
+    }
    },
    {
     "id": 2,
@@ -4687,7 +4757,12 @@
     "groupId": 1,
     "groupName": "教学楼",
     "netstate": 1,
-    "switchCount": 0
+    "switchCount": 0,
+    "switches": {
+     "kind": "",
+     "power": 0,
+     "zone": 0
+    }
    },
    {
     "id": 4,
@@ -4696,7 +4771,12 @@
     "groupId": 1,
     "groupName": "教学楼",
     "netstate": 1,
-    "switchCount": 0
+    "switchCount": 0,
+    "switches": {
+     "kind": "",
+     "power": 0,
+     "zone": 0
+    }
    },
    {
     "id": 5,
@@ -4705,7 +4785,12 @@
     "groupId": 1,
     "groupName": "教学楼",
     "netstate": 1,
-    "switchCount": 0
+    "switchCount": 0,
+    "switches": {
+     "kind": "",
+     "power": 0,
+     "zone": 0
+    }
    },
    {
     "id": 6,
@@ -4714,7 +4799,12 @@
     "groupId": 2,
     "groupName": "办公区",
     "netstate": 1,
-    "switchCount": 1
+    "switchCount": 1,
+    "switches": {
+     "kind": "",
+     "power": 0,
+     "zone": 0
+    }
    },
    {
     "id": 7,
@@ -4723,7 +4813,12 @@
     "groupId": 2,
     "groupName": "办公区",
     "netstate": 1,
-    "switchCount": 8
+    "switchCount": 8,
+    "switches": {
+     "kind": "amplifier",
+     "power": 8,
+     "zone": 0
+    }
    },
    {
     "id": 8,
@@ -4732,7 +4827,12 @@
     "groupId": 3,
     "groupName": "室外操场",
     "netstate": 1,
-    "switchCount": 0
+    "switchCount": 0,
+    "switches": {
+     "kind": "",
+     "power": 0,
+     "zone": 0
+    }
    },
    {
     "id": 10,
@@ -4741,7 +4841,12 @@
     "groupId": 4,
     "groupName": "宿舍楼",
     "netstate": 1,
-    "switchCount": 0
+    "switchCount": 0,
+    "switches": {
+     "kind": "",
+     "power": 0,
+     "zone": 0
+    }
    },
    {
     "id": 11,
@@ -4750,7 +4855,12 @@
     "groupId": 2,
     "groupName": "办公区",
     "netstate": 1,
-    "switchCount": 0
+    "switchCount": 0,
+    "switches": {
+     "kind": "",
+     "power": 0,
+     "zone": 0
+    }
    },
    {
     "id": 20,
@@ -4759,7 +4869,12 @@
     "groupId": 2,
     "groupName": "办公区",
     "netstate": 1,
-    "switchCount": 16
+    "switchCount": 16,
+    "switches": {
+     "kind": "",
+     "power": 0,
+     "zone": 0
+    }
    },
    {
     "id": 3,
@@ -4768,7 +4883,12 @@
     "groupId": 1,
     "groupName": "教学楼",
     "netstate": 0,
-    "switchCount": 0
+    "switchCount": 0,
+    "switches": {
+     "kind": "",
+     "power": 0,
+     "zone": 0
+    }
    },
    {
     "id": 9,
@@ -4777,7 +4897,12 @@
     "groupId": 3,
     "groupName": "室外操场",
     "netstate": 0,
-    "switchCount": 0
+    "switchCount": 0,
+    "switches": {
+     "kind": "",
+     "power": 0,
+     "zone": 0
+    }
    }
   ]
  },

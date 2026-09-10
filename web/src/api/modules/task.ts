@@ -221,6 +221,22 @@ export interface MediaOption {
   folderName: string;
 }
 
+/**
+ * 一台终端那几路开关的排法（后端 internal/termswitch.Layout）。
+ *
+ *   kind  ""=没有逐路勾选这回事 / "preamp"=前置 / "amplifier"=功放
+ *   power 前几路是电源
+ *   zone  接着几路是分区
+ *
+ * ⚠ 型号号码（哪些 id 算前置、哪些算功放）**只写在后端一处**。
+ *   前端不认号码，只认这三个字段 —— 现场换新型号时改后端就够了。
+ */
+export interface SwitchLayout {
+  kind: "" | "preamp" | "amplifier";
+  power: number;
+  zone: number;
+}
+
 export interface TaskTerminalOption {
   id: number;
   name: string;
@@ -228,8 +244,10 @@ export interface TaskTerminalOption {
   groupId: number;
   groupName: string;
   netstate: number;
-  /** 分区/通道数（terminaltype.switchcount）。≥ 2 时这台终端可以逐分区勾选 */
+  /** 分区/通道数（terminaltype.switchcount）。只说有几路，不说每一路是干什么的 */
   switchCount: number;
+  /** 这几路里哪些是电源、哪些是分区 */
+  switches: SwitchLayout;
 }
 
 export type TaskAction = "start" | "stop" | "pause" | "resume";

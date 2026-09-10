@@ -8,6 +8,7 @@ import (
 	"htweb/internal/folder"
 	"htweb/internal/i18n"
 	"htweb/internal/store"
+	"htweb/internal/termswitch"
 )
 
 // 媒体与终端选择器（修 D-102）。
@@ -83,6 +84,9 @@ type TerminalOption struct {
 	// 旧版挑终端时按它决定要不要弹「分区一…分区十六」那张勾选表
 	// （get_terminaltype.php 就是查这一列），并把结果写进 terminaloftask.area。
 	SwitchCount int `json:"switchCount"`
+	// Switches 说明这几路里哪些是电源、哪些是分区 —— switchcount 只有个数，
+	// 没有语义。判据见 internal/termswitch，界面照它排勾选框的名字。
+	Switches termswitch.Layout `json:"switches"`
 }
 
 // TerminalOptions 按关键字搜索可选终端。
@@ -105,7 +109,7 @@ func (s *Service) TerminalOptions(ctx context.Context, u *auth.User, keyword str
 	}
 
 	rs, err := s.db.QueryContext(ctx, `
-		SELECT t.id, COALESCE(t.terminalname,''), COALESCE(tt.name,''),
+		SELECT t.id, COALESCE(t.terminalname,''), COALESCE(t.typeid,0), COALESCE(tt.name,''),
 		       COALESCE((SELECT tog.groupid FROM terminalofgroup tog
 		                  WHERE tog.terminalid = t.id ORDER BY tog.id LIMIT 1), 0),
 		       COALESCE(t.netstate,0), COALESCE(tt.switchcount,0)
@@ -122,10 +126,12 @@ func (s *Service) TerminalOptions(ctx context.Context, u *auth.User, keyword str
 	groupIDs := map[int64]bool{}
 	for rs.Next() {
 		var o TerminalOption
-		if err := rs.Scan(&o.ID, &o.Name, &o.TypeName, &o.GroupID, &o.NetState, &o.SwitchCount); err != nil {
+		var typeID int64
+		if err := rs.Scan(&o.ID, &o.Name, &typeID, &o.TypeName, &o.GroupID, &o.NetState, &o.SwitchCount); err != nil {
 			return nil, err
 		}
 		o.TypeName = i18n.TC(ctx, o.TypeName)
+		o.Switches = termswitch.Of(typeID, o.SwitchCount)
 		if o.GroupID > 0 {
 			groupIDs[o.GroupID] = true
 		}

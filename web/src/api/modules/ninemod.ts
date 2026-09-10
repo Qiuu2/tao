@@ -1,6 +1,8 @@
 import http from "@/api";
 import { PORT1 } from "@/api/config/servicePort";
 import type { ResPage } from "@/api/interface";
+// 开关排法两处共用一个类型，定义在 task.ts（终端选项最先出现在那儿）
+import type { SwitchLayout } from "./task";
 
 /* ==================================================================
    终端功放 / 采播管理 / 文字语音 / LED 播放（共用 typed-tasks）
@@ -133,8 +135,10 @@ export interface TypedTerminalOption {
   ip: string;
   netstate: number;
   groupId: number;
-  /** 分区/通道数（terminaltype.switchcount）。≥ 2 时这台终端可以逐分区勾选 */
+  /** 分区/通道数（terminaltype.switchcount）。只说有几路，不说每一路是干什么的 */
   switchCount: number;
+  /** 这几路里哪些是电源、哪些是分区 */
+  switches: SwitchLayout;
 }
 
 export interface TypedControlResult {

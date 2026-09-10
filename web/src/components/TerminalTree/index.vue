@@ -68,13 +68,13 @@
           <span class="tt-label">{{ data.label }}</span>
           <span v-if="data.terminalId" class="tt-meta">
             <!--
-              分区/通道勾选。照 ok112：终端型号的 switchcount ≥ 2 时才有这一项
-              （get_terminaltype.php 查的就是 terminaltype.switchcount，
-              addterminalfunctionplay.html 里的判据是 channelnum%2==0 && channelnum!=0，
-              现网所有型号的 switchcount 不是 0/1 就是 4/8/10/16，两者等价）。
+              电源 / 分区逐路勾选。只有**前置和功放**有这一项 ——
+              switchcount 只说有几路，不说每一路是干什么的，判据在后端
+              （internal/termswitch），这里只认它回的 switches。
+              勾选前置的第 3 路和勾选功放的第 3 路，含义完全不同。
             -->
             <el-button
-              v-if="zonePickable && data.switchCount >= 2"
+              v-if="zonePickable && pickableOf(data)"
               link
               type="primary"
               size="small"
@@ -133,33 +133,57 @@ interface TermNode {
   /** 型号 / IP 之类的次要信息，显示在名字右边 */
   sub?: string;
   disabled?: boolean;
-  /** 分区/通道数（terminaltype.switchcount）。≥ 2 时这台终端可以逐分区勾选 */
+  /** 分区/通道数（terminaltype.switchcount）。只说有几路，不说每一路是干什么的 */
   switchCount?: number;
+  /** 这几路里哪些是电源、哪些是分区。后端算好给的，见 internal/termswitch */
+  switches?: SwitchLayout;
   children?: TermNode[];
 }
 
 /**
- * 分区/通道的名字，逐个照 ok112 的 language/chinese.php：
- * zone_1..zone_6 是分区一~六，zone_7/zone_8 是**电源一 / 电源二**，
- * zone_9..zone_16 又回到分区九~十六。第 7、8 位不是分区，别顺手改成「分区七/八」。
+ * 一台终端那几路开关的排法（后端 internal/termswitch.Layout）。
+ *
+ *   kind  ""=没有逐路勾选这回事 / "preamp"=前置 / "amplifier"=功放
+ *   power 前几路是电源
+ *   zone  接着几路是分区
+ *
+ * 前置是「前两路电源 + 其余分区」，功放是「全部电源」。
+ * 型号号码写在后端，前端不认号码，只认这三个字段。
  */
+interface SwitchLayout {
+  kind: string;
+  power: number;
+  zone: number;
+}
+
 // 脚本里拼的文案用 t()；模板里的 $t 不用引入
 const { t, locale } = useI18n();
 // 有几处循环里的临时变量就叫 t（一台终端），会把上面这个 t 遮住。
 // 起个别名比给循环变量改名安全 —— 改名要动一整段，遮蔽只在那几行里发生。
 const i18nT = t;
 
-const ZONE_LABELS = computed(() => {
-  // 第 7、8 位是电源不是分区（旧版 language/chinese.php 的 zone_7 / zone_8
-  // 就写着「电源一 / 电源二」），别顺手排成「分区七 / 分区八」。
-  // prettier-ignore
-  const zh = ["一", "二", "三", "四", "五", "六", "", "", "九", "十", "十一", "十二", "十三", "十四", "十五", "十六"]; // i18n-ignore：只在中文界面用，英文走 i+1
-  const isEn = locale.value === "en";
-  return zh.map((w, i) => {
-    if (i === 6 || i === 7) return t("common.powerBit", { n: isEn ? i - 5 : i === 6 ? "一" : "二" }); // i18n-ignore
-    return t("common.zoneBit", { n: isEn ? i + 1 : w });
-  });
-});
+/**
+ * 序号的中文写法。「电源一」「分区十六」这种，英文界面直接用阿拉伯数字。
+ *
+ * ⚠ 旧版把这十六个名字写死成 zone_1..zone_16，其中第 7、8 位固定叫
+ *   「电源一 / 电源二」—— 那是照某一种型号排的，换个型号就对不上。
+ *   现在改成按型号算（前置前两路电源、功放全是电源），序号在这里生成。
+ */
+// prettier-ignore
+const CN_NUM = ["一", "二", "三", "四", "五", "六", "七", "八", "九", "十", "十一", "十二", "十三", "十四", "十五", "十六"]; // i18n-ignore：只在中文界面用，英文走数字
+
+const ordinal = (n: number) => (locale.value === "en" ? String(n) : (CN_NUM[n - 1] ?? String(n)));
+
+/**
+ * 一台终端那几路开关的名字，顺序与 terminaloftask.area 的位次一一对应。
+ * 前 power 路是电源，接着 zone 路是分区 —— 排法由后端给（internal/termswitch）。
+ */
+const switchLabels = (sw?: SwitchLayout): string[] => {
+  const out: string[] = [];
+  for (let i = 0; i < (sw?.power ?? 0); i++) out.push(t("common.powerBit", { n: ordinal(i + 1) }));
+  for (let i = 0; i < (sw?.zone ?? 0); i++) out.push(t("common.zoneBit", { n: ordinal(i + 1) }));
+  return out;
+};
 
 /** terminaloftask.area 是 varchar(16)，旧版勾选后补 0 补满 16 位 */
 const AREA_LEN = 16;
@@ -252,6 +276,7 @@ const normalize = (t: any) => ({
   netstate: Number(t.netstate ?? 0),
   typeName: String(t.typeName ?? "").trim(),
   switchCount: Number(t.switchCount ?? 0),
+  switches: t.switches as SwitchLayout | undefined,
   disabled: !!t.disabled
 });
 
@@ -333,6 +358,7 @@ const nodes = computed<TermNode[]>(() => {
       netstate: t.netstate,
       sub,
       switchCount: t.switchCount,
+      switches: t.switches,
       disabled: t.disabled
     });
   }
@@ -377,10 +403,24 @@ watch(nodes, syncToTree);
  *   分组节点也算进来，而分组节点没有 terminalId，会变成一堆 NaN。
  *   即便如此这里仍然再 filter 一次 terminalId，双保险。
  */
-const emitChecked = () => {
+/**
+ * 勾选变化。
+ *
+ * 勾中一台前置或功放时**顺手把电源/分区那张小表弹出来** —— 照 ok112：
+ * 它在 toncheck() 里 state==1 就把 div#lead 浮到鼠标边上。
+ * 不弹的话，那几路默认全接通，而人根本不知道有这回事。
+ *
+ * 只在**点这台终端本身**时弹：点分组节点会连带勾上底下十几台，
+ * 一台弹一个框没法用。那种情况下人可以再点节点上的入口逐台设。
+ */
+const emitChecked = (data?: TermNode, info?: { checkedKeys?: (string | number)[] }) => {
   if (!props.multiple || !treeRef.value) return;
   const ids = (treeRef.value.getCheckedNodes(true) as TermNode[]).filter(n => !!n.terminalId).map(n => n.terminalId as number);
   emit("update:modelValue", ids);
+
+  if (!zonePickable.value || !data?.terminalId || !pickableOf(data)) return;
+  const justChecked = (info?.checkedKeys ?? []).includes(data.key);
+  if (justChecked) openZone(data);
 };
 
 const onNodeClick = (data: TermNode) => {
@@ -394,6 +434,7 @@ const checkAll = (on: boolean) => {
   if (!treeRef.value) return;
   const all = nodes.value.flatMap(g => g.children ?? []).filter(n => !n.disabled);
   treeRef.value.setCheckedKeys(on ? all.map(n => n.key) : [], false);
+  // 不传节点：全选一次可能勾上几十台，一台弹一个框没法用
   emitChecked();
 };
 
@@ -422,32 +463,39 @@ const zone = reactive({
   checked: [] as number[]
 });
 
-/** 没设过的终端按「全通道」显示：与后端默认一致 */
+/** 这台终端有几路可勾。后端没给 switches 的接口（老的几个）当作没有。 */
+const switchTotal = (data: TermNode) => (data.switches?.power ?? 0) + (data.switches?.zone ?? 0);
+
+/** 要不要给这台终端逐路勾选：只有前置和功放，而且真的有路可勾 */
+const pickableOf = (data: TermNode) => !!data.switches?.kind && switchTotal(data) > 0;
+
+/** 没设过的终端按「全部接通」显示：与后端默认一致 */
 const maskOf = (data: TermNode) => {
   const raw = props.areas?.[data.terminalId as number];
-  const n = data.switchCount ?? 0;
+  const n = switchTotal(data);
   if (!raw) return "1".repeat(Math.min(n, AREA_LEN)).padEnd(AREA_LEN, "0");
   return raw.padEnd(AREA_LEN, "0").slice(0, AREA_LEN);
 };
 
 const zoneSummary = (data: TermNode) => {
-  const n = Math.min(data.switchCount ?? 0, AREA_LEN);
+  const labels = switchLabels(data.switches);
   const mask = maskOf(data);
   const on: string[] = [];
-  for (let i = 0; i < n; i++) if (mask[i] === "1") on.push(ZONE_LABELS.value[i]);
+  for (let i = 0; i < labels.length; i++) if (mask[i] === "1") on.push(labels[i]);
   if (on.length === 0) return t("common.zoneNone");
-  if (on.length === n) return t("common.zoneAll");
-  return t("common.zoneSome", { list: on.join("、") });
+  if (on.length === labels.length) return t("common.zoneAll");
+  // 顿号是中文的列表分隔符，英文界面下要用逗号 —— 「Power 1、Zone 2」很刺眼
+  return t("common.zoneSome", { list: on.join(locale.value === "en" ? ", " : "、") }); // i18n-ignore
 };
 
 const openZone = (data: TermNode) => {
-  const n = Math.min(data.switchCount ?? 0, AREA_LEN);
+  const labels = switchLabels(data.switches);
   const mask = maskOf(data);
   zone.terminalId = data.terminalId as number;
   zone.title = t("common.zoneSelect", { name: data.label });
-  zone.labels = ZONE_LABELS.value.slice(0, n);
+  zone.labels = labels;
   zone.checked = [];
-  for (let i = 0; i < n; i++) if (mask[i] === "1") zone.checked.push(i);
+  for (let i = 0; i < labels.length; i++) if (mask[i] === "1") zone.checked.push(i);
   zone.visible = true;
 };
 
