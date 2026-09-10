@@ -21,6 +21,7 @@ type Config struct {
 	Database  Database  `yaml:"database"`
 	Media     Media     `yaml:"media"`
 	Notify    Notify    `yaml:"notify"`
+	SDK       SDK       `yaml:"sdk"`
 	Auth      Auth      `yaml:"auth"`
 	Logs      Logs      `yaml:"logs"`
 	Backup    Backup    `yaml:"backup"`
@@ -183,6 +184,22 @@ type Notify struct {
 	Enabled bool `yaml:"enabled"`
 }
 
+// SDK 是厂商 SDK 的二进制命令端口（首页那四个紧急广播按钮走这里）。
+//
+// 与上面的 Notify 是**两套协议、两个端口**，不能合并：
+// notify 发文本报文到 serverbaseparam.webport，这里发结构体的内存布局到 8885。
+// 详见 internal/sdkudp 的包说明。
+type SDK struct {
+	// Host 后台广播服务地址。默认走本机回环 —— 厂商示例里写的是 docker 里的
+	// 主机名 audioserver，新版跑在宿主上，用已发布的回环端口。
+	Host string `yaml:"host"`
+	// Port SDK 命令端口，默认 8885。
+	Port int `yaml:"port"`
+	// Enabled 关掉后只记日志不真发包。联调期用得上 ——
+	// 这条命令一发出去，整所学校的喇叭就响了，没有「预演」这一说。
+	Enabled bool `yaml:"enabled"`
+}
+
 type Auth struct {
 	// Secret 用于签发会话令牌的 HMAC 密钥。
 	Secret string `yaml:"secret"`
@@ -216,6 +233,7 @@ func Default() *Config {
 		},
 		Media:  Media{Root: "/opt/apps/a9000", MaxUploadMB: 300, FFmpeg: "/opt/apps/a9000/bin/ffmpeg"},
 		Notify: Notify{Host: "127.0.0.1", Port: 0, Enabled: true},
+		SDK:    SDK{Host: "127.0.0.1", Port: 8885, Enabled: true},
 		Auth:   Auth{TTL: 8 * time.Hour, CaptchaEnabled: true},
 		Assistant: Assistant{
 			Enabled:      false,
@@ -241,6 +259,14 @@ func (c *Config) validate() error {
 	}
 	if c.Media.Root == "" {
 		return fmt.Errorf("media.root 不能为空")
+	}
+	// 端口配成 0 的话包会发到 127.0.0.1:0 上，Dial 那一步就报错了，
+	// 但 UDP 没有回执，界面上只会看到「已下发」——给个兜底值。
+	if c.SDK.Port <= 0 {
+		c.SDK.Port = 8885
+	}
+	if strings.TrimSpace(c.SDK.Host) == "" {
+		c.SDK.Host = "127.0.0.1"
 	}
 	if c.Auth.TTL <= 0 {
 		c.Auth.TTL = 8 * time.Hour

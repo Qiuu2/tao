@@ -49,10 +49,10 @@ export interface BoundTask {
   missing: boolean;
 }
 
+/** 紧急广播的一路。四路固定，**不绑任务** —— 按下去直接发 SDK 命令。 */
 export interface EmergencySlot {
   key: string;
   name: string;
-  task: BoundTask | null;
 }
 
 export interface DashConfig {
@@ -95,5 +95,11 @@ export const saveShortcutsApi = (shortcuts: Shortcut[]) =>
 export const saveQuickTasksApi = (taskIds: number[]) =>
   http.put<{ count: number }>(PORT1 + `/api/dashboard/quick-tasks`, { taskIds });
 
-export const saveEmergencyApi = (slots: Record<string, number>) =>
-  http.put<{ slots: number }>(PORT1 + `/api/dashboard/emergency`, { slots });
+/**
+ * 下发一路紧急广播。stop 为 true 表示停止。
+ *
+ * ⚠ 后端走的是 UDP，没有回执：这个接口成功只代表命令发出去了，
+ * 终端响没响这一侧看不见。所以提示语写「已下发」而不是「已播放」。
+ */
+export const playEmergencyApi = (key: string, stop: boolean) =>
+  http.post<{ key: string; stop: boolean }>(PORT1 + `/api/dashboard/emergency`, { key, stop });

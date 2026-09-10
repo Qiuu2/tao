@@ -1,12 +1,16 @@
 package main
 
 import (
+	"fmt"
 	"net/http"
 	"strings"
 
+	"htweb/internal/audit"
 	"htweb/internal/auth"
 	"htweb/internal/dashboard"
 	"htweb/internal/httpx"
+	"htweb/internal/i18n"
+	"htweb/internal/sdkudp"
 	"htweb/internal/store"
 )
 
@@ -88,20 +92,76 @@ func (a *app) handleDashQuickTasks(w http.ResponseWriter, r *http.Request) {
 	httpx.OK(w, map[string]interface{}{"count": len(in.TaskIDs)})
 }
 
-type emergencyReq struct {
-	Slots map[string]int64 `json:"slots"`
+// emergencyAuditLabel 是四路各自的操作日志文案，[0]=下发 [1]=停止。
+//
+// # 为什么摊成八条写死的字符串，而不是拼出来
+//
+// 两个原因，缺一不可：
+//  1. 日志页会把 operate 按界面语言翻一遍，而翻译是**按整句原文查字典**的。
+//     拼出来的句子在字典里找不到，英文界面下这一行就永远是中文。
+//  2. 字典的一致性测试（i18n/dict_test.go）会拿每条中文回 Go 源码里找一遍。
+//     写死在这儿，改了名字测试立刻就红。
+//
+// 八条重复得有点笨，但这是整个系统里最需要事后说清「谁在几点放了哪一路」的动作。
+var emergencyAuditLabel = map[string][2]string{
+	"quake":    {"下发紧急广播（地震）", "停止紧急广播（地震）"},
+	"evacuate": {"下发紧急广播（疏散）", "停止紧急广播（疏散）"},
+	"alert":    {"下发紧急广播（警戒）", "停止紧急广播（警戒）"},
+	"fire":     {"下发紧急广播（消防）", "停止紧急广播（消防）"},
 }
 
-func (a *app) handleDashEmergency(w http.ResponseWriter, r *http.Request) {
-	var in emergencyReq
+type emergencyPlayReq struct {
+	// Key 是四个固定槽位之一：quake / evacuate / alert / fire
+	Key string `json:"key"`
+	// Stop 为 true 表示停止这一路，false 表示开始播。
+	Stop bool `json:"stop"`
+}
+
+// handleDashEmergencyPlay 触发（或停止）一路紧急广播。
+//
+// 它**不写任何数据**：一条 SDK 命令发到后台服务的 8885 端口，
+// 由后台服务去驱动终端。所以这里没有「绑定」这一步，四个按钮随时可按。
+//
+// ⚠ UDP 没有回执。这个接口返回成功，只能说明包发出去了 ——
+// 后台服务收没收到、终端响没响，这一侧看不见。前端提示因此写「已下发」。
+func (a *app) handleDashEmergencyPlay(w http.ResponseWriter, r *http.Request) {
+	var in emergencyPlayReq
 	if !httpx.DecodeJSON(w, r, &in) {
 		return
 	}
-	if err := a.dash.SetEmergency(r.Context(), in.Slots); err != nil {
-		failDash(w, "绑定紧急广播", err)
+	slot, ok := dashboard.FindSlot(strings.TrimSpace(in.Key))
+	if !ok {
+		// 拼过字符串的 msg 在响应边界那一层配不上字典，所以在这儿就把原文翻好。
+		httpx.Fail(w, httpx.CodeBadRequest, fmt.Sprintf(
+			i18n.TC(r.Context(), "紧急广播只有 quake / evacuate / alert / fire 四路，不认识 %s"), in.Key))
 		return
 	}
-	httpx.OK(w, map[string]interface{}{"slots": len(in.Slots)})
+
+	stop := int32(0)
+	if in.Stop {
+		stop = 1
+	}
+
+	// 审计写在动手之前，而且发包失败也留着这一行：
+	// 「谁在几点按了哪一路」这件事，比这一包有没有成功发出去更值得记 ——
+	// UDP 本来也判断不出对面收没收到，事后追的是**按钮被按过**。
+	u := auth.From(r.Context())
+	a.auditor.Write(r.Context(), u.Username,
+		emergencyAuditLabel[slot.Key][stop], audit.ClientIP(r))
+
+	err := a.sdk.SendUrgentPlay(r.Context(), sdkudp.UrgentPlay{
+		ChannelID: slot.ChannelID,
+		KeyID:     slot.KeyID,
+		// 0 = 全部终端。紧急广播按定义就是全场都要听见，
+		// 界面上也没有选终端这一步。
+		TerminalID: 0,
+		IsStop:     stop,
+	})
+	if err != nil {
+		httpx.Internal(w, "下发紧急广播", err)
+		return
+	}
+	httpx.OK(w, map[string]interface{}{"key": slot.Key, "stop": in.Stop})
 }
 
 func (a *app) handleDashBrowse(w http.ResponseWriter, r *http.Request) {

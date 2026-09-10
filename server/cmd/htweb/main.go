@@ -45,6 +45,7 @@ import (
 	"htweb/internal/openapi"
 	"htweb/internal/register"
 	"htweb/internal/remote"
+	"htweb/internal/sdkudp"
 	"htweb/internal/serverparam"
 	"htweb/internal/sound"
 	"htweb/internal/store"
@@ -78,6 +79,8 @@ type app struct {
 	params    *serverparam.Service
 	offline   *offline.Service
 	dash      *dashboard.Service
+	// sdk 走厂商 SDK 的二进制端口，目前只有首页那四个紧急广播按钮在用。
+	sdk       *sdkudp.Sender
 	zones     *zone.Service
 	holidays  *holiday.Service
 	remotes   *remote.Service
@@ -136,6 +139,7 @@ func main() {
 			cfg.Media.Root),
 		offline:  offline.New(st.DB()),
 		dash:     dashboard.New(st.DB(), cfg.DashboardFile()),
+		sdk:      sdkudp.New(cfg.SDK.Host, cfg.SDK.Port, cfg.SDK.Enabled),
 		zones:    zone.New(st.DB()),
 		holidays: holiday.New(st.DB()),
 		remotes:  remote.New(st.DB()),
@@ -496,15 +500,19 @@ func (a *app) routes() http.Handler {
 	// —— 看板首页 ——
 	//
 	// 读只要登录（设备与任务的可见范围各自按 userterminal / task_user_id 收敛）；
-	// 三块可配置区域（快捷入口 / 快捷任务 / 紧急广播绑定）是全局共享的界面设置，
+	// 两块可配置区域（快捷入口 / 快捷任务）是全局共享的界面设置，
 	// 收紧到超级管理员，免得任何人都能改掉别人看到的首页。
+	//
+	// 紧急广播是**动作**不是设置：它不存东西，按一下全场喇叭就响。
+	// 门槛跟「启停任务」一档（PrivTask / tsk），与它替换掉的那两个按钮一致 ——
+	// 收到超级管理员会让值班的人在真出事时按不动。
 	mux.HandleFunc("GET /api/dashboard/overview", req(a.handleDashOverview))
 	mux.HandleFunc("GET /api/dashboard/perf", req(a.handleDashPerf))
 	mux.HandleFunc("GET /api/dashboard/config", req(a.handleDashConfig))
 	mux.HandleFunc("GET /api/dashboard/tasks", req(a.handleDashBrowse))
 	mux.HandleFunc("PUT /api/dashboard/shortcuts", sup(a.handleDashShortcuts))
 	mux.HandleFunc("PUT /api/dashboard/quick-tasks", sup(a.handleDashQuickTasks))
-	mux.HandleFunc("PUT /api/dashboard/emergency", sup(a.handleDashEmergency))
+	mux.HandleFunc("POST /api/dashboard/emergency", tsk(a.handleDashEmergencyPlay))
 
 	// rmt 是「遥控管理」那一档：serverpriv，但**受备机只读限制**。
 	//

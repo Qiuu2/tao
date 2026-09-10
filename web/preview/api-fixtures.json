@@ -725,23 +725,19 @@
    "emergency": [
     {
      "key": "quake",
-     "name": "地震",
-     "task": null
+     "name": "地震"
     },
     {
      "key": "evacuate",
-     "name": "疏散",
-     "task": null
+     "name": "疏散"
     },
     {
      "key": "alert",
-     "name": "警戒",
-     "task": null
+     "name": "警戒"
     },
     {
      "key": "fire",
-     "name": "消防",
-     "task": null
+     "name": "消防"
     }
    ]
   }
@@ -9265,9 +9261,9 @@
         {
          "name": "zone",
          "in": "query",
-         "type": "string",
+         "type": "int/string",
          "required": false,
-         "desc": "只看某个分区的。名字或编号都行",
+         "desc": "只看某个分区的。**分区编号**或分区名都行（分区名不会重复，两种都安全）",
          "example": ""
         },
         {
@@ -9297,6 +9293,7 @@
        ],
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "{\n  \"list\": [{\n    \"id\": 2, \"name\": \"A102教室音箱\", \"type\": \"一体化音箱\", \"zone\": \"教学楼\",\n    \"ip\": \"192.168.2.12\",\n    \"online\": true, \"playing\": false, \"stateText\": \"在线空闲\",\n    \"volume\": 75, \"running\": true, \"runStateText\": \"已启动\"\n  }],\n  \"total\": 12, \"pageNum\": 1, \"pageSize\": 20\n}",
        "returns": [
         {
@@ -9434,6 +9431,7 @@
        ],
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "{\n  \"list\": [{ \"id\": 125, \"name\": \"10.起床号.mp3\", \"seconds\": 89,\n             \"sizeKB\": 1406, \"folderId\": 2, \"type\": \"mp3\" }],\n  \"total\": 1, \"pageNum\": 1, \"pageSize\": 20\n}",
        "returns": [
         {
@@ -9528,6 +9526,7 @@
        ],
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "{\n  \"list\": [{\n    \"id\": 1008, \"name\": \"升旗仪式-国歌\", \"note\": \"每周一\",\n    \"enabled\": true, \"running\": true, \"stateText\": \"执行中\",\n    \"startDate\": \"2026-01-01\", \"endDate\": \"2026-12-31\",\n    \"playTime\": \"07:50:00\", \"endTime\": \"07:53:00\",\n    \"weekdays\": [7], \"priority\": 8, \"volume\": 90,\n    \"media\": [{ \"id\": 138, \"name\": \"中华人民共和国国歌.mp3\" }],\n    \"terminals\": [{ \"id\": 8, \"name\": \"操场号角01\" }]\n  }],\n  \"total\": 6, \"pageNum\": 1, \"pageSize\": 20\n}",
        "returns": [
         {
@@ -9645,6 +9644,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "[{ \"name\": \"春季作息\", \"tasks\": 7, \"enabled\": 7 }]",
        "returns": [
         {
@@ -9685,12 +9685,13 @@
          "in": "path",
          "type": "string",
          "required": true,
-         "desc": "方案名。界面会自动做 URL 编码",
+         "desc": "方案名。⚠ 方案**没有编号**，名字就是它的身份，这里只能写名字。界面会自动做 URL 编码",
          "example": "春季作息"
         }
        ],
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "{\n  \"name\": \"春季作息\", \"volume\": 66, \"priority\": 10,\n  \"terminals\": [{ \"id\": 1, \"name\": \"A101教室音箱\" }],\n  \"items\": [{\n    \"taskId\": 1001, \"name\": \"早读预备铃\", \"playTime\": \"07:20:00\", \"enabled\": true,\n    \"seconds\": 30, \"loopTimes\": 0, \"weekdays\": [1,2,3,4,5],\n    \"startDate\": \"2026-01-01\", \"endDate\": \"2026-12-31\",\n    \"media\": [{ \"id\": 125, \"name\": \"10.起床号.mp3\" }]\n  }]\n}",
        "returns": [
         {
@@ -9788,6 +9789,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "[{\n  \"playId\": 1, \"taskId\": 70231, \"media\": \"中华人民共和国国歌.mp3\",\n  \"terminals\": [{ \"id\": 8, \"name\": \"操场号角01\" }],\n  \"volume\": 90, \"seconds\": 46, \"state\": \"playing\",\n  \"startTime\": \"2026-09-08 08:00:52\", \"endTime\": \"\"\n}]",
        "returns": [
         {
@@ -9853,7 +9855,7 @@
     },
     {
      "name": "任务",
-     "desc": "文件广播任务的增删改启停。新建是一次调用带齐媒体、终端、任务信息 —— 与界面「新建任务」那一屏对应。",
+     "desc": "文件广播任务的增删改启停。新建是一次调用带齐媒体、终端、任务信息 —— 与界面「新建任务」那一屏对应。媒体、终端、分区、任务本身都**用编号寻址**最稳（编号唯一，名字不一定）。",
      "prefix": "/openapi/v1",
      "section": "curated",
      "endpoints": [
@@ -9874,27 +9876,27 @@
         },
         {
          "name": "folder",
-         "type": "string/int",
+         "type": "int/string",
          "required": false,
-         "desc": "所属分组，名字或编号。不给落到你看得见的第一个分组"
+         "desc": "所属分组：**分组编号**，也认分组名（分组名建的时候挡了重名，用名字安全）。不给落到你看得见的第一个分组"
         },
         {
          "name": "media",
          "type": "数组",
          "required": false,
-         "desc": "媒体清单，**按数组顺序播**。每项写名字或编号"
+         "desc": "媒体清单，**按数组顺序播**。每项写**媒体编号**（推荐，唯一），也认媒体名 —— ⚠ 但媒体名没有唯一约束，可以重名，重了会报错要你改用编号。编号在「媒体列表」里查"
         },
         {
          "name": "terminals",
          "type": "数组",
          "required": false,
-         "desc": "播到哪些终端。每项可以只写名字/编号，也可以写 { \"terminal\": \"A101教室音箱\", \"area\": \"11110000\" } 来指定区域掩码"
+         "desc": "播到哪些终端。每项写**终端编号**（推荐，唯一），也认终端名（⚠ 同样可以重名）；要指定区域掩码就写成 { \"terminal\": 1, \"area\": \"11110000\" }。编号在「终端状态」里查。**不用给分区号**，服务端自己填"
         },
         {
          "name": "zones",
          "type": "数组",
          "required": false,
-         "desc": "播到哪些分区，会展开成终端。与 terminals 取并集去重"
+         "desc": "播到哪些分区，会展开成终端。每项写**分区编号**或分区名（分区名不会重复，用名字安全）。与 terminals 取并集去重"
         },
         {
          "name": "playTime",
@@ -9936,13 +9938,13 @@
          "name": "seconds",
          "type": "int",
          "required": false,
-         "desc": "时长（秒）。与 loopTimes 二选一；都不给按媒体自身总时长算"
+         "desc": "时长（秒），最多 86400。与 loopTimes 二选一；都不给按媒体自身总时长算"
         },
         {
          "name": "loopTimes",
          "type": "int",
          "required": false,
-         "desc": "循环次数。与 seconds 二选一。⚠ 填 0 是**无限循环**，不是「不循环」"
+         "desc": "循环次数：把整个清单播几遍。与 seconds 二选一。⚠ 填 0 是**无限循环**，不是「不循环」"
         },
         {
          "name": "interval",
@@ -10044,17 +10046,18 @@
          "name": "led.devices",
          "type": "数组",
          "required": false,
-         "desc": "上到哪几块屏。每项 { terminal, deviceId }；deviceId 在「led播放 → LED 屏设备」里看"
+         "desc": "上到哪几块屏。每项 { terminal, deviceId }；terminal 同上，写**终端编号**最稳；deviceId 在「led播放 → LED 屏设备」里看"
         }
        ],
-       "body": "{\n  \"name\": \"课间音乐\",\n  \"folder\": \"admin\",\n\n  \"media\": [\"大课间.mp3\", \"10.起床号.mp3\"],\n  \"terminals\": [{ \"terminal\": \"A101教室音箱\", \"area\": \"11110000\" }],\n  \"zones\": [\"教学楼\"],\n\n  \"playTime\": \"09:50\",\n  \"endTime\": \"10:00:00\",\n  \"startDate\": \"2026-09-01\",\n  \"endDate\": \"2027-01-31\",\n  \"weekdays\": [1, 2, 3, 4, 5],\n  \"disableDay\": \"2026-10-01\",\n\n  \"seconds\": 600,\n  \"interval\": { \"everySeconds\": 300, \"playSeconds\": 30 },\n\n  \"volume\": 70,\n  \"priority\": 20,\n  \"prePower\": 10,\n  \"sequential\": true,\n  \"multicast\": false,\n  \"localFirst\": false,\n  \"enabled\": true,\n\n  \"led\": {\n    \"text\": \"课间休息，请到操场活动\",\n    \"speed\": 5,\n    \"mode\": 0,\n    \"devices\": [{ \"terminal\": \"A101教室音箱\", \"deviceId\": 1 }]\n  }\n}",
-       "sample": "{ \"id\": 70230, \"mediaCount\": 1, \"terminalCount\": 4 }",
+       "body": "{\n  \"name\": \"课间音乐\",\n  \"folder\": 1,\n\n  \"media\": [124, 125],\n  \"terminals\": [2, { \"terminal\": 1, \"area\": \"11110000\" }],\n  \"zones\": [1],\n\n  \"playTime\": \"09:50\",\n  \"endTime\": \"10:00:00\",\n  \"startDate\": \"2026-09-01\",\n  \"endDate\": \"2027-01-31\",\n  \"weekdays\": [1, 2, 3, 4, 5],\n  \"disableDay\": \"2026-10-01\",\n\n  \"seconds\": 600,\n  \"interval\": { \"everySeconds\": 300, \"playSeconds\": 30 },\n\n  \"volume\": 70,\n  \"priority\": 20,\n  \"prePower\": 10,\n  \"sequential\": true,\n  \"multicast\": false,\n  \"localFirst\": false,\n  \"enabled\": true,\n\n  \"led\": {\n    \"text\": \"课间休息，请到操场活动\",\n    \"speed\": 5,\n    \"mode\": 0,\n    \"devices\": [{ \"terminal\": 1, \"deviceId\": 1 }]\n  }\n}",
+       "examples": null,
+       "sample": "{\n  \"id\": 70230, \"mediaCount\": 2, \"terminalCount\": 4,\n  \"name\": \"课间音乐\", \"folderId\": 1,\n  \"playTime\": \"09:50:00\", \"endTime\": \"10:05:00\",\n  \"seconds\": 900, \"loopTimes\": 0,\n  \"volume\": 70, \"priority\": 20, \"enabled\": true\n}",
        "returns": [
         {
          "name": "id",
          "type": "int",
          "required": false,
-         "desc": "任务编号。之后改它、启停它、删它都用这个（也可以继续用任务名）"
+         "desc": "任务编号。之后改它、启停它、删它都用这个"
         },
         {
          "name": "mediaCount",
@@ -10067,10 +10070,62 @@
          "type": "int",
          "required": false,
          "desc": "实际写进去几台终端。⚠ **对一下这个数** —— 给了分区的话它是展开后的终端数，比你传的条目多是正常的"
+        },
+        {
+         "name": "name / folderId",
+         "type": "混合",
+         "required": false,
+         "desc": "存下来的任务名与所属分组编号。没给 folder 时它是服务端替你挑的那个分组"
+        },
+        {
+         "name": "playTime",
+         "type": "string",
+         "required": false,
+         "desc": "每天几点开播 HH:MM:SS"
+        },
+        {
+         "name": "endTime",
+         "type": "string",
+         "required": false,
+         "desc": "几点结束。⚠ **这一项常常是服务端算的** —— 没传 endTime 时按「开播时刻 + 时长」算；改任务时只要动了时长或挪了开播时刻，它也会跟着重算。对一眼这个值，别等到广播比预期多响五分钟才发现"
+        },
+        {
+         "name": "seconds",
+         "type": "int",
+         "required": false,
+         "desc": "按秒播时的时长。⚠ 与 loopTimes **只有一个非零** —— 库里共用一列，这里替你分开了。都没传时它是按媒体总时长算出来的"
+        },
+        {
+         "name": "loopTimes",
+         "type": "int",
+         "required": false,
+         "desc": "按遍数播时的循环次数"
+        },
+        {
+         "name": "volume",
+         "type": "int",
+         "required": false,
+         "desc": "存下来的音量 0~100。没传时是默认的 80"
+        },
+        {
+         "name": "priority",
+         "type": "int",
+         "required": false,
+         "desc": "存下来的任务级别。⚠ 没传时取的是你能用的**最低**一档（数字最大），会被别的广播压住"
+        },
+        {
+         "name": "enabled",
+         "type": "bool",
+         "required": false,
+         "desc": "存完是启用还是停用。库里 projectstate 0 才是启用，这里已经翻成正常的布尔"
         }
        ],
        "notes": [
+        "回执里除了编号，还有**服务端替你定下来的那几项**（endTime / seconds / priority / folderId / volume）—— 这些是你没传时它自己决定的值，建完对一眼比事后查库快。要看全貌用「任务详情」。",
+        "示例里的数字都是**编号**：folder 1 = 任务分组「admin」，media 124/125 = 两条媒体（在「媒体列表」查），terminal 1/2 = 两台终端（在「终端状态」查），zone 1 = 分区「教学楼」。写名字也认，但见下一条。",
+        "⚠ **能用编号就用编号**。终端名和媒体名在库里**没有唯一约束**，是真的可以重名的 —— 重名时接口只能报错让你改用编号，而这个错会在你上线之后才出现。分区名、任务分组名、媒体目录名建的时候就挡了重名，用名字是安全的；作息方案则相反，它根本没有编号，只能用名字。",
         "⚠ weekdays 留空 = 手动任务，永远不会自动响。想每天响要写 [1,2,3,4,5,6,7]。默认成「每天」太危险 —— 少写一个字段就变成每天全校广播。",
+        "接口里**没有分区号这个参数，也不需要你传**。库里 terminaloftask 除了终端号还存一台终端的分区号（后台下发时读它），这一列由服务端按终端**此刻**所属的分区自己算：分区 2 的终端存 2，没归分区的存 0。界面上那张表单会传它，是因为它手里本来就有终端选择器那份数据；接口这边由服务端算，少一个能填错的地方 —— 分区改了也不用你跟着改。",
         "⚠ 分区是在写入那一刻展开成终端的。建完任务再往分区里加终端，这条任务不会自动带上它 —— 加了终端要重新调一次「修改任务」。",
         "不给 priority 时取最低一档，会被别的广播压住。要它优先就自己填一个小数字。"
        ],
@@ -10088,14 +10143,15 @@
         {
          "name": "ref",
          "in": "path",
-         "type": "string",
+         "type": "int/string",
          "required": true,
-         "desc": "任务名或编号",
-         "example": ""
+         "desc": "**任务编号**（推荐，唯一），也认任务名",
+         "example": "1008"
         }
        ],
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "{\n  \"id\": 70230, \"name\": \"课间音乐\", \"note\": \"\", \"folderId\": 1,\n  \"media\": [{ \"id\": 124, \"name\": \"大课间.mp3\" }],\n  \"terminals\": [{ \"id\": 1, \"name\": \"A101教室音箱\", \"area\": \"11110000\", \"deleted\": false }],\n  \"startDate\": \"2026-09-01\", \"endDate\": \"2027-01-31\",\n  \"playTime\": \"09:50:00\", \"endTime\": \"10:00:00\",\n  \"weekdays\": [1,2,3,4,5], \"disableDay\": \"2026-10-01\",\n  \"seconds\": 600, \"loopTimes\": 0,\n  \"interval\": { \"everySeconds\": 300, \"playSeconds\": 30, \"playTimes\": 0 },\n  \"volume\": 70, \"priority\": 20, \"prePower\": 10,\n  \"enabled\": true, \"sequential\": true, \"multicast\": false, \"localFirst\": false,\n  \"led\": { \"text\": \"课间休息\", \"name\": \"课间音乐\", \"speed\": 5, \"mode\": 0,\n           \"devices\": [{ \"terminalId\": 1, \"terminalName\": \"A101教室音箱\", \"deviceId\": 1 }] }\n}",
        "returns": [
         {
@@ -10201,43 +10257,325 @@
        "method": "PUT",
        "path": "/tasks/{ref}",
        "summary": "修改任务",
-       "desc": "只写要改的字段，没给的保持原样。",
+       "desc": "改一条已经存在的任务。新建时能填的每一项这里都能改：时长、音量、播放时刻、星期、媒体清单、终端、LED 字幕……**只写要改的那几个字段**，没写的保持原样 —— 所以「把时长改成 15 分钟」就是一行 {\"seconds\": 900}，不用把整条任务重发一遍。",
        "right": "任务管理（taskpriv）",
        "params": [
         {
          "name": "ref",
          "in": "path",
-         "type": "string",
+         "type": "int/string",
          "required": true,
-         "desc": "任务名或编号",
-         "example": "课间音乐"
+         "desc": "要改哪条任务：**任务编号**（推荐，唯一），也认任务名。编号从新建任务的返回值或「任务列表」里拿",
+         "example": "70230"
         }
        ],
-       "fields": null,
-       "body": "{ \"volume\": 55 }",
-       "sample": "{ \"id\": 70230, \"mediaCount\": 1, \"terminalCount\": 4 }",
+       "fields": [
+        {
+         "name": "name",
+         "type": "string",
+         "required": false,
+         "desc": "改任务名，最多 45 字。不传就不改名"
+        },
+        {
+         "name": "folder",
+         "type": "int/string",
+         "required": false,
+         "desc": "换到别的任务分组：**分组编号**，也认分组名。不传保持原样"
+        },
+        {
+         "name": "media",
+         "type": "数组",
+         "required": false,
+         "desc": "改播放清单，**按数组顺序播**。⚠ 给了就是**整体替换**，不是追加。每项写**媒体编号**（推荐，唯一），也认媒体名 —— 但媒体名可以重名。不传保持原样"
+        },
+        {
+         "name": "terminals",
+         "type": "数组",
+         "required": false,
+         "desc": "改播到哪些终端。⚠ **整体替换**。每项写**终端编号**（推荐，唯一）或终端名；要改区域掩码写成 { \"terminal\": 1, \"area\": \"11110000\" }。terminals 与 zones 有一个给了值，终端清单就整体重算"
+        },
+        {
+         "name": "zones",
+         "type": "数组",
+         "required": false,
+         "desc": "改播到哪些分区，会展开成终端。每项写**分区编号**或分区名。⚠ 与 terminals 是同一个位置：只传 zones 也会把原来单独挂的终端一起换掉"
+        },
+        {
+         "name": "playTime",
+         "type": "string",
+         "required": false,
+         "desc": "播放时间（每天几点开播）。09:50 或 09:50:00"
+        },
+        {
+         "name": "endTime",
+         "type": "string",
+         "required": false,
+         "desc": "结束时间。不给且这次改了时长的话，会按「播放时刻 + 新时长」自动重算"
+        },
+        {
+         "name": "startDate",
+         "type": "string",
+         "required": false,
+         "desc": "开始日期。不给默认今天"
+        },
+        {
+         "name": "endDate",
+         "type": "string",
+         "required": false,
+         "desc": "结束日期。不给默认一年后"
+        },
+        {
+         "name": "weekdays",
+         "type": "数组",
+         "required": false,
+         "desc": "改哪几天播：1=周一 … 7=周日。⚠ 传空数组 [] 会把它变成**手动任务**，以后永远不会自动响。不传才是保持原样"
+        },
+        {
+         "name": "disableDay",
+         "type": "string",
+         "required": false,
+         "desc": "改「当天停用」的那一天，YYYY-MM-DD。传空串清掉它"
+        },
+        {
+         "name": "seconds",
+         "type": "int",
+         "required": false,
+         "desc": "改成按时长播，单位秒，最多 86400。**改任务时长就是改这一个字段**：{\"seconds\": 900} = 播 15 分钟。⚠ 结束时刻 endTime 会跟着重算；不想让它动就同时给一个 endTime。与 loopTimes 只能给一个"
+        },
+        {
+         "name": "loopTimes",
+         "type": "int",
+         "required": false,
+         "desc": "改成按遍数播：把整个清单循环几遍。给了它就把原来的按秒时长换掉。⚠ 0 是**无限循环**，不是「不循环」。与 seconds 只能给一个。⚠ 开着间隔播放的任务只能按秒，用 seconds"
+        },
+        {
+         "name": "interval",
+         "type": "对象",
+         "required": false,
+         "desc": "改间隔播放。传了就整体替换；不传保持原样"
+        },
+        {
+         "name": "interval.everySeconds",
+         "type": "int",
+         "required": false,
+         "desc": "间隔长度：每隔多少秒响一次"
+        },
+        {
+         "name": "interval.playSeconds",
+         "type": "int",
+         "required": false,
+         "desc": "间隔时长：每次响多少秒。与 playTimes 二选一"
+        },
+        {
+         "name": "interval.playTimes",
+         "type": "int",
+         "required": false,
+         "desc": "间隔次数：每次把清单播几遍，最多 99。与 playSeconds 二选一"
+        },
+        {
+         "name": "volume",
+         "type": "int",
+         "required": false,
+         "desc": "任务音量 0~100，默认 80"
+        },
+        {
+         "name": "priority",
+         "type": "int",
+         "required": false,
+         "desc": "任务级别 10~109。⚠ **数字小的优先级高**；不给取你能用的最低一档"
+        },
+        {
+         "name": "prePower",
+         "type": "int",
+         "required": false,
+         "desc": "预开电源：提前多少秒开功放，0~3600"
+        },
+        {
+         "name": "sequential",
+         "type": "bool",
+         "required": false,
+         "desc": "true 顺序播（默认）、false 随机播"
+        },
+        {
+         "name": "multicast",
+         "type": "bool",
+         "required": false,
+         "desc": "发送模式：true 组播、false 单播（默认）。组播要求交换机支持，没把握别动"
+        },
+        {
+         "name": "localFirst",
+         "type": "bool",
+         "required": false,
+         "desc": "本地优先播放：终端上已下发过这个媒体就放本地那份，断网也能响。默认关"
+        },
+        {
+         "name": "enabled",
+         "type": "bool",
+         "required": false,
+         "desc": "启用 / 停用这条任务。false = 以后都不响（只想让今天这一次别响，用「启停任务」的 stop）"
+        },
+        {
+         "name": "led",
+         "type": "对象",
+         "required": false,
+         "desc": "改 LED 字幕。⚠ **不传 = 保持原样**；要取消字幕得显式传 { \"text\": \"\" }（或 null）。传了就是整体替换整段字幕设置"
+        },
+        {
+         "name": "led.text",
+         "type": "string",
+         "required": false,
+         "desc": "字幕正文，最多 1024 字"
+        },
+        {
+         "name": "led.name",
+         "type": "string",
+         "required": false,
+         "desc": "字幕子任务名。留空跟主任务同名"
+        },
+        {
+         "name": "led.speed",
+         "type": "int",
+         "required": false,
+         "desc": "Led 速度 0~10"
+        },
+        {
+         "name": "led.mode",
+         "type": "int",
+         "required": false,
+         "desc": "Led 显示模式 0~10"
+        },
+        {
+         "name": "led.devices",
+         "type": "数组",
+         "required": false,
+         "desc": "上到哪几块屏。每项 { terminal, deviceId }；terminal 同上，写**终端编号**最稳；deviceId 在「led播放 → LED 屏设备」里看"
+        }
+       ],
+       "body": "{ \"seconds\": 900 }",
+       "examples": [
+        {
+         "title": "改时长：改成播 15 分钟",
+         "desc": "最常问的一个。时长就是 seconds 这一个字段，单位是秒。结束时刻会跟着重算成 播放时刻 + 900 秒 —— 想自己定就在同一次请求里加一个 \"endTime\"。",
+         "body": "{ \"seconds\": 900 }"
+        },
+        {
+         "title": "改时长：改成把清单播 3 遍",
+         "desc": "按遍数播而不是按秒。给了 loopTimes 就把原来的按秒时长换掉，两者只能有一个。⚠ 写 0 是无限循环。⚠ 这条任务如果开着**间隔播放**，只能按秒（用 seconds）—— 间隔播放要拿总时长来排，接口会明确报错告诉你。",
+         "body": "{ \"loopTimes\": 3 }"
+        },
+        {
+         "title": "改音量",
+         "desc": "0~100。其它一律不动。",
+         "body": "{ \"volume\": 55 }"
+        },
+        {
+         "title": "改播放时刻和星期",
+         "desc": "改成每周一到周五 10:05 播。⚠ weekdays 传空数组会变成手动任务，永远不再自动响。",
+         "body": "{ \"playTime\": \"10:05\", \"weekdays\": [1, 2, 3, 4, 5] }"
+        },
+        {
+         "title": "换终端",
+         "desc": "⚠ 整体替换：原来挂的终端全部换成这三台，不是再加三台。数字是终端编号，在「终端状态」里查。要保留原有的，先用「任务详情」读出来再连同新的一起传。",
+         "body": "{ \"terminals\": [1, 2, 8] }"
+        },
+        {
+         "title": "给某台终端指定区域",
+         "desc": "掩码每一位对应一路输出，1 = 出声。这里是「只走前四路」。同样是整体替换终端清单。",
+         "body": "{ \"terminals\": [{ \"terminal\": 1, \"area\": \"11110000\" }] }"
+        },
+        {
+         "title": "换播放的媒体",
+         "desc": "⚠ 整体替换播放清单，按数组顺序播。数字是媒体编号，在「媒体列表」里查。",
+         "body": "{ \"media\": [124, 125] }"
+        },
+        {
+         "title": "改成间隔播放",
+         "desc": "每隔 5 分钟响 30 秒，直到任务时长走完。不想要间隔了就把 interval 整个去掉重新传其它字段 —— 传 null 即可。",
+         "body": "{ \"interval\": { \"everySeconds\": 300, \"playSeconds\": 30 } }"
+        },
+        {
+         "title": "停用这条任务",
+         "desc": "以后都不响，任务还在。只想让今天这一次别响，用「启停任务」的 stop。",
+         "body": "{ \"enabled\": false }"
+        },
+        {
+         "title": "取消 LED 字幕",
+         "desc": "⚠ 正文留空才是取消。**不传 led 是保持原样** —— 只改音量不会把字幕带掉。",
+         "body": "{ \"led\": { \"text\": \"\" } }"
+        }
+       ],
+       "sample": "{\n  \"id\": 70230, \"mediaCount\": 2, \"terminalCount\": 4,\n  \"name\": \"课间音乐\", \"folderId\": 1,\n  \"playTime\": \"09:50:00\", \"endTime\": \"10:05:00\",\n  \"seconds\": 900, \"loopTimes\": 0,\n  \"volume\": 70, \"priority\": 20, \"enabled\": true\n}",
        "returns": [
         {
          "name": "id",
          "type": "int",
          "required": false,
-         "desc": "任务编号。之后改它、启停它、删它都用这个（也可以继续用任务名）"
+         "desc": "任务编号。就是你刚改的那条"
         },
         {
          "name": "mediaCount",
          "type": "int",
          "required": false,
-         "desc": "实际写进去几条媒体"
+         "desc": "改完之后这条任务挂着几条媒体。没动 media 时它是原来的条数，不是 0"
         },
         {
          "name": "terminalCount",
          "type": "int",
          "required": false,
-         "desc": "实际写进去几台终端。⚠ **对一下这个数** —— 给了分区的话它是展开后的终端数，比你传的条目多是正常的"
+         "desc": "改完之后挂着几台终端。⚠ **对一下这个数** —— 给了分区的话它是展开后的终端数，比你传的条目多是正常的"
+        },
+        {
+         "name": "name / folderId",
+         "type": "混合",
+         "required": false,
+         "desc": "改完之后的任务名与所属分组编号"
+        },
+        {
+         "name": "playTime",
+         "type": "string",
+         "required": false,
+         "desc": "改完之后每天几点开播"
+        },
+        {
+         "name": "endTime",
+         "type": "string",
+         "required": false,
+         "desc": "⚠ **改完之后的结束时刻，最该对的一项**。传了 seconds 或 playTime 而没传 endTime 时，它是服务端替你重算的 —— 回执不给出来的话，你要等到广播比预期多响五分钟才会发现"
+        },
+        {
+         "name": "seconds",
+         "type": "int",
+         "required": false,
+         "desc": "改完之后按秒播的时长。⚠ 与 loopTimes 只有一个非零；传了 loopTimes 之后这里会变成 0，那是正常的（换了播法）"
+        },
+        {
+         "name": "loopTimes",
+         "type": "int",
+         "required": false,
+         "desc": "改完之后的循环遍数"
+        },
+        {
+         "name": "volume / priority",
+         "type": "int",
+         "required": false,
+         "desc": "改完之后的音量与任务级别（数字小的优先）"
+        },
+        {
+         "name": "enabled",
+         "type": "bool",
+         "required": false,
+         "desc": "改完之后启没启用"
         }
        ],
        "notes": [
-        "⚠ 清单类字段（media / terminals / zones）给了就是整体替换，不是追加。传 media: [\"A.mp3\"] 会把原来的清单换成只有 A.mp3。不传则保持原样。"
+        "⚠ 清单类字段（media / terminals / zones）给了就是**整体替换**，不是追加。传 media: [124] 会把原来的清单换成只剩这一条；不传则保持原样。想在原有基础上加一条，先用「任务详情」读出现在有哪些，加上再整体传回来。",
+        "⚠ terminals 与 zones 是**同一个位置**：这两个里只要有一个给了值，终端清单就整体重算。只传 zones 会把原来单独挂着的终端也一起换掉。",
+        "⚠ 改了时长（seconds / loopTimes）**或**挪了开播时刻（playTime），结束时刻 endTime 都会跟着重算。这是必要的：只挪开播时刻不动结束时刻，一条 09:50→10:05 的任务传了 playTime: \"10:05\" 就变成 10:05 开始、10:05 结束 —— 一条零长度的任务。不想让它自动算就在同一次请求里自己给一个 endTime。两样都没动（比如只改音量）时 endTime 一动不动。",
+        "按遍数播（loopTimes）算不出确定的秒数：那时挪开播时刻会把原来的播放窗口**整体平移**，长度不变。另外越过午夜一律截到 23:59:59 —— endTime 是个时刻，没有「第二天」。",
+        "⚠ 不传 led 是**保持原样**；要取消字幕得显式传 led: { \"text\": \"\" }。",
+        "接口里**没有分区号这个参数，也不需要你传**。库里 terminaloftask 除了终端号还存一台终端的分区号（后台下发时读它），这一列由服务端按终端**此刻**所属的分区自己算：分区 2 的终端存 2，没归分区的存 0。界面上那张表单会传它，是因为它手里本来就有终端选择器那份数据；接口这边由服务端算，少一个能填错的地方 —— 分区改了也不用你跟着改。",
+        "回执里带的是**改完之后实际存进去的值**，不是你传的原文。传 {\"seconds\": 900} 回来的 endTime 就是服务端算的那个 —— 这是确认「服务端替我改了什么」最快的办法。",
+        "改之前先调一次「任务详情」（GET /tasks/{ref}）：它返回的形状和这里的入参一致，读出来改两个值再 PUT 回去最稳。"
        ],
        "danger": true,
        "freeform": false
@@ -10259,8 +10597,16 @@
          "example": "stop"
         }
        ],
-       "fields": null,
-       "body": "{ \"tasks\": [\"课间音乐\"] }",
+       "fields": [
+        {
+         "name": "tasks",
+         "type": "数组",
+         "required": true,
+         "desc": "要操作哪几条任务。每项写**任务编号**（推荐，唯一），也认任务名。一次可以给多条 —— 能做的会做掉，做不了的在 blocked 里逐条给原因"
+        }
+       ],
+       "body": "{ \"tasks\": [1008, 1010] }",
+       "examples": null,
        "sample": "{\n  \"succeeded\": [{ \"id\": 1008, \"name\": \"升旗仪式-国歌\" }],\n  \"blocked\":   [{ \"id\": 1010, \"name\": \"课间轻音乐\", \"reason\": \"只能操作自己创建的任务\" }]\n}",
        "returns": [
         {
@@ -10299,14 +10645,15 @@
         {
          "name": "ref",
          "in": "path",
-         "type": "string",
+         "type": "int/string",
          "required": true,
-         "desc": "任务名或编号",
-         "example": ""
+         "desc": "**任务编号**（推荐，唯一），也认任务名",
+         "example": "70230"
         }
        ],
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "{ \"succeeded\": [{ \"id\": 70230, \"name\": \"课间音乐\" }], \"blocked\": [] }",
        "returns": [
         {
@@ -10345,21 +10692,21 @@
        "fields": [
         {
          "name": "media",
-         "type": "string/int",
+         "type": "int/string",
          "required": true,
-         "desc": "播什么。一个媒体"
+         "desc": "播什么，一个媒体。写**媒体编号**（推荐，唯一），也认媒体名 —— ⚠ 媒体名可以重名，重了会报错要你改用编号。编号在「媒体列表」里查"
         },
         {
          "name": "terminals",
          "type": "数组",
          "required": false,
-         "desc": "播到哪些终端"
+         "desc": "播到哪些终端。每项写**终端编号**（推荐，唯一）或终端名。编号在「终端状态」里查"
         },
         {
          "name": "zones",
          "type": "数组",
          "required": false,
-         "desc": "播到哪些分区。与 terminals 至少给一个"
+         "desc": "播到哪些分区，会展开成终端。每项写**分区编号**或分区名（分区名不会重复）。与 terminals 至少给一个"
         },
         {
          "name": "volume",
@@ -10374,7 +10721,8 @@
          "desc": "最多播多久。不给按媒体自身时长，还不行兜底 300 秒"
         }
        ],
-       "body": "{\n  \"media\": \"中华人民共和国国歌.mp3\",\n  \"zones\": [\"室外操场\"],\n  \"volume\": 90\n}",
+       "body": "{\n  \"media\": 138,\n  \"zones\": [3],\n  \"volume\": 90\n}",
+       "examples": null,
        "sample": "{\n  \"playId\": 1, \"taskId\": 70231, \"media\": \"中华人民共和国国歌.mp3\",\n  \"terminals\": [{ \"id\": 8, \"name\": \"操场号角01\" }],\n  \"volume\": 90, \"seconds\": 46, \"state\": \"playing\",\n  \"startTime\": \"2026-09-08 08:00:52\", \"endTime\": \"\"\n}",
        "returns": [
         {
@@ -10433,7 +10781,9 @@
         }
        ],
        "notes": [
+        "示例里的 138 是媒体编号（在「媒体列表」查）、3 是分区编号（在「全部功能接口 → 终端分区」查）。写名字也认，但媒体名可以重名 —— 告警联动这种没人盯着的场景，用编号才不会某天突然报「找到多个同名媒体」。",
         "把返回的 playId 记下来，停止时要用。",
+        "接口里**没有分区号这个参数，也不需要你传**。库里 terminaloftask 除了终端号还存一台终端的分区号（后台下发时读它），这一列由服务端按终端**此刻**所属的分区自己算：分区 2 的终端存 2，没归分区的存 0。界面上那张表单会传它，是因为它手里本来就有终端选择器那份数据；接口这边由服务端算，少一个能填错的地方 —— 分区改了也不用你跟着改。",
         "⚠ 以**最高优先级**下发，会压住正在播的排期任务。这是有意的 —— 它是你此刻主动要求的。上课时间请谨慎。",
         "⚠ 这个真的会让喇叭响。"
        ],
@@ -10453,12 +10803,13 @@
          "in": "path",
          "type": "int",
          "required": true,
-         "desc": "立即播放返回的 playId",
-         "example": ""
+         "desc": "立即播放返回的 playId。也能在「还在播的立即播放」里查到",
+         "example": "1"
         }
        ],
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "{ \"playId\": 1, \"state\": \"stopped\", \"endTime\": \"2026-09-08 08:01:24\" }",
        "returns": [
         {
@@ -10511,19 +10862,25 @@
          "name": "terminals",
          "type": "数组",
          "required": false,
-         "desc": "打到哪些终端"
+         "desc": "打到哪些终端。每项写**终端编号**（推荐，唯一）或终端名"
         },
         {
          "name": "zones",
          "type": "数组",
          "required": false,
-         "desc": "打到哪些分区。与 terminals 至少给一个"
+         "desc": "打到哪些分区，会展开成终端。每项写**分区编号**或分区名。与 terminals 至少给一个"
         },
         {
          "name": "items",
          "type": "数组",
          "required": true,
          "desc": "打铃条目，至少一条。每条：playTime 必填、media 必填、name/seconds/loopTimes 可选"
+        },
+        {
+         "name": "items[].media",
+         "type": "数组",
+         "required": false,
+         "desc": "这一条播什么。每项写**媒体编号**（推荐，唯一）或媒体名 —— ⚠ 媒体名可以重名"
         },
         {
          "name": "weekdays",
@@ -10562,7 +10919,8 @@
          "desc": "提前多少秒开功放电源"
         }
        ],
-       "body": "{\n  \"name\": \"夏季作息\",\n  \"zones\": [\"教学楼\"],\n  \"weekdays\": [1, 2, 3, 4, 5],\n  \"volume\": 75,\n  \"items\": [\n    { \"name\": \"早读预备\",   \"playTime\": \"07:20\", \"media\": [\"10.起床号.mp3\"], \"seconds\": 30 },\n    { \"name\": \"第一节下课\", \"playTime\": \"09:50\", \"media\": [\"04.爱的纪念（下课）.mp3\"] }\n  ]\n}",
+       "body": "{\n  \"name\": \"夏季作息\",\n  \"zones\": [1],\n  \"weekdays\": [1, 2, 3, 4, 5],\n  \"volume\": 75,\n  \"items\": [\n    { \"name\": \"早读预备\",   \"playTime\": \"07:20\", \"media\": [125], \"seconds\": 30 },\n    { \"name\": \"第一节下课\", \"playTime\": \"09:50\", \"media\": [126] }\n  ]\n}",
+       "examples": null,
        "sample": "{ \"name\": \"夏季作息\", \"itemCount\": 2, \"taskIds\": [70232, 70233], \"warnings\": [] }",
        "returns": [
         {
@@ -10591,8 +10949,10 @@
         }
        ],
        "notes": [
+        "示例里的 1 是分区编号（教学楼）、125 / 126 是媒体编号。方案本身是个例外：它**没有编号**，name 就是它的身份，之后启停、删除、查详情都只能用这个名字。",
         "⚠ weekdays 留空时这里默认**周一到周五**，而新建任务那边默认「手动」。不是笔误：作息方案天然是上课日打铃，建一个永不触发的方案没有意义；而文件广播任务建来手动触发是常见用法。两边都别漏填。",
-        "warnings 是「建成了，但有件事你该知道」，比如同一时刻排了两条铃。不拦截，但要看。"
+        "warnings 是「建成了，但有件事你该知道」，比如同一时刻排了两条铃。不拦截，但要看。",
+        "接口里**没有分区号这个参数，也不需要你传**。库里 terminaloftask 除了终端号还存一台终端的分区号（后台下发时读它），这一列由服务端按终端**此刻**所属的分区自己算：分区 2 的终端存 2，没归分区的存 0。界面上那张表单会传它，是因为它手里本来就有终端选择器那份数据；接口这边由服务端算，少一个能填错的地方 —— 分区改了也不用你跟着改。"
        ],
        "danger": true,
        "freeform": false
@@ -10610,12 +10970,13 @@
          "in": "path",
          "type": "string",
          "required": true,
-         "desc": "方案名",
+         "desc": "方案名。⚠ 方案**没有编号**，名字就是它的身份，这里只能写名字",
          "example": ""
         }
        ],
        "fields": null,
        "body": "{ \"enabled\": false }",
+       "examples": null,
        "sample": "{ \"name\": \"夏季作息\", \"affectedTasks\": 2 }",
        "returns": [
         {
@@ -10648,12 +11009,13 @@
          "in": "path",
          "type": "string",
          "required": true,
-         "desc": "方案名",
+         "desc": "方案名。⚠ 方案**没有编号**，名字就是它的身份，这里只能写名字",
          "example": ""
         }
        ],
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "{ \"name\": \"夏季作息\", \"affectedTasks\": 2 }",
        "returns": [
         {
@@ -10691,6 +11053,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -10707,6 +11070,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -10723,6 +11087,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -10739,6 +11104,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -10755,6 +11121,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -10771,6 +11138,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -10787,6 +11155,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -10803,6 +11172,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -10819,6 +11189,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -10835,6 +11206,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -10851,6 +11223,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -10875,6 +11248,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -10891,6 +11265,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -10907,6 +11282,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -10923,6 +11299,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -10939,6 +11316,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -10955,6 +11333,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -10971,6 +11350,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -10987,6 +11367,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -11003,6 +11384,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -11019,6 +11401,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -11035,6 +11418,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -11051,6 +11435,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -11067,6 +11452,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -11083,6 +11469,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -11099,6 +11486,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -11115,6 +11503,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -11131,6 +11520,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -11147,6 +11537,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -11163,6 +11554,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -11179,6 +11571,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -11195,6 +11588,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -11211,6 +11605,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -11227,6 +11622,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -11243,6 +11639,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -11259,6 +11656,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -11275,6 +11673,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -11291,6 +11690,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -11307,6 +11707,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -11323,6 +11724,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -11339,6 +11741,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -11355,6 +11758,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -11371,6 +11775,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -11387,6 +11792,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -11403,6 +11809,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -11419,6 +11826,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -11435,6 +11843,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -11451,6 +11860,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -11475,6 +11885,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -11491,6 +11902,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -11507,6 +11919,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -11523,6 +11936,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -11539,6 +11953,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -11555,6 +11970,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -11571,6 +11987,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -11587,6 +12004,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -11611,6 +12029,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -11627,6 +12046,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -11643,6 +12063,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -11659,6 +12080,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -11675,6 +12097,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -11691,6 +12114,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -11707,6 +12131,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -11723,6 +12148,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -11739,6 +12165,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -11755,6 +12182,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -11771,6 +12199,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -11787,6 +12216,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -11803,6 +12233,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -11819,6 +12250,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -11835,6 +12267,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -11851,6 +12284,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -11867,6 +12301,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -11883,6 +12318,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -11899,6 +12335,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -11915,6 +12352,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -11931,6 +12369,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -11947,6 +12386,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -11971,6 +12411,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -11987,6 +12428,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -12003,6 +12445,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -12019,6 +12462,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -12035,6 +12479,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -12051,6 +12496,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -12067,6 +12513,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -12083,6 +12530,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -12099,6 +12547,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -12115,6 +12564,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -12131,6 +12581,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -12147,6 +12598,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -12163,6 +12615,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -12187,6 +12640,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -12203,6 +12657,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -12219,6 +12674,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -12235,6 +12691,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -12251,6 +12708,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -12267,6 +12725,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -12283,6 +12742,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -12307,6 +12767,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -12323,6 +12784,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -12339,6 +12801,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -12355,6 +12818,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -12371,6 +12835,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -12387,6 +12852,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -12403,6 +12869,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -12419,6 +12886,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -12435,6 +12903,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -12451,6 +12920,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -12467,6 +12937,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -12483,6 +12954,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -12499,6 +12971,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -12515,6 +12988,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -12531,6 +13005,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -12547,6 +13022,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -12563,6 +13039,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -12579,6 +13056,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -12595,6 +13073,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -12619,6 +13098,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -12635,6 +13115,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -12651,6 +13132,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -12667,6 +13149,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -12683,6 +13166,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -12699,6 +13183,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -12723,6 +13208,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -12739,6 +13225,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -12755,6 +13242,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -12771,6 +13259,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -12787,6 +13276,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -12803,6 +13293,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -12819,6 +13310,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -12835,6 +13327,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -12851,6 +13344,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -12867,6 +13361,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -12883,6 +13378,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -12899,6 +13395,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -12915,6 +13412,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -12931,6 +13429,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -12947,6 +13446,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -12971,6 +13471,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -12987,6 +13488,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -13003,6 +13505,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -13019,6 +13522,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -13035,6 +13539,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -13051,6 +13556,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -13067,6 +13573,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -13083,6 +13590,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -13099,6 +13607,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -13115,6 +13624,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -13131,6 +13641,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -13147,6 +13658,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -13163,6 +13675,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -13187,6 +13700,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -13203,6 +13717,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -13219,6 +13734,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -13235,6 +13751,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -13251,6 +13768,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -13267,6 +13785,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -13283,6 +13802,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -13299,6 +13819,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -13315,6 +13836,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -13331,6 +13853,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -13347,6 +13870,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -13363,6 +13887,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -13379,6 +13904,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -13395,6 +13921,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -13419,6 +13946,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -13435,6 +13963,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -13451,6 +13980,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -13467,6 +13997,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -13483,6 +14014,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -13499,6 +14031,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -13523,6 +14056,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -13539,6 +14073,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -13555,6 +14090,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -13571,6 +14107,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -13587,6 +14124,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -13603,6 +14141,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -13619,6 +14158,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -13635,6 +14175,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -13651,6 +14192,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -13667,6 +14209,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -13683,6 +14226,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -13707,6 +14251,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -13723,6 +14268,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -13739,6 +14285,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -13755,6 +14302,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -13771,6 +14319,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -13787,6 +14336,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -13803,6 +14353,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -13819,6 +14370,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -13835,6 +14387,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -13851,6 +14404,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -13867,6 +14421,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -13883,6 +14438,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -13907,6 +14463,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -13923,6 +14480,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -13939,6 +14497,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -13955,6 +14514,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -13971,6 +14531,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -13987,6 +14548,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -14003,6 +14565,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -14019,6 +14582,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -14035,6 +14599,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -14051,6 +14616,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -14067,6 +14633,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -14083,6 +14650,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -14099,6 +14667,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -14115,6 +14684,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -14131,6 +14701,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -14155,6 +14726,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -14171,6 +14743,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -14187,6 +14760,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,
@@ -14203,6 +14777,7 @@
        "params": null,
        "fields": null,
        "body": "",
+       "examples": null,
        "sample": "",
        "returns": null,
        "notes": null,

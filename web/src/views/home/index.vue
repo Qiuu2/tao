@@ -174,24 +174,16 @@
       <section class="panel">
         <header class="panel-hd">
           {{ $t("dash.emergency") }}
-          <div class="hd-actions">
-            <el-button size="small" type="primary" plain :disabled="!isSuper" @click="openEmergencyBind">
-              {{ $t("dash.bindTask") }}
-            </el-button>
-          </div>
         </header>
         <div class="panel-bd">
           <div class="emg-grid">
             <div v-for="s in cfg?.emergency ?? []" :key="s.key" class="emg-card">
               <span class="emg-name">{{ s.name }}</span>
-              <span class="emg-bind" :class="{ muted: !s.task, danger: s.task?.missing }">
-                {{ s.task ? s.task.taskName : $t("dash.unbound") }}
-              </span>
               <span class="emg-ops">
-                <el-button size="small" type="success" :disabled="!s.task || s.task.missing" @click="runTask(s.task!.taskId)">
+                <el-button size="small" type="success" :loading="emgBusy === s.key" @click="playEmergency(s)">
                   {{ $t("dash.run") }}
                 </el-button>
-                <el-button size="small" type="danger" :disabled="!s.task || s.task.missing" @click="stopTask(s.task!.taskId)">
+                <el-button size="small" type="danger" :loading="emgBusy === s.key + ':stop'" @click="stopEmergency(s)">
                   {{ $t("dash.stop") }}
                 </el-button>
               </span>
@@ -305,21 +297,6 @@
       </template>
     </el-dialog>
 
-    <!-- 绑定紧急广播 -->
-    <el-dialog v-model="ed.visible" :title="$t('dash.bindEmergency')" width="560px">
-      <el-alert type="info" :closable="false" class="mb12"> {{ $t("dash.emergencyDialogTip") }} </el-alert>
-      <el-form label-width="80px">
-        <el-form-item v-for="s in cfg?.emergency ?? []" :key="s.key" :label="s.name">
-          <el-select v-model="ed.slots[s.key]" clearable filterable :placeholder="$t('dash.unbound')" class="fill">
-            <el-option v-for="t in fileTasks" :key="t.taskid" :label="t.taskname" :value="t.taskid" />
-          </el-select>
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <el-button @click="ed.visible = false">{{ $t("common.cancel") }}</el-button>
-        <el-button type="primary" :loading="ed.busy" @click="saveEmergency">{{ $t("common.confirm") }}</el-button>
-      </template>
-    </el-dialog>
   </div>
 </template>
 
@@ -327,18 +304,19 @@
 import { useI18n } from "vue-i18n";
 import { computed, onMounted, onUnmounted, reactive, ref } from "vue";
 import { useRouter } from "vue-router";
-import { ElMessage } from "element-plus";
+import { ElMessage, ElMessageBox } from "element-plus";
 import { EditPen, Plus } from "@element-plus/icons-vue";
 import {
   getDashConfigApi,
   getDashOverviewApi,
   getDashPerfApi,
   getDashTasksApi,
-  saveEmergencyApi,
+  playEmergencyApi,
   saveQuickTasksApi,
   saveShortcutsApi,
   type BrowseItem,
   type DashConfig,
+  type EmergencySlot,
   type Overview,
   type Perf
 } from "@/api/modules/dashboard";
@@ -611,28 +589,42 @@ const saveQuick = async () => {
   }
 };
 
-const ed = reactive({ visible: false, busy: false, slots: {} as Record<string, number | undefined> });
-const openEmergencyBind = async () => {
-  await loadFileTasks();
-  ed.slots = {};
-  (cfg.value?.emergency ?? []).forEach(s => (ed.slots[s.key] = s.task && !s.task.missing ? s.task.taskId : undefined));
-  ed.busy = false;
-  ed.visible = true;
-};
-const saveEmergency = async () => {
-  ed.busy = true;
+/* ---------------- 紧急广播 ---------------- */
+
+/**
+ * 紧急广播不绑任务：按一下就往后台服务发一条 SDK 命令（地震/疏散/警戒/消防
+ * 各占一路），由后台去驱动全部终端。
+ *
+ * 执行前先问一遍 —— 这四个按钮一按，全场喇叭就响，误触的代价比多点一下大得多。
+ * 停止不问：真按错了要停下来的时候，不该再挡一道。
+ */
+const emgBusy = ref("");
+
+const sendEmergency = async (slot: EmergencySlot, stop: boolean) => {
+  emgBusy.value = stop ? `${slot.key}:stop` : slot.key;
   try {
-    const payload: Record<string, number> = {};
-    Object.entries(ed.slots).forEach(([k, v]) => (payload[k] = v ?? 0));
-    await saveEmergencyApi(payload);
-    ElMessage.success(t("common.saveSuccess"));
-    ed.visible = false;
-    const { data } = await getDashConfigApi();
-    cfg.value = data;
+    await playEmergencyApi(slot.key, stop);
+    // 说「已下发」不说「已播放」：后端走 UDP，没有回执，响没响这边不知道
+    ElMessage.success(t(stop ? "dash.emergencyStopSent" : "dash.emergencySent", { name: slot.name }));
   } finally {
-    ed.busy = false;
+    emgBusy.value = "";
   }
 };
+
+const playEmergency = async (slot: EmergencySlot) => {
+  try {
+    await ElMessageBox.confirm(t("dash.emergencyConfirm", { name: slot.name }), t("dash.emergencyConfirmTitle"), {
+      type: "warning",
+      confirmButtonText: t("dash.run"),
+      cancelButtonText: t("common.cancel")
+    });
+  } catch {
+    return; // 点了取消
+  }
+  await sendEmergency(slot, false);
+};
+
+const stopEmergency = (slot: EmergencySlot) => sendEmergency(slot, true);
 
 /* ---------------- 生命周期 ---------------- */
 
@@ -894,12 +886,6 @@ onUnmounted(() => timer && window.clearInterval(timer));
   font-size: 13px;
   font-weight: 600;
   color: #d03b3b;
-}
-.emg-bind {
-  overflow: hidden;
-  font-size: 12px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 .emg-ops {
   display: flex;

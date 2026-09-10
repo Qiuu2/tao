@@ -88,10 +88,13 @@ type BoundTask struct {
 	Missing bool `json:"missing"`
 }
 
+// EmergencySlot 是返回给界面的一个紧急广播按钮。
+//
+// 这里**没有 Task 字段** —— 紧急广播不绑任务了，四个按钮直接发 SDK 命令。
+// 界面拿这个只是为了拿到名字和 key，槽位本身是固定的四个。
 type EmergencySlot struct {
-	Key  string     `json:"key"`
-	Name string     `json:"name"`
-	Task *BoundTask `json:"task"`
+	Key  string `json:"key"`
+	Name string `json:"name"`
 }
 
 type Config struct {
@@ -104,13 +107,7 @@ type Config struct {
 func (s *Service) Config(ctx context.Context) (*Config, error) {
 	st := s.snapshot()
 
-	ids := append([]int64{}, st.QuickTasks...)
-	for _, slot := range EmergencySlots {
-		if id := st.Emergency[slot.Key]; id > 0 {
-			ids = append(ids, id)
-		}
-	}
-	known, err := s.loadTasks(ctx, ids)
+	known, err := s.loadTasks(ctx, st.QuickTasks)
 	if err != nil {
 		return nil, err
 	}
@@ -129,13 +126,11 @@ func (s *Service) Config(ctx context.Context) (*Config, error) {
 	}
 	for _, slot := range EmergencySlots {
 		// 槽位名是固定的产品词汇（地震/疏散/警戒/消防），跟着界面语言走。
-		// key 不翻 —— 那是存进 dashboard.json 的标识，翻了历史数据就对不上了。
-		e := EmergencySlot{Key: slot.Key, Name: i18n.TC(ctx, slot.Name)}
-		if id := st.Emergency[slot.Key]; id > 0 {
-			t := pick(known, id)
-			e.Task = &t
-		}
-		out.Emergency = append(out.Emergency, e)
+		// key 不翻 —— 那是前端和接口用的标识，翻了两边就对不上了。
+		out.Emergency = append(out.Emergency, EmergencySlot{
+			Key:  slot.Key,
+			Name: i18n.TC(ctx, slot.Name),
+		})
 	}
 	return out, nil
 }
@@ -168,23 +163,12 @@ func (s *Service) pruneDeleted(known map[int64]BoundTask) bool {
 		}
 	}
 	s.state.QuickTasks = kept
-	for key, id := range s.state.Emergency {
-		if id <= 0 {
-			continue
-		}
-		if _, ok := known[id]; !ok {
-			delete(s.state.Emergency, key)
-			dropped = append(dropped, id)
-		}
-	}
 	s.mu.Unlock()
 
 	if len(dropped) == 0 {
 		return false
 	}
-	// 说「条绑定」而不是「个任务」：同一条任务可能既在快捷任务里、又占着一个
-	// 紧急槽位，那是两条绑定。写成任务数会让人对着日志数不明白。
-	logf("首页有 %d 条绑定指向已被删除的任务，已清掉（任务号 %v）", len(dropped), dropped)
+	logf("首页快捷任务里有 %d 条指向已被删除的任务，已清掉（任务号 %v）", len(dropped), dropped)
 	if err := s.save(); err != nil {
 		// 落盘失败不该让首页打不开：内存里已经清干净了，这一次的返回是对的，
 		// 下次进程重启会把旧的读回来，届时再清一次。
@@ -285,37 +269,6 @@ func (s *Service) SetQuickTasks(ctx context.Context, ids []int64) error {
 	}
 	s.mu.Lock()
 	s.state.QuickTasks = ids
-	s.mu.Unlock()
-	return s.save()
-}
-
-// SetEmergency 保存紧急广播四个固定槽位的绑定。
-// 传 0 表示解绑该槽位；槽位本身不能增删。
-func (s *Service) SetEmergency(ctx context.Context, m map[string]int64) error {
-	valid := map[string]bool{}
-	for _, slot := range EmergencySlots {
-		valid[slot.Key] = true
-	}
-	ids := []int64{}
-	for k, v := range m {
-		if !valid[k] {
-			return fmt.Errorf("紧急广播只有 quake / evacuate / alert / fire 四个固定槽位，不认识 %q", k)
-		}
-		if v > 0 {
-			ids = append(ids, v)
-		}
-	}
-	if err := s.assertFileTasks(ctx, dedup(ids)); err != nil {
-		return err
-	}
-	s.mu.Lock()
-	next := map[string]int64{}
-	for k, v := range m {
-		if v > 0 {
-			next[k] = v
-		}
-	}
-	s.state.Emergency = next
 	s.mu.Unlock()
 	return s.save()
 }

@@ -196,7 +196,9 @@ var auditLabels = map[string]string{
 	// 看板首页那三块可配置区域是全局共享的界面设置，改了所有人都受影响
 	"PUT /api/dashboard/shortcuts":   "修改看板快捷入口",
 	"PUT /api/dashboard/quick-tasks": "修改看板快捷任务",
-	"PUT /api/dashboard/emergency":   "修改看板紧急广播",
+	// POST /api/dashboard/emergency 不在这里：这条要记的是**哪一路**响了
+	// （追责时「admin 下发紧急广播」等于没记），而这一层只认得路由模式。
+	// 由 handleDashEmergencyPlay 自己记，见 dashboard_handlers.go。
 
 	"PUT /api/time/clock": "设置服务器时钟",
 

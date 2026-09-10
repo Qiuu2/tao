@@ -1,9 +1,9 @@
 // Package dashboard 提供看板首页的数据（设备概况 / 服务器性能 / 快捷入口 /
 // 快捷任务 / 紧急广播 / 浏览任务）。
 //
-// # 「快捷入口、快捷任务、紧急广播绑定」存在哪里
+// # 「快捷入口、快捷任务」存在哪里
 //
-// 这三样都是**新增的界面状态**，旧库里没有对应的表。而 R1 红线禁止任何 DDL，
+// 这两样都是**新增的界面状态**，旧库里没有对应的表。而 R1 红线禁止任何 DDL，
 // 所以不能建表。挨个看了现有的空表：
 //
 //	shortcutkeymap    (id, type, mediaid)          只有两个 int，放不下路由与标签
@@ -13,6 +13,9 @@
 // 后两张虽然现在是 0 行，但都是**后台 C 服务可能扫描的业务表** ——
 // 往里塞界面状态，万一 C 服务把它们当真任务执行，就会在一所正在上课的学校里
 // 放出一段没人预期的广播。这个风险不值得冒。
+//
+// 紧急广播那四个按钮**不在这份状态里** —— 它不存任何东西，
+// 点一下就往 SDK 端口发一条命令，见 internal/sdkudp。
 //
 // 因此改存**一个 JSON 文件**（默认 <备份目录同级>/dashboard.json）：
 // 不动数据库、不可能被 C 服务误读、重启后仍在、所有用户共享同一份。
@@ -29,16 +32,38 @@ import (
 	"sync"
 )
 
-// EmergencySlots 是紧急广播的四个**固定**槽位，顺序与界面一致。
-// 固定意味着：不能增删，只能改「这个槽位绑哪个任务」。
-var EmergencySlots = []struct {
-	Key  string
+// Slot 是紧急广播的一个固定槽位。
+//
+// ChannelID / KeyID 是厂商 SDK 那条命令（SDKUrgentPlay_t）的两个参数，
+// 取值是**设备固件里定死的**，不是这边能随便编的号 —— 见 internal/sdkudp。
+type Slot struct {
+	// Key 是存进 URL 与前端的标识，**不翻译**。
+	Key string
+	// Name 是界面上的字，产品词汇，跟着界面语言走。
 	Name string
-}{
-	{"quake", "地震"},
-	{"evacuate", "疏散"},
-	{"alert", "警戒"},
-	{"fire", "消防"},
+	// ChannelID SDK 的通道号 0~3。
+	ChannelID int32
+	// KeyID SDK 的按键号 1000~1003。
+	KeyID int32
+}
+
+// EmergencySlots 是紧急广播的四个**固定**槽位，顺序与界面一致。
+// 固定意味着：不能增删 —— 这四个号在设备固件里，加一个第五种也没东西会响应。
+var EmergencySlots = []Slot{
+	{Key: "quake", Name: "地震", ChannelID: 0, KeyID: 1000},
+	{Key: "evacuate", Name: "疏散", ChannelID: 1, KeyID: 1001},
+	{Key: "alert", Name: "警戒", ChannelID: 2, KeyID: 1002},
+	{Key: "fire", Name: "消防", ChannelID: 3, KeyID: 1003},
+}
+
+// FindSlot 按 key 找槽位。找不到就是前端传了个不认识的 key。
+func FindSlot(key string) (Slot, bool) {
+	for _, s := range EmergencySlots {
+		if s.Key == key {
+			return s, true
+		}
+	}
+	return Slot{}, false
 }
 
 // State 是落在 dashboard.json 里的全部界面状态。
@@ -52,8 +77,11 @@ type State struct {
 	Shortcuts []Shortcut `json:"shortcuts"`
 	// QuickTasks 是绑定到「快捷任务」面板的文件广播任务 ID。
 	QuickTasks []int64 `json:"quickTasks"`
-	// Emergency 是四个固定槽位各自绑定的任务 ID，key 取 EmergencySlots.Key。
-	Emergency map[string]int64 `json:"emergency"`
+
+	// 这里曾经有一个 Emergency map[string]int64，存四个紧急槽位各绑了哪个任务。
+	// 紧急广播改走 SDK 命令之后就不需要绑定了（见 EmergencySlots 上的说明），
+	// 字段已删。老的 dashboard.json 里那个键会被 json 解码直接忽略，
+	// 下一次落盘时消失，不用手工清理。
 }
 
 type Shortcut struct {
@@ -89,7 +117,7 @@ func New(db *sql.DB, file string) *Service {
 func (s *Service) load() {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	s.state = State{Shortcuts: []Shortcut{}, QuickTasks: []int64{}, Emergency: map[string]int64{}}
+	s.state = State{Shortcuts: []Shortcut{}, QuickTasks: []int64{}}
 	if s.file == "" {
 		return
 	}
@@ -106,9 +134,6 @@ func (s *Service) load() {
 	}
 	if st.QuickTasks == nil {
 		st.QuickTasks = []int64{}
-	}
-	if st.Emergency == nil {
-		st.Emergency = map[string]int64{}
 	}
 	s.state = st
 }
@@ -139,13 +164,8 @@ func (s *Service) save() error {
 func (s *Service) snapshot() State {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	out := State{
+	return State{
 		Shortcuts:  append([]Shortcut{}, s.state.Shortcuts...),
 		QuickTasks: append([]int64{}, s.state.QuickTasks...),
-		Emergency:  map[string]int64{},
 	}
-	for k, v := range s.state.Emergency {
-		out.Emergency[k] = v
-	}
-	return out
 }

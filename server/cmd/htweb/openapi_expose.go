@@ -106,13 +106,15 @@ var keyDenied = map[string]string{
 	"PUT /api/assistant/settings":   "改别人的界面偏好，程序没有理由做这件事",
 
 	// —— 其它纯界面的东西 ——
-	"GET /api/health":                  "探活接口，本来就不需要凭据",
-	"GET /api/openapi/spec":            "接口目录，给界面渲染用",
-	"GET /api/openapi/openapi.json":    "OpenAPI 文档，登录后在界面上下载",
-	"GET /api/dashboard/config":        "首页三块可配置区域的当前配置，纯界面的东西",
-	"PUT /api/dashboard/shortcuts":     "改的是所有人看到的首页快捷入口，该由人在界面上决定",
-	"PUT /api/dashboard/quick-tasks":   "改的是所有人看到的首页快捷任务，该由人在界面上决定",
-	"PUT /api/dashboard/emergency":     "首页那个紧急广播按钮绑什么，该由人在界面上决定",
+	"GET /api/health":                "探活接口，本来就不需要凭据",
+	"GET /api/openapi/spec":          "接口目录，给界面渲染用",
+	"GET /api/openapi/openapi.json":  "OpenAPI 文档，登录后在界面上下载",
+	"GET /api/dashboard/config":      "首页三块可配置区域的当前配置，纯界面的东西",
+	"PUT /api/dashboard/shortcuts":   "改的是所有人看到的首页快捷入口，该由人在界面上决定",
+	"PUT /api/dashboard/quick-tasks": "改的是所有人看到的首页快捷任务，该由人在界面上决定",
+	// 紧急广播是「按下去全场喇叭就响」的动作，而且 UDP 发出去撤不回来。
+	// 这种事必须是人在界面上按的，不能挂在一个可以被脚本调用的密钥后面。
+	"POST /api/dashboard/emergency":    "紧急广播必须由人在界面上按，不开放给密钥调用",
 	"GET /api/media/{id}/stream":       "音频流，浏览器 <audio> 用的；下载走 /download",
 	"GET /api/backups/{name}/download": "备份包下载，浏览器 window.open 用的",
 }

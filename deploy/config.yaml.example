@@ -41,6 +41,17 @@ notify:
   port: 0
   enabled: true
 
+# 厂商 SDK 的二进制命令端口。目前只有看板首页那四个紧急广播按钮走这里。
+# 与上面的 notify 是两套协议、两个端口，不要混。
+sdk:
+  # 后台广播服务地址。厂商示例里写的是 docker 内的主机名 audioserver，
+  # 新版跑在宿主上，走已发布的回环端口。
+  host: "127.0.0.1"
+  port: 8885
+  # 关掉后只记日志不真发包。⚠ 这条命令一发出去全场喇叭就响，
+  # 联调期先设 false。
+  enabled: true
+
 auth:
   # ⚠ 换成一串随机值，别沿用样例。生成一个：
   #     head -c 32 /dev/urandom | base64 | tr -d '=+/'
