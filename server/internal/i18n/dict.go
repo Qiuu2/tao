@@ -417,8 +417,18 @@ var codeDict = map[string]string{
 	"请先选择要删除的遥控任务":                            "Select the remote tasks to delete first",
 
 	// ——— 注册服务 ———
-	"主服务器":      "Primary server",
-	"备机":        "Standby server",
+	"主服务器": "Primary server",
+	"备机":   "Standby server",
+
+	// ——— 自助修改密码 ———
+	"修改用户密码":           "Change account password",
+	"旧密码输入不正确":         "The current password is not correct",
+	"请输入旧密码":           "Enter your current password",
+	"两次输入的新密码不一致":      "The two new passwords do not match",
+	"新密码不能和旧密码相同":      "The new password must differ from the current one",
+	"密码长度必须在 %d~%d 之间": "The password must be %d to %d characters long",
+	"密码必须同时包含数字、大写字母、小写字母和符号": "The password must contain a digit, an uppercase letter, a lowercase letter and a symbol",
+	"账号不存在":     "That account does not exist",
 	"服务器已注册":    "This server is licensed",
 	"服务器在试用期":   "This server is in its trial period",
 	"服务器没有注册":   "This server is not licensed",

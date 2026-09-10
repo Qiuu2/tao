@@ -227,6 +227,11 @@ func (a *app) routes() http.Handler {
 	mux.HandleFunc("POST /api/logout", req(a.handleLogout))
 	mux.HandleFunc("GET /api/auth/me", req(a.handleMe))
 
+	// 改自己的密码：登录即可，不需要任何权限位 —— 它改的是自己那一行。
+	// ⚠ 备机模式下也允许：备机是只读的**广播业务**，不是「连自己密码都不许改」。
+	mux.HandleFunc("GET /api/account/password-policy", req(a.handlePasswordPolicy))
+	mux.HandleFunc("PUT /api/account/password", req(a.handleChangePassword))
+
 	// Geeker-Admin 基座启动时会拉取菜单与按钮权限
 	mux.HandleFunc("GET /api/menu/list", req(a.handleMenu))
 	mux.HandleFunc("GET /api/auth/buttons", req(a.handleButtons))
@@ -922,6 +927,43 @@ func (a *app) handleLogout(w http.ResponseWriter, r *http.Request) {
 		a.auditor.Write(r.Context(), u.Username, "用户登出", audit.ClientIP(r))
 	}
 	a.authMgr.Logout(token)
+	httpx.OK(w, nil)
+}
+
+// handlePasswordPolicy 告诉界面「新密码要满足什么」。
+//
+// 只是为了让弹窗在**提交之前**把要求写出来。真正拦人的是
+// handleChangePassword 里那次校验 —— 这个接口回什么都不影响能不能改成。
+func (a *app) handlePasswordPolicy(w http.ResponseWriter, r *http.Request) {
+	p, err := a.authMgr.Policy(r.Context())
+	if err != nil {
+		httpx.Internal(w, "读取密码强度设置", err)
+		return
+	}
+	httpx.OK(w, p)
+}
+
+// handleChangePassword 改当前登录账号自己的密码。
+//
+// ⚠ 请求体里**没有用户名** —— 改谁的密码由会话决定。旧版是把用户名跟着
+// 表单一起提交、服务端照着改的，知道别人旧密码就能改别人的（见 auth/password.go）。
+func (a *app) handleChangePassword(w http.ResponseWriter, r *http.Request) {
+	var in struct {
+		OldPassword     string `json:"oldPassword"`
+		NewPassword     string `json:"newPassword"`
+		ConfirmPassword string `json:"confirmPassword"`
+	}
+	if !httpx.DecodeJSON(w, r, &in) {
+		return
+	}
+	err := a.authMgr.ChangeOwnPassword(r.Context(), auth.From(r.Context()),
+		in.OldPassword, in.NewPassword, in.ConfirmPassword)
+	if err != nil {
+		// 全是「用户填错了」这一类，回 40001 让界面把话直接显示出来；
+		// 这里不区分旧密码错与强度不够，两种都是照着 msg 改就行。
+		httpx.Fail(w, httpx.CodeBadRequest, err.Error())
+		return
+	}
 	httpx.OK(w, nil)
 }
 

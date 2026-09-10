@@ -32,3 +32,27 @@ export const getAuthButtonListApi = () => {
 export const logoutApi = () => {
   return http.post(PORT1 + `/api/logout`);
 };
+
+/* ---------------- 自助修改密码 ---------------- */
+
+/** 新密码要满足什么。complex 对应旧库 serverconfig.fuzamima */
+export interface PasswordPolicy {
+  complex: boolean;
+  minLength: number;
+  maxLength: number;
+}
+
+/** @description 读密码强度要求。只用来在弹窗里把要求写清楚，真正拦人的是提交那一次 */
+export const getPasswordPolicyApi = () => {
+  return http.get<PasswordPolicy>(PORT1 + `/api/account/password-policy`, {}, { loading: false });
+};
+
+/**
+ * @description 改**自己**的登录密码。
+ *
+ * 请求体里没有用户名 —— 改谁的密码由会话决定。旧版是把用户名跟着表单一起提交、
+ * 服务端照着改的，知道别人旧密码就能改别人的。
+ */
+export const changeOwnPasswordApi = (params: { oldPassword: string; newPassword: string; confirmPassword: string }) => {
+  return http.put(PORT1 + `/api/account/password`, params);
+};

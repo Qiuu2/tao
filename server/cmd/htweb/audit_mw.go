@@ -65,6 +65,8 @@ var auditLabels = map[string]string{
 	"DELETE /api/usergroups/{id}": "删除用户组",
 	"POST /api/users":             "新建用户",
 	"PUT /api/users/{id}":         "修改用户",
+	// 措辞照旧版 $logset['userpasswordmodify_msg']
+	"PUT /api/account/password":   "修改用户密码",
 	"POST /api/users/{id}/enable": "启用/停用用户",
 	"DELETE /api/users":           "删除用户",
 
