@@ -175,16 +175,35 @@
           projectstate：0 = 启用、1 = 停用，与 audioserver.sql 的列注释相反。
           旧模板 BellManager/bellManager_form.html 就是 `== 0` 渲染 Enabled。
         -->
+        <!--
+          状态列照 ok112（FileTaskManager_from.html）：**没在跑的时候**显示启用/停用，
+          一跑起来就显示跑到哪一步了（执行中 / 已停止 / 立即执行）。
+          旧版是 state==0 看 projectstate，否则看 state —— 同一列两种含义，
+          因为「停用的任务」和「正在执行的任务」本来就是互斥的两种情形。
+        -->
         <template #projectstate="scope">
-          <el-tag v-if="scope.row.projectstate === 0" type="success" size="small">{{ $t("common.enable") }}</el-tag>
-          <el-tag v-else type="info" size="small">{{ $t("common.disable") }}</el-tag>
-        </template>
-
-        <template #state="scope">
-          <el-tag :type="stateTagType(scope.row.state)" size="small" effect="plain">{{ scope.row.stateText }}</el-tag>
+          <template v-if="scope.row.state === 0">
+            <el-tag v-if="scope.row.projectstate === 0" type="success" size="small">{{ $t("common.enable") }}</el-tag>
+            <el-tag v-else type="info" size="small">{{ $t("common.disable") }}</el-tag>
+          </template>
+          <el-tag v-else :type="stateTagType(scope.row.state)" size="small" effect="plain">{{ scope.row.stateText }}</el-tag>
           <el-tooltip v-if="!scope.row.startable" :content="scope.row.blockReason" placement="top">
             <el-icon class="warn-icon"><WarningFilled /></el-icon>
           </el-tooltip>
+        </template>
+
+        <!--
+          正在播放列 = **此刻在放的那首歌的名字**，照 ok112 拿 task.playfileid
+          去媒体表对名字。原来这一列显示的是任务状态，与列名对不上。
+
+          ⚠ 名字只在任务真的在跑时才有（服务端按 state 判过了）：playfileid 是
+            后台 C 服务写的，停下来不见得会清，挂着上一首的名字会让人以为还在响。
+        -->
+        <template #playingName="scope">
+          <span v-if="scope.row.playingName" class="playing" :title="scope.row.playingName">
+            {{ scope.row.playingName }}
+          </span>
+          <span v-else class="muted">—</span>
         </template>
 
         <template #weekdays="scope">
@@ -194,9 +213,9 @@
         </template>
 
         <!--
-          :80 的操作列是「编辑 / 终端 / 媒体」三个链接，后两个开只读弹窗。
+          操作列照 :80：「编辑 / 终端 / 媒体」，后两个开只读弹窗。
           展开行仍然保留（点行首箭头），两种看法并存。
-          复制是我们多的一个（:80 没有，但去掉就丢功能）。
+          删除在工具栏上（勾中行再点），与 :80 一致，不在行里重复一份。
         -->
         <template #operation="scope">
           <el-button type="primary" link :icon="EditPen" :disabled="!canEdit" @click="openEdit(scope.row)">{{
@@ -207,9 +226,6 @@
           </el-button>
           <el-button type="primary" link @click="openMedia(scope.row)">
             {{ $t("taskCommon.media") }}<span class="cnt">({{ scope.row.media?.length ?? 0 }})</span>
-          </el-button>
-          <el-button type="primary" link :icon="CopyDocument" :disabled="!canCopy" @click="openCopy(scope.row)">
-            {{ $t("common.copy") }}
           </el-button>
         </template>
       </ProTable>
@@ -528,24 +544,6 @@
       </template>
     </el-dialog>
 
-    <!-- 复制任务 -->
-    <el-dialog v-model="cp.visible" :title="$t('task.copyTask')" width="480px">
-      <el-form label-width="100px">
-        <el-form-item :label="$t('task.newTaskName')" required>
-          <el-input v-model="cp.name" maxlength="85" show-word-limit />
-        </el-form-item>
-        <el-form-item :label="$t('task.targetFolder')" required>
-          <el-select v-model="cp.folderId" class="fill">
-            <el-option v-for="f in flatFolders" :key="f.id" :label="f.name" :value="f.id" />
-          </el-select>
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <el-button @click="cp.visible = false">{{ $t("common.cancel") }}</el-button>
-        <el-button type="primary" :loading="cp.saving" @click="submitCopy">{{ $t("common.confirm") }}</el-button>
-      </template>
-    </el-dialog>
-
     <!-- 删除影响面 -->
     <el-dialog v-model="del.visible" :title="$t('task.deleteTaskTitle')" width="640px">
       <el-alert type="error" :closable="false" show-icon class="mb12">
@@ -610,7 +608,6 @@ import {
   ArrowUp,
   CirclePlus,
   Close,
-  CopyDocument,
   Delete,
   EditPen,
   FolderAdd,
@@ -625,7 +622,6 @@ import { useRoute, useRouter } from "vue-router";
 import {
   cancelTaskEmergencyApi,
   controlTaskApi,
-  copyTaskApi,
   createTaskApi,
   createTaskFolderApi,
   deleteTaskFolderApi,
@@ -674,7 +670,6 @@ const canAdd = computed(() => !!btn.value.add);
 const canEdit = computed(() => !!btn.value.edit);
 const canDelete = computed(() => !!btn.value.delete);
 const canControl = computed(() => !!btn.value.control);
-const canCopy = computed(() => !!btn.value.copy);
 const canFolder = computed(() => !!btn.value.folder);
 
 /** ProTable 的 selectedListIds 是 string[]，统一转成数字 id */
@@ -733,8 +728,9 @@ const columns = reactive<ColumnProps<TaskRow>[]>([
   { prop: "defaultvolume", label: t("common.volume"), width: 70 },
   { prop: "priority", label: t("taskCommon.priority"), width: 90, sortable: "custom" },
   { prop: "ownerUserName", label: t("taskCommon.owner"), width: 110 },
-  { prop: "state", label: t("task.playing"), width: 110, sortable: "custom" },
-  { prop: "operation", label: t("common.operation"), fixed: "right", width: 190 }
+  { prop: "playingName", label: t("task.playing"), minWidth: 150, showOverflowTooltip: true },
+  // 去掉「复制」之后剩三个链接，给 220 让它们排一行，不折成两行
+  { prop: "operation", label: t("common.operation"), fixed: "right", width: 220 }
 ]);
 
 const stateTagType = (s: number) => (s === 1 ? "warning" : s === 3 ? "success" : "info");
@@ -1176,35 +1172,6 @@ const submit = async () => {
   }
 };
 
-/* ---------------- 复制 ---------------- */
-
-const cp = reactive({ visible: false, saving: false, id: 0, name: "", folderId: 0 });
-
-const openCopy = (row: TaskRow) => {
-  Object.assign(cp, {
-    visible: true,
-    saving: false,
-    id: row.taskid,
-    name: t("task.copySuffix", { name: row.taskname }),
-    folderId: row.folderId || currentFolder.value
-  });
-};
-
-const submitCopy = async () => {
-  if (!cp.name.trim()) return ElMessage.warning(t("task.newTaskNameRequired"));
-  if (!cp.folderId) return ElMessage.warning(t("task.pickTargetFolder"));
-  cp.saving = true;
-  try {
-    const { data } = await copyTaskApi(cp.id, cp.folderId, cp.name.trim());
-    ElMessage.success(t("task.copiedAs", { id: data.taskid }));
-    cp.visible = false;
-    refresh();
-    loadFolders();
-  } finally {
-    cp.saving = false;
-  }
-};
-
 /* ---------------- 删除 ---------------- */
 
 const del = reactive({ visible: false, saving: false, preview: null as TaskDeletePreview | null });
@@ -1458,6 +1425,10 @@ onMounted(async () => {
 }
 .muted {
   color: var(--el-text-color-secondary);
+}
+/* 正在响的那首歌 —— 这一列只有在跑的任务才有内容，给点分量 */
+.playing {
+  color: var(--el-color-success);
 }
 .ml6 {
   margin-left: 6px;

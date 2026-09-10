@@ -35,6 +35,10 @@ export interface TaskRow {
   projectstate: number;
   state: number;
   stateText: string;
+  /** 此刻正在播的那首歌（task.playfileid → media.name）。没在跑时是空串 */
+  playingName: string;
+  /** 后台 C 服务写的原始值，没在跑时可能是上一首的号 */
+  playfileid: number;
   startdate: string;
   enddate: string;
   playtime: string;
@@ -325,10 +329,6 @@ export const previewDeleteTasksApi = (ids: number[]) => {
 
 export const deleteTasksApi = (ids: number[]) => {
   return http.delete<TaskDeleteResult>(PORT1 + `/api/tasks`, {}, { data: { ids, confirmed: true } });
-};
-
-export const copyTaskApi = (id: number, targetFolderId: number, newName: string) => {
-  return http.post<TaskSaveResult>(PORT1 + `/api/tasks/${id}/copy`, { targetFolderId, newName });
 };
 
 export const syncTaskTerminalsApi = (taskIds: number[], terminalIds: number[]) => {

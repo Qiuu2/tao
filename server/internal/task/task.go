@@ -93,6 +93,19 @@ const (
 	StateDisabled = 1 // 停用
 )
 
+// task.state 的取值（后台 C 服务写，Web 只读）。措辞见 decorate。
+const (
+	RunStateReady   = 0 // 准备
+	RunStateRunning = 1 // 执行中
+	RunStateStopped = 2 // 已停止
+	RunStateNow     = 3 // 立即执行
+)
+
+// Running 表示这条任务此刻在播。
+func Running(state int) bool {
+	return state == RunStateRunning || state == RunStateNow
+}
+
 type Service struct {
 	db *sql.DB
 }
@@ -132,11 +145,20 @@ type Item struct {
 	TaskName string `json:"taskname"`
 	TaskType int    `json:"tasktype"`
 	// IsRandomPlay 取值反直觉：0 = 随机，1 = 顺序（BR-163），必须原样保留。
-	IsRandomPlay  int    `json:"israndomplay"`
-	PlayModeText  string `json:"playModeText"`
-	ProjectState  int    `json:"projectstate"`
-	State         int    `json:"state"`
-	StateText     string `json:"stateText"`
+	IsRandomPlay int    `json:"israndomplay"`
+	PlayModeText string `json:"playModeText"`
+	ProjectState int    `json:"projectstate"`
+	State        int    `json:"state"`
+	StateText    string `json:"stateText"`
+	// PlayFileID / PlayingName 是**此刻正在播的那首**（ok112 的「正在播放」列，
+	// FileTaskManager_from.html 里拿 playfileid 去 medialist 里对名字）。
+	//
+	// ⚠ task.playfileid 这一列是**后台 C 服务写的**，Web 这一侧只读不写：
+	// 旧版 PHP 从头到尾只在建任务时把表单里的值原样插进去（一般是 0），
+	// 启停时一次都没碰过它。所以停下来之后这一列可能还留着上一首的号 ——
+	// 界面上因此按 State 判断要不要当成「正在播」，见 decorate。
+	PlayFileID    int64  `json:"playfileid"`
+	PlayingName   string `json:"playingName"`
 	StartDate     string `json:"startdate"`
 	EndDate       string `json:"enddate"`
 	PlayTime      string `json:"playtime"`
@@ -275,9 +297,11 @@ func (s *Service) List(ctx context.Context, u *auth.User, q ListQuery) (*ListRes
 		       COALESCE(t.exemodel,'0000000'), COALESCE(t.priority,0),
 		       COALESCE(t.defaultvolume,0), COALESCE(t.prepower,0),
 		       COALESCE(t.parentid,0), COALESCE(t.task_user_id,0),
-		       COALESCE(b.username,'')
+		       COALESCE(b.username,''),
+		       COALESCE(t.playfileid,0), COALESCE(pm.name,'')
 		FROM task t
-		LEFT JOIN book_admin b ON b.id = t.task_user_id` + where +
+		LEFT JOIN book_admin b ON b.id = t.task_user_id
+		LEFT JOIN media pm ON pm.id = t.playfileid` + where +
 		" ORDER BY " + order + " LIMIT ? OFFSET ?"
 
 	listArgs := append(append([]interface{}{}, whereArgs...), q.Pager.PageSize, q.Pager.Offset())
@@ -296,7 +320,7 @@ func (s *Service) List(ctx context.Context, u *auth.User, q ListQuery) (*ListRes
 			&it.StartDate, &it.EndDate, &it.PlayTime, &it.EndTime,
 			&it.TimeLengthTyp, &it.TimeLength, &it.ExeModel, &it.Priority,
 			&it.Volume, &it.PrePower, &it.FolderID, &it.OwnerUserID,
-			&it.OwnerUserName); err != nil {
+			&it.OwnerUserName, &it.PlayFileID, &it.PlayingName); err != nil {
 			return nil, fmt.Errorf("扫描任务行: %w", err)
 		}
 		decorate(ctx, &it)
@@ -340,16 +364,26 @@ func decorate(ctx context.Context, it *Item) {
 		it.PlayModeText = i18n.T(l, "随机")
 	}
 	switch it.State {
-	case 0:
+	case RunStateReady:
 		it.StateText = i18n.T(l, "准备")
-	case 1:
+	case RunStateRunning:
 		it.StateText = i18n.T(l, "执行中")
-	case 2:
+	case RunStateStopped:
 		it.StateText = i18n.T(l, "已停止")
-	case 3:
+	case RunStateNow:
 		it.StateText = i18n.T(l, "立即执行")
 	default:
 		it.StateText = fmt.Sprintf(i18n.T(l, "未知(%d)"), it.State)
+	}
+
+	// 「正在播放」只在真的在播的时候给名字。
+	//
+	// playfileid 是后台 C 服务写的，停下来之后**不见得会清**（旧版 PHP 从头到尾
+	// 没碰过这一列）。不判一下的话，一条早就停了的任务会一直挂着上一首的歌名，
+	// 而这一列的名字就叫「正在播放」—— 看的人会当成它此刻在响。
+	// 原始的 playfileid 仍旧原样带出去，需要的人自己判。
+	if !Running(it.State) {
+		it.PlayingName = ""
 	}
 	// BR-164：1 = 按秒数，2 = 按循环次数
 	// 「播放 N 秒 / 循环 N 次」这类量词句，中英语序不同，
