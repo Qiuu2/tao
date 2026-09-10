@@ -266,3 +266,20 @@ export const getTerminalOptionsApi = (userId: number) => {
 export const getWindCapacityApi = () => {
   return http.get<WindCapacity>(PORT1 + `/api/users/wind-capacity`, {}, { loading: false });
 };
+
+/**
+ * 新建 / 修改用户那张表单的密码要求。
+ *
+ * ⚠ 与「自助修改密码」是**两条不同的规则**，虽然都跟着 serverconfig.fuzamima：
+ * 简单模式下自助改密码不查长度，而新建用户要求至少 6 位、且只能是中文/字母/数字
+ * （旧版 useradd.html 与 modifypassword.html 的 checkform 本来就不一样）。
+ */
+export interface UserPasswordRule {
+  complex: boolean;
+  minLength: number;
+  maxLength: number;
+}
+
+export const getUserPasswordRuleApi = () => {
+  return http.get<UserPasswordRule>(PORT1 + `/api/users/password-rule`, {}, { loading: false });
+};

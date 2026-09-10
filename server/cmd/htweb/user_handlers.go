@@ -20,6 +20,10 @@ func failUser(w http.ResponseWriter, action string, err error) {
 		httpx.Fail(w, httpx.CodeNotFound, err.Error())
 	case errors.Is(err, user.ErrNoPermission):
 		httpx.Fail(w, httpx.CodeForbidden, err.Error())
+	case errors.Is(err, user.ErrValidation):
+		// 新建/修改用户那一组校验。用标记而不是关键词 ——
+		// 那些提示在英文界面下是英文，中文关键词一条都匹配不上（见 user/validate.go）
+		httpx.Fail(w, httpx.CodeBadRequest, strings.TrimPrefix(err.Error(), user.ErrValidation.Error()+": "))
 	case errors.Is(err, user.ErrSystemGroup),
 		errors.Is(err, user.ErrSystemUser),
 		errors.Is(err, user.ErrNotRegistered),
@@ -329,6 +333,17 @@ func (a *app) handleUserDelete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	httpx.OK(w, impact)
+}
+
+// handleUserPasswordRule 是新建 / 修改用户那张表单的密码要求，
+// 供界面直接把提示写出来（与自助改密码那边是**两条不同的规则**，见 user/validate.go）。
+func (a *app) handleUserPasswordRule(w http.ResponseWriter, r *http.Request) {
+	rule, err := a.users.PasswordRule(r.Context())
+	if err != nil {
+		failUser(w, "查询密码要求", err)
+		return
+	}
+	httpx.OK(w, rule)
 }
 
 func (a *app) handleTerminalOptions(w http.ResponseWriter, r *http.Request) {

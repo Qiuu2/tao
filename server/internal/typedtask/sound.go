@@ -237,10 +237,8 @@ type SoundTreeGroup struct {
 //   - 终端来自 soundgroup，普通用户还要再交叉 userterminal
 //   - 探头来自 sounddevice.groupid
 //
-// ⚠ 旧版还按 `terminal.typeid IN (可广播的型号)` 筛过一道终端。这里不筛：
-// 那份型号清单是 get_terminal_type(3,…) 从 terminaltype 里按能力位算出来的，
-// 而分区里本来就只会放广播终端 —— 多筛一道的唯一效果是把现场已经放进分区、
-// 型号却不在清单里的终端藏起来，人反而不知道它去哪了。
+// 终端还要再按**可广播的型号**筛一道，与旧版的 get_terminal_type(3,…) 同一句，
+// 见 broadcastTypeCond。
 func (s *Service) SoundTree(ctx context.Context, u *auth.User, keyword string) ([]SoundTreeGroup, error) {
 	groups, err := s.soundGroups(ctx)
 	if err != nil {
@@ -252,6 +250,7 @@ func (s *Service) SoundTree(ctx context.Context, u *auth.User, keyword string) (
 	}
 
 	cond := &store.Cond{}
+	cond.Add(broadcastTypeCond)
 	if !u.IsAdmin {
 		cond.Add(`t.id IN (SELECT terminalid FROM userterminal WHERE userid = ?)`, u.ID)
 	}
@@ -326,6 +325,26 @@ func (s *Service) soundGroups(ctx context.Context) ([]SoundTreeGroup, error) {
 	}
 	return out, rows.Err()
 }
+
+// broadcastTypeCond 是「这台终端的型号能不能放广播」，
+// 一字不差照抄旧版 inc/config.inc.php 里 get_terminal_type(3, …, 0, 0) 的那句：
+//
+//	SELECT id FROM terminaltype
+//	WHERE isdecode = '1'
+//	  AND id NOT IN (0,26,2,7,8,9,10,12,15,16,17,21,22,25,28,29,30,31,32,36,37,40,41,42)
+//
+// isdecode = 1 是「能解码音频」，也就是能出声；后面那串黑名单是旧版一个个排掉的
+// （服务器、报警主机、编码器、LED 设备、应急终端之类 —— 它们要么不出声，
+// 要么不该出现在声场任务里）。名单本身没有规律可循，是现场攒出来的，照抄。
+//
+// ⚠ 写成子查询而不是把型号号码展开成常量：黑名单是「排除」而不是「列举」，
+// 现场装了新型号时，只要它 isdecode=1 且不在黑名单里就该自动出现在树上。
+// 展开成常量的话，新型号会静默消失，而没有人会想到来看这里。
+const broadcastTypeCond = `t.typeid IN (
+	SELECT id FROM terminaltype
+	 WHERE COALESCE(isdecode,0) = 1
+	   AND id NOT IN (0,2,7,8,9,10,12,15,16,17,21,22,25,26,28,29,30,31,32,36,37,40,41,42)
+)`
 
 // ---------- 默认噪声值（soundtask 里 taskid = 0 那六行）----------
 

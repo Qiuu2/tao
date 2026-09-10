@@ -245,19 +245,25 @@ func (s *Service) CreateUser(ctx context.Context, in CreateUserInput) (*CreateUs
 		return nil, ErrNotRegistered
 	}
 
+	// 逐条照旧版 useradd.html 的 checkform()，见 validate.go
 	username := strings.TrimSpace(in.Username)
-	if username == "" || len(username) > 50 {
-		return nil, fmt.Errorf("用户名长度非法")
+	if err := checkUsername(ctx, username); err != nil {
+		return nil, err
 	}
-	if in.Password == "" || len(in.Password) > 20 {
-		return nil, fmt.Errorf("密码长度必须在 1~20 之间")
-	}
-	if in.Password != in.ConfirmPassword {
-		return nil, fmt.Errorf("两次输入的密码不一致")
+	in.Info = strings.TrimSpace(in.Info)
+	if err := checkInfo(ctx, in.Info); err != nil {
+		return nil, err
 	}
 	if in.UsergroupID <= 0 {
-		return nil, fmt.Errorf("必须指定用户组")
+		return nil, invalid(i18n.TC(ctx, "请选择所属用户组"))
 	}
+	if err := s.checkPassword(ctx, in.Password, in.ConfirmPassword); err != nil {
+		return nil, err
+	}
+	if err := checkTerminals(ctx, in.Terminals); err != nil {
+		return nil, err
+	}
+	in.Serials = trimSerials(in.Serials)
 
 	unlock, err := s.lock(ctx, "htweb_user_create")
 	if err != nil {
@@ -398,17 +404,27 @@ func (s *Service) UpdateUser(ctx context.Context, id int64, in UpdateUserInput) 
 		username = oldName
 		in.UsergroupID = SystemGroupID
 	}
-	if username == "" || len(username) > 50 {
-		return nil, fmt.Errorf("用户名长度非法")
+	if err := checkUsername(ctx, username); err != nil {
+		return nil, err
 	}
+	in.Info = strings.TrimSpace(in.Info)
+	if err := checkInfo(ctx, in.Info); err != nil {
+		return nil, err
+	}
+	if in.UsergroupID <= 0 {
+		return nil, invalid(i18n.TC(ctx, "请选择所属用户组"))
+	}
+	if err := checkTerminals(ctx, in.Terminals); err != nil {
+		return nil, err
+	}
+	in.Serials = trimSerials(in.Serials)
 
+	// 空密码 = 不改密码（修 D-58：旧版会把它 md5("") 存进去，账号从此登不上）。
+	// 真填了就走与新建同一条规则。
 	changePassword := in.Password != ""
 	if changePassword {
-		if len(in.Password) > 20 {
-			return nil, fmt.Errorf("密码长度不能超过 20")
-		}
-		if in.Password != in.ConfirmPassword {
-			return nil, fmt.Errorf("两次输入的密码不一致")
+		if err := s.checkPassword(ctx, in.Password, in.ConfirmPassword); err != nil {
+			return nil, err
 		}
 	}
 

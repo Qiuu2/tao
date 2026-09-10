@@ -277,6 +277,7 @@ func (a *app) routes() http.Handler {
 	mux.HandleFunc("GET /api/users", usr(a.handleUserList))
 	mux.HandleFunc("GET /api/users/wind-capacity", usr(a.handleWindCapacity))
 	mux.HandleFunc("GET /api/users/terminal-options", usr(a.handleTerminalOptions))
+	mux.HandleFunc("GET /api/users/password-rule", usr(a.handleUserPasswordRule))
 	mux.HandleFunc("GET /api/users/delete-preview", usr(a.handleUserDeletePreview))
 	mux.HandleFunc("GET /api/users/{id}", usr(a.handleUserGet))
 	mux.HandleFunc("POST /api/users", usr(a.handleUserCreate))

@@ -88,14 +88,20 @@
 
         <el-form-item :label="$t('user.username')" required>
           <el-input v-model="dlg.form.username" :disabled="dlg.usernameLocked" maxlength="50" show-word-limit />
+          <div class="rule-tip">{{ $t("user.usernameCharset") }}</div>
         </el-form-item>
 
+        <!--
+          密码框 maxlength 16、描述 30，都照旧版表单上的 maxlength ——
+          旧版界面根本输不进第 17 / 31 个字符。
+        -->
         <el-form-item :label="dlg.isEdit ? $t('user.newPassword') : $t('user.password')" :required="!dlg.isEdit">
-          <el-input v-model="dlg.form.password" type="password" show-password maxlength="20" autocomplete="new-password" />
+          <el-input v-model="dlg.form.password" type="password" show-password maxlength="16" autocomplete="new-password" />
+          <div class="rule-tip">{{ pwdRuleText }}</div>
         </el-form-item>
 
         <el-form-item :label="$t('user.confirmPassword')" :required="!dlg.isEdit">
-          <el-input v-model="dlg.form.confirmPassword" type="password" show-password maxlength="20" autocomplete="new-password" />
+          <el-input v-model="dlg.form.confirmPassword" type="password" show-password maxlength="16" autocomplete="new-password" />
         </el-form-item>
 
         <el-form-item :label="$t('user.belongGroup')" required>
@@ -110,7 +116,7 @@
         </el-form-item>
 
         <el-form-item :label="$t('common.description')">
-          <el-input v-model="dlg.form.info" maxlength="60" show-word-limit :placeholder="$t('common.optional')" />
+          <el-input v-model="dlg.form.info" maxlength="30" show-word-limit :placeholder="$t('common.optional')" />
         </el-form-item>
 
         <el-divider content-position="left">{{ $t("user.subControlSoftware") }}</el-divider>
@@ -198,12 +204,14 @@ import {
   getTerminalOptionsApi,
   getUserApi,
   getUserListApi,
+  getUserPasswordRuleApi,
   getWindCapacityApi,
   GroupOption,
   previewDeleteUserApi,
   setUserEnableApi,
   TerminalOption,
   updateUserApi,
+  UserPasswordRule,
   UserRow,
   WindCapacity
 } from "@/api/modules/account";
@@ -228,6 +236,8 @@ const refresh = () => proTableRef.value?.getTableList?.();
 
 const scopeNote = ref("");
 const capacity = ref<WindCapacity>();
+/** 新建 / 修改用户那张表单的密码要求（跟着 serverconfig.fuzamima 走） */
+const pwdRule = ref<UserPasswordRule>();
 const groupOptions = ref<GroupOption[]>([]);
 const terminalOptions = ref<TerminalOption[]>([]);
 
@@ -273,9 +283,10 @@ const dataCallback = (data: any) => {
 };
 
 const loadMeta = async () => {
-  const [cap, groups] = await Promise.all([getWindCapacityApi(), getGroupOptionsApi()]);
+  const [cap, groups, rule] = await Promise.all([getWindCapacityApi(), getGroupOptionsApi(), getUserPasswordRuleApi()]);
   capacity.value = cap.data;
   groupOptions.value = groups.data ?? [];
+  pwdRule.value = rule.data;
 };
 
 /* ---------------- 新建 / 编辑 ---------------- */
@@ -358,12 +369,47 @@ const openEdit = async (row: UserRow) => {
   await loadTerminals(data.id);
 };
 
+/*
+  校验逐条照旧版 useradd.html / usermodify.html 的 checkform()。
+  服务端也各查一遍（user/validate.go）—— 旧版这些规则**全在浏览器里跑**，
+  绕过页面直接发请求，空用户名、一位数密码都能存进去。
+*/
+/** 旧版的 isChinaOrNumbOrLett()：中文 / 字母 / 数字，别的都不收 */
+const NAME_CHARSET = /^[0-9a-zA-Z一-龥]+$/;
+const isComplexEnough = (v: string) => /[0-9]/.test(v) && /[A-Z]/.test(v) && /[a-z]/.test(v) && /[^a-zA-Z0-9]/.test(v);
+
+/** 密码要求那一行提示 */
+const pwdRuleText = computed(() =>
+  pwdRule.value?.complex
+    ? t("user.pwdRuleComplex", { min: pwdRule.value.minLength, max: pwdRule.value.maxLength })
+    : t("user.pwdRuleSimple", { min: pwdRule.value?.minLength ?? 6, max: pwdRule.value?.maxLength ?? 16 })
+);
+
+/** 返回一句错误文案；没问题返回空串 */
+const checkPassword = (v: string) => {
+  const r = pwdRule.value;
+  const min = r?.minLength ?? 6;
+  const max = r?.maxLength ?? 16;
+  const n = [...v].length;
+  if (n < min || n > max) return t("user.pwdLengthRule", { min, max });
+  if (r?.complex) return isComplexEnough(v) ? "" : t("user.pwdComplexRule");
+  return NAME_CHARSET.test(v) ? "" : t("user.pwdCharsetRule");
+};
+
 const submit = async () => {
   const f = dlg.form;
   if (!f.username.trim()) return ElMessage.warning(t("user.usernameRequired"));
+  if (!NAME_CHARSET.test(f.username.trim())) return ElMessage.warning(t("user.usernameCharset"));
   if (!f.usergroupId) return ElMessage.warning(t("user.pickGroup"));
   if (!dlg.isEdit && !f.password) return ElMessage.warning(t("user.passwordRequired"));
+  // 修改时留空 = 不改密码；真填了就走与新建同一条规则
+  if (f.password) {
+    const bad = checkPassword(f.password);
+    if (bad) return ElMessage.warning(bad);
+  }
   if (f.password !== f.confirmPassword) return ElMessage.warning(t("user.passwordMismatch"));
+  // 旧版 checkform 末尾那句：一台都不绑的用户登进来什么设备都看不见
+  if (!selectedTerminalIds.value.length) return ElMessage.warning(t("user.pickTerminals"));
 
   // 把选中的终端 id 还原成 {terminalId, groupId} —— groupId 从选项里取，
   // 不再像旧版那样让前端传两条平行的逗号串靠下标对齐
@@ -463,6 +509,12 @@ onMounted(loadMeta);
 </script>
 
 <style scoped lang="scss">
+/* 输入框底下那一行要求提示 */
+.rule-tip {
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--el-text-color-secondary);
+}
 .header-bar {
   display: flex;
   flex-wrap: wrap;

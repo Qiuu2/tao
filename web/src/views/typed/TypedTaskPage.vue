@@ -1395,6 +1395,14 @@ const openEdit = async (row: TypedTask) => {
       .filter(d => !d.deleted)
       .map(d => ({ deviceId: d.deviceId, groupId: d.groupId, dbValues: [...d.dbValues] }));
     await Promise.all([loadNoiseTemplate(), loadSoundTree(soundKeyword.value.trim())]);
+    // 树上只有「型号能放广播」的终端（与旧版 get_terminal_type(3,…) 同一句）。
+    // 库里绑着、树上却没有的，勾不上也就保存不回去 —— 不能悄悄丢，说一句。
+    const onTree = new Set(soundGroups.value.flatMap(g => g.terminals.map(x => x.id)));
+    const offTree = selectedTerminals.value.filter(id => !onTree.has(id));
+    if (offTree.length) {
+      selectedTerminals.value = selectedTerminals.value.filter(id => onTree.has(id));
+      ElMessage.warning(t("sound.offTreeTerminals", { n: offTree.length }));
+    }
     await syncSoundTree();
     const goneDev = (data.soundDevices ?? []).filter(d => d.deleted).length;
     if (goneDev) ElMessage.warning(t("sound.droppedDevices", { n: goneDev }));

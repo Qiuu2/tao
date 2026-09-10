@@ -62,6 +62,7 @@ var keyDenied = map[string]string{
 	"GET /api/menu/list":               "左侧菜单，纯界面的东西",
 	"GET /api/auth/buttons":            "按钮置灰用的，纯界面的东西",
 	"GET /api/account/password-policy": "密码强度要求，是给填表单的人看的提示",
+	"GET /api/users/password-rule":     "新建/修改用户那张表单的密码要求，同样是给填表单的人看的提示",
 	"PUT /api/account/password": "改的是**当前会话那个人**自己的登录密码。" +
 		"密钥背后没有人，它改谁的都不对；真要给程序换凭据，那是重发一把密钥，不是改人的密码",
 

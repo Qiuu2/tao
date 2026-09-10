@@ -57,8 +57,15 @@ type PasswordPolicy struct {
 
 // Policy 读当前的密码强度要求。
 func (m *Manager) Policy(ctx context.Context) (*PasswordPolicy, error) {
+	return ReadPolicy(ctx, m.db)
+}
+
+// ReadPolicy 与 Policy 同一件事，只是不需要一个 Manager ——
+// 用户管理那边也要读这份设置（新建/修改用户的密码要求），
+// 而它手上只有 *sql.DB，为了读一列去造一个带密钥和会话时长的 Manager 没有道理。
+func ReadPolicy(ctx context.Context, db *sql.DB) (*PasswordPolicy, error) {
 	var fuza int
-	err := m.db.QueryRowContext(ctx,
+	err := db.QueryRowContext(ctx,
 		`SELECT COALESCE(fuzamima,0) FROM serverconfig ORDER BY id LIMIT 1`).Scan(&fuza)
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return nil, fmt.Errorf("读取密码强度设置: %w", err)

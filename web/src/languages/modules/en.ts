@@ -25,6 +25,7 @@ export default {
     zoneCount: "{t} terminal(s) / {d} noise device(s)",
     searchTreePlaceholder: "Search terminal or noise device name",
     noZone: "No sound-field zones yet — create one under “Sound-field zones”",
+    offTreeTerminals: "{n} bound terminal(s) are not of a broadcast-capable type, so they are not on the tree and will be removed from this task on save",
     droppedDevices: "{n} noise device(s) were deleted and are not restored"
   },
   app: {
@@ -968,6 +969,13 @@ export default {
     belongGroup: "User group",
     pickGroup: "Choose a user group",
     username: "Username",
+    usernameCharset: "Chinese characters, letters and digits only",
+    pickTerminals: "Choose the terminals this user may control",
+    pwdRuleSimple: "{min}–{max} characters, Chinese characters, letters and digits only",
+    pwdRuleComplex: "{min}–{max} characters, and must contain a digit, an uppercase letter, a lowercase letter and a symbol",
+    pwdLengthRule: "The password must be {min} to {max} characters long",
+    pwdComplexRule: "The password must contain a digit, an uppercase letter, a lowercase letter and a symbol",
+    pwdCharsetRule: "The password may contain only Chinese characters, letters and digits",
     usernameRequired: "Enter a username",
     password: "Password",
     newPassword: "New password",

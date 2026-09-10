@@ -33,6 +33,7 @@ export default {
     zoneCount: "{t} 台终端 / {d} 个噪声设备",
     searchTreePlaceholder: "搜索终端或噪声设备名称",
     noZone: "还没有声场分区，先去「声场分区」建一个",
+    offTreeTerminals: "有 {n} 台已绑定的终端不在可广播的型号里，树上没有它们，保存后会从这条任务上移除",
     droppedDevices: "有 {n} 个噪声设备已被删除，没有回填"
   },
   app: {
@@ -973,6 +974,13 @@ export default {
     belongGroup: "所属用户组",
     pickGroup: "请选择所属用户组",
     username: "用户名",
+    usernameCharset: "只能是中文、字母或数字",
+    pickTerminals: "请为该用户选择可控制的终端",
+    pwdRuleSimple: "{min} ~ {max} 位，只能是中文、字母或数字",
+    pwdRuleComplex: "{min} ~ {max} 位，且必须同时包含数字、大写字母、小写字母和符号",
+    pwdLengthRule: "密码长度必须在 {min} ~ {max} 之间",
+    pwdComplexRule: "密码必须同时包含数字、大写字母、小写字母和符号",
+    pwdCharsetRule: "密码只能是中文、字母或数字",
     usernameRequired: "请输入用户名",
     password: "密码",
     newPassword: "新密码",
