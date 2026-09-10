@@ -1,14 +1,14 @@
 <!--
-  日志：操作日志（F-54）+ 任务日志（F-55）
+  日志：操作日志（F-54）
 
-  两件事必须先说清楚，否则用户会误判：
+  先说清楚一件事，否则用户会误判：**log 表是三方共用的**。
+  现网 156 行里 admin 是旧 PHP Web 写的、server 与「主机:-1」是后台 C 服务写的。
+  清空会连 C 服务的记录一起清掉，而且清完它还会继续往里写。
+  所以清理面板里把「后台服务写的条数」单列出来。
 
-  1. **log 表是三方共用的**。现网 156 行里 admin 是旧 PHP Web 写的、
-     server 与「主机:-1」是后台 C 服务写的。清空会连 C 服务的记录一起清掉，
-     而且清完它还会继续往里写。所以清理面板里把「后台服务写的条数」单列出来。
-
-  2. **任务日志不在数据库里**，是后台服务写在 datelog/ 下的
-     logYYYY-MM-DD.html 文件。现网 414 个文件 5.4MB。
+  ⚠ 任务日志（datelog 下每天一个 logYYYY-MM-DD.html）这一页**已经撤掉**，
+  连带撤掉的还有后台滚动清理删那批文件的能力 ——
+  界面上看不见的东西不该在后台被悄悄删掉。那些文件仍由 C 服务自己管。
 
   相对旧版的关键修复：
     · 筛选的**列名**来自 URL 直接拼进 SQL（`where log.$searchkey like '%$v%'`），
@@ -20,121 +20,63 @@
 -->
 <template>
   <div class="log-page">
-    <el-tabs v-model="tab" class="log-tabs">
-      <!-- ============ 操作日志 ============ -->
-      <el-tab-pane :label="$t('log.opLog')" name="operate">
-        <div class="table-box">
-          <ProTable
-            ref="proTableRef"
-            :columns="columns"
-            :request-api="getLogListApi"
-            :init-param="initParam"
-            :data-callback="dataCallback"
-            row-key="id"
-            @sort-change="onSortChange"
-          >
-            <template #tableHeader>
-              <div class="header-bar">
-                <div class="header-left">
-                  <el-button type="danger" :icon="Delete" @click="openClear">{{ $t("log.cleanLog") }}</el-button>
+    <div class="table-box">
+      <ProTable
+        ref="proTableRef"
+        :columns="columns"
+        :request-api="getLogListApi"
+        :init-param="initParam"
+        :data-callback="dataCallback"
+        row-key="id"
+        @sort-change="onSortChange"
+      >
+        <template #tableHeader>
+          <div class="header-bar">
+            <div class="header-left">
+              <el-button type="danger" :icon="Delete" @click="openClear">{{ $t("log.cleanLog") }}</el-button>
 
-                  <!--
-                    保留期：默认 1 个月，可选 3 个月 / 半年 / 1 年。
-                    选完点「确定」：设置存下来，超期的当场滚掉，不用等到明天。
-                    服务里另有一个每天跑一次的定时滚动，不靠这一页开着。
-                  -->
-                  <el-divider direction="vertical" />
-                  <span class="keep-label">{{ $t("log.retention") }}</span>
-                  <el-select v-model="keepOption" style="width: 120px">
-                    <el-option v-for="c in keep?.choices ?? []" :key="c.value" :label="c.label" :value="c.value" />
-                  </el-select>
-                  <el-button type="primary" :loading="keepSaving" :disabled="!keep" @click="onKeepConfirm">{{
-                    $t("common.confirm")
-                  }}</el-button>
-                </div>
-                <div class="header-right">
-                  <el-tag v-if="pendingCutoff" type="warning" size="small" effect="plain">
-                    {{ $t("log.pendingCutoffTip", { date: pendingCutoff }) }}
-                  </el-tag>
-                  <el-tag v-if="stats" type="info" size="small" effect="plain">
-                    {{ $t("log.statsLine", { n: stats.total, from: stats.earliest, to: stats.latest }) }}
-                  </el-tag>
-                </div>
-              </div>
-            </template>
-
-            <template #source="scope">
-              <el-tag :type="sourceTag(scope.row.source)" size="small" effect="plain">
-                {{ scope.row.source }}
+              <!--
+                保留期：默认 1 个月，可选 3 个月 / 半年 / 1 年。
+                选完点「确定」：设置存下来，超期的当场滚掉，不用等到明天。
+                服务里另有一个每天跑一次的定时滚动，不靠这一页开着。
+              -->
+              <el-divider direction="vertical" />
+              <span class="keep-label">{{ $t("log.retention") }}</span>
+              <el-select v-model="keepOption" style="width: 120px">
+                <el-option v-for="c in keep?.choices ?? []" :key="c.value" :label="c.label" :value="c.value" />
+              </el-select>
+              <el-button type="primary" :loading="keepSaving" :disabled="!keep" @click="onKeepConfirm">{{
+                $t("common.confirm")
+              }}</el-button>
+            </div>
+            <div class="header-right">
+              <el-tag v-if="pendingCutoff" type="warning" size="small" effect="plain">
+                {{ $t("log.pendingCutoffTip", { date: pendingCutoff }) }}
               </el-tag>
-            </template>
-
-            <template #user="scope">
-              <span v-if="scope.row.user">{{ scope.row.user }}</span>
-              <span v-else class="muted">{{ $t("log.notRecorded") }}</span>
-            </template>
-
-            <template #ip="scope">
-              <span v-if="scope.row.ip">{{ scope.row.ip }}</span>
-              <span v-else class="muted">—</span>
-            </template>
-          </ProTable>
-        </div>
-      </el-tab-pane>
-
-      <!-- ============ 任务日志 ============ -->
-      <el-tab-pane :label="$t('log.taskLog')" name="task">
-        <div class="task-log">
-          <el-alert v-if="taskLogError" type="warning" :closable="false" class="mb12">
-            {{ taskLogError }}
-          </el-alert>
-
-          <template v-else>
-            <div class="task-bar">
-              <el-date-picker
-                v-model="fileRange"
-                type="daterange"
-                value-format="YYYY-MM-DD"
-                :start-placeholder='$t("common.startDate")'
-                :end-placeholder='$t("common.endDate")'
-                size="default"
-                @change="loadFiles"
-              />
-              <el-button :icon="Refresh" @click="loadFiles">{{ $t("common.refresh") }}</el-button>
-              <el-button type="danger" :icon="Delete" :disabled="!files?.dirWritable" @click="openTaskClear">
-                {{ $t("log.cleanTaskLog") }}
-              </el-button>
-              <span v-if="files" class="task-summary">
-                {{ files.total }} 个文件 · {{ humanSize(files.totalSize) }} · {{ files.dir }}
-              </span>
+              <el-tag v-if="stats" type="info" size="small" effect="plain">
+                {{ $t("log.statsLine", { n: stats.total, from: stats.earliest, to: stats.latest }) }}
+              </el-tag>
             </div>
+          </div>
+        </template>
 
-            <!-- 目录还没建出来：这不是故障，说清楚就行，别让人以为日志丢了 -->
-            <el-alert v-if="files?.note" type="info" :closable="false" show-icon class="mb12">
-              {{ files.note }}
-            </el-alert>
-            <el-alert v-else-if="files && !files.dirWritable" type="info" :closable="false" class="mb12">
-              {{ $t("log.noWritePermission") }}
-            </el-alert>
+        <template #source="scope">
+          <el-tag :type="sourceTag(scope.row.source)" size="small" effect="plain">
+            {{ scope.row.source }}
+          </el-tag>
+        </template>
 
-            <div class="task-body">
-              <el-table :data="files?.files ?? []" height="calc(100vh - 320px)" @row-click="openFile">
-                <el-table-column prop="date" :label="$t('common.startDate')" width="120" />
-                <el-table-column :label="$t('common.size')" width="100">
-                  <template #default="{ row }">{{ humanSize(row.size) }}</template>
-                </el-table-column>
-                <el-table-column prop="modTime" :label="$t('log.modifiedAt')" width="170" />
-                <el-table-column label="" width="80">
-                  <template #default="{ row }">
-                    <el-tag v-if="row.today" type="warning" size="small" effect="plain">{{ $t("log.today") }}</el-tag>
-                  </template>
-                </el-table-column>
-              </el-table>
-            </div>
-          </template>
-        </div>
-      </el-tab-pane>
-    </el-tabs>
+        <template #user="scope">
+          <span v-if="scope.row.user">{{ scope.row.user }}</span>
+          <span v-else class="muted">{{ $t("log.notRecorded") }}</span>
+        </template>
+
+        <template #ip="scope">
+          <span v-if="scope.row.ip">{{ scope.row.ip }}</span>
+          <span v-else class="muted">—</span>
+        </template>
+      </ProTable>
+    </div>
 
     <!-- 清理操作日志 -->
     <el-dialog v-model="clr.visible" :title="$t('log.cleanOpLog')" width="600px">
@@ -164,55 +106,6 @@
         <el-button type="danger" :loading="clr.busy" @click="confirmClear">{{ $t("log.confirmClean") }}</el-button>
       </template>
     </el-dialog>
-
-    <!-- 清理任务日志 -->
-    <el-dialog v-model="tclr.visible" :title="$t('log.cleanTaskLog')" width="640px">
-      <el-form label-width="100px">
-        <el-form-item :label="$t('log.cleanMode')">
-          <el-radio-group v-model="tclr.mode" @change="previewTaskClear">
-            <el-radio value="keepDays">{{ $t("log.keepRecentN") }}</el-radio>
-            <el-radio value="beforeDate">{{ $t("log.deleteBefore") }}</el-radio>
-            <el-radio value="all">{{ $t("log.clearAll") }}</el-radio>
-          </el-radio-group>
-        </el-form-item>
-        <el-form-item v-if="tclr.mode === 'keepDays'" :label="$t('log.keepDays')">
-          <el-input-number v-model="tclr.keepDays" :min="1" :max="3650" @change="previewTaskClear" />
-        </el-form-item>
-        <el-form-item v-if="tclr.mode === 'beforeDate'" :label="$t('log.cutoffDate')">
-          <el-date-picker v-model="tclr.beforeDate" type="date" value-format="YYYY-MM-DD" @change="previewTaskClear" />
-        </el-form-item>
-      </el-form>
-
-      <el-descriptions v-if="tclr.preview" :column="2" border size="small">
-        <el-descriptions-item :label="$t('log.willDelete')">{{ tclr.preview.count }} 个文件</el-descriptions-item>
-        <el-descriptions-item :label="$t('log.freed')">{{ humanSize(tclr.preview.size) }}</el-descriptions-item>
-      </el-descriptions>
-      <el-alert v-if="tclr.preview?.skippedToday.length" type="info" :closable="false" class="mt12">
-        跳过今天的文件（{{ tclr.preview.skippedToday.join("、") }}）——
-        后台服务很可能正开着句柄往里写，删掉后它会继续写进一个已被删除的 inode，日志静默丢失。
-      </el-alert>
-      <template #footer>
-        <el-button @click="tclr.visible = false">{{ $t("common.cancel") }}</el-button>
-        <el-button type="danger" :loading="tclr.busy" :disabled="!tclr.preview?.count" @click="confirmTaskClear">
-          确认删除{{ tclr.preview?.count ? `(${tclr.preview.count})` : "" }}
-        </el-button>
-      </template>
-    </el-dialog>
-
-    <!-- 任务日志内容 -->
-    <el-drawer v-model="viewer.visible" :title="viewer.name" size="70%">
-      <el-alert v-if="viewer.truncated" type="info" :closable="false" class="mb12"> {{ $t("log.tailOnly") }} </el-alert>
-      <el-alert v-if="viewer.gbkLines" type="info" :closable="false" class="mb12">
-        该文件里有 {{ viewer.gbkLines }} 行是 GBK 编码（其余是 UTF-8），已自动转码后显示。
-        后台服务在同一个文件里混用了两种编码，旧页面对这部分内容一直是乱码。
-      </el-alert>
-      <!--
-        内容是后台服务写的 HTML 片段，这里刻意用 <pre> 文本渲染而不是 v-html：
-        C 服务会把任务名、终端名一类的用户可控内容直接拼进去，
-        v-html 渲染等于把它变成存储型 XSS。
-      -->
-      <pre class="log-content">{{ viewer.content }}</pre>
-    </el-drawer>
   </div>
 </template>
 
@@ -220,33 +113,25 @@
 import { useI18n } from "vue-i18n";
 import { computed, onMounted, reactive, ref } from "vue";
 import { ElMessage, ElMessageBox } from "element-plus";
-import { Delete, Refresh } from "@element-plus/icons-vue";
+import { Delete } from "@element-plus/icons-vue";
 import ProTable from "@/components/ProTable/index.vue";
 import type { ColumnProps, ProTableInstance } from "@/components/ProTable/interface";
 import {
   clearLogsApi,
-  deleteTaskLogsApi,
   getLogListApi,
   getLogStatsApi,
   getRetentionApi,
-  getTaskLogFilesApi,
-  previewDeleteTaskLogsApi,
-  readTaskLogApi,
   setRetentionApi,
   type LogClearMode,
   type LogEntry,
   type LogStats,
-  type TaskLogDeletePreview,
   type RetentionOption,
-  type RetentionSettings,
-  type TaskLogFile,
-  type TaskLogList
+  type RetentionSettings
 } from "@/api/modules/log";
 
 // 脚本里拼的文案用 t()；模板里的 $t 不用引入
 const { t } = useI18n();
 
-const tab = ref("operate");
 const proTableRef = ref<ProTableInstance>();
 const stats = ref<LogStats | null>(null);
 const initParam = reactive({ orderBy: "", order: "" });
@@ -332,91 +217,6 @@ const confirmClear = async () => {
   }
 };
 
-/* ---------------- 任务日志 ---------------- */
-
-const files = ref<TaskLogList | null>(null);
-const taskLogError = ref("");
-/** 空数组表示不限日期；用 undefined/null 会被 el-date-picker 的类型拒掉 */
-const fileRange = ref<[string, string] | []>([]);
-
-const loadFiles = async () => {
-  try {
-    const { data } = await getTaskLogFilesApi({
-      from: fileRange.value?.[0] ?? "",
-      to: fileRange.value?.[1] ?? ""
-    });
-    files.value = data;
-    taskLogError.value = "";
-  } catch (e: any) {
-    taskLogError.value = e?.message ?? t("log.taskLogUnavailable");
-  }
-};
-
-const humanSize = (n: number) => {
-  if (n < 1024) return `${n} B`;
-  if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`;
-  return `${(n / 1024 / 1024).toFixed(1)} MB`;
-};
-
-const viewer = reactive({ visible: false, name: "", content: "", truncated: false, gbkLines: 0 });
-
-const openFile = async (row: TaskLogFile) => {
-  const { data } = await readTaskLogApi(row.name);
-  viewer.name = data.name;
-  viewer.content = data.content;
-  viewer.truncated = data.truncated;
-  viewer.gbkLines = data.gbkLines;
-  viewer.visible = true;
-};
-
-const tclr = reactive({
-  visible: false,
-  busy: false,
-  mode: "keepDays" as LogClearMode,
-  keepDays: 90,
-  beforeDate: "",
-  preview: null as TaskLogDeletePreview | null
-});
-
-const previewTaskClear = async () => {
-  if (tclr.mode === "beforeDate" && !tclr.beforeDate) {
-    tclr.preview = null;
-    return;
-  }
-  const { data } = await previewDeleteTaskLogsApi({
-    mode: tclr.mode,
-    beforeDate: tclr.beforeDate,
-    keepDays: tclr.keepDays
-  });
-  tclr.preview = data;
-};
-
-const openTaskClear = async () => {
-  tclr.visible = true;
-  tclr.busy = false;
-  await previewTaskClear();
-};
-
-const confirmTaskClear = async () => {
-  await ElMessageBox.confirm(t("log.confirmDeleteTaskLogs", { n: tclr.preview?.count }), t("common.doubleConfirm"), {
-    type: "warning"
-  });
-  tclr.busy = true;
-  try {
-    const { data } = await deleteTaskLogsApi({
-      mode: tclr.mode,
-      beforeDate: tclr.beforeDate,
-      keepDays: tclr.keepDays
-    });
-    ElMessage.success(t("log.deletedFiles", { n: data.deleted.length, size: humanSize(data.freedBytes) }));
-    if (data.failed.length) ElMessage.warning(t("log.failedFiles", { n: data.failed.length, names: data.failed.join("、") }));
-    tclr.visible = false;
-    loadFiles();
-  } finally {
-    tclr.busy = false;
-  }
-};
-
 /* ---------------- 日志保留期 ----------------
 
   默认 1 个月，可选 3 个月 / 半年 / 1 年。选完点「确定」：设置存下来，
@@ -460,12 +260,9 @@ const onKeepConfirm = async () => {
     keepOption.value = data.settings.option;
     const p = data.purge;
     let msg = t("log.retentionIs", { label: data.settings.label });
-    if (p) {
-      msg += t("log.cutoffSummary", { cutoff: p.cutoff, rows: p.operationRows, files: p.taskLogFiles.length });
-      if (p.taskLogFailed.length) msg += t("log.someUndeletable", { n: p.taskLogFailed.length });
-    }
+    if (p) msg += t("log.cutoffSummary", { cutoff: p.cutoff, rows: p.operationRows });
     ElMessage.success(msg);
-    await Promise.all([loadStats(), loadFiles()]);
+    await loadStats();
     proTableRef.value?.getTableList();
   } catch {
     // 保存失败就把下拉退回原值，别让界面显示一个没生效的设置
@@ -477,7 +274,6 @@ const onKeepConfirm = async () => {
 
 onMounted(() => {
   loadStats();
-  loadFiles();
   loadKeep();
 });
 </script>
@@ -493,68 +289,16 @@ onMounted(() => {
   height: 100%;
   padding: 0 12px;
 }
-.log-tabs {
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  min-height: 0;
-  :deep(.el-tabs__content) {
-    flex: 1;
-    min-height: 0;
-  }
-  :deep(.el-tab-pane) {
-    height: 100%;
-  }
-}
 .header-bar {
   display: flex;
   align-items: center;
   justify-content: space-between;
   width: 100%;
 }
-.task-log {
-  padding: 12px;
-  background: var(--el-bg-color);
-  border-radius: 6px;
-}
-.task-bar {
-  display: flex;
-  gap: 10px;
-  align-items: center;
-  margin-bottom: 12px;
-}
-.task-summary {
-  font-size: 12px;
-  color: var(--el-text-color-secondary);
-}
-.log-content {
-  max-height: calc(100vh - 160px);
-  padding: 12px;
-  overflow: auto;
-  font-size: 12px;
-  line-height: 1.6;
-  white-space: pre-wrap;
-  word-break: break-all;
-  background: var(--el-fill-color-light);
-  border-radius: 4px;
-}
 .muted {
   color: var(--el-text-color-placeholder);
 }
-.form-tip {
-  margin-left: 8px;
-  font-size: 12px;
-  color: var(--el-text-color-secondary);
-  &.block {
-    display: block;
-    margin-left: 0;
-    line-height: 1.6;
-  }
-}
 .mb12 {
   margin-bottom: 12px;
-}
-.mt12 {
-  margin-top: 12px;
 }
 </style>

@@ -118,12 +118,11 @@ type Backup struct {
 }
 
 // Logs 是日志模块的配置。
+//
+// ⚠ 这里没有任务日志目录：任务日志那一页已经撤掉，
+// 后台 C 服务写在 datelog/ 下的 logYYYY-MM-DD.html 新版一概不读也不删。
+// 老的 config.yaml 里可能还留着 task_dir，多余的键被忽略，不影响启动。
 type Logs struct {
-	// TaskDir 任务日志目录。它**不在数据库里**（BR-251），是后台 C 服务
-	// 每天写一个 logYYYY-MM-DD.html 的文件目录，现网在
-	// /opt/apps/a9000/html/ok112/datelog。
-	// 留空表示禁用任务日志功能（接口直接回「未配置」而不是去猜路径）。
-	TaskDir string `yaml:"task_dir"`
 	// SettingsFile 存日志保留期这类界面可改的设置。
 	// 留空则取 <备份目录的上级>/logsettings.json，与看板状态文件同一个目录。
 	SettingsFile string `yaml:"settings_file"`

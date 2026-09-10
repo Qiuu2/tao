@@ -392,7 +392,7 @@ var exposedGroups = []exposedGroup{
 	},
 	{
 		Name: "看板与日志",
-		Desc: "总览数据与操作/任务日志。做监控大屏、对账最常用的一组。",
+		Desc: "总览数据与操作日志。做监控大屏、对账最常用的一组。",
 		APIs: []exposedAPI{
 			{"GET /api/dashboard/overview", "首页总览数据", "登录即可", false},
 			{"GET /api/dashboard/perf", "服务器性能指标", "登录即可", false},
@@ -402,10 +402,6 @@ var exposedGroups = []exposedGroup{
 			{"DELETE /api/logs", "清理操作日志", "超级管理员", true},
 			{"GET /api/logs/retention", "日志保留期设置", "超级管理员", false},
 			{"PUT /api/logs/retention", "修改日志保留期", "超级管理员", true},
-			{"GET /api/task-logs/files", "任务日志文件清单", "超级管理员", false},
-			{"GET /api/task-logs/files/{name}", "读一个任务日志文件", "超级管理员", false},
-			{"GET /api/task-logs/delete-preview", "清理任务日志前看影响", "超级管理员", false},
-			{"DELETE /api/task-logs", "清理任务日志", "超级管理员", true},
 		},
 	},
 	{

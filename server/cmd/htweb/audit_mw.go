@@ -179,7 +179,6 @@ var auditLabels = map[string]string{
 	"DELETE /api/bell-plans/items":       "删除打铃条目",
 	"PUT /api/bell-plans/items/schedule": "修改打铃条目排期",
 
-	"DELETE /api/task-logs": "清理任务日志",
 	// 保留期是「日志少了一截」的直接原因，改了必须留痕。
 	// 这一下同时会立刻滚一次，那部分由 logs.RetentionService.Purge 在删之前
 	// 自己写一行（带上清掉多少条），所以一次「确定」会留两行：先设置、后清理。

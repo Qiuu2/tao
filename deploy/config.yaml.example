@@ -60,9 +60,9 @@ auth:
   captcha_enabled: true
 
 logs:
-  # 任务日志目录：后台 C 服务每天写一个 logYYYY-MM-DD.html（不在数据库里，BR-251）
-  # 留空则禁用任务日志功能
-  task_dir: "/opt/apps/a9000/html/ok112/datelog"
+  # ⚠ 这里没有任务日志目录：任务日志那一页已经撤掉，后台 C 服务写在
+  # datelog/ 下的 logYYYY-MM-DD.html 新版一概不读也不删。
+  # 老配置里留着 task_dir 也没关系，多余的键会被忽略。
   # 日志保留期这类界面上能改的设置存这个 JSON 文件里。
   # 留空则取 <备份目录的上级>/logsettings.json。
   #

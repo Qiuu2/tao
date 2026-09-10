@@ -30,55 +30,6 @@ export interface LogClearResult {
   describe: string;
 }
 
-export interface TaskLogFile {
-  name: string;
-  date: string;
-  size: number;
-  modTime: string;
-  /** 今天的文件，后台可能正在写，删除时跳过 */
-  today: boolean;
-  writable: boolean;
-}
-
-export interface TaskLogList {
-  dir: string;
-  files: TaskLogFile[];
-  total: number;
-  totalSize: number;
-  today: string;
-  dirWritable: boolean;
-  /**
-   * 一个文件都没有时的原因说明。
-   * 目前只有一种：目录还不存在 —— 后台服务写第一条任务日志时才建它。
-   */
-  note?: string;
-}
-
-export interface TaskLogContent {
-  name: string;
-  size: number;
-  truncated: boolean;
-  content: string;
-  /** 按 GBK 转码过的行数；不为 0 说明后台服务在这个文件里混用了两种编码 */
-  gbkLines: number;
-}
-
-export interface TaskLogDeletePreview {
-  files: TaskLogFile[];
-  count: number;
-  size: number;
-  skippedToday: string[];
-  skippedReadonly: string[];
-}
-
-export interface TaskLogDeleteResult {
-  deleted: string[];
-  freedBytes: number;
-  skippedToday: string[];
-  skippedReadonly: string[];
-  failed: string[];
-}
-
 /* ---------------- 操作日志 ---------------- */
 
 export const getLogListApi = (params: any) => {
@@ -92,20 +43,6 @@ export const getLogStatsApi = () => http.get<LogStats>(PORT1 + `/api/logs/stats`
 export const clearLogsApi = (data: { mode: LogClearMode; beforeDate?: string; keepDays?: number }) => {
   return http.delete<LogClearResult>(PORT1 + `/api/logs`, {}, { data: { ...data, confirmed: true } });
 };
-
-/* ---------------- 任务日志 ---------------- */
-
-export const getTaskLogFilesApi = (params: { from?: string; to?: string } = {}) =>
-  http.get<TaskLogList>(PORT1 + `/api/task-logs/files`, params, { loading: false });
-
-export const readTaskLogApi = (name: string, tailBytes = 0) =>
-  http.get<TaskLogContent>(PORT1 + `/api/task-logs/files/${encodeURIComponent(name)}`, { tailBytes });
-
-export const previewDeleteTaskLogsApi = (params: { mode: LogClearMode; beforeDate?: string; keepDays?: number }) =>
-  http.get<TaskLogDeletePreview>(PORT1 + `/api/task-logs/delete-preview`, params);
-
-export const deleteTaskLogsApi = (data: { mode: LogClearMode; beforeDate?: string; keepDays?: number }) =>
-  http.delete<TaskLogDeleteResult>(PORT1 + `/api/task-logs`, {}, { data: { ...data, confirmed: true } });
 
 /* ---------------- 日志保留期 ---------------- */
 
@@ -129,15 +66,11 @@ export interface RetentionSettings {
   /** 上一次滚动清理的时间，空串表示这个进程起来之后还没跑过 */
   lastRunAt: string;
   lastResult: string;
-  /** 为 false 表示没配任务日志目录，那部分不参与滚动 */
-  taskLogEnabled: boolean;
 }
 
 export interface RetentionPurgeResult {
   cutoff: string;
   operationRows: number;
-  taskLogFiles: string[];
-  taskLogFailed: string[];
 }
 
 /** 保存保留期的返回：设置本身 + 这一下立刻滚掉了什么 */

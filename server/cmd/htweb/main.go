@@ -72,7 +72,6 @@ type app struct {
 	alarms    *alarm.Service
 	bells     *bell.Service
 	logs      *logs.Service
-	taskLogs  *logs.TaskLogService
 	logKeep   *logs.RetentionService
 	auditor   *audit.Recorder
 	backups   *backup.Service
@@ -132,7 +131,6 @@ func main() {
 		bells:     bell.New(st.DB()),
 		assist:    assistant.New(st.DB(), cfg.Assistant),
 		auditor:   audit.New(st.DB()),
-		taskLogs:  logs.NewTaskLog(st.DB(), cfg.Logs.TaskDir),
 		backups: backup.New(st.DB(), cfg.BackupDir(), cfg.BackupMediaDir(),
 			cfg.Database.Name),
 		params: serverparam.New(st.DB(), cfg.Legacy.ApacheConf, cfg.Legacy.SwaggerFile,
@@ -155,7 +153,7 @@ func main() {
 	}
 	a.logs = logs.New(st.DB(), a.auditor)
 	// 日志保留期 + 每天一次的滚动清理。设置存文件（零 DDL 红线），见 logs/retention.go
-	a.logKeep = logs.NewRetention(a.logs, a.taskLogs, cfg.LogSettingsFile())
+	a.logKeep = logs.NewRetention(a.logs, cfg.LogSettingsFile())
 	// 删除用户会连带删掉他名下的媒体，物理文件清理与 C 服务通知复用媒体域的实现
 	a.users.SetSideEffects(a.medias, a.notifier)
 	// 助手的写操作走页面用的这两个，不另起炉灶 —— 守卫与通知协议一并继承
@@ -451,7 +449,7 @@ func (a *app) routes() http.Handler {
 	mux.HandleFunc("DELETE /api/bell-plans/items", bel(a.handleBellItemDelete))
 	mux.HandleFunc("PUT /api/bell-plans/items/schedule", bel(a.handleBellItemSchedule))
 
-	// —— 日志（业务域十一，F-54 / F-55）——
+	// —— 日志（业务域十一，F-54）——
 	//
 	// 全部限超级管理员（BR-246）。旧版权限不足时输出硬编码中文 HTML 后 exit（D-204）。
 	sup := a.requireSuper
@@ -480,10 +478,6 @@ func (a *app) routes() http.Handler {
 	mux.HandleFunc("GET /api/logs/retention", sup(a.handleLogRetentionGet))
 	// PUT 一次做两件事：存设置 + 立刻滚一次。界面上就是「选完点确定」那一下。
 	mux.HandleFunc("PUT /api/logs/retention", sup(a.handleLogRetentionSet))
-	mux.HandleFunc("GET /api/task-logs/files", sup(a.handleTaskLogFiles))
-	mux.HandleFunc("GET /api/task-logs/files/{name}", sup(a.handleTaskLogRead))
-	mux.HandleFunc("GET /api/task-logs/delete-preview", sup(a.handleTaskLogDeletePreview))
-	mux.HandleFunc("DELETE /api/task-logs", sup(a.handleTaskLogDelete))
 
 	// —— 备份与恢复（业务域十三，F-58 ~ F-60）——
 	//
@@ -1153,7 +1147,7 @@ func (a *app) handleMenu(w http.ResponseWriter, r *http.Request) {
 		//   同一个组件，两个入口。
 		userMenus = append(userMenus, menu("/user/register", "registerServer", "/register/index", "Ticket", "注册服务"))
 	}
-	// 日志（操作日志 + 任务日志）只对超级管理员开放（BR-246）。
+	// 日志（操作日志）只对超级管理员开放（BR-246）。
 	// 放在「用户管理」这一组：这一页记的是**谁**在什么时候做了什么，
 	// 跟用户是一件事的两面，比挂在「基础配置」下面顺手。
 	if u.ID == 1 {

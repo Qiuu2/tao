@@ -1226,19 +1226,6 @@
    "total": 0
   }
  },
- "GET /api/task-logs/files?from=&to=": {
-  "code": 200,
-  "msg": "ok",
-  "data": {
-   "dir": "/tmp/claude-0/-home-user-tao/240c941b-1465-582f-b98e-030b4c18cb77/scratchpad/datelog",
-   "files": [],
-   "total": 0,
-   "totalSize": 0,
-   "today": "2026-09-07",
-   "dirWritable": true,
-   "note": ""
-  }
- },
  "GET /api/logs/stats": {
   "code": 200,
   "msg": "ok",
@@ -8801,8 +8788,7 @@
     }
    ],
    "lastRunAt": "2026-09-07 02:07:49",
-   "lastResult": "保留 1 个月（2026-08-07 之前的已清理）：操作日志 0 条、任务日志 0 个文件",
-   "taskLogEnabled": true
+   "lastResult": "保留 1 个月（2026-08-07 之前的已清理）：操作日志 0 条"
   }
  },
  "GET /api/assistant/status": {
@@ -14449,7 +14435,7 @@
     },
     {
      "name": "看板与日志",
-     "desc": "总览数据与操作/任务日志。做监控大屏、对账最常用的一组。",
+     "desc": "总览数据与操作日志。做监控大屏、对账最常用的一组。",
      "prefix": "",
      "section": "full",
      "endpoints": [
@@ -14577,74 +14563,6 @@
        "method": "PUT",
        "path": "/api/logs/retention",
        "summary": "修改日志保留期",
-       "desc": "",
-       "right": "超级管理员",
-       "params": null,
-       "fields": null,
-       "body": "",
-       "examples": null,
-       "sample": "",
-       "returns": null,
-       "notes": null,
-       "danger": true,
-       "freeform": true
-      },
-      {
-       "id": "get:/api/task-logs/files",
-       "method": "GET",
-       "path": "/api/task-logs/files",
-       "summary": "任务日志文件清单",
-       "desc": "",
-       "right": "超级管理员",
-       "params": null,
-       "fields": null,
-       "body": "",
-       "examples": null,
-       "sample": "",
-       "returns": null,
-       "notes": null,
-       "danger": false,
-       "freeform": true
-      },
-      {
-       "id": "get:/api/task-logs/files/{name}",
-       "method": "GET",
-       "path": "/api/task-logs/files/{name}",
-       "summary": "读一个任务日志文件",
-       "desc": "",
-       "right": "超级管理员",
-       "params": null,
-       "fields": null,
-       "body": "",
-       "examples": null,
-       "sample": "",
-       "returns": null,
-       "notes": null,
-       "danger": false,
-       "freeform": true
-      },
-      {
-       "id": "get:/api/task-logs/delete-preview",
-       "method": "GET",
-       "path": "/api/task-logs/delete-preview",
-       "summary": "清理任务日志前看影响",
-       "desc": "",
-       "right": "超级管理员",
-       "params": null,
-       "fields": null,
-       "body": "",
-       "examples": null,
-       "sample": "",
-       "returns": null,
-       "notes": null,
-       "danger": false,
-       "freeform": true
-      },
-      {
-       "id": "delete:/api/task-logs",
-       "method": "DELETE",
-       "path": "/api/task-logs",
-       "summary": "清理任务日志",
        "desc": "",
        "right": "超级管理员",
        "params": null,

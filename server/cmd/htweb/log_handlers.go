@@ -1,9 +1,7 @@
 package main
 
 import (
-	"errors"
 	"net/http"
-	"strconv"
 	"strings"
 
 	"htweb/internal/audit"
@@ -13,29 +11,24 @@ import (
 	"htweb/internal/store"
 )
 
-// 日志模块 F-54 / F-55。
+// 日志模块 F-54。
 //
 // 访问控制：**仅超级管理员**（BR-246）。
 // 旧版权限不足时输出一段硬编码中文 HTML（还用了 IE 专有的 expression() CSS）
 // 然后 exit（D-204）；这里回标准的 403 业务码。
 
 func failLog(w http.ResponseWriter, action string, err error) {
-	switch {
-	case errors.Is(err, logs.ErrTaskLogDisabled):
-		httpx.Fail(w, httpx.CodeNotFound, err.Error())
-	default:
-		if isLogValidationErr(err) {
-			httpx.Fail(w, httpx.CodeBadRequest, err.Error())
-			return
-		}
-		httpx.Internal(w, action, err)
+	if isLogValidationErr(err) {
+		httpx.Fail(w, httpx.CodeBadRequest, err.Error())
+		return
 	}
+	httpx.Internal(w, action, err)
 }
 
 func isLogValidationErr(err error) bool {
 	msg := err.Error()
 	for _, kw := range []string{
-		"格式不正确", "只能是", "必须", "之间", "不合法", "不存在", "不在允许",
+		"格式不正确", "只能是", "必须", "之间",
 	} {
 		if strings.Contains(msg, kw) {
 			return true
@@ -130,77 +123,6 @@ func (a *app) handleLogClear(w http.ResponseWriter, r *http.Request) {
 	})
 	if err != nil {
 		failLog(w, "清理操作日志", err)
-		return
-	}
-	httpx.OK(w, res)
-}
-
-// ---------- F-55 任务日志 ----------
-
-func (a *app) handleTaskLogFiles(w http.ResponseWriter, r *http.Request) {
-	q := r.URL.Query()
-	res, err := a.taskLogs.ListFiles(r.Context(),
-		strings.TrimSpace(q.Get("from")), strings.TrimSpace(q.Get("to")))
-	if err != nil {
-		failLog(w, "查询任务日志文件", err)
-		return
-	}
-	httpx.OK(w, res)
-}
-
-func (a *app) handleTaskLogRead(w http.ResponseWriter, r *http.Request) {
-	name := r.PathValue("name")
-	tail, _ := strconv.ParseInt(r.URL.Query().Get("tailBytes"), 10, 64)
-	res, err := a.taskLogs.ReadFile(r.Context(), name, tail)
-	if err != nil {
-		failLog(w, "读取任务日志", err)
-		return
-	}
-	httpx.OK(w, res)
-}
-
-type taskLogDeleteReq struct {
-	Mode       string `json:"mode"`
-	BeforeDate string `json:"beforeDate"`
-	KeepDays   int    `json:"keepDays"`
-	Confirmed  bool   `json:"confirmed"`
-}
-
-func (t taskLogDeleteReq) toInput() logs.TaskLogDeleteInput {
-	return logs.TaskLogDeleteInput{
-		Mode:       logs.ClearMode(t.Mode),
-		BeforeDate: t.BeforeDate,
-		KeepDays:   t.KeepDays,
-	}
-}
-
-func (a *app) handleTaskLogDeletePreview(w http.ResponseWriter, r *http.Request) {
-	q := r.URL.Query()
-	in := taskLogDeleteReq{
-		Mode:       q.Get("mode"),
-		BeforeDate: q.Get("beforeDate"),
-		KeepDays:   atoiDefault(q.Get("keepDays"), 0),
-	}
-	res, err := a.taskLogs.PreviewDelete(r.Context(), in.toInput())
-	if err != nil {
-		failLog(w, "预览任务日志清理", err)
-		return
-	}
-	httpx.OK(w, res)
-}
-
-func (a *app) handleTaskLogDelete(w http.ResponseWriter, r *http.Request) {
-	var in taskLogDeleteReq
-	if !httpx.DecodeJSON(w, r, &in) {
-		return
-	}
-	if !in.Confirmed {
-		httpx.Fail(w, httpx.CodeBadRequest, "清理未确认")
-		return
-	}
-	res, err := a.taskLogs.Delete(r.Context(), in.toInput())
-	if err != nil {
-		failLog(w, "清理任务日志", err)
 		return
 	}
 	httpx.OK(w, res)
