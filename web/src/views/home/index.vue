@@ -189,7 +189,6 @@
               </span>
             </div>
           </div>
-          <div class="muted small mt8">{{ $t("dash.emergencyFixedTip") }}</div>
         </div>
       </section>
     </div>
@@ -925,8 +924,5 @@ onUnmounted(() => timer && window.clearInterval(timer));
 }
 .mb12 {
   margin-bottom: 12px;
-}
-.mt8 {
-  margin-top: 8px;
 }
 </style>

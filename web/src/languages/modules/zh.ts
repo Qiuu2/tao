@@ -171,7 +171,6 @@ export default {
     filterFolder: "任务管理：",
     filterWeekday: "星期筛选：",
     filterType: "任务类型：",
-    emergencyFixedTip: "四路是固定的，不需要绑定任务：按下即向全部终端下发对应的紧急广播命令。",
     emergencyConfirmTitle: "确认下发紧急广播",
     emergencyConfirm: "将向全部终端下发「{name}」紧急广播，现场喇叭会立即响起。确定要继续吗？",
     emergencySent: "「{name}」已下发（命令已发出，终端是否响起请以现场为准）",

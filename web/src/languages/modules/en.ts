@@ -164,8 +164,6 @@ export default {
     filterFolder: "Folder:",
     filterWeekday: "Weekday:",
     filterType: "Task type:",
-    emergencyFixedTip:
-      "The four channels are fixed and need no task bound — pressing one sends that emergency broadcast command to every terminal.",
     emergencyConfirmTitle: "Send this emergency broadcast?",
     emergencyConfirm:
       "This sends the “{name}” emergency broadcast to every terminal. The speakers on site will sound immediately. Continue?",
