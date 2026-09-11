@@ -1,6 +1,6 @@
 // Package sdkudp 按厂商 SDK 的二进制协议给后台广播服务发命令。
 //
-// 目前只有一条：紧急广播（cmdid=194，SDKUrgentPlay_t）。
+// 目前只有一条：紧急广播（cmdid=4，SDKUrgentPlay_t）。
 //
 // # 与 internal/notify 的区别
 //
@@ -16,7 +16,7 @@
 //
 //	偏移  类型      字段        值
 //	 0    uint16    cmdheader   0xff66
-//	 2    uint16    cmdid       194
+//	 2    uint16    cmdid       4
 //	 4    uint16    length      args 的字节数（这条命令是 16）
 //	 6    int16     state       0
 //	 8    int32     serialid    0
@@ -50,7 +50,12 @@ const (
 	headerLen = 16
 
 	// cmdUrgentPlay 紧急广播。
-	cmdUrgentPlay = 194
+	//
+	// ⚠ 早前按厂商头文件里的 194 发，现场确认后改成 4。
+	//   改这个数就是换一条命令 —— 后台服务不认识的 cmdid 会被直接丢掉，
+	//   而 UDP 没有回执，表现是「点了没反应」。所以下面的编码测试把
+	//   这两个字节（04 00）写死在期望值里，改动必须过那一关。
+	cmdUrgentPlay = 4
 )
 
 // 发请求时头部这三个字段的取值。
@@ -72,56 +77,9 @@ type Sender struct {
 
 // New 造一个发送器。
 //
-// host 留空表示**跟着浏览器打开这个页面的地址走**（见 Host 方法）；
-// 填了就是固定发到这个地址，不再看请求。
-//
 // enabled 为 false 时只记日志不真发 —— 联调期不想真让喇叭响的时候用。
 func New(host string, port int, enabled bool) *Sender {
 	return &Sender{host: strings.TrimSpace(host), port: port, enabled: enabled}
-}
-
-// Host 定下这一次要发到哪台机器。
-//
-// # 为什么默认跟着页面地址走
-//
-// 后台广播服务和这个 Web 服务跑在**同一台机器**上 —— 那台机器就是运维在
-// 浏览器地址栏里敲的那个地址。写死 127.0.0.1 只在「人就坐在服务器前面用
-// localhost 打开」时才对；从别的机器打开 `http://192.168.1.50:8080`，
-// 包却发去了 Web 进程自己的回环，8885 上没人收，而 UDP 不会报任何错 ——
-// 表现就是「点了没反应」，还查不出原因。
-//
-// 所以取请求的 Host（浏览器实际连的那个地址），去掉端口，配上 SDK 的端口。
-//
-// # 什么时候该在 config 里写死
-//
-// 后台服务和 Web 不在同一台机器上时（比如广播服务在容器里、Web 在宿主上），
-// 填 sdk.host 把它钉死。填了就完全不看请求。
-//
-// ⚠ Host 头是**客户端发来的**，能被改。这里只拿它当地址用，
-// 报文内容是固定的那 33 字节，不含任何来自请求的数据；而且这条路由本来就要
-// 登录 + taskpriv。真要收紧到一个地址，就是上面那句「在 config 里写死」。
-func (s *Sender) Host(reqHost string) string {
-	if s.host != "" {
-		return s.host
-	}
-	if h := hostOnly(reqHost); h != "" {
-		return h
-	}
-	// 请求里也拿不到 —— 退回回环，至少还是个能连的地址
-	return "127.0.0.1"
-}
-
-// hostOnly 从 "192.168.1.50:8080" 这样的串里取出主机名。
-// 没带端口的原样返回；IPv6 的 "[::1]:8080" 由 net.SplitHostPort 处理。
-func hostOnly(v string) string {
-	v = strings.TrimSpace(v)
-	if v == "" {
-		return ""
-	}
-	if h, _, err := net.SplitHostPort(v); err == nil {
-		return h
-	}
-	return v
 }
 
 // UrgentPlay 是紧急广播命令的 args（C 里的 SDKUrgentPlay_t）。
@@ -165,17 +123,15 @@ func (p UrgentPlay) encodeArgs() []byte {
 // ⚠ UDP 是无连接的：**发出去不代表播出来**。这里能报的错只有本地那几种
 // （地址写错、端口不通），后台服务收没收到、认不认这条命令，这一侧看不见。
 // 所以界面上的提示只能说「已下发」，不能说「已播放」。
-// reqHost 是浏览器打开这个页面用的地址（http.Request.Host），
-// 决定这一包发到哪台机器 —— 见 Sender.Host。
-func (s *Sender) SendUrgentPlay(ctx context.Context, reqHost string, p UrgentPlay) error {
-	return s.send(ctx, reqHost, cmdUrgentPlay, p.encodeArgs(),
+func (s *Sender) SendUrgentPlay(ctx context.Context, p UrgentPlay) error {
+	return s.send(ctx, cmdUrgentPlay, p.encodeArgs(),
 		fmt.Sprintf("紧急广播 channel=%d key=%d terminal=%d stop=%d",
 			p.ChannelID, p.KeyID, p.TerminalID, p.IsStop))
 }
 
-func (s *Sender) send(ctx context.Context, reqHost string, cmdID uint16, args []byte, desc string) error {
+func (s *Sender) send(ctx context.Context, cmdID uint16, args []byte, desc string) error {
 	payload := encode(cmdID, args)
-	addr := net.JoinHostPort(s.Host(reqHost), strconv.Itoa(s.port))
+	addr := net.JoinHostPort(s.host, strconv.Itoa(s.port))
 
 	if !s.enabled {
 		log.Printf("sdkudp(已禁用，仅记录) -> %s : %s [% x]", addr, desc, payload)

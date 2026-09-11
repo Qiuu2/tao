@@ -122,10 +122,6 @@ type emergencyPlayReq struct {
 // 它**不写任何数据**：一条 SDK 命令发到后台服务的 8885 端口，
 // 由后台服务去驱动终端。所以这里没有「绑定」这一步，四个按钮随时可按。
 //
-// 发到**哪台机器**默认跟着浏览器打开这个页面的地址走（r.Host）——
-// 后台服务和 Web 跑在同一台机器上，那台机器就是地址栏里的那个地址。
-// 两者不在一起时在 config.yaml 的 sdk.host 里钉死。详见 sdkudp.Sender.Host。
-//
 // ⚠ UDP 没有回执。这个接口返回成功，只能说明包发出去了 ——
 // 后台服务收没收到、终端响没响，这一侧看不见。前端提示因此写「已下发」。
 func (a *app) handleDashEmergencyPlay(w http.ResponseWriter, r *http.Request) {
@@ -153,7 +149,7 @@ func (a *app) handleDashEmergencyPlay(w http.ResponseWriter, r *http.Request) {
 	a.auditor.Write(r.Context(), u.Username,
 		emergencyAuditLabel[slot.Key][stop], audit.ClientIP(r))
 
-	err := a.sdk.SendUrgentPlay(r.Context(), r.Host, sdkudp.UrgentPlay{
+	err := a.sdk.SendUrgentPlay(r.Context(), sdkudp.UrgentPlay{
 		ChannelID: slot.ChannelID,
 		KeyID:     slot.KeyID,
 		// 0 = 全部终端。紧急广播按定义就是全场都要听见，
