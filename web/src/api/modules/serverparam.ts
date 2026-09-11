@@ -99,10 +99,32 @@ export interface ServerParams {
   readonly: SpReadOnly;
 }
 
+/**
+ * 保存时「网卡那一步」的结果。
+ *
+ * 只有网络那三个框（IP / 掩码 / 网关）真的变了才会有这个对象；
+ * 没变时后端不返回它。见 serverparam/netaddr.go。
+ */
+export interface SpNetworkApply {
+  /** 真的去改网卡了。为 true 时当前这条连接马上会断 —— 界面要拦住人并给出新地址 */
+  attempted: boolean;
+  /** 非空表示地址变了但没能改网卡，值就是原因（缺 nmcli、缺 sudo、掩码非法…） */
+  blocked: string;
+  /** 改的是哪个 NetworkManager 连接、哪块网卡，给人核对用 */
+  connection: string;
+  device: string;
+  /** 设上去的地址，形如 192.168.1.50/24 */
+  address: string;
+  gateway: string;
+  /** 换完地址之后这一页的新入口 */
+  newUrl: string;
+}
+
 export interface SpSaveResult {
   updated: boolean;
   requiresRestart: boolean;
   restartReason: string[];
+  network?: SpNetworkApply;
 }
 
 export interface TableImpact {

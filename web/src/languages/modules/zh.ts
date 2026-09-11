@@ -1076,6 +1076,13 @@ export default {
     savedButMore: "保存成功，但还需要处理",
     needExtraSteps: "以下改动需要额外操作才会真正生效：\n\n{reasons}",
     gotIt: "知道了",
+    ipSwitchTitle: "网卡地址正在切换",
+    ipSwitching:
+      "服务器网卡（{conn} · {device}）正在切换到 {address}。\n\n" +
+      "当前这条连接马上就会断开 —— 这一页从旧地址已经连不上了，属正常现象。\n\n" +
+      "请用新地址重新打开：{url}\n\n" +
+      "若几十秒后新地址仍打不开，说明网卡没切成功，请到服务器本机上查看。",
+    ipNotApplied: "IP / 掩码 / 网关已经存进数据库，但没有改到网卡上：\n\n{reason}\n\n系统网卡需要另行修改。",
     serverRunning: "服务器运行",
     serverStopped: "服务器终止",
     unknownState: "未知状态 {v}",

@@ -39,6 +39,17 @@ for p in /usr/bin/timedatectl /bin/timedatectl; do
 done
 [ -n "$TIMEDATECTL" ] || die "找不到 timedatectl，这台机器没法通过 Web 设置系统时间"
 
+# nmcli 同理。找不到不算致命：没有 NetworkManager 的机器就是改不了网卡地址，
+# 规则照写（路径给个默认值），程序探不通会在页面上说明，不会报错。
+NMCLI=""
+for p in /usr/bin/nmcli /bin/nmcli; do
+  [ -x "$p" ] && NMCLI="$p" && break
+done
+if [ -z "$NMCLI" ]; then
+  NMCLI=/usr/bin/nmcli
+  echo "⚠ 未找到 nmcli —— 这台机器不能在 Web 上改服务器 IP（页面会说明原因）"
+fi
+
 UPDATE_SH="$A9000_ROOT/script/cmd/update_audioserver.sh"
 if [ ! -f "$UPDATE_SH" ]; then
   # 不是致命错误：有些机器不带版本包。规则照样写（路径固定），
@@ -62,6 +73,7 @@ trap 'rm -f "$TMP"' EXIT
 sed -e "s|@SERVICE_USER@|$SERVICE_USER|g" \
     -e "s|@A9000_ROOT@|$A9000_ROOT|g" \
     -e "s|@TIMEDATECTL@|$TIMEDATECTL|g" \
+    -e "s|@NMCLI@|$NMCLI|g" \
     "$TEMPLATE" > "$TMP"
 
 # 语法校验。-c 检查、-f 指定文件；不通过就地退出，目标文件一个字节都不动。
@@ -84,6 +96,14 @@ if sudo -u "$SERVICE_USER" sudo -n -l "$TIMEDATECTL" set-time '2000-01-01 00:00:
   echo "✓ $SERVICE_USER 可以免密执行 timedatectl set-time"
 else
   echo "✗ $SERVICE_USER 仍然不能免密执行 timedatectl set-time —— 请把上面的输出发给开发"
+fi
+if [ -x "$NMCLI" ]; then
+  # 探的是程序真正要跑的那个形态（connection modify 带参数），与 netaddr.go 一致
+  if sudo -u "$SERVICE_USER" sudo -n -l "$NMCLI" connection modify x ipv4.method manual >/dev/null 2>&1; then
+    echo "✓ $SERVICE_USER 可以免密执行 nmcli connection modify（可在 Web 上改服务器 IP）"
+  else
+    echo "✗ $SERVICE_USER 仍然不能免密执行 nmcli connection modify"
+  fi
 fi
 if [ -f "$UPDATE_SH" ]; then
   if sudo -u "$SERVICE_USER" sudo -n -l "$UPDATE_SH" >/dev/null 2>&1; then

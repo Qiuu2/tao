@@ -474,6 +474,40 @@ const save = async () => {
       time: ar.mode === "shutdown" ? ar.shutdownTime : ar.rebootTime
     });
     ElMessage.success(t("common.saveSuccess"));
+
+    /*
+      网卡那一步。改了 IP / 掩码 / 网关时后端会**真的去改网卡**
+      （见 serverparam/netaddr.go），当前这条连接随即断掉 —— 浏览器还连在旧地址上。
+
+      所以这个框必须拦住人，并且把新地址原样摆出来。
+      少了它，页面会在几秒后毫无征兆地转圈超时，人只会以为「保存把服务器弄坏了」。
+
+      ⚠ 几个刻意的选择：
+        · showClose: false —— 这不是一条可以随手划掉的提示，读完再走。
+        · 新地址是**纯文本**不是链接：文案里还拼进了 nmcli 报上来的连接名与网卡名，
+          开 HTML 渲染就等于把那两段外部字符串当标记解析，不值得为一个能点的链接冒这个险。
+        · **不自动跳转**到新地址：新地址要等网卡切完才通，跳过去多半是一个打不开的
+          页面，比停在这儿还糟。什么时候通了，人自己什么时候去开。
+    */
+    if (data.network?.attempted) {
+      await ElMessageBox.alert(
+        t("server.ipSwitching", {
+          address: data.network.address,
+          conn: data.network.connection,
+          device: data.network.device,
+          url: data.network.newUrl
+        }),
+        t("server.ipSwitchTitle"),
+        { confirmButtonText: t("server.gotIt"), showClose: false, dangerouslyUseHTMLString: false }
+      );
+      return; // 这条连接已经不作数了，不必再 load()
+    }
+    if (data.network?.blocked) {
+      await ElMessageBox.alert(t("server.ipNotApplied", { reason: data.network.blocked }), t("server.savedButMore"), {
+        confirmButtonText: t("server.gotIt")
+      });
+    }
+
     if (data.requiresRestart) {
       await ElMessageBox.alert(
         t("server.needExtraSteps", { reasons: data.restartReason.join("\n\n") }),

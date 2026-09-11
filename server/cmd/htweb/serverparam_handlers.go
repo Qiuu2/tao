@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"fmt"
+	"net"
 	"net/http"
 	"path/filepath"
 	"strings"
@@ -64,6 +65,10 @@ func (a *app) handleServerParamSave(w http.ResponseWriter, r *http.Request) {
 	if !httpx.DecodeJSON(w, r, &in) {
 		return
 	}
+	// 改完 IP 之后人要用新地址重新打开这一页，端口不变 ——
+	// 从浏览器实际连的那个地址里取端口，拼成新入口的链接回给界面。
+	_, webPort, _ := net.SplitHostPort(r.Host)
+
 	res, err := a.params.Save(r.Context(), serverparam.Input{
 		Network:   in.Network,
 		Ports:     in.Ports,
@@ -71,7 +76,7 @@ func (a *app) handleServerParamSave(w http.ResponseWriter, r *http.Request) {
 		Multicast: in.Multicast,
 		HA:        in.HA,
 		Misc:      in.Misc,
-	})
+	}, webPort)
 	if err != nil {
 		failParam(w, "保存服务器参数", err)
 		return

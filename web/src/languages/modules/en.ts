@@ -1070,6 +1070,14 @@ export default {
     savedButMore: "Saved, but there is more to do",
     needExtraSteps: "These changes need extra steps before they take effect:\n\n{reasons}",
     gotIt: "Got it",
+    ipSwitchTitle: "The network address is switching",
+    ipSwitching:
+      "The server's network interface ({conn} · {device}) is switching to {address}.\n\n" +
+      "This connection is about to drop — the page will stop responding on the old address, which is expected.\n\n" +
+      "Open the new address instead: {url}\n\n" +
+      "If the new address is still unreachable after a minute, the switch failed; check on the server itself.",
+    ipNotApplied:
+      "The IP, netmask and gateway were saved to the database, but were NOT applied to the network interface:\n\n{reason}\n\nThe interface must be changed separately.",
     serverRunning: "Running",
     serverStopped: "Stopped",
     unknownState: "Unknown state {v}",

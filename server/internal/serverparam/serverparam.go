@@ -376,6 +376,9 @@ type SaveResult struct {
 	// 新版**不会**替用户去重启任何东西（那条报文实测是整机重启）。
 	RequiresRestart bool     `json:"requiresRestart"`
 	RestartReasons  []string `json:"restartReason"`
+	// Network 是「网卡那一步」的结果。nil 表示这次保存没碰网络那三个框。
+	// 见 netaddr.go。
+	Network *NetworkApply `json:"network,omitempty"`
 }
 
 // Save 写入参数。
@@ -384,7 +387,9 @@ type SaveResult struct {
 // sounddetect 在 serverbaseparam 与 serverconfig 两处冗余存储，
 // 必须同时写、保持一致（BR-259 / 契约 C-42）——
 // 旧版是两段散在不同分支的代码，这里收进一个事务。
-func (s *Service) Save(ctx context.Context, in Input) (*SaveResult, error) {
+// Save 的 webPort 是浏览器打开这个页面用的端口，只为在换 IP 之后
+// 拼出新入口的链接（见 netaddr.go 的 planNetwork）。
+func (s *Service) Save(ctx context.Context, in Input, webPort string) (*SaveResult, error) {
 	if err := in.validate(); err != nil {
 		return nil, err
 	}
@@ -442,9 +447,19 @@ func (s *Service) Save(ctx context.Context, in Input) (*SaveResult, error) {
 		return nil, fmt.Errorf("提交事务: %w", err)
 	}
 
+	// 库已经写完了。接下来才是网卡 —— 顺序不能反：
+	// 先改网卡的话这条连接立刻断掉，事务提交不了，最后得到一台
+	// 「网卡是新地址、库里还是旧地址」的机器。
+	plan := s.planNetwork(ctx, before, in, webPort)
+	if plan != nil && plan.Attempted {
+		// ⚠ 真正执行放到响应发出之后，否则操作员只会看到「请求失败」。
+		runNetworkLater(nmcliPath(), plan.Connection, plan.Address, plan.Gateway)
+	}
+
 	return &SaveResult{Updated: true,
 		RequiresRestart: len(restartReasons(ctx, before, in)) > 0,
-		RestartReasons:  restartReasons(ctx, before, in)}, nil
+		RestartReasons:  restartReasons(ctx, before, in),
+		Network:         plan}, nil
 }
 
 // syncServerConfig 维护 serverconfig 那一行。
@@ -499,12 +514,12 @@ func restartReasons(ctx context.Context, before *Params, in Input) []string {
 			out = append(out, fmt.Sprintf("%s 由 %d 改为 %d：需要重启后台服务", c.name, c.from, c.to))
 		}
 	}
-	if before.Network.IP != in.Network.IP {
-		out = append(out, fmt.Sprintf(
-			"服务器 IP 由 %s 改为 %s：这里只改了数据库里的记录，"+
-				"系统网卡配置需要另行修改（新版不会去动系统配置文件）",
-			before.Network.IP, in.Network.IP))
-	}
+	// ⚠ 服务器 IP 变更**不再**列进这里。
+	//
+	// 它已经不是「要你另外去做点什么」了 —— 保存时会真的去改网卡
+	// （见 netaddr.go），结果单独放在 SaveResult.Network 里，
+	// 界面要弹的是「连接即将断开，请用新地址重新打开」，
+	// 跟这一串「改完还得重启后台服务」是两码事，混在一起只会被当成又一条提示划过去。
 	if before.HA.Model != in.HA.Model {
 		out = append(out, fmt.Sprintf("服务器模式由「%s」改为「%s」：会立刻影响所有人的只读判定",
 			modelText(ctx, before.HA.Model), modelText(ctx, in.HA.Model)))

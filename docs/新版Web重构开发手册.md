@@ -311,6 +311,8 @@ Web 端**不直接控制硬件**，而是：写数据库 + 通过 UDP/TCP 向后
 （`deploy/install-sudoers.sh` → `/etc/sudoers.d/htweb`）。
 没有它，「服务器信息 → 版本设置」的提交和「时间设置」的两个按钮会**静静变灰**
 —— 不报错，只是不能用，换台机器就得重排一遍。
+「服务器信息」里改 IP / 掩码 / 网关同样靠它（`nmcli connection modify/up`）：
+缺规则时数据库照常保存，但地址不会改到网卡上，页面会明说是这个原因。
 
 ⚠ 与之配套的一条：systemd 单元里**不能**有 `NoNewPrivileges=true`。
 它会禁掉 setuid 提权路径，而 sudo 正是 setuid 程序，

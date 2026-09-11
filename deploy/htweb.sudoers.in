@@ -12,6 +12,7 @@
 #
 #   设置服务器时间 / 同步当前时间 → timedatectl set-time
 #   （手工设时间前关掉自动校时）  → timedatectl set-ntp
+#   服务器信息里改 IP / 掩码 / 网关 → nmcli connection modify / up
 #   版本设置的「提交」            → update_audioserver.sh，它内部全是 sudo docker
 #
 # 没有这几条时程序不会去猜密码、也不会假装成功：接口会探测一次，
@@ -31,8 +32,18 @@
 # ⚠ 脚本路径写死在这里。谁能改这个脚本，谁就等于拿到了 root ——
 #   所以 install.sh 会检查它属主是不是 root 或服务账号本人，
 #   并且**不允许**它对其它用户可写。
+#
+# ⚠ HTWEB_NET 那两条带 *，等于把「改任意 NetworkManager 连接」的能力给了 htweb。
+#   收不窄：连接名每台机器都不一样（麒麟 V10 上默认是「有线连接 1」，
+#   别的发行版是 Wired connection 1），属性也得带参数。
+#   这是「在 Web 上改服务器 IP」这件事本身的代价。作为补偿：接口挂在 serverpriv 上、
+#   改完留一行操作日志、程序只会用这两个子命令（modify / up），代码里不拼 shell。
+#
+#   不需要在 Web 上改 IP 的部署，把 HTWEB_NET 从最后那行里删掉即可 ——
+#   程序探不到权限就跳过网卡那一步并在页面上说明原因，不报错、也不假装成功。
 
 Cmnd_Alias HTWEB_CLOCK = @TIMEDATECTL@ set-time *, @TIMEDATECTL@ set-ntp *
+Cmnd_Alias HTWEB_NET   = @NMCLI@ connection modify *, @NMCLI@ connection up *
 Cmnd_Alias HTWEB_AUDIO = @A9000_ROOT@/script/cmd/update_audioserver.sh
 
-@SERVICE_USER@ ALL=(root) NOPASSWD: HTWEB_CLOCK, HTWEB_AUDIO
+@SERVICE_USER@ ALL=(root) NOPASSWD: HTWEB_CLOCK, HTWEB_NET, HTWEB_AUDIO
