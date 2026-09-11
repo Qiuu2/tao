@@ -295,3 +295,88 @@ func TestReplaceKeepsTrailingNewline(t *testing.T) {
 		t.Errorf("换行被吃掉了\n得到 %q\n期望 %q", got, want)
 	}
 }
+
+// 现网 ha.cf 的真实片段（第 205~215 行）。
+//
+// ⚠ 第 210 行是一句**带 node 这个词的注释**：
+//
+//	  #       node    nodename ...    -- must match uname -n
+//	只找 "node" 会先撞上它，把 "nodename" 当成服务器名写进 haresources。
+//	所以锚点必须在行首，# 开头的行匹配不上。
+const realHACf = `#       very likely NOT what you want.
+#
+#watchdog /dev/watchdog
+#
+#       Tell what machines are in the cluster
+#       node    nodename ...    -- must match uname -n
+node ha515h
+node ha526h
+#
+#       Less common options...
+#
+`
+
+// 服务器基本信息那一页：haresources 的服务器名取自 ha.cf 的**第一条 node**。
+//
+// 旧版是 fileLine(..., 211, 's') 取第 211 行再 preg_match，
+// 这里改成在整个文件里找第一条 node —— 行号是最不该依赖的东西。
+func TestNodeNameFromRealHACf(t *testing.T) {
+	dir := t.TempDir()
+	p := write(t, dir, "ha.cf", realHACf)
+
+	got := nodeNameFrom(p, "库里的名字")
+	if got != "ha515h" {
+		t.Errorf("第一条 node 应当是 ha515h，实际 %q（撞上第 210 行那句注释了？）", got)
+	}
+}
+
+// 整条链路：ha.cf 里是 ha515h，写进 haresources 的就该是 ha515h，
+// 而且地址那一半（<ip>/<前缀>/eth0 ha-post）要原样留着。
+func TestHAResourcesUsesFirstNodeName(t *testing.T) {
+	root := t.TempDir()
+	etc := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(etc, "etc/ha.d"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(etc, "etc/ha.d/ha.cf"), []byte(realHACf), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	write(t, root, "home/heartbeat/haresource", "旧名字 192.168.2.159/24/eth0 ha-post\n")
+
+	s := &Service{a9000Root: root, etcRoot: etc}
+	in := Input{Network: Network{IP: "10.0.0.5", SubnetMask: "255.255.255.0", Gateway: "10.0.0.1"}}
+	in.HA.Name = "库里的名字"
+
+	s.syncLegacyFiles(in, in.HA.Name)
+
+	got := read(t, filepath.Join(root, "home/heartbeat/haresource"))
+	want := "ha515h 10.0.0.5/24/eth0 ha-post\n"
+	if got != want {
+		t.Errorf("haresources 不对\n得到 %q\n期望 %q", got, want)
+	}
+}
+
+// 主备配置那一页写 ha.cf 的两条 node：注释行不能被当成第一条。
+func TestHACfNodeWriteSkipsComment(t *testing.T) {
+	dir := t.TempDir()
+	p := write(t, dir, "ha.cf", realHACf)
+
+	if r := applyHAEdit(haEdit{path: p, re: reHANodeLine, line: "node new-master", what: "x"}); r.Status != SyncUpdated {
+		t.Fatalf("%+v", r)
+	}
+	if r := applyHAEdit(haEdit{path: p, re: reHANodeLine, line: "node new-slave", what: "x", nth: 1}); r.Status != SyncUpdated {
+		t.Fatalf("%+v", r)
+	}
+	got := read(t, p)
+	if !strings.Contains(got, "node new-master\nnode new-slave\n") {
+		t.Errorf("两条 node 没分别写对：\n%s", got)
+	}
+	// 那句注释必须原样留着 —— 它要是被当成第一条 node 改掉，
+	// 文件的自说明就没了，而且真正的 node 行一条都没改
+	if !strings.Contains(got, "#       node    nodename ...    -- must match uname -n") {
+		t.Errorf("第 210 行那句注释被改掉了：\n%s", got)
+	}
+	if !strings.Contains(got, "#watchdog /dev/watchdog") {
+		t.Errorf("别的行被动了：\n%s", got)
+	}
+}

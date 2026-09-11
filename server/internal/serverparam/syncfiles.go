@@ -126,7 +126,13 @@ var (
 	// swagger1.json 的 host（只换 IP，端口原样留着）
 	reSwaggerHostLine = regexp.MustCompile(`(?m)^(\s*"host"\s*:\s*")([^"]*)(".*)$`)
 	// ha.cf 里的 node 名
-	reHANode = regexp.MustCompile(`(?m)^\s*node\s+(\S+)`)
+	// ⚠ 用 [ \t] 而不是 \s：\s 含 \n，多行模式下 `^\s*` 能跨行吃到下一行去，
+	//   `node\s+` 也可能把换行当分隔符。节点名只会和 node 同一行。
+	//
+	// ⚠ 也不能只找 "node" 这个词：现网 ha.cf 第 210 行是
+	//     #       node    nodename ...    -- must match uname -n
+	//   一句带 node 的注释。所以必须锚在行首（# 开头的行匹配不上）。
+	reHANode = regexp.MustCompile(`(?m)^[ \t]*node[ \t]+(\S+)`)
 	// 从 `1.2.3.4:99` 里取端口
 	reHostPort = regexp.MustCompile(`^(.*?)(:\d+)?$`)
 )
