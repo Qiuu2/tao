@@ -229,7 +229,7 @@ func TestSyncLegacyFilesEndToEnd(t *testing.T) {
 	write(t, root, "home/heartbeat/haresource", "a9000 192.168.2.159/8/eth0 ha-post\n")
 	write(t, root, "home/graylog/config/graylog.conf",
 		"http_publish_uri = http://192.168.2.159:9001/\nhttp_external_uri = http://192.168.2.159:9001/\n")
-	write(t, root, "html/htweb/ha-post.sh", "#!/bin/sh\nroute add default gw 192.168.2.1\n")
+	write(t, root, "html/htweb/ha-post.sh", realHAPost)
 	swagger := write(t, root, "swagger1.json", "{\n    \"host\": \"192.168.2.159:99\"\n}\n")
 
 	s := &Service{a9000Root: root, swaggerFile: swagger, etcRoot: t.TempDir()}
@@ -259,6 +259,9 @@ func TestSyncLegacyFilesEndToEnd(t *testing.T) {
 	}
 	if v := read(t, filepath.Join(root, "html/htweb/ha-post.sh")); !strings.Contains(v, "route add default gw 10.0.0.1") {
 		t.Errorf("ha-post.sh 网关不对：%q", v)
+	}
+	if v := read(t, filepath.Join(root, "html/htweb/ha-post.sh")); !strings.Contains(v, `10.0.0.5\/24`) {
+		t.Errorf("ha-post.sh 里的 netplan 地址不对：%q", v)
 	}
 	if v := read(t, swagger); !strings.Contains(v, `"host": "10.0.0.5:99"`) {
 		t.Errorf("swagger host 不对：%q", v)
@@ -378,5 +381,99 @@ func TestHACfNodeWriteSkipsComment(t *testing.T) {
 	}
 	if !strings.Contains(got, "#watchdog /dev/watchdog") {
 		t.Errorf("别的行被动了：\n%s", got)
+	}
+}
+
+// 现网 ha-post.sh 的真实内容。第 11 行是默认路由，第 12 行那条 sed 把地址写进 netplan。
+const realHAPost = `#!/bin/sh
+###
+ # @Brief: 
+ # @Author: Li Jian
+ # @Date: 2023-02-27 17:34:16
+ # @LastEditors: Li Jian
+ # @LastEditTime: 2024-02-01 15:13:14
+ # @FilePath: /a9000-autoinstall/ubuntu-autoinstall-generator/a9000/home/heartbeat/ha-post.sh
+ # Copyright (c) 2023 by Li Jian email: jianli508@163.com, All Rights Reserved. 
+### 
+route add default gw 192.168.2.1
+sed -i '0,/-/s/\(-\)\(.*\)/\1 192.168.2.159\/24/' /etc/netplan/00-installer-config.yaml
+systemctl start ntp.service
+`
+
+// ha-post.sh 第 12 行：只换中间那段 <ip>\/<前缀>，sed 表达式的其余部分一个字符都不能动。
+//
+// 旧版是按字节偏移切的（strpos("sed")+30 到 strpos("/etc/netplan")-3），
+// 而且用 'r+' 就地覆写 —— 新地址比旧地址短时，**文件尾部会留下旧内容的残骸**
+// （它把 position2 到 EOF 的内容重写到了一个更靠前的位置，却没有截断）。
+func TestHAPostNetplanAddress(t *testing.T) {
+	dir := t.TempDir()
+	p := write(t, dir, "ha-post.sh", realHAPost)
+
+	r := replaceSub(p, reHAPostNetplan, `10.0.0.5\/8`, "netplan", 1)
+	if r.Status != SyncUpdated {
+		t.Fatalf("应当改成功：%+v", r)
+	}
+	got := read(t, p)
+
+	want := `sed -i '0,/-/s/\(-\)\(.*\)/\1 10.0.0.5\/8/' /etc/netplan/00-installer-config.yaml`
+	if !strings.Contains(got, want) {
+		t.Errorf("那一行不对\n得到：%s", got)
+	}
+	// sed 表达式的骨架必须原样
+	for _, keep := range []string{`0,/-/s/`, `\(-\)\(.*\)`, `\1 `, `/etc/netplan/00-installer-config.yaml`} {
+		if !strings.Contains(got, keep) {
+			t.Errorf("sed 表达式被改坏了，少了 %q：\n%s", keep, got)
+		}
+	}
+	// 前后两行不能动
+	if !strings.Contains(got, "route add default gw 192.168.2.1\n") {
+		t.Errorf("第 11 行被动了：\n%s", got)
+	}
+	if !strings.HasSuffix(got, "systemctl start ntp.service\n") {
+		t.Errorf("第 13 行被动了或尾部有残骸：\n%q", got)
+	}
+	// 旧地址必须换干净，一个字节都不能剩
+	if strings.Contains(got, "192.168.2.159") {
+		t.Errorf("旧地址还在（旧版就地覆写会留下这种残骸）：\n%q", got)
+	}
+}
+
+// 新地址比旧地址短很多时，文件长度要精确收缩 —— 这正是旧版 'r+' 覆写留残骸的场景。
+func TestHAPostNetplanShorterAddress(t *testing.T) {
+	dir := t.TempDir()
+	p := write(t, dir, "ha-post.sh", realHAPost)
+
+	if r := replaceSub(p, reHAPostNetplan, `1.1.1.1\/8`, "netplan", 1); r.Status != SyncUpdated {
+		t.Fatalf("%+v", r)
+	}
+	got := read(t, p)
+	// 长度要精确收缩：短了多少个字符，文件就该短多少字节，一个残骸都不能留
+	const oldTok, newTok = `192.168.2.159\/24`, `1.1.1.1\/8`
+	if want := len(realHAPost) - (len(oldTok) - len(newTok)); len(got) != want {
+		t.Errorf("长度不对：%d，期望 %d（多出来的就是残骸）", len(got), want)
+	}
+	if !strings.HasSuffix(got, "systemctl start ntp.service\n") {
+		t.Errorf("尾部有残骸：%q", got)
+	}
+}
+
+// 掩码非法时不动 netplan 那一行，但默认路由照改 —— 少改一处好过写错一个网段。
+func TestHAPostSkipsNetplanOnBadMask(t *testing.T) {
+	root := t.TempDir()
+	write(t, root, "html/htweb/ha-post.sh", realHAPost)
+
+	s := &Service{a9000Root: root, etcRoot: t.TempDir()}
+	got := s.syncHAPost(s.syncPathsFor("srv"), "10.0.0.5", "255.0.255.0", "10.0.0.1")
+
+	for _, f := range got {
+		if strings.Contains(f.What, "netplan") {
+			t.Errorf("掩码不连续时不该去改 netplan 那一行：%+v", f)
+		}
+	}
+	if v := read(t, filepath.Join(root, "html/htweb/ha-post.sh")); !strings.Contains(v, "route add default gw 10.0.0.1") {
+		t.Errorf("默认路由还是要改的：%q", v)
+	}
+	if v := read(t, filepath.Join(root, "html/htweb/ha-post.sh")); !strings.Contains(v, "192.168.2.159") {
+		t.Errorf("netplan 那一行应当原样保留：%q", v)
 	}
 }

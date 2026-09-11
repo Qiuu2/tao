@@ -17,6 +17,7 @@ import (
 //	<a9000>/home/graylog/config/graylog.conf       第 126 行  http_publish_uri  = http://<ip>:9001/
 //	                                               第 140 行  http_external_uri = http://<ip>:9001/
 //	<a9000>/html/htweb/ha-post.sh                  第 11 行   route add default gw <网关>
+//	                                               第 12 行   那条 sed 里的 <ip>\/<前缀>
 //	                                               改完再 cp 回 /etc/ha.d/
 //	<a9000>/html/ok112/swagger-ui/dist/swagger1.json 第 11 行 "host": "<ip>:99",
 //
@@ -127,6 +128,19 @@ var (
 	reGraylogExternal = regexp.MustCompile(`(?m)^\s*http_external_uri\s*=.*$`)
 	// ha-post.sh 里的默认路由
 	reDefaultRoute = regexp.MustCompile(`(?m)^\s*route\s+add\s+default\s+gw\s+.*$`)
+	// ha-post.sh 里改 netplan 的那一行，形如：
+	//
+	//	sed -i '0,/-/s/\(-\)\(.*\)/\1 192.168.2.159\/24/' /etc/netplan/00-installer-config.yaml
+	//
+	// 捕获组 1 是中间那段 `192.168.2.159\/24`（**带一个反斜杠**，因为它嵌在 sed 表达式里）。
+	// 认的是「同一行里先有这个地址形态、后有 /etc/netplan」。
+	//
+	// ⚠ 旧版是按**字节偏移**切的：strpos("sed")+30 到 strpos("/etc/netplan")-3。
+	//   那个 +30 是数出来的 —— 从 `sed` 起第 30 个字符正好是 IP 的第一位。
+	//   sed 表达式改一个字符、前面注释里多出一个 "sed"，偏移就全错，
+	//   而且**不会报错**，只是把地址写进了错的位置。
+	reHAPostNetplan = regexp.MustCompile(
+		`(?m)^[^\n]*?(\d{1,3}(?:\.\d{1,3}){3}\\/\d{1,3})[^\n]*?/etc/netplan[^\n]*$`)
 	// swagger1.json 的 host（只换 IP，端口原样留着）
 	reSwaggerHostLine = regexp.MustCompile(`(?m)^(\s*"host"\s*:\s*")([^"]*)(".*)$`)
 	// ha.cf 里的 node 名
@@ -145,6 +159,12 @@ var (
 //
 // 返回 (是否真的改了, 状态, 说明)。
 func replaceLine(path string, re *regexp.Regexp, line, what string) FileSync {
+	return replaceSub(path, re, line, what, 0)
+}
+
+// replaceSub 与 replaceLine 同一件事，但 sub 非 0 时只替换那个捕获组 ——
+// ha-post.sh 那条 sed 表达式里只有中间的地址要换，前后都得原样留着。
+func replaceSub(path string, re *regexp.Regexp, line, what string, sub int) FileSync {
 	out := FileSync{Path: path, What: what}
 	if strings.TrimSpace(path) == "" {
 		out.Status = SyncMissing
@@ -163,22 +183,33 @@ func replaceLine(path string, re *regexp.Regexp, line, what string) FileSync {
 		return out
 	}
 
-	loc := re.FindIndex(raw)
+	loc := re.FindSubmatchIndex(raw)
 	if loc == nil {
-		// ⚠ 到这一步旧版会去改第 150 行 / 第 126 行。这里什么都不做 ——
-		//   把一行内容不明的东西覆盖掉，比不改糟得多。
+		// ⚠ 到这一步旧版会去改第 150 行 / 第 126 行 / 按字节偏移切。
+		//   这里什么都不做 —— 把一段内容不明的东西覆盖掉，比不改糟得多。
 		out.Status = SyncNoAnchor
-		out.Detail = "没找到要改的那一行（不按行号猜，已原样保留）"
+		out.Detail = "没找到要改的那一段（不按行号也不按字节偏移猜，已原样保留）"
 		return out
 	}
-	if string(raw[loc[0]:loc[1]]) == line {
+
+	// sub 非 0 时只换那个捕获组（ha-post.sh 那条 sed 表达式里只有中间的地址要换）
+	start, end := loc[0], loc[1]
+	if sub > 0 {
+		if 2*sub+1 >= len(loc) || loc[2*sub] < 0 {
+			out.Status = SyncNoAnchor
+			out.Detail = "那一行的形态和预期不一样（已原样保留）"
+			return out
+		}
+		start, end = loc[2*sub], loc[2*sub+1]
+	}
+	if string(raw[start:end]) == line {
 		out.Status = SyncUnchanged
 		return out
 	}
 
-	updated := append([]byte{}, raw[:loc[0]]...)
+	updated := append([]byte{}, raw[:start]...)
 	updated = append(updated, []byte(line)...)
-	updated = append(updated, raw[loc[1]:]...)
+	updated = append(updated, raw[end:]...)
 
 	if err := atomicWrite(path, updated); err != nil {
 		out.Status = SyncFailed
@@ -298,7 +329,7 @@ func (s *Service) syncLegacyFiles(in Input, srvName string) []FileSync {
 	//
 	// 旧版的来回是：先把 /etc/ha.d 里那份拷进工作目录、改、再拷回去。
 	// 照做，好处是 html/htweb 下那份始终是线上那份的副本。
-	out = append(out, s.syncHAPost(p, in.Network.Gateway)...)
+	out = append(out, s.syncHAPost(p, in.Network.IP, in.Network.SubnetMask, in.Network.Gateway)...)
 
 	// ── swagger1.json 的 host：只换 IP，端口原样留着 ──
 	if p.SwaggerFile != "" {
@@ -308,13 +339,41 @@ func (s *Service) syncLegacyFiles(in Input, srvName string) []FileSync {
 }
 
 // syncHAPost 改 ha-post.sh 里的默认路由，并保持两份副本一致。
-func (s *Service) syncHAPost(p syncPaths, gateway string) []FileSync {
-	what := "默认路由（ha-post.sh）"
-	line := "route add default gw " + gateway
+// haPostEdit 是 ha-post.sh 里要改的一处。
+type haPostEdit struct {
+	re   *regexp.Regexp
+	line string
+	what string
+	// sub 非 0 时只替换那个捕获组，行里其余部分原样留着。
+	sub int
+}
+
+// syncHAPost 改 ha-post.sh 里的**两处**，并保持两份副本一致。
+//
+// 主备切换后这个脚本会在接管的那台机器上跑，所以它内部记的地址必须是新的：
+//
+//	第 11 行  route add default gw <网关>              重建默认路由
+//	第 12 行  sed … '\1 <ip>\/<前缀>' … netplan        把网卡地址写进 netplan
+//
+// 第 12 行漏改的后果比不改还糟：切过去的机器起来了，但地址是上一版的。
+func (s *Service) syncHAPost(p syncPaths, ip, mask, gateway string) []FileSync {
+	edits := []haPostEdit{
+		{reDefaultRoute, "route add default gw " + gateway, "默认路由（ha-post.sh）", 0},
+	}
+	// 掩码算不出前缀、或 IP 不合法，就不动 netplan 那一行 ——
+	// 宁可少改一处，也不能把一个错的网段写进去。
+	if prefix, err := maskToPrefix(mask); err == nil && isIPv4(ip) {
+		edits = append(edits, haPostEdit{reHAPostNetplan,
+			fmt.Sprintf(`%s\/%d`, ip, prefix), "netplan 地址（ha-post.sh）", 1})
+	}
 
 	// 工作目录下没有副本时，直接改线上那份
 	if p.HAPostWork == "" {
-		return []FileSync{replaceLine(p.HAPostLive, reDefaultRoute, line, what)}
+		out := []FileSync{}
+		for _, e := range edits {
+			out = append(out, replaceSub(p.HAPostLive, e.re, e.line, e.what, e.sub))
+		}
+		return out
 	}
 
 	// 先把线上那份取过来当基准（取不到就用工作目录下现有的那份）
@@ -322,33 +381,41 @@ func (s *Service) syncHAPost(p syncPaths, gateway string) []FileSync {
 		_ = atomicWrite(p.HAPostWork, raw)
 	}
 
-	r := replaceLine(p.HAPostWork, reDefaultRoute, line, what)
-	if r.Status != SyncUpdated && r.Status != SyncUnchanged {
-		return []FileSync{r}
+	results := []FileSync{}
+	anyOK := false
+	for _, e := range edits {
+		r := replaceSub(p.HAPostWork, e.re, e.line, e.what, e.sub)
+		results = append(results, r)
+		if r.Status == SyncUpdated || r.Status == SyncUnchanged {
+			anyOK = true
+		}
+	}
+	if !anyOK {
+		return results
 	}
 
 	// 改好的那份放回 /etc/ha.d
 	raw, err := os.ReadFile(p.HAPostWork)
 	if err != nil {
-		return []FileSync{r}
+		return results
 	}
-	back := FileSync{Path: p.HAPostLive, What: what}
+	back := FileSync{Path: p.HAPostLive, What: "ha-post.sh 放回 /etc/ha.d"}
 	// ⚠ 线上那份不存在就**不创建**：我们是在同步已有的配置，不是在装 heartbeat。
 	//   没装旧系统的机器上 /etc/ha.d 整个目录都没有，那时候报「写不进去」
 	//   会让人以为坏了，其实只是这台机器没这东西。
 	if _, serr := os.Stat(p.HAPostLive); serr != nil {
 		back.Status = SyncMissing
 		back.Detail = "文件不存在（这台机器可能没装旧系统）"
-		return []FileSync{r, back}
+		return append(results, back)
 	}
 	if werr := atomicWrite(p.HAPostLive, raw); werr != nil {
 		back.Status = SyncFailed
 		back.Detail = werr.Error()
 	} else {
 		back.Status = SyncUpdated
-		back.Detail = line
+		back.Detail = "← " + p.HAPostWork
 	}
-	return []FileSync{r, back}
+	return append(results, back)
 }
 
 // replaceSwaggerHost 把 `"host": "1.2.3.4:99"` 里的 IP 换掉，**端口原样留着**。
