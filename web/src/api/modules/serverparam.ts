@@ -102,8 +102,12 @@ export interface ServerParams {
 /**
  * 保存时「网卡那一步」的结果。
  *
- * 只有网络那三个框（IP / 掩码 / 网关）真的变了才会有这个对象；
- * 没变时后端不返回它。见 serverparam/netaddr.go。
+ * 只有**主/备服务器地址**（masterip / slaveip，按 model 选）或者掩码、网关
+ * 真的变了才会有这个对象；没变时后端不返回它。见 serverparam/netaddr.go。
+ *
+ * ⚠ 「服务器地址」那一栏（network.ip）是 heartbeat 的虚拟地址，
+ *   改它**不会**动网卡 —— 只写 haresources / ha-post.sh / graylog / swagger
+ *   那几个配置文件，要 heartbeat 重新接管资源才生效。
  */
 export interface SpNetworkApply {
   /** 真的去改网卡了。为 true 时当前这条连接马上会断 —— 界面要拦住人并给出新地址 */
@@ -113,7 +117,7 @@ export interface SpNetworkApply {
   /** 改的是哪个 NetworkManager 连接、哪块网卡，给人核对用 */
   connection: string;
   device: string;
-  /** 设上去的地址，形如 192.168.1.50/24 */
+  /** 设上去的地址，形如 192.168.1.50/24（来自主/备服务器地址，不是「服务器地址」那一栏） */
   address: string;
   gateway: string;
   /** 换完地址之后这一页的新入口 */

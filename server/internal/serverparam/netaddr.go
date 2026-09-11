@@ -18,15 +18,32 @@ import (
 // 否则那一行记录和机器实际的地址对不上。旧版是做了这件事的
 // （ok112/iprun.sh，nmcli），只是做法上有几处不能照抄，见下面。
 //
-// # 认哪个地址
+// # 认哪个地址：主/备地址，**不是**「服务器地址」那一栏
 //
-// 取界面上「服务器IP」那一栏（serverbaseparam.ip）、掩码取 subnetmask、
-// 网关取 gateway —— 就是操作员刚刚改的那三个框。
+// 网卡上设的是 `masterip`（本机是主机时）或 `slaveip`（本机是备机时），
+// 掩码取 subnetmask、网关取 gateway。与旧版 iprun.sh 一致：
 //
-// ⚠ 旧版 iprun.sh 取的是**主/备 IP**（按 model 选 masterip 或 slaveip），
-//   跟界面上那个 ip 字段没关系。现网这两处的值是不一样的
-//   （ip=192.168.2.159 而 masterip=12.12.2.51），照抄会把机器设到一个
-//   操作员根本没输入过的地址上。这一条是有意不 1:1 的，已与需求方确认。
+//	if [ "$FLAG" -eq 1 ]; then MASTERIPMASK="$MASTERIP"/"$SUBNETMASK"
+//	else                       MASTERIPMASK="$SLAVEIP"/"$SUBNETMASK"; fi
+//	nmcli connection modify "$CONNECTION_NAME" ipv4.method manual ipv4.addresses "$MASTERIPMASK" …
+//
+// `setiprun()` 虽然也收了 `$ip` 这个参数，但拼命令行时根本没用到它。
+//
+// ⚠ **「服务器基本信息」那一栏「服务器地址」（serverbaseparam.ip）是虚拟地址，
+//
+//	绝不能写到网卡上。** 现网这台机器：
+//
+//	eth0    192.168.1.63    ← 真实地址，就是 masterip / slaveip 这一对
+//	eth0:0  192.168.2.159   ← 虚拟地址，heartbeat 按 haresources 那一行
+//	                          （`<名字> 192.168.2.159/24/eth0 ha-post`）拉起来的
+//
+//	把虚拟地址 nmcli 到 eth0 上，真实地址就没了，而 heartbeat 那边还要
+//	往 eth0:0 放同一个地址 —— 这台机器会直接从网上消失。
+//	早前这里取的正是 ip 那一栏，是错的。
+//
+// 于是「服务器地址」这一栏改了**只写库和配置文件**（haresources / ha-post.sh /
+// graylog / swagger，见 syncfiles.go），要 heartbeat 重新接管资源才生效；
+// 动网卡这一步只认主/备地址与掩码、网关。
 //
 // # 与旧版的其它差别
 //
@@ -180,7 +197,7 @@ type NetworkApply struct {
 	// Connection / Device 改的是哪个连接、哪块网卡。
 	Connection string `json:"connection"`
 	Device     string `json:"device"`
-	// Address 是设上去的地址，形如 192.168.1.50/24。
+	// Address 是设上去的地址，形如 192.168.1.50/24（来自 masterip / slaveip，不是「服务器地址」那一栏）。
 	Address string `json:"address"`
 	Gateway string `json:"gateway"`
 	// NewURL 是换完地址之后这个页面的新入口，界面上直接给成一个链接。
@@ -233,7 +250,15 @@ func applyNetwork(ctx context.Context, cmd, conn, addr, gateway string) error {
 // webPort 是浏览器打开这个页面用的端口，只为拼 NewURL —— 换完地址之后
 // 人要用新地址重新打开，端口不会变。
 func (s *Service) planNetwork(ctx context.Context, before *Params, in Input, webPort string) *NetworkApply {
-	changed := before.Network.IP != in.Network.IP ||
+	// 网卡上该是哪个地址 —— 主机取 masterip、备机取 slaveip，与旧版 iprun.sh 一致。
+	want := realNICAddr(in.HA.Model, in.HA.MasterIP, in.HA.SlaveIP)
+	had := realNICAddr(before.HA.Model, before.HA.MasterIP, before.HA.SlaveIP)
+
+	// 掩码和网关这两栏在「服务器基本信息」页上，改了也要重新设一次网卡
+	// —— 旧版两个页面保存时都调 setiprun()，就是这个意思。
+	// ⚠ 「服务器地址」（in.Network.IP）**不在这个条件里**：它是虚拟地址，
+	//   改了只写配置文件，不动网卡。
+	changed := want != had ||
 		before.Network.SubnetMask != in.Network.SubnetMask ||
 		before.Network.Gateway != in.Network.Gateway
 	if !changed {
@@ -242,16 +267,20 @@ func (s *Service) planNetwork(ctx context.Context, before *Params, in Input, web
 
 	out := &NetworkApply{Gateway: in.Network.Gateway}
 
+	if want == "" {
+		out.Blocked = "主/备服务器地址是空的，不知道该把网卡设成什么（旧版 iprun.sh 在这一步也是直接退出）"
+		return out
+	}
 	prefix, err := maskToPrefix(in.Network.SubnetMask)
 	if err != nil {
 		out.Blocked = err.Error()
 		return out
 	}
-	if !isIPv4(in.Network.IP) {
-		out.Blocked = "服务器 IP 不是合法的 IPv4 地址，没有去动网卡"
+	if !isIPv4(want) {
+		out.Blocked = "主/备服务器地址不是合法的 IPv4 地址，没有去动网卡"
 		return out
 	}
-	out.Address = fmt.Sprintf("%s/%d", in.Network.IP, prefix)
+	out.Address = fmt.Sprintf("%s/%d", want, prefix)
 
 	ab := s.probeNetwork(ctx)
 	out.Connection, out.Device = ab.Connection, ab.Device
@@ -261,11 +290,21 @@ func (s *Service) planNetwork(ctx context.Context, before *Params, in Input, web
 	}
 
 	out.Attempted = true
-	out.NewURL = "http://" + in.Network.IP
+	out.NewURL = "http://" + want
 	if webPort != "" {
-		out.NewURL = "http://" + net.JoinHostPort(in.Network.IP, webPort)
+		out.NewURL = "http://" + net.JoinHostPort(want, webPort)
 	}
 	return out
+}
+
+// realNICAddr 返回这台机器网卡上该设的**真实**地址：主机是 masterip、备机是 slaveip。
+//
+// ⚠ 不是「服务器地址」那一栏 —— 那是 heartbeat 的虚拟地址，理由见文件头。
+func realNICAddr(model int, masterIP, slaveIP string) string {
+	if model == 2 {
+		return strings.TrimSpace(slaveIP)
+	}
+	return strings.TrimSpace(masterIP)
 }
 
 // runNetworkLater 在响应发出去之后再动网卡。

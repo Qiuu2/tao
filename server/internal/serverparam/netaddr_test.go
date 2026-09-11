@@ -4,6 +4,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"testing"
 )
 
@@ -64,30 +65,127 @@ func TestSplitNmcli(t *testing.T) {
 	}
 }
 
-// 网络那三个框没动时不能去碰网卡 —— 保存一次别的设置就把网断一下，
+// netBefore/netIn 造一对「现网那台机器」的前后状态：
+// 虚拟地址 192.168.2.159（eth0:0），真实地址 192.168.1.63 / .64（eth0）。
+func netBefore() *Params {
+	p := &Params{Network: Network{IP: "192.168.2.159", SubnetMask: "255.255.255.0", Gateway: "192.168.2.1"}}
+	p.HA.Model = 1
+	p.HA.MasterIP = "192.168.1.63"
+	p.HA.SlaveIP = "192.168.1.64"
+	return p
+}
+
+func netIn(b *Params) Input {
+	in := Input{Network: b.Network}
+	in.HA.Model = b.HA.Model
+	in.HA.MasterIP = b.HA.MasterIP
+	in.HA.SlaveIP = b.HA.SlaveIP
+	return in
+}
+
+// 主/备地址与掩码、网关都没动时不能去碰网卡 —— 保存一次别的设置就把网断一下，
 // 是这个功能最容易犯也最难原谅的错。
 func TestPlanNetworkSkipsWhenUnchanged(t *testing.T) {
 	s := &Service{}
-	before := &Params{Network: Network{IP: "192.168.1.10", SubnetMask: "255.255.255.0", Gateway: "192.168.1.1"}}
-	in := Input{Network: Network{IP: "192.168.1.10", SubnetMask: "255.255.255.0", Gateway: "192.168.1.1"}}
+	before := netBefore()
+	in := netIn(before)
 	in.Ports.Port = 9999 // 只改端口
 
 	if got := s.planNetwork(t.Context(), before, in, "8080"); got != nil {
-		t.Fatalf("网络三项没变，不该去动网卡，却得到 %+v", got)
+		t.Fatalf("主/备地址与掩码网关都没变，不该去动网卡，却得到 %+v", got)
+	}
+}
+
+// ⚠ 这一条是这个文件里最要紧的：
+// 「服务器地址」那一栏是 heartbeat 的虚拟地址（现网 eth0:0 上的 192.168.2.159），
+// 改它**绝不能**去动网卡 —— 动了就把 eth0 上的真实地址 192.168.1.63 冲掉，
+// 而 heartbeat 那边还要往 eth0:0 放同一个地址，这台机器会直接从网上消失。
+func TestPlanNetworkIgnoresVirtualIP(t *testing.T) {
+	s := &Service{}
+	before := netBefore()
+	in := netIn(before)
+	in.Network.IP = "192.168.2.200" // 只改虚拟地址
+
+	if got := s.planNetwork(t.Context(), before, in, "8080"); got != nil {
+		t.Fatalf("改的是虚拟地址，网卡一步都不该走，却得到 %+v", got)
+	}
+}
+
+// 网卡地址取的是主/备那一对，不是「服务器地址」。主机取 masterip。
+func TestPlanNetworkUsesMasterIP(t *testing.T) {
+	s := &Service{}
+	before := netBefore()
+	in := netIn(before)
+	in.HA.MasterIP = "192.168.1.70"
+
+	got := s.planNetwork(t.Context(), before, in, "8886")
+	if got == nil {
+		t.Fatal("主机地址变了，应当返回一个结果")
+	}
+	if got.Address != "192.168.1.70/24" {
+		t.Errorf("网卡地址该取 masterip，得到 %q", got.Address)
+	}
+	if strings.Contains(got.Address, "192.168.2.") || strings.Contains(got.NewURL, "192.168.2.") {
+		t.Errorf("虚拟地址漏到网卡那一步了：%+v", got)
+	}
+}
+
+// 切成备机时取 slaveip —— model 本身变了也要重新设网卡。
+func TestPlanNetworkUsesSlaveIPWhenSlave(t *testing.T) {
+	s := &Service{}
+	before := netBefore()
+	in := netIn(before)
+	in.HA.Model = 2
+
+	got := s.planNetwork(t.Context(), before, in, "8886")
+	if got == nil {
+		t.Fatal("从主机切成备机，网卡地址该跟着换")
+	}
+	if got.Address != "192.168.1.64/24" {
+		t.Errorf("备机该取 slaveip，得到 %q", got.Address)
+	}
+}
+
+// 掩码或网关变了也要重新设一次（旧版两个页面保存时都调 setiprun）——
+// 地址仍然取主/备那一对。
+func TestPlanNetworkReappliesOnMaskOrGateway(t *testing.T) {
+	s := &Service{}
+	for _, c := range []struct {
+		name  string
+		tweak func(*Input)
+		want  string
+	}{
+		{"掩码变了", func(in *Input) { in.Network.SubnetMask = "255.255.0.0" }, "192.168.1.63/16"},
+		{"网关变了", func(in *Input) { in.Network.Gateway = "192.168.1.254" }, "192.168.1.63/24"},
+	} {
+		t.Run(c.name, func(t *testing.T) {
+			before := netBefore()
+			in := netIn(before)
+			c.tweak(&in)
+			got := s.planNetwork(t.Context(), before, in, "8886")
+			if got == nil {
+				t.Fatal("该重新设一次网卡")
+			}
+			if got.Address != c.want {
+				t.Errorf("地址 = %q，期望 %q", got.Address, c.want)
+			}
+		})
 	}
 }
 
 // 地址非法时不能动网卡，而且要说清楚为什么。
 func TestPlanNetworkRejectsBadInput(t *testing.T) {
 	s := &Service{}
-	before := &Params{Network: Network{IP: "192.168.1.10", SubnetMask: "255.255.255.0", Gateway: "192.168.1.1"}}
 
-	for _, c := range []struct{ name, ip, mask string }{
-		{"掩码不连续", "192.168.1.20", "255.0.255.0"},
-		{"IP 不是 IPv4", "not-an-ip", "255.255.255.0"},
+	for _, c := range []struct{ name, master, mask string }{
+		{"掩码不连续", "192.168.1.70", "255.0.255.0"},
+		{"主机地址不是 IPv4", "not-an-ip", "255.255.255.0"},
+		{"主机地址是空的", "", "255.255.255.0"},
 	} {
 		t.Run(c.name, func(t *testing.T) {
-			in := Input{Network: Network{IP: c.ip, SubnetMask: c.mask, Gateway: "192.168.1.1"}}
+			before := netBefore()
+			in := netIn(before)
+			in.HA.MasterIP, in.Network.SubnetMask = c.master, c.mask
 			got := s.planNetwork(t.Context(), before, in, "8080")
 			if got == nil {
 				t.Fatal("地址变了，应当返回一个结果说明情况")

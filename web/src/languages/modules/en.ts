@@ -1073,11 +1073,13 @@ export default {
     ipSwitchTitle: "The network address is switching",
     ipSwitching:
       "The server's network interface ({conn} · {device}) is switching to {address}.\n\n" +
-      "This connection is about to drop — the page will stop responding on the old address, which is expected.\n\n" +
-      "Open the new address instead: {url}\n\n" +
+      "That is this machine's real address (the primary/backup pair), not the virtual address in the \"Server address\" field.\n\n" +
+      "If you opened this page on that address the connection is about to drop, which is expected; " +
+      "if you opened it on the virtual address nothing changes.\n\n" +
+      "New address: {url}\n\n" +
       "If the new address is still unreachable after a minute, the switch failed; check on the server itself.",
     ipNotApplied:
-      "The IP, netmask and gateway were saved to the database, but were NOT applied to the network interface:\n\n{reason}\n\nThe interface must be changed separately.",
+      "The settings were saved to the database, but the interface's real address was NOT changed to the primary/backup address:\n\n{reason}\n\nThe interface must be changed separately.",
     filesNotSynced:
       "These legacy files record the same address and could not be updated (the rest were synced):\n\n{list}\n\nCheck them on the server; no htweb restart is needed afterwards.",
     serverRunning: "Running",
