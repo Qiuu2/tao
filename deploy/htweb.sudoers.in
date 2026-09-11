@@ -13,6 +13,7 @@
 #   设置服务器时间 / 同步当前时间 → timedatectl set-time
 #   （手工设时间前关掉自动校时）  → timedatectl set-ntp
 #   服务器信息里改 IP / 掩码 / 网关 → nmcli connection modify / up
+#   主备配置改 /etc 下那几个文件   → htweb-ha-apply（本目录下的小脚本）
 #   版本设置的「提交」            → update_audioserver.sh，它内部全是 sudo docker
 #
 # 没有这几条时程序不会去猜密码、也不会假装成功：接口会探测一次，
@@ -41,9 +42,19 @@
 #
 #   不需要在 Web 上改 IP 的部署，把 HTWEB_NET 从最后那行里删掉即可 ——
 #   程序探不到权限就跳过网卡那一步并在页面上说明原因，不报错、也不假装成功。
+#
+# ⚠ HTWEB_HA 这条**不带 ***：htweb 只能传一个目标名（hosts / hostname / ha.cf /
+#   haresources / ha-post / crontab），路径写死在脚本里，内容走 stdin，
+#   脚本落盘前还要体检（hosts 必须有 127.0.0.1 那一行、hostname 只能一行…）。
+#   所以这条 sudo 能改的只有那 6 个文件，不是系统里任意位置。
+#
+#   ⚠⚠ htweb-ha-apply 必须是 root 属主、且服务账号不可写 ——
+#       谁能改那个脚本，谁就等于拿到了 root。install-sudoers.sh 会检查这一点。
+#   不做主备的部署把 HTWEB_HA 删掉即可，主备那一页会整组跳过并说明原因。
 
 Cmnd_Alias HTWEB_CLOCK = @TIMEDATECTL@ set-time *, @TIMEDATECTL@ set-ntp *
 Cmnd_Alias HTWEB_NET   = @NMCLI@ connection modify *, @NMCLI@ connection up *
+Cmnd_Alias HTWEB_HA    = @A9000_ROOT@/htweb/htweb-ha-apply
 Cmnd_Alias HTWEB_AUDIO = @A9000_ROOT@/script/cmd/update_audioserver.sh
 
-@SERVICE_USER@ ALL=(root) NOPASSWD: HTWEB_CLOCK, HTWEB_NET, HTWEB_AUDIO
+@SERVICE_USER@ ALL=(root) NOPASSWD: HTWEB_CLOCK, HTWEB_NET, HTWEB_HA, HTWEB_AUDIO

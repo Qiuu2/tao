@@ -43,6 +43,20 @@ type haTargets struct {
 	edits []haEdit
 	// 换文件的（把 src 拷成 dst）
 	copies []haCopy
+	// 搬文件的（旧版用 mv -f）
+	moves []haMove
+	// 删文件的（旧版用 rm -rf）
+	removes []haRemove
+}
+
+type haMove struct {
+	src, dst string
+	what     string
+}
+
+type haRemove struct {
+	path string
+	what string
 }
 
 type haEdit struct {
@@ -104,17 +118,27 @@ type haPaths struct {
 	Crontab     string
 	CrontabSrc  string
 	StartSlave  string
+	MysqlDelSrc string
+	MysqlDelDst string
+}
+
+// etc 给 /etc 下的绝对路径加上测试前缀（生产里 etcRoot 为空，原样返回）。
+func (s *Service) etc(p string) string {
+	if strings.TrimSpace(s.etcRoot) == "" {
+		return p
+	}
+	return filepath.Join(s.etcRoot, p)
 }
 
 func (s *Service) haPathsFor() haPaths {
 	root := strings.TrimSpace(s.a9000Root)
 	p := haPaths{
-		HACf:     "/etc/ha.d/ha.cf",
-		Hosts:    "/etc/hosts",
-		Hostname: "/etc/hostname",
-		Crontab:  "/etc/crontab",
+		HACf:     s.etc("/etc/ha.d/ha.cf"),
+		Hosts:    s.etc("/etc/hosts"),
+		Hostname: s.etc("/etc/hostname"),
+		Crontab:  s.etc("/etc/crontab"),
 	}
-	p.HAResources = []string{"/etc/ha.d/haresources"}
+	p.HAResources = []string{s.etc("/etc/ha.d/haresources")}
 	if root == "" {
 		return p
 	}
@@ -129,6 +153,8 @@ func (s *Service) haPathsFor() haPaths {
 	p.AppRun = filepath.Join(root, "script/apprun.sh")
 	p.CrontabSrc = filepath.Join(root, "home/heartbeat/crontab-slave")
 	p.StartSlave = filepath.Join(root, "script/mysqlstartslave.sql")
+	p.MysqlDelSrc = filepath.Join(root, "script/mysqldel-bdata")
+	p.MysqlDelDst = filepath.Join(root, "script/mysqldel.sh")
 	return p
 }
 
@@ -206,6 +232,15 @@ func (s *Service) buildHATargets(in Input) haTargets {
 			"启动脚本（apprun.sh）"})
 	}
 
+	// ── 主机：把系统 crontab 删掉 ──
+	//
+	// 旧版是 `rm -rf /etc/crontab` —— 主机不跑备机那几条定时任务。
+	// ⚠ 删之前先留一份 .htweb.bak（脚本那边做），至少还能退回去：
+	//   这台机器上可能有别人加的任务，一删就没了。
+	if isMaster {
+		t.removes = append(t.removes, haRemove{p.Crontab, "主机上删掉系统 crontab"})
+	}
+
 	// ── 只有备机才有的那几项 ──
 	if !isMaster {
 		if p.CrontabSrc != "" {
@@ -213,6 +248,12 @@ func (s *Service) buildHATargets(in Input) haTargets {
 		}
 		if p.TimeUpdate != "" {
 			t.edits = append(t.edits, haEdit{path: p.TimeUpdate, re: reNtpdate, line: "ntpdate -u " + in.HA.MasterIP, what: "备机校时目标（timeupdate.sh）", nth: 0})
+		}
+		if on && p.MysqlDelSrc != "" {
+			// 旧版 `mv mysqldel-bdata mysqldel.sh -f`：备机要换一份删库脚本。
+			// 照做 mv（不是 cp）—— 与旧版一致；源文件已经不在、目标又在的话
+			// 说明上次就搬过了，报 unchanged 而不是报错。
+			t.moves = append(t.moves, haMove{p.MysqlDelSrc, p.MysqlDelDst, "备机的 mysqldel.sh"})
 		}
 		if on && p.StartSlave != "" {
 			// modify_cala_backup()：把复制起点指向主机。
@@ -255,6 +296,31 @@ func (s *Service) syncHAFiles(in Input) []FileSync {
 			blocked = append(blocked, fmt.Sprintf("%s（%s）", c.dst, why))
 		}
 	}
+	for _, m := range t.moves {
+		if _, err := os.Stat(m.src); err != nil {
+			continue // 上次已经搬过了，或者这台机器没有这个脚本
+		}
+		// 搬走要动的是**源文件所在目录**（unlink）和目标目录（创建）
+		if why := probeDirWritable(filepath.Dir(m.src)); why != "" {
+			blocked = append(blocked, fmt.Sprintf("%s（%s）", m.src, why))
+		}
+		if why := probeDirWritable(filepath.Dir(m.dst)); why != "" {
+			blocked = append(blocked, fmt.Sprintf("%s（%s）", m.dst, why))
+		}
+	}
+	for _, r := range t.removes {
+		if _, err := os.Stat(r.path); err != nil {
+			continue // 已经不在了
+		}
+		// 删一个文件要的是**它所在目录**的写权限，不是文件本身的
+		if probeDirWritable(filepath.Dir(r.path)) == "" {
+			continue
+		}
+		if _, _, ok := canPrivWrite(r.path); ok {
+			continue // /etc/crontab 这种可以走提权脚本
+		}
+		blocked = append(blocked, fmt.Sprintf("%s（没有删除权限，也没有可用的提权通道）", r.path))
+	}
 	if len(blocked) > 0 {
 		return []FileSync{{
 			What:   "主备角色配置（整组未执行）",
@@ -272,7 +338,103 @@ func (s *Service) syncHAFiles(in Input) []FileSync {
 	for _, c := range t.copies {
 		out = append(out, copyFileAs(c))
 	}
-	return append(out, haSkipped(in)...)
+	for _, m := range t.moves {
+		out = append(out, moveFile(m))
+	}
+	for _, r := range t.removes {
+		out = append(out, removeFile(r))
+	}
+	return out
+}
+
+// probeDirWritable 探一个目录能不能建/删文件。返回空串表示可以。
+func probeDirWritable(dir string) string {
+	f, err := os.CreateTemp(dir, ".htweb-probe-*")
+	if err != nil {
+		return "目录不可写"
+	}
+	name := f.Name()
+	_ = f.Close()
+	_ = os.Remove(name)
+	return ""
+}
+
+// moveFile 对应旧版的 `mv <src> <dst> -f`。
+//
+// 源文件不在、目标已经在，说明上次就搬过了 —— 报 unchanged，不当成错误。
+// 旧版跑第二次是静默失败（mv 报错没人看），这里如实说明状态。
+func moveFile(m haMove) FileSync {
+	out := FileSync{Path: m.dst, What: m.what}
+	if _, err := os.Stat(m.src); err != nil {
+		if _, derr := os.Stat(m.dst); derr == nil {
+			out.Status = SyncUnchanged
+			out.Detail = "上次已经搬过了（源文件 " + filepath.Base(m.src) + " 不在了）"
+			return out
+		}
+		out.Status = SyncMissing
+		out.Detail = "源文件不存在：" + m.src
+		return out
+	}
+	if err := os.MkdirAll(filepath.Dir(m.dst), 0o755); err != nil {
+		out.Status = SyncFailed
+		out.Detail = err.Error()
+		return out
+	}
+	if err := os.Rename(m.src, m.dst); err != nil {
+		out.Status = SyncFailed
+		out.Detail = "搬动失败：" + err.Error()
+		return out
+	}
+	out.Status = SyncUpdated
+	out.Detail = "← " + m.src + "（已搬走，原位置不再保留）"
+	return out
+}
+
+// removeFile 对应旧版的 `rm -rf <path>`。
+//
+// ⚠ 删之前先留一份 .htweb.bak。旧版是直接删的，而 /etc/crontab 上可能有
+//
+//	这台机器上别人加的任务 —— 一删就没了，也没有任何地方能查回来。
+func removeFile(r haRemove) FileSync {
+	out := FileSync{Path: r.path, What: r.what}
+	raw, err := os.ReadFile(r.path)
+	if os.IsNotExist(err) {
+		out.Status = SyncUnchanged
+		out.Detail = "本来就不在"
+		return out
+	}
+	if err != nil {
+		out.Status = SyncFailed
+		out.Detail = "读取失败：" + err.Error()
+		return out
+	}
+	// 先备份再删。备份失败就不删 —— 不可逆的动作没有退路时不该做。
+	if werr := os.WriteFile(r.path+".htweb.bak", raw, 0o600); werr != nil {
+		if _, _, ok := canPrivWrite(r.path); !ok {
+			out.Status = SyncFailed
+			out.Detail = "留不下备份（" + werr.Error() + "），没有退路就不删"
+			return out
+		}
+		// 走提权那条路时，备份由脚本自己做
+	}
+	if rerr := os.Remove(r.path); rerr != nil {
+		if _, _, ok := canPrivWrite(r.path); ok {
+			if perr := privRemove(r.path); perr != nil {
+				out.Status = SyncFailed
+				out.Detail = perr.Error()
+				return out
+			}
+			out.Status = SyncUpdated
+			out.Detail = "已删除（旁边留了 .htweb.bak）"
+			return out
+		}
+		out.Status = SyncFailed
+		out.Detail = "删除失败：" + rerr.Error()
+		return out
+	}
+	out.Status = SyncUpdated
+	out.Detail = "已删除（旁边留了 .htweb.bak）"
+	return out
 }
 
 // probeWritable 返回空串表示「可以写」或「文件不存在（跳过）」，
@@ -295,7 +457,11 @@ func probeWritable(path string) string {
 	}
 	f, err := os.CreateTemp(filepath.Dir(path), ".htweb-probe-*")
 	if err != nil {
-		return "没有写权限"
+		// 直接写不了，再看有没有提权那条路（/etc 下那几个 root 文件）
+		if _, _, ok := canPrivWrite(path); ok {
+			return ""
+		}
+		return "没有写权限，也没有可用的提权通道（装一次 deploy/install-sudoers.sh）"
 	}
 	name := f.Name()
 	_ = f.Close()
@@ -393,25 +559,5 @@ func copyFileAs(c haCopy) FileSync {
 	}
 	out.Status = SyncUpdated
 	out.Detail = "← " + c.src
-	return out
-}
-
-// haSkipped 是旧版做了、这里**有意没做**的那几件，作为结果的一部分回给界面 ——
-// 让人知道还差什么，而不是以为全套都做完了。
-func haSkipped(in Input) []FileSync {
-	out := []FileSync{}
-	if in.HA.Model != 2 {
-		out = append(out, FileSync{
-			Path: "/etc/crontab", What: "主机上删掉系统 crontab", Status: SyncNoAnchor,
-			Detail: "旧版在这里 `rm -rf /etc/crontab`（主机不跑备机那几条定时任务）。" +
-				"删系统 crontab 不可逆、也删掉了这台机器上别人加的任务，没有照做，请人工确认。",
-		})
-	} else if in.HA.Backup == 1 {
-		out = append(out, FileSync{
-			Path: "script/mysqldel.sh", What: "备机的 mysqldel.sh", Status: SyncNoAnchor,
-			Detail: "旧版在这里 `mv mysqldel-bdata mysqldel.sh -f`（一次性移动，跑第二次就没源文件了）。" +
-				"这属于换脚本不是改配置，没有照做，请人工确认。",
-		})
-	}
 	return out
 }

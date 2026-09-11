@@ -313,6 +313,9 @@ Web 端**不直接控制硬件**，而是：写数据库 + 通过 UDP/TCP 向后
 —— 不报错，只是不能用，换台机器就得重排一遍。
 「服务器信息」里改 IP / 掩码 / 网关同样靠它（`nmcli connection modify/up`）：
 缺规则时数据库照常保存，但地址不会改到网卡上，页面会明说是这个原因。
+「主备服务器配置」要写 `/etc/hosts`、`/etc/hostname`、`/etc/ha.d/*`、`/etc/crontab`，
+走的是随包一起装的 `htweb-ha-apply`（`root:root 755`，只认 6 个目标名、内容走 stdin）；
+没装它或没给那条 sudo 时，那一页**整组跳过**并说明缺什么 —— 绝不留下改了一半的 HA 配置。
 
 ⚠ 与之配套的一条：systemd 单元里**不能**有 `NoNewPrivileges=true`。
 它会禁掉 setuid 提权路径，而 sudo 正是 setuid 程序，

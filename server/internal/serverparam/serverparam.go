@@ -47,6 +47,12 @@ type Service struct {
 	// 「版本设置」页要靠它找到 sounds/audioserver 下的版本包与 script/cmd 下的重建脚本，
 	// 见 version.go。留空时版本切换会直接报「找不到 a9000 安装目录」而不是乱猜路径。
 	a9000Root string
+	// etcRoot 是 /etc 的前缀，**只在测试里设**。
+	//
+	// 主备配置要改 /etc/hosts、/etc/hostname、/etc/ha.d/*，这几个是绝对路径；
+	// 不给测试留一个前缀的话，跑一次单测就把开发机/CI 机器的 /etc/hosts 真改了 ——
+	// 这是实测踩出来的，不是假想。生产里它永远是空串。
+	etcRoot string
 }
 
 func New(db *sql.DB, apacheConf, swaggerFile, a9000Root string) *Service {

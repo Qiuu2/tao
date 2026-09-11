@@ -8,8 +8,11 @@ import (
 )
 
 // 搭一棵能跑完整套主备配置的临时 a9000 目录树。
-// /etc 下那几个是绝对路径，测试里碰不到 —— 它们会报 missing，
-// 与「没装 heartbeat 的机器」上的真实结果一致。
+//
+// ⚠ 每个用例都要给 Service 设 etcRoot（一个临时目录），否则 /etc/hosts、
+//
+//	/etc/hostname 是绝对路径，跑一次单测就把这台机器的真文件改了。
+//	这不是假想：第一版没有 etcRoot，跑测试真的把开发机的 /etc/hosts 写了。
 func haFixture(t *testing.T) (root string) {
 	t.Helper()
 	root = t.TempDir()
@@ -26,6 +29,8 @@ func haFixture(t *testing.T) (root string) {
 	write(t, root, "script/timeupdate.sh", "#!/bin/sh\n# 十行占位\nntpdate -u 1.1.1.1\n")
 	write(t, root, "script/mysqlstartslave.sql",
 		"CHANGE MASTER TO master_host='1.1.1.1',master_user='rep',master_password='x';\nSTART SLAVE;\n")
+	write(t, root, "script/mysqldel-bdata", "#!/bin/sh\n# 备机用的删库脚本\n")
+	write(t, root, "script/mysqldel.sh", "#!/bin/sh\n# 单机用的\n")
 	return root
 }
 
@@ -52,7 +57,7 @@ func statusOf(got []FileSync, what string) *FileSync {
 // 主机：换 server-master.cnf 与 apprun-master.sh，ucast 指向**备机**。
 func TestHASyncMaster(t *testing.T) {
 	root := haFixture(t)
-	s := &Service{a9000Root: root}
+	s := &Service{a9000Root: root, etcRoot: t.TempDir()}
 	got := s.syncHAFiles(haInput(1, 1))
 
 	for _, f := range got {
@@ -79,9 +84,13 @@ func TestHASyncMaster(t *testing.T) {
 	if v := read(t, filepath.Join(root, "script/timeupdate.sh")); strings.Contains(v, "192.168.2.51") {
 		t.Errorf("主机不该改 timeupdate.sh：%q", v)
 	}
-	// 主机那条 rm -rf /etc/crontab 必须如实报出来没做
-	if f := statusOf(got, "删掉系统 crontab"); f == nil {
-		t.Error("主机应当报出「没做 rm -rf /etc/crontab」这一条")
+	// 主机要真的删掉系统 crontab（删前留 .htweb.bak）
+	f := statusOf(got, "删掉系统 crontab")
+	if f == nil {
+		t.Fatal("主机应当有「删掉系统 crontab」这一条")
+	}
+	if f.Status != SyncUpdated && f.Status != SyncUnchanged {
+		t.Errorf("crontab 那一条状态不对：%s（%s）", f.Status, f.Detail)
 	}
 }
 
@@ -89,7 +98,7 @@ func TestHASyncMaster(t *testing.T) {
 // 校时目标和复制起点都指向主机。
 func TestHASyncSlave(t *testing.T) {
 	root := haFixture(t)
-	s := &Service{a9000Root: root}
+	s := &Service{a9000Root: root, etcRoot: t.TempDir()}
 	got := s.syncHAFiles(haInput(2, 1))
 
 	for _, f := range got {
@@ -118,7 +127,7 @@ func TestHASyncSlave(t *testing.T) {
 // 关掉主备（backup=0）时退回单机那份 server.cnf。
 func TestHASyncBackupOff(t *testing.T) {
 	root := haFixture(t)
-	s := &Service{a9000Root: root}
+	s := &Service{a9000Root: root, etcRoot: t.TempDir()}
 	s.syncHAFiles(haInput(1, 0))
 	if v := read(t, filepath.Join(root, "home/mysql/my.cnf.d/server.cnf")); !strings.Contains(v, "# 单机") {
 		t.Errorf("关掉主备该用 server.cnf，实际：%q", v)
@@ -146,7 +155,7 @@ func TestHASyncAllOrNothing(t *testing.T) {
 	before := read(t, filepath.Join(root, "home/heartbeat/haresources"))
 	beforeCnf := read(t, filepath.Join(root, "home/mysql/my.cnf.d/server.cnf"))
 
-	s := &Service{a9000Root: root}
+	s := &Service{a9000Root: root, etcRoot: t.TempDir()}
 	got := s.syncHAFiles(haInput(1, 1))
 
 	if len(got) != 1 || got[0].Status != SyncFailed {
@@ -223,5 +232,132 @@ func TestHostsEntryAnchor(t *testing.T) {
 	}
 	if !strings.Contains(got, "127.0.0.1  localhost") || !strings.Contains(got, "::1  ip6-localhost") {
 		t.Errorf("别的行被动了：%q", got)
+	}
+}
+
+// privTargets 与 deploy/htweb-ha-apply 里那张 case 表必须一一对应。
+//
+// 两边是分开维护的（一个 Go、一个 shell），漏改一边的表现是：
+// htweb 觉得自己能写，脚本却回「不认识的目标名」—— 而那时候前面几个文件
+// 可能已经改了。所以拿测试把它们钉在一起。
+func TestPrivTargetsMatchHelperScript(t *testing.T) {
+	raw, err := os.ReadFile(filepath.Join("..", "..", "..", "deploy", "htweb-ha-apply"))
+	if err != nil {
+		t.Skipf("找不到 deploy/htweb-ha-apply：%v", err)
+	}
+	script := string(raw)
+
+	for path, target := range privTargets {
+		// 脚本里那一行形如：  hosts)       DEST=/etc/hosts;             MODE=644 ;;
+		if !strings.Contains(script, target+")") {
+			t.Errorf("privTargets 里有 %q，脚本的 case 表里没有", target)
+			continue
+		}
+		if !strings.Contains(script, "DEST="+path+";") {
+			t.Errorf("目标名 %q 在脚本里指向的路径不是 %q", target, path)
+		}
+	}
+
+	// 反向：脚本里 case 表出现的目标名，Go 这边也得认
+	for _, line := range strings.Split(script, "\n") {
+		line = strings.TrimSpace(line)
+		if !strings.Contains(line, "DEST=/") || !strings.Contains(line, ")") {
+			continue
+		}
+		name := strings.TrimSpace(strings.SplitN(line, ")", 2)[0])
+		found := false
+		for _, v := range privTargets {
+			if v == name {
+				found = true
+				break
+			}
+		}
+		if !found {
+			t.Errorf("脚本里有目标名 %q，privTargets 里没有", name)
+		}
+	}
+}
+
+// 主机：真删 /etc/crontab，而且**删之前要留下 .htweb.bak** ——
+// 那上面可能有这台机器上别人加的定时任务，旧版一删就没了。
+func TestHARemoveCrontabKeepsBackup(t *testing.T) {
+	root := haFixture(t)
+	etc := t.TempDir()
+	if err := os.WriteFile(filepath.Join(etc, "etc-crontab-placeholder"), []byte("x"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	// 造出 <etcRoot>/etc/crontab
+	if err := os.MkdirAll(filepath.Join(etc, "etc"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	cron := filepath.Join(etc, "etc", "crontab")
+	if err := os.WriteFile(cron, []byte("* * * * * root /别人的/任务.sh\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	s := &Service{a9000Root: root, etcRoot: etc}
+	got := s.syncHAFiles(haInput(1, 1))
+
+	if _, err := os.Stat(cron); !os.IsNotExist(err) {
+		t.Errorf("主机上 /etc/crontab 应当被删掉，err=%v", err)
+	}
+	bak, err := os.ReadFile(cron + ".htweb.bak")
+	if err != nil {
+		t.Fatalf("删之前必须留一份 .htweb.bak：%v", err)
+	}
+	if !strings.Contains(string(bak), "别人的/任务.sh") {
+		t.Errorf("备份内容不对：%q", bak)
+	}
+	if f := statusOf(got, "删掉系统 crontab"); f == nil || f.Status != SyncUpdated {
+		t.Errorf("结果里那一条不对：%+v", f)
+	}
+}
+
+// 备机：mysqldel-bdata 真的搬成 mysqldel.sh，源文件不再保留。
+func TestHAMoveMysqldel(t *testing.T) {
+	root := haFixture(t)
+	s := &Service{a9000Root: root, etcRoot: t.TempDir()}
+	got := s.syncHAFiles(haInput(2, 1))
+
+	dst := filepath.Join(root, "script/mysqldel.sh")
+	if v := read(t, dst); !strings.Contains(v, "备机用的删库脚本") {
+		t.Errorf("mysqldel.sh 该换成备机那份：%q", v)
+	}
+	if _, err := os.Stat(filepath.Join(root, "script/mysqldel-bdata")); !os.IsNotExist(err) {
+		t.Errorf("旧版是 mv，源文件不该还在：err=%v", err)
+	}
+	if f := statusOf(got, "mysqldel"); f == nil || f.Status != SyncUpdated {
+		t.Errorf("结果里那一条不对：%+v", f)
+	}
+
+	// 再跑一次：源文件已经没了、目标在，应当报 unchanged 而不是报错
+	got2 := s.syncHAFiles(haInput(2, 1))
+	if f := statusOf(got2, "mysqldel"); f == nil || f.Status != SyncUnchanged {
+		t.Errorf("第二次应当报 unchanged：%+v", f)
+	}
+}
+
+// 主机不该去搬 mysqldel，备机不该去删 crontab —— 角色搞反了后果都很实在。
+func TestHARoleSpecificActions(t *testing.T) {
+	root := haFixture(t)
+	s := &Service{a9000Root: root, etcRoot: t.TempDir()}
+	s.syncHAFiles(haInput(1, 1)) // 主机
+	if _, err := os.Stat(filepath.Join(root, "script/mysqldel-bdata")); err != nil {
+		t.Errorf("主机不该搬 mysqldel-bdata：err=%v", err)
+	}
+
+	root2 := haFixture(t)
+	etc2 := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(etc2, "etc"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	cron := filepath.Join(etc2, "etc", "crontab")
+	if err := os.WriteFile(cron, []byte("keep\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	s2 := &Service{a9000Root: root2, etcRoot: etc2}
+	s2.syncHAFiles(haInput(2, 1)) // 备机
+	if _, err := os.Stat(cron); err != nil {
+		t.Errorf("备机不该删 /etc/crontab（它要换成 crontab-slave）：err=%v", err)
 	}
 }

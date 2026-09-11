@@ -67,6 +67,23 @@ else
   note "update_audioserver.sh 属主 $owner 权限 $perm —— 可以"
 fi
 
+# htweb-ha-apply：主备配置写 /etc 下那几个文件的唯一一条口子。
+# 给它免密 root，就必须确认别人改不了它 —— 否则等于把 root 交给了那个人。
+HA_APPLY="$A9000_ROOT/htweb/htweb-ha-apply"
+if [ ! -f "$HA_APPLY" ]; then
+  echo "⚠ 未找到 $HA_APPLY —— 主备服务器配置在装上它之前只写数据库（页面会说明原因）"
+else
+  owner=$(stat -c '%U' "$HA_APPLY")
+  perm=$(stat -c '%a' "$HA_APPLY")
+  [ "$owner" = "root" ] || die "$HA_APPLY 属主是 $owner，不是 root。
+   给它免密 root 等于把 root 交给 $owner。请 chown root:root 再重跑。"
+  case "$perm" in
+    *[2367]) die "$HA_APPLY 对同组或其他用户可写（权限 $perm），
+   给它免密 root 等于把 root 交出去。请先 chmod go-w 再重跑。" ;;
+  esac
+  note "htweb-ha-apply 属主 $owner 权限 $perm —— 可以"
+fi
+
 TMP="$(mktemp /tmp/htweb-sudoers.XXXXXX)"
 trap 'rm -f "$TMP"' EXIT
 
@@ -103,6 +120,13 @@ if [ -x "$NMCLI" ]; then
     echo "✓ $SERVICE_USER 可以免密执行 nmcli connection modify（可在 Web 上改服务器 IP）"
   else
     echo "✗ $SERVICE_USER 仍然不能免密执行 nmcli connection modify"
+  fi
+fi
+if [ -f "$HA_APPLY" ]; then
+  if sudo -u "$SERVICE_USER" sudo -n -l "$HA_APPLY" hosts >/dev/null 2>&1; then
+    echo "✓ $SERVICE_USER 可以免密执行 htweb-ha-apply（主备配置能写 /etc 下那几个文件）"
+  else
+    echo "✗ $SERVICE_USER 仍然不能免密执行 htweb-ha-apply"
   fi
 fi
 if [ -f "$UPDATE_SH" ]; then

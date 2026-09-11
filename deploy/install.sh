@@ -12,6 +12,7 @@
 #     htweb.service.in      systemd 单元模板
 #     config.yaml.example   配置样例
 #     htweb                 Go 二进制（linux/amd64）
+#     htweb-ha-apply        主备配置写 /etc 那几个文件的小脚本（装成 root:root 755）
 #     dist.tgz              前端产物
 #
 # 可以反复执行：已经装好的部分不会被重复折腾，config.yaml 存在时**不覆盖**。
@@ -53,6 +54,16 @@ if systemctl is-active --quiet htweb 2>/dev/null; then
 fi
 install -o "$SERVICE_USER" -g "$SERVICE_USER" -m 755 "$SRC_DIR/htweb" "$APP_DIR/htweb"
 echo "✓ $APP_DIR/htweb  ($(md5sum "$APP_DIR/htweb" | cut -c1-32))"
+
+# 主备配置写 /etc 下那几个文件的小脚本。
+# ⚠ 属主必须是 root、且服务账号**不可写** —— 它是要拿免密 root 跑的，
+#   谁能改它谁就等于拿到了 root。所以这里不用 $SERVICE_USER 装。
+if [ -f "$SRC_DIR/htweb-ha-apply" ]; then
+  install -o root -g root -m 755 "$SRC_DIR/htweb-ha-apply" "$APP_DIR/htweb-ha-apply"
+  echo "✓ $APP_DIR/htweb-ha-apply（root:root 755）"
+else
+  echo "⚠ 同目录下没有 htweb-ha-apply —— 主备服务器配置将只写数据库，页面会说明原因"
+fi
 
 step "前端"
 if [ -f "$SRC_DIR/dist.tgz" ]; then

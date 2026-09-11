@@ -232,7 +232,7 @@ func TestSyncLegacyFilesEndToEnd(t *testing.T) {
 	write(t, root, "html/ok112/ha-post.sh", "#!/bin/sh\nroute add default gw 192.168.2.1\n")
 	swagger := write(t, root, "swagger1.json", "{\n    \"host\": \"192.168.2.159:99\"\n}\n")
 
-	s := &Service{a9000Root: root, swaggerFile: swagger}
+	s := &Service{a9000Root: root, swaggerFile: swagger, etcRoot: t.TempDir()}
 	in := Input{Network: Network{IP: "10.0.0.5", SubnetMask: "255.255.255.0", Gateway: "10.0.0.1"}}
 	in.HA.Name = "a9000-master"
 
@@ -270,7 +270,7 @@ func TestSyncUsesFullPrefix(t *testing.T) {
 	root := t.TempDir()
 	write(t, root, "home/heartbeat/haresource", "old 1.1.1.1/8/eth0 ha-post\n")
 
-	s := &Service{a9000Root: root}
+	s := &Service{a9000Root: root, etcRoot: t.TempDir()}
 	in := Input{Network: Network{IP: "10.0.0.5", SubnetMask: "255.255.255.128", Gateway: "10.0.0.1"}}
 	in.HA.Name = "srv"
 	s.syncLegacyFiles(in, in.HA.Name)

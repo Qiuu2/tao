@@ -87,12 +87,12 @@ type syncPaths struct {
 func (s *Service) syncPathsFor(srvName string) syncPaths {
 	root := strings.TrimSpace(s.a9000Root)
 	p := syncPaths{
-		HACf:           "/etc/ha.d/ha.cf",
-		HAPostLive:     "/etc/ha.d/ha-post.sh",
+		HACf:           s.etc("/etc/ha.d/ha.cf"),
+		HAPostLive:     s.etc("/etc/ha.d/ha-post.sh"),
 		SwaggerFile:    s.swaggerFile,
 		DefaultSrvName: srvName,
 	}
-	p.HAResources = []string{"/etc/ha.d/haresources"}
+	p.HAResources = []string{s.etc("/etc/ha.d/haresources")}
 	if root != "" {
 		// ⚠ 旧版这里写的是单数 haresource（同一段代码注释掉的那一行才是复数）。
 		//   两个都试：哪个存在改哪个，都不存在就报 missing。
@@ -181,6 +181,18 @@ func replaceLine(path string, re *regexp.Regexp, line, what string) FileSync {
 // 直接 truncate 再写的话，写到一半断电或者权限不够，留下的是**半个**配置文件；
 // haresources 半行会让主备切换在最需要它的时候失灵。
 func atomicWrite(path string, data []byte) error {
+	if err := atomicWriteDirect(path, data); err == nil {
+		return nil
+	} else if _, _, ok := canPrivWrite(path); !ok {
+		// 走不通提权那条路就把原来的错回上去 —— 那才是人要看的原因
+		return err
+	}
+	// /etc 下那几个 root 文件：交给装好的小脚本写（见 privwrite.go）。
+	// 内容是上面算好的整份文件，脚本只负责原子落盘 + 体检。
+	return privWrite(path, data)
+}
+
+func atomicWriteDirect(path string, data []byte) error {
 	mode := os.FileMode(0o644)
 	if st, err := os.Stat(path); err == nil {
 		mode = st.Mode().Perm()
