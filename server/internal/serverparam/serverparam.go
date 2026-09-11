@@ -379,6 +379,10 @@ type SaveResult struct {
 	// Network 是「网卡那一步」的结果。nil 表示这次保存没碰网络那三个框。
 	// 见 netaddr.go。
 	Network *NetworkApply `json:"network,omitempty"`
+	// Files 是旧系统里那几个记着同一个地址的配置文件的同步结果
+	// （haresources / graylog.conf / ha-post.sh / swagger1.json）。
+	// 只在 IP 或网关变了时才有内容。见 syncfiles.go。
+	Files []FileSync `json:"files,omitempty"`
 }
 
 // Save 写入参数。
@@ -450,6 +454,18 @@ func (s *Service) Save(ctx context.Context, in Input, webPort string) (*SaveResu
 	// 库已经写完了。接下来才是网卡 —— 顺序不能反：
 	// 先改网卡的话这条连接立刻断掉，事务提交不了，最后得到一台
 	// 「网卡是新地址、库里还是旧地址」的机器。
+	// 旧系统里那几个记着同一个地址的配置文件（haresources / graylog.conf /
+	// ha-post.sh / swagger1.json）。放在动网卡**之前**做完 —— 网卡一切连接就断，
+	// 后面的活就没人看得见结果了。
+	//
+	// 它们失败不影响这次保存：库已经写完了，把文件同步的失败算成保存失败，
+	// 只会让人以为什么都没做成，反而去重试一遍。逐个文件的结果回给界面。
+	var files []FileSync
+	if before.Network.IP != in.Network.IP || before.Network.Gateway != in.Network.Gateway ||
+		before.Network.SubnetMask != in.Network.SubnetMask {
+		files = s.syncLegacyFiles(in, in.HA.Name)
+	}
+
 	plan := s.planNetwork(ctx, before, in, webPort)
 	if plan != nil && plan.Attempted {
 		// ⚠ 真正执行放到响应发出之后，否则操作员只会看到「请求失败」。
@@ -459,7 +475,8 @@ func (s *Service) Save(ctx context.Context, in Input, webPort string) (*SaveResu
 	return &SaveResult{Updated: true,
 		RequiresRestart: len(restartReasons(ctx, before, in)) > 0,
 		RestartReasons:  restartReasons(ctx, before, in),
-		Network:         plan}, nil
+		Network:         plan,
+		Files:           files}, nil
 }
 
 // syncServerConfig 维护 serverconfig 那一行。

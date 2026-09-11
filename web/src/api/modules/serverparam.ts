@@ -120,11 +120,32 @@ export interface SpNetworkApply {
   newUrl: string;
 }
 
+/**
+ * 旧系统里那几个记着同一个地址的配置文件的同步结果
+ * （haresources / graylog.conf / ha-post.sh / swagger1.json）。
+ * 只在 IP / 掩码 / 网关变了时才有。见 serverparam/syncfiles.go。
+ */
+export interface SpFileSync {
+  path: string;
+  /** 这个文件里改的是什么，给人看的一句话 */
+  what: string;
+  /**
+   * updated   改好了
+   * unchanged 本来就对，没动
+   * missing   文件不存在（这台机器多半没装旧系统，不是故障）
+   * no-anchor 文件在，但没找到该改的那一行 —— 不按行号猜，原样保留
+   * failed    读写失败，多半是权限
+   */
+  status: "updated" | "unchanged" | "missing" | "no-anchor" | "failed";
+  detail?: string;
+}
+
 export interface SpSaveResult {
   updated: boolean;
   requiresRestart: boolean;
   restartReason: string[];
   network?: SpNetworkApply;
+  files?: SpFileSync[];
 }
 
 export interface TableImpact {

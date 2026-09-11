@@ -476,6 +476,27 @@ const save = async () => {
     ElMessage.success(t("common.saveSuccess"));
 
     /*
+      旧系统那几个记着同一个地址的配置文件（haresources / graylog.conf /
+      ha-post.sh / swagger1.json）。只报**需要人管**的那几条：
+
+        no-anchor  文件在、但没找到该改的那一行 —— 值得看一眼，那一行的格式可能变了
+        failed     读写失败，多半是 /etc/ha.d 的权限
+
+      missing（这台机器没装旧系统）和 unchanged（本来就对）不报：
+      它们既不是故障也不需要人做什么，摆出来只会稀释真正要看的那两条。
+    */
+    const badFiles = (data.files ?? []).filter(f => f.status === "no-anchor" || f.status === "failed");
+    if (badFiles.length) {
+      await ElMessageBox.alert(
+        t("server.filesNotSynced", {
+          list: badFiles.map(f => `· ${f.what}（${f.path}）：${f.detail || f.status}`).join("\n")
+        }),
+        t("server.savedButMore"),
+        { confirmButtonText: t("server.gotIt") }
+      );
+    }
+
+    /*
       网卡那一步。改了 IP / 掩码 / 网关时后端会**真的去改网卡**
       （见 serverparam/netaddr.go），当前这条连接随即断掉 —— 浏览器还连在旧地址上。
 

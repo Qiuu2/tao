@@ -71,7 +71,8 @@ logs:
   # 也不能建新表；现有的空表又都可能被后台 C 服务扫描，塞进去有触发误广播的风险。
   #
   # 保留期默认 1 个月，可选 3 个月 / 半年 / 1 年，超期的每天滚一次
-  # （操作日志按 time 删、任务日志按文件名里的日期删）。详见 logs/retention.go。
+  # （只清 log 表；任务日志那一页已撤，datelog 下的文件新版不读也不删）。
+  # 详见 logs/retention.go。
   # settings_file: "/opt/apps/a9000/htweb/logsettings.json"
 
 backup:
@@ -116,8 +117,11 @@ assistant:
 #
 # 这两个文件是「服务器基本信息」页上 web端口 / sdk端口 的来源：
 # 它们不在数据库里，而在 Apache 配置和旧版 swagger 文档里。
-# ⚠ 只读解析，绝不回写 —— 旧版改这两处用的是按行号 sed（D-209），
+# ⚠ httpd.conf **只读解析，绝不回写** —— 旧版改端口用的是按行号 sed（D-209），
 #   行数一变就会写坏 httpd.conf，整个站点起不来。
+# ⚠ swagger_file 里那一行 "host": "<ip>:<端口>" 会在**改服务器 IP 时**被改写
+#   （只换 IP，端口原样留着），因为它记的就是同一个地址。它同样不按行号改：
+#   认 "host" 这个键，找不到就原样保留并在页面上报出来。
 #
 # legacy:
 #   apache_conf: "/opt/apps/a9000/home/apache/httpd.conf"

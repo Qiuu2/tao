@@ -1078,6 +1078,8 @@ export default {
       "If the new address is still unreachable after a minute, the switch failed; check on the server itself.",
     ipNotApplied:
       "The IP, netmask and gateway were saved to the database, but were NOT applied to the network interface:\n\n{reason}\n\nThe interface must be changed separately.",
+    filesNotSynced:
+      "These legacy files record the same address and could not be updated (the rest were synced):\n\n{list}\n\nCheck them on the server; no htweb restart is needed afterwards.",
     serverRunning: "Running",
     serverStopped: "Stopped",
     unknownState: "Unknown state {v}",

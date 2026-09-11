@@ -1083,6 +1083,8 @@ export default {
       "请用新地址重新打开：{url}\n\n" +
       "若几十秒后新地址仍打不开，说明网卡没切成功，请到服务器本机上查看。",
     ipNotApplied: "IP / 掩码 / 网关已经存进数据库，但没有改到网卡上：\n\n{reason}\n\n系统网卡需要另行修改。",
+    filesNotSynced:
+      "旧系统里这几个文件记着同一个地址，这次没能跟着改（其余文件已同步）：\n\n{list}\n\n请到服务器上核对一下，改完不用重启 htweb。",
     serverRunning: "服务器运行",
     serverStopped: "服务器终止",
     unknownState: "未知状态 {v}",
