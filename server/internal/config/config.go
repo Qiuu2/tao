@@ -247,8 +247,10 @@ func Default() *Config {
 		},
 		Legacy: Legacy{
 			ApacheConf: "/opt/apps/a9000/home/apache/httpd.conf",
-			// ⚠ 在 html/htweb 下，不是旧版的 html/ok112 —— 这一份跟着新前端走
-			SwaggerFile: "/opt/apps/a9000/html/htweb/swagger-ui/dist/swagger1.json",
+			// ⚠ 这一份留在 html/ok112 下（不跟着新前端走）：
+			// 它是**旧版对外 API 的 swagger 文档**，由旧系统自己提供，
+			// 新版只是在改服务器 IP 时把里面的 host 跟着改一下。
+			SwaggerFile: "/opt/apps/a9000/html/ok112/swagger-ui/dist/swagger1.json",
 		},
 	}
 }

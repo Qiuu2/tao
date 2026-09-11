@@ -125,4 +125,4 @@ assistant:
 #
 # legacy:
 #   apache_conf: "/opt/apps/a9000/home/apache/httpd.conf"
-#   swagger_file: "/opt/apps/a9000/html/htweb/swagger-ui/dist/swagger1.json"
+#   swagger_file: "/opt/apps/a9000/html/ok112/swagger-ui/dist/swagger1.json"

@@ -18,11 +18,15 @@ import (
 //	                                               第 140 行  http_external_uri = http://<ip>:9001/
 //	<a9000>/html/htweb/ha-post.sh                  第 11 行   route add default gw <网关>
 //	                                               改完再 cp 回 /etc/ha.d/
-//	<a9000>/html/htweb/swagger-ui/dist/swagger1.json 第 11 行 "host": "<ip>:99",
+//	<a9000>/html/ok112/swagger-ui/dist/swagger1.json 第 11 行 "host": "<ip>:99",
 //
-// ⚠ 旧版这两个路径在 `html/ok112/` 下（那是旧 PHP 后台的目录）。
-//   新版这两份跟着新前端走，落在 `html/htweb/` —— 与 deploy/install.sh 的
-//   WEB_DIR 一致。swagger 的具体位置仍可由 config 的 legacy.swagger_file 覆盖。
+// ⚠ 这两份的目录**不一样**，别顺手统一：
+//
+//   - ha-post.sh 跟着新前端走，在 `html/htweb/`（与 deploy/install.sh 的 WEB_DIR 一致）。
+//     它是主备切换时要执行的脚本，归新版管。
+//   - swagger1.json 仍在 `html/ok112/` —— 它是**旧版对外 API 的文档**，
+//     由旧系统自己提供，新版只是在改服务器 IP 时把里面的 host 跟着改一下。
+//     具体位置可由 config 的 legacy.swagger_file 覆盖。
 //
 // 这些值不跟着改的后果不是「界面不好看」：haresources 里那一行是主备切换时
 // 要接管的虚拟 IP，graylog 那两行是日志系统对外报的地址，swagger 那一行是
