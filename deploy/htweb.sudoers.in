@@ -12,6 +12,7 @@
 #
 #   设置服务器时间 / 同步当前时间 → timedatectl set-time
 #   （手工设时间前关掉自动校时）  → timedatectl set-ntp
+#                                  systemctl stop <那几个校时守护>
 #   服务器信息里改 IP / 掩码 / 网关 → nmcli connection modify / up
 #   主备配置改 /etc 下那几个文件   → htweb-ha-apply（本目录下的小脚本）
 #   地址或主备角色改完重启两个服务 → systemctl stop/start heartbeat
@@ -72,7 +73,17 @@
 #
 #   删掉这一条的话，保存照常完成，页面上会说这两个服务没能按新配置起来并给出手工命令。
 
-Cmnd_Alias HTWEB_CLOCK = @TIMEDATECTL@ set-time *, @TIMEDATECTL@ set-ntp *
+# ⚠ HTWEB_CLOCK 的 stop 那几条也是**没有星号**的：单元名一个个写死。
+#   非它们不可的原因：systemd 的 timedated 在自动校时开着时会直接拒绝 SetTime
+#   （Automatic time synchronization is enabled），而 `timedatectl set-ntp false`
+#   只管得住 timesyncd 和在 /usr/lib/systemd/ntp-units.d/ 里登记过的单元 ——
+#   ha-post.sh 第 13 行直接 `systemctl start ntp.service` 起来的那个未必算数。
+#   名单与 server/internal/timeset/clock.go 的 ntpUnits 一一对应。
+
+Cmnd_Alias HTWEB_CLOCK = @TIMEDATECTL@ set-time *, @TIMEDATECTL@ set-ntp *, \
+                         @SYSTEMCTL@ stop systemd-timesyncd, @SYSTEMCTL@ stop ntp, \
+                         @SYSTEMCTL@ stop ntpd, @SYSTEMCTL@ stop chronyd, \
+                         @SYSTEMCTL@ stop chrony
 Cmnd_Alias HTWEB_NET   = @NMCLI@ connection modify *, @NMCLI@ connection up *
 Cmnd_Alias HTWEB_HA    = @A9000_ROOT@/htweb/htweb-ha-apply
 Cmnd_Alias HTWEB_SVC   = @SYSTEMCTL@ stop heartbeat, @SYSTEMCTL@ start heartbeat, \

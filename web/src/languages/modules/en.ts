@@ -1415,6 +1415,9 @@ export default {
     beidouDisabled: "BeiDou time sync disabled",
     beidouSet: "BeiDou time-sync terminal set",
     serverTimeSet: "Server clock set",
+    stopNtpToo: "Also turn off automatic time sync",
+    serverTimeSetAt: "Server time set to {time}",
+    timeNotKept: "The time did not stick",
   },
   remote: {
     keyNo: "Key {n}",

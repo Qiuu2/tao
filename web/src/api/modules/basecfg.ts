@@ -196,8 +196,29 @@ export interface TimeState {
    * 这种机器手工拨的时间是留得住的。所以 ntpActive 不再作为阻断条件。
    */
   ntpSynced: boolean;
+  /** 这台机器上**正在跑**的自动校时服务名（systemd-timesyncd / ntp / ntpd / chronyd…） */
+  ntpUnits: string[];
   /** ntpActive 时的一句提醒，显示在按钮旁边；不是阻断原因 */
   ntpWarning: string;
+}
+
+/**
+ * 一次「设置服务器时间」的结果。
+ *
+ * ⚠ 只看 set 是不够的：现网踩过的坑正是「弹了绿条、时间一点没变」。
+ *   drifted 就是为这个存在的 —— 拨完两秒后读回来对不上，就在这里说明白。
+ */
+export interface ClockResult {
+  /** timedatectl set-time 真的执行成功了 */
+  set: boolean;
+  /** 拨完、核对过之后服务器真正的时间 */
+  serverTime: string;
+  /** 为了让时间留得住而停掉的那几个自动校时服务 */
+  stopped?: string[];
+  /** 非空表示拨过去之后又被拨回来了，值就是说明 */
+  drifted?: string;
+  /** 拨完之后还需要知道的事（比如 ha-post.sh 会把 ntp 再拉起来） */
+  note?: string;
 }
 
 export interface TimeTerminal {
@@ -237,7 +258,13 @@ export const setGpsTerminalApi = (terminalId: number) => http.put<{ updated: boo
  * stopNtp 对应界面上的「同时关闭自动校时」勾选框：勾了才会执行
  * `timedatectl set-ntp false`。关系统服务是操作员的决定，程序不代劳。
  */
-export const setServerClockApi = (time: string, stopNtp = false) =>
-  http.put<{ updated: boolean }>(PORT1 + `/api/time/clock`, { time, stopNtp });
+/**
+ * 设置服务器系统时间。
+ *
+ * ⚠ stopNtp 默认 **true**：自动校时开着时 systemd 会直接拒绝拨表
+ *   （Automatic time synchronization is enabled），传 false 等于这个接口必定失败。
+ */
+export const setServerClockApi = (time: string, stopNtp = true) =>
+  http.put<ClockResult>(PORT1 + `/api/time/clock`, { time, stopNtp });
 export const syncTerminalTimeApi = (ids: number[]) =>
   http.post<{ sent: number; note: string }>(PORT1 + `/api/time/sync`, { ids });

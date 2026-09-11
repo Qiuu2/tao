@@ -1421,6 +1421,9 @@ export default {
     beidouDisabled: "已停用北斗校时",
     beidouSet: "已设置北斗校时终端",
     serverTimeSet: "已设置服务器时间",
+    stopNtpToo: "同时关闭自动校时",
+    serverTimeSetAt: "服务器时间已设置为 {time}",
+    timeNotKept: "时间没留住",
   },
   remote: {
     keyNo: "{n} 键",

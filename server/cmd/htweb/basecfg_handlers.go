@@ -474,8 +474,14 @@ func (a *app) handleTimeTerminals(w http.ResponseWriter, r *http.Request) {
 // ⚠ 服务账号没有免密 sudo 时做不到。这时接口返回一条说明缺什么的错误，
 // 而不是假装成功 —— 装 deploy/install-sudoers.sh 即可开通。详见 timeset/clock.go。
 //
-// stopNTP 对应界面上的「同时关闭自动校时」勾选框。关系统服务这件事
-// 只在明确勾选时才做，不由程序替操作员决定。
+// stopNTP 对应界面上的「同时关闭自动校时」勾选框（默认勾着）。
+//
+// ⚠ 不勾的话 systemd 会**直接拒绝**拨表（Automatic time synchronization is
+// enabled），这个按钮就是按不动的。之所以还留这个开关而不是写死，
+// 是因为停系统服务终归该让操作员看见自己在做什么。
+//
+// 返回体里除了 updated，还有停了谁、拨完有没有被拨回去、下一次会不会又被拨 ——
+// 现网踩过的坑正是「绿条弹了、时间没变」，光回一个 updated 不够。
 func (a *app) handleTimeSetClock(w http.ResponseWriter, r *http.Request) {
 	var in struct {
 		Time    string `json:"time"`
@@ -484,11 +490,12 @@ func (a *app) handleTimeSetClock(w http.ResponseWriter, r *http.Request) {
 	if !httpx.DecodeJSON(w, r, &in) {
 		return
 	}
-	if err := a.times.SetClock(r.Context(), in.Time, in.StopNTP); err != nil {
+	res, err := a.times.SetClock(r.Context(), in.Time, in.StopNTP)
+	if err != nil {
 		a.failTime(w, "设置服务器时间", err)
 		return
 	}
-	httpx.OK(w, map[string]interface{}{"updated": true})
+	httpx.OK(w, res)
 }
 
 type ntpReq struct {

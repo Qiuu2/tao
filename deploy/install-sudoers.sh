@@ -130,6 +130,11 @@ if sudo -u "$SERVICE_USER" sudo -n -l "$TIMEDATECTL" set-time '2000-01-01 00:00:
 else
   echo "✗ $SERVICE_USER 仍然不能免密执行 timedatectl set-time —— 请把上面的输出发给开发"
 fi
+if sudo -u "$SERVICE_USER" sudo -n -l "$SYSTEMCTL" stop ntp >/dev/null 2>&1; then
+  echo "✓ $SERVICE_USER 可以免密停掉自动校时守护（手工设时间才留得住）"
+else
+  echo "✗ $SERVICE_USER 仍然不能免密停自动校时 —— 「设置服务器时间」会被系统拒绝"
+fi
 if [ -x "$NMCLI" ]; then
   # 探的是程序真正要跑的那个形态（connection modify 带参数），与 netaddr.go 一致
   if sudo -u "$SERVICE_USER" sudo -n -l "$NMCLI" connection modify x ipv4.method manual >/dev/null 2>&1; then

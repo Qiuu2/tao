@@ -79,7 +79,24 @@
           <el-button type="primary" :loading="clockBusy" :disabled="!canSetClock" @click="setClock('manual')">
             {{ $t("time.setServerTime") }}
           </el-button>
+          <!--
+            ⚠ 这个勾必须有、而且默认勾上。
+              systemd 在自动校时开着时**直接拒绝**拨表
+              （Automatic time synchronization is enabled），不关就等于按钮按不动。
+              早前这里是写死 false 的（理由是「6.png 上没有这个勾」），
+              结果现网表现就是「点了没反应，时间不变」。
+              它照样是个明摆着的勾选框而不是隐藏副作用 —— 停系统服务该让人看见。
+          -->
+          <el-checkbox v-model="stopNtp">{{ $t("time.stopNtpToo") }}</el-checkbox>
         </div>
+
+        <!-- 按钮为什么是灰的，以前只有后端知道，页面上一个字都没有 -->
+        <el-alert v-if="st && !st.canSetClock && st.clockBlockReason" type="warning" :closable="false" class="mt8">
+          {{ st.clockBlockReason }}
+        </el-alert>
+        <el-alert v-else-if="st?.ntpWarning" type="info" :closable="false" class="mt8">
+          {{ st.ntpWarning }}
+        </el-alert>
       </el-form>
 
       <el-divider />
@@ -223,6 +240,12 @@ const daysInMonth = computed(() => new Date(cf.year, cf.month, 0).getDate());
 /** 服务端没有改时钟的能力时按钮置灰；能力由 /api/time 的 canSetClock 告知 */
 const canSetClock = computed(() => !!st.value?.canSetClock && !st.value?.readOnly);
 
+/**
+ * 「同时关闭自动校时」。默认勾上 —— 不关的话 systemd 会拒绝拨表，
+ * 这个按钮就是没用的（现网实测：点了没反应，时间不变）。
+ */
+const stopNtp = ref(true);
+
 const setClock = async (from: "manual" | "browser") => {
   // 变量名不能叫 t —— i18n 的 t 在这一页也要用。
   const when = from === "browser" ? new Date() : new Date(cf.year, cf.month - 1, cf.day, cf.hour, cf.minute, cf.second);
@@ -241,10 +264,22 @@ const setClock = async (from: "manual" | "browser") => {
 
   clockBusy.value = true;
   try {
-    // 第二个参数是「同时关闭自动校时」。6.png 上没有这个勾选框，所以固定不关 ——
-    // 关掉一个系统服务不该是某个按钮的隐藏副作用。
-    await setServerClockApi(text, false);
-    ElMessage.success(t("time.serverTimeSet"));
+    const { data } = await setServerClockApi(text, stopNtp.value);
+
+    /*
+      ⚠ 不能只弹一句「设置成功」就完事。
+
+      拨表这件事有一种很坏的失败方式：命令返回 0，两秒后时间又被别的东西
+      拨回去了 —— 页面上绿条弹过，运维去看服务器却一点没变，
+      然后来问「为什么没用」。后端为此会读回来核对一次，对不上就填 drifted。
+    */
+    if (data.drifted) {
+      await ElMessageBox.alert(data.drifted, t("time.timeNotKept"), { confirmButtonText: t("time.gotIt") });
+    } else {
+      ElMessage.success(t("time.serverTimeSetAt", { time: data.serverTime }));
+    }
+    // 停掉了哪几个服务、下一次还会不会被拨回来 —— 都是他要知道的
+    if (data.note) ElMessage.info(data.note);
     await load();
   } finally {
     clockBusy.value = false;
@@ -315,7 +350,13 @@ onUnmounted(() => {
 }
 .clock-actions {
   display: flex;
+  gap: 14px;
+  align-items: center;
   justify-content: center;
+}
+.mt8 {
+  max-width: 760px;
+  margin: 10px auto 0;
 }
 // 「本地当前时间」「北斗校时」两行：标签右对齐到同一条竖线（照 6.png）
 .line {
