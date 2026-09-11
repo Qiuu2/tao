@@ -41,6 +41,8 @@ import (
 type haTargets struct {
 	// 改内容的
 	edits []haEdit
+	// /etc/hosts 是整份重写，不走 edits（理由见 hostsRewrite）
+	hosts *hostsRewrite
 	// 换文件的（把 src 拷成 dst）
 	copies []haCopy
 	// 搬文件的（旧版用 mv -f）
@@ -78,30 +80,55 @@ type haCopy struct {
 	what     string
 }
 
+// hostsRewrite 是 /etc/hosts 的整份重写计划。
+//
+// # 为什么这一个文件不按锚点改，而是整份重写
+//
+// 另外那几个文件都能「认一行、换一行」。/etc/hosts 不行，有两个原因：
+//
+//  1. **改名字的时候没有锚点可认**。旧版是 `sed -i '9c <主机IP>  <主机名>'`、
+//     `sed -i '10c <备机IP>  <备机名>'` —— 按行号写，所以名字改成什么都写得进去。
+//     换成「找到写着新名字的那一行再改」就不成立了：把 ha51 改名叫 a9000-master
+//     时，文件里根本没有哪一行写着 a9000-master，于是一行都不写，
+//     库里名字变了、hosts 里还是旧名 —— 主备互相认不出对方。
+//     所以要认的是**旧名**，而旧名只有 before 知道。
+//
+//  2. **不能碰 localhost 那一行**。旧版 `sed -i '2c 127.0.0.1  <本机名>'` 写死第 2 行；
+//     在 Debian/Ubuntu/麒麟上第 2 行是 `127.0.1.1 <hostname>`，不是 localhost。
+//     而「文件里第一条 127.0.0.1」在绝大多数机器上恰恰**就是** localhost 那一行 ——
+//     照这个锚点改下去，`127.0.0.1 localhost` 就没了，这台机器上一大票
+//     连本地回环的东西会立刻出问题。Go 的 RE2 没有负向前瞻，
+//     「127.0.0.1 开头但不是 localhost 的那一行」写不成一条正则。
+//
+// 于是改成：**先按主机名清理，再把三行补回去**。
+// 清理只针对 purge 里那几个名字（新旧本机名 / 主机名 / 备机名），
+// 别人加的条目一律不动，写着 localhost 的行更是永远不碰。
+type hostsRewrite struct {
+	path string
+	// purge 是要从文件里清掉的主机名 —— **新旧都要在内**，
+	// 否则改名之后旧名那一行会留在文件里指着同一个地址。
+	purge []string
+	// entries 按这个顺序补回文件末尾。
+	// 本机名那一条排在最前：主机上本机名同时出现在回环行和主机行，
+	// 解析取文件里第一条，排前面才能让本机名解到 127.0.0.1（与旧版第 2 行一致）。
+	entries []hostsEntry
+}
+
+type hostsEntry struct {
+	ip, name string
+}
+
 var (
 	reHANodeLine  = regexp.MustCompile(`(?m)^[ \t]*node[ \t]+.*$`)
 	reHADeadtime  = regexp.MustCompile(`(?m)^[ \t]*deadtime[ \t]+.*$`)
 	reHAInitdead  = regexp.MustCompile(`(?m)^[ \t]*initdead[ \t]+.*$`)
 	reHABcast     = regexp.MustCompile(`(?m)^[ \t]*bcast[ \t]+.*$`)
 	reHAUcast     = regexp.MustCompile(`(?m)^[ \t]*ucast[ \t]+.*$`)
-	reHostLoop    = regexp.MustCompile(`(?m)^[ \t]*127\.0\.0\.1[ \t]+.*$`)
 	reRsyncDstIP  = regexp.MustCompile(`(?m)^[ \t]*dstip=.*$`)
 	reNtpdate     = regexp.MustCompile(`(?m)^[ \t]*ntpdate[ \t]+.*$`)
 	reMasterHost  = regexp.MustCompile(`master_host\s*=\s*'[^']*'`)
-	reHostsEntry  = `(?m)^[ \t]*\d+\.\d+\.\d+\.\d+[ \t]+%s[ \t]*$`
 	reHAResHeadRe = regexp.MustCompile(`(?m)^([^\s#]+)(\s.*\bha-post[ \t]*)$`)
 )
-
-// hostsEntryFor 造一个「认主机名」的正则：`<任意IP>  <名字>`。
-//
-// 旧版是死写第 9 行、第 10 行。认名字稳得多 —— /etc/hosts 上面那几行注释
-// 每个发行版都不一样，麒麟上还会多出 IPv6 那几条。
-func hostsEntryFor(name string) *regexp.Regexp {
-	if strings.TrimSpace(name) == "" {
-		return nil
-	}
-	return regexp.MustCompile(fmt.Sprintf(reHostsEntry, regexp.QuoteMeta(name)))
-}
 
 // haPaths 是这一页要碰的全部路径。
 type haPaths struct {
@@ -162,7 +189,7 @@ func (s *Service) haPathsFor() haPaths {
 //
 // isMaster 来自 HA.Model（1 = 主机，2 = 备机）；
 // on 来自 HA.Backup（旧版的 serveritem / openorclose：1 = 启用主备，0 = 关掉）。
-func (s *Service) buildHATargets(in Input) haTargets {
+func (s *Service) buildHATargets(before *Params, in Input) haTargets {
 	p := s.haPathsFor()
 	isMaster := in.HA.Model != 2
 	on := in.HA.Backup == 1
@@ -195,14 +222,38 @@ func (s *Service) buildHATargets(in Input) haTargets {
 	)
 
 	// ── /etc/hosts：回环那一行写本机名，另外两行分别是主机与备机 ──
-	t.edits = append(t.edits,
-		haEdit{path: p.Hosts, re: reHostLoop, line: "127.0.0.1  " + self, what: "hosts 回环行（本机名）", nth: 0})
-	if re := hostsEntryFor(in.HA.Name); re != nil {
-		t.edits = append(t.edits, haEdit{path: p.Hosts, re: re, line: in.HA.MasterIP + "  " + in.HA.Name, what: "hosts 主机条目", nth: 0})
+	//
+	// 对应旧版这三条：
+	//
+	//	sed -i '2c 127.0.0.1  <本机名>'   /etc/hosts
+	//	sed -i '9c <主机IP>  <主机名>'    /etc/hosts
+	//	sed -i '10c <备机IP>  <备机名>'   /etc/hosts
+	//
+	// 这里改成整份重写 —— 按行号写在改名字时会写错地方，理由见 hostsRewrite。
+	h := &hostsRewrite{path: p.Hosts}
+	h.purge = []string{self, in.HA.Name, in.HA.SlaveName}
+	if before != nil {
+		// 改名的场合，文件里写着的是**旧**名字 —— 不把旧名一起清掉，
+		// 补完新行之后旧名那一条还留在文件里，指着同一个地址。
+		oldSelf := before.HA.Name
+		if before.HA.Model == 2 {
+			oldSelf = before.HA.SlaveName
+		}
+		h.purge = append(h.purge, oldSelf, before.HA.Name, before.HA.SlaveName)
 	}
-	if re := hostsEntryFor(in.HA.SlaveName); re != nil {
-		t.edits = append(t.edits, haEdit{path: p.Hosts, re: re, line: in.HA.SlaveIP + "  " + in.HA.SlaveName, what: "hosts 备机条目", nth: 0})
+	// 本机名 → 回环。主机上 self 就是主机名，于是它在下面的主机条目里还会
+	// 出现一次；这是旧版的样子（第 2 行 + 第 9 行），保持一致。
+	if strings.TrimSpace(self) != "" {
+		h.entries = append(h.entries, hostsEntry{"127.0.0.1", self})
 	}
+	// 地址或名字缺一个就不补这一条 —— 宁可少一行，也不写半行进去。
+	if strings.TrimSpace(in.HA.Name) != "" && strings.TrimSpace(in.HA.MasterIP) != "" {
+		h.entries = append(h.entries, hostsEntry{in.HA.MasterIP, in.HA.Name})
+	}
+	if strings.TrimSpace(in.HA.SlaveName) != "" && strings.TrimSpace(in.HA.SlaveIP) != "" {
+		h.entries = append(h.entries, hostsEntry{in.HA.SlaveIP, in.HA.SlaveName})
+	}
+	t.hosts = h
 
 	// ── /etc/hostname：整个文件就一行 ──
 	t.edits = append(t.edits, haEdit{path: p.Hostname, re: regexp.MustCompile(`(?s)\A.*\z`), line: self + "\n", what: "主机名（/etc/hostname）", nth: 0})
@@ -275,8 +326,8 @@ func haChanged(before *Params, in Input) bool {
 }
 
 // syncHAFiles 把这台机器按主/备角色配好。**要么全做，要么全不做**。
-func (s *Service) syncHAFiles(in Input) []FileSync {
-	t := s.buildHATargets(in)
+func (s *Service) syncHAFiles(before *Params, in Input) []FileSync {
+	t := s.buildHATargets(before, in)
 
 	// ── 先整体探一遍 ──
 	//
@@ -286,6 +337,11 @@ func (s *Service) syncHAFiles(in Input) []FileSync {
 	for _, e := range t.edits {
 		if why := probeWritable(e.path); why != "" {
 			blocked = append(blocked, fmt.Sprintf("%s（%s）", e.path, why))
+		}
+	}
+	if t.hosts != nil {
+		if why := probeWritable(t.hosts.path); why != "" {
+			blocked = append(blocked, fmt.Sprintf("%s（%s）", t.hosts.path, why))
 		}
 	}
 	for _, c := range t.copies {
@@ -334,6 +390,9 @@ func (s *Service) syncHAFiles(in Input) []FileSync {
 	out := []FileSync{}
 	for _, e := range t.edits {
 		out = append(out, applyHAEdit(e))
+	}
+	if t.hosts != nil {
+		out = append(out, applyHostsRewrite(*t.hosts))
 	}
 	for _, c := range t.copies {
 		out = append(out, copyFileAs(c))
@@ -522,6 +581,106 @@ func applyHAEdit(e haEdit) FileSync {
 	out.Status = SyncUpdated
 	out.Detail = strings.TrimSpace(line)
 	return out
+}
+
+// applyHostsRewrite 重写 /etc/hosts：先清掉 purge 里那几个名字的条目，
+// 再把 entries 那几行补到末尾。别的行一律原样留着。
+func applyHostsRewrite(h hostsRewrite) FileSync {
+	out := FileSync{Path: h.path, What: "主机名解析（/etc/hosts）"}
+	raw, err := os.ReadFile(h.path)
+	if os.IsNotExist(err) {
+		out.Status = SyncMissing
+		out.Detail = "文件不存在"
+		return out
+	}
+	if err != nil {
+		out.Status = SyncFailed
+		out.Detail = "读取失败：" + err.Error()
+		return out
+	}
+	if len(h.entries) == 0 {
+		// 一条都算不出来（名字和地址都是空的）——那就什么都别动。
+		out.Status = SyncUnchanged
+		out.Detail = "服务器名称与主备地址都是空的，没有可写的条目"
+		return out
+	}
+
+	drop := map[string]bool{}
+	for _, n := range h.purge {
+		if n = strings.TrimSpace(n); n != "" {
+			drop[n] = true
+		}
+	}
+
+	var keep []string
+	body := strings.TrimRight(string(raw), "\n")
+	if body != "" {
+		for _, ln := range strings.Split(body, "\n") {
+			if hostsLineDropped(ln, drop) {
+				continue
+			}
+			keep = append(keep, ln)
+		}
+	}
+	for _, e := range h.entries {
+		keep = append(keep, e.ip+"  "+e.name)
+	}
+	updated := strings.Join(keep, "\n") + "\n"
+	if updated == string(raw) {
+		out.Status = SyncUnchanged
+		return out
+	}
+	if err := atomicWrite(h.path, []byte(updated)); err != nil {
+		out.Status = SyncFailed
+		out.Detail = err.Error()
+		return out
+	}
+	lines := make([]string, 0, len(h.entries))
+	for _, e := range h.entries {
+		lines = append(lines, e.ip+"  "+e.name)
+	}
+	out.Status = SyncUpdated
+	out.Detail = strings.Join(lines, "；")
+	return out
+}
+
+// hostsLineDropped 判断 /etc/hosts 的某一行该不该清掉。
+//
+// 只清「主机名落在 drop 里」的行。空行、注释行、以及**任何写着 localhost 的行**
+// 都留着 —— 后者尤其重要：`127.0.0.1 localhost` 一旦没了，
+// 这台机器上一大票连本地回环的东西会立刻出问题，而那时候界面也已经打不开了。
+func hostsLineDropped(line string, drop map[string]bool) bool {
+	body := line
+	if i := strings.IndexByte(body, '#'); i >= 0 {
+		body = body[:i]
+	}
+	f := strings.Fields(body)
+	if len(f) < 2 {
+		return false // 注释、空行、或者只有一个地址没有名字
+	}
+	hit := false
+	for _, n := range f[1:] {
+		if isLocalhostName(n) {
+			return false
+		}
+		if drop[n] {
+			hit = true
+		}
+	}
+	return hit
+}
+
+// isLocalhostName 认出回环那几个保留名（含 IPv6 那几条和 localhost.localdomain）。
+func isLocalhostName(n string) bool {
+	l := strings.ToLower(n)
+	switch l {
+	case "localhost", "localhost.localdomain", "localhost4", "localhost6",
+		"localhost4.localdomain4", "localhost6.localdomain6",
+		"ip6-localhost", "ip6-loopback", "ip6-localnet",
+		"ip6-mcastprefix", "ip6-allnodes", "ip6-allrouters":
+		return true
+	}
+	return strings.HasPrefix(l, "localhost.")
 }
 
 // copyFileAs 把 src 原样拷成 dst 并设好权限。原子替换，理由与 atomicWrite 一致。
