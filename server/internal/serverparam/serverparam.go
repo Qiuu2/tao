@@ -463,7 +463,12 @@ func (s *Service) Save(ctx context.Context, in Input, webPort string) (*SaveResu
 	var files []FileSync
 	if before.Network.IP != in.Network.IP || before.Network.Gateway != in.Network.Gateway ||
 		before.Network.SubnetMask != in.Network.SubnetMask {
-		files = s.syncLegacyFiles(in, in.HA.Name)
+		files = append(files, s.syncLegacyFiles(in, in.HA.Name)...)
+	}
+	// 主备那几项动了就按新角色把这台机器重新配一遍（见 hasync.go）。
+	// 它是**整组要么全做要么全不做**的 —— 改一半的 HA 配置比一点没改糟得多。
+	if haChanged(before, in) {
+		files = append(files, s.syncHAFiles(in)...)
 	}
 
 	plan := s.planNetwork(ctx, before, in, webPort)
