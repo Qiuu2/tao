@@ -1076,6 +1076,13 @@ export default {
     savedButMore: "保存成功，但还需要处理",
     needExtraSteps: "以下改动需要额外操作才会真正生效：\n\n{reasons}",
     gotIt: "知道了",
+    servicesRestarted: "已重启：{list}",
+    servicesNotRestarted:
+      "设置已经存进数据库、配置文件也改好了，但下面这些服务没能重启 —— " +
+      "它们现在跑的还是旧配置：\n\n{list}\n\n" +
+      "请到服务器上手工重启：\n" +
+      "  sudo systemctl restart heartbeat\n" +
+      "  sudo docker restart a9000_audioserver",
     ipSwitchTitle: "网卡地址正在切换",
     ipSwitching:
       "服务器网卡（{conn} · {device}）正在切换到 {address}。\n\n" +

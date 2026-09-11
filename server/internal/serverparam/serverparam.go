@@ -389,6 +389,10 @@ type SaveResult struct {
 	// （haresources / graylog.conf / ha-post.sh / swagger1.json）。
 	// 只在 IP 或网关变了时才有内容。见 syncfiles.go。
 	Files []FileSync `json:"files,omitempty"`
+	// Services 是「重启吃这些配置的服务」那一步的结果
+	// （heartbeat 与 a9000_audioserver）。只在地址或主备角色变了时才有内容。
+	// 见 svcrestart.go。
+	Services []ServiceRestart `json:"services,omitempty"`
 }
 
 // Save 写入参数。
@@ -467,14 +471,26 @@ func (s *Service) Save(ctx context.Context, in Input, webPort string) (*SaveResu
 	// 它们失败不影响这次保存：库已经写完了，把文件同步的失败算成保存失败，
 	// 只会让人以为什么都没做成，反而去重试一遍。逐个文件的结果回给界面。
 	var files []FileSync
-	if before.Network.IP != in.Network.IP || before.Network.Gateway != in.Network.Gateway ||
-		before.Network.SubnetMask != in.Network.SubnetMask {
+	netDirty := before.Network.IP != in.Network.IP || before.Network.Gateway != in.Network.Gateway ||
+		before.Network.SubnetMask != in.Network.SubnetMask
+	if netDirty {
 		files = append(files, s.syncLegacyFiles(in, in.HA.Name)...)
 	}
 	// 主备那几项动了就按新角色把这台机器重新配一遍（见 hasync.go）。
 	// 它是**整组要么全做要么全不做**的 —— 改一半的 HA 配置比一点没改糟得多。
-	if haChanged(before, in) {
+	haDirty := haChanged(before, in)
+	if haDirty {
 		files = append(files, s.syncHAFiles(before, in)...)
+	}
+
+	// 文件都落盘了，再把吃这些配置的两个服务重启一遍（见 svcrestart.go）：
+	// heartbeat 重读 ha.cf / haresources，a9000_audioserver 重读 serverbaseparam。
+	//
+	// ⚠ 顺序：一定在文件写完**之后**（否则重启起来读的还是旧配置），
+	//   也在动网卡**之前**（网卡一切这条连接就断了，结果没人看得见）。
+	var services []ServiceRestart
+	if netDirty || haDirty {
+		services = s.restartServices(ctx)
 	}
 
 	plan := s.planNetwork(ctx, before, in, webPort)
@@ -487,7 +503,8 @@ func (s *Service) Save(ctx context.Context, in Input, webPort string) (*SaveResu
 		RequiresRestart: len(restartReasons(ctx, before, in)) > 0,
 		RestartReasons:  restartReasons(ctx, before, in),
 		Network:         plan,
-		Files:           files}, nil
+		Files:           files,
+		Services:        services}, nil
 }
 
 // syncServerConfig 维护 serverconfig 那一行。

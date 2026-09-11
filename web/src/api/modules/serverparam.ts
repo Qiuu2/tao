@@ -144,12 +144,31 @@ export interface SpFileSync {
   detail?: string;
 }
 
+/**
+ * 吃这些配置的两个服务的重启结果。
+ * 只在地址（虚拟或主/备）、掩码、网关或主备角色变了时才有。
+ * 见 serverparam/svcrestart.go。
+ *
+ * · heartbeat          重读 /etc/ha.d/ha.cf 与 haresources
+ * · a9000_audioserver  重读 serverbaseparam（它是 docker 容器，不是 systemd 单元）
+ */
+export interface SpServiceRestart {
+  /** 服务名，给人核对用 */
+  name: string;
+  /** 为什么要重启它 */
+  what: string;
+  /** updated = 重启了；missing = 这台机器上没有它；failed = 没能重启（多半缺免密 sudo） */
+  status: "updated" | "unchanged" | "missing" | "no-anchor" | "failed";
+  detail?: string;
+}
+
 export interface SpSaveResult {
   updated: boolean;
   requiresRestart: boolean;
   restartReason: string[];
   network?: SpNetworkApply;
   files?: SpFileSync[];
+  services?: SpServiceRestart[];
 }
 
 export interface TableImpact {

@@ -14,6 +14,8 @@
 #   （手工设时间前关掉自动校时）  → timedatectl set-ntp
 #   服务器信息里改 IP / 掩码 / 网关 → nmcli connection modify / up
 #   主备配置改 /etc 下那几个文件   → htweb-ha-apply（本目录下的小脚本）
+#   地址或主备角色改完重启两个服务 → systemctl restart heartbeat
+#                                  docker restart a9000_audioserver
 #   版本设置的「提交」            → update_audioserver.sh，它内部全是 sudo docker
 #
 # 没有这几条时程序不会去猜密码、也不会假装成功：接口会探测一次，
@@ -51,10 +53,21 @@
 #   ⚠⚠ htweb-ha-apply 必须是 root 属主、且服务账号不可写 ——
 #       谁能改那个脚本，谁就等于拿到了 root。install-sudoers.sh 会检查这一点。
 #   不做主备的部署把 HTWEB_HA 删掉即可，主备那一页会整组跳过并说明原因。
+#
+# ⚠ HTWEB_SVC 这两条**一个星号都没有**：服务名和容器名都写死在规则里，
+#   htweb 只能重启 heartbeat 这一个单元和 a9000_audioserver 这一个容器，
+#   不能 stop、不能 restart 别的东西，更不能 `docker run` 任何镜像。
+#   （注意 `docker restart` 与 `docker run` 是两条不同的子命令，
+#   这条规则给不出后者 —— 后者在 HTWEB_AUDIO 那个脚本里，是另一回事。）
+#
+#   为什么需要：地址或主备角色改完，heartbeat 要重读 ha.cf / haresources，
+#   a9000_audioserver 要重读 serverbaseparam，不重启就还是按旧配置跑。
+#   删掉这一条的话，保存照常完成，页面上会说「这两个服务没能重启」并给出手工命令。
 
 Cmnd_Alias HTWEB_CLOCK = @TIMEDATECTL@ set-time *, @TIMEDATECTL@ set-ntp *
 Cmnd_Alias HTWEB_NET   = @NMCLI@ connection modify *, @NMCLI@ connection up *
 Cmnd_Alias HTWEB_HA    = @A9000_ROOT@/htweb/htweb-ha-apply
+Cmnd_Alias HTWEB_SVC   = @SYSTEMCTL@ restart heartbeat, @DOCKER@ restart a9000_audioserver
 Cmnd_Alias HTWEB_AUDIO = @A9000_ROOT@/script/cmd/update_audioserver.sh
 
-@SERVICE_USER@ ALL=(root) NOPASSWD: HTWEB_CLOCK, HTWEB_NET, HTWEB_HA, HTWEB_AUDIO
+@SERVICE_USER@ ALL=(root) NOPASSWD: HTWEB_CLOCK, HTWEB_NET, HTWEB_HA, HTWEB_SVC, HTWEB_AUDIO

@@ -1070,6 +1070,13 @@ export default {
     savedButMore: "Saved, but there is more to do",
     needExtraSteps: "These changes need extra steps before they take effect:\n\n{reasons}",
     gotIt: "Got it",
+    servicesRestarted: "Restarted: {list}",
+    servicesNotRestarted:
+      "The settings were saved and the config files updated, but these services could not be restarted — " +
+      "they are still running the old configuration:\n\n{list}\n\n" +
+      "Restart them on the server by hand:\n" +
+      "  sudo systemctl restart heartbeat\n" +
+      "  sudo docker restart a9000_audioserver",
     ipSwitchTitle: "The network address is switching",
     ipSwitching:
       "The server's network interface ({conn} · {device}) is switching to {address}.\n\n" +

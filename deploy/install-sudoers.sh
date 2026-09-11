@@ -50,6 +50,20 @@ if [ -z "$NMCLI" ]; then
   echo "⚠ 未找到 nmcli —— 这台机器不能在 Web 上改服务器 IP（页面会说明原因）"
 fi
 
+# systemctl / docker：地址或主备角色改完要重启 heartbeat 与 a9000_audioserver。
+# 找不到不算致命 —— 规则照写，程序探不通会在页面上说明并给出手工命令。
+SYSTEMCTL=""
+for p in /usr/bin/systemctl /bin/systemctl; do
+  [ -x "$p" ] && SYSTEMCTL="$p" && break
+done
+[ -n "$SYSTEMCTL" ] || { SYSTEMCTL=/usr/bin/systemctl; echo "⚠ 未找到 systemctl —— heartbeat 要手工重启"; }
+
+DOCKER=""
+for p in /usr/bin/docker /bin/docker /usr/local/bin/docker; do
+  [ -x "$p" ] && DOCKER="$p" && break
+done
+[ -n "$DOCKER" ] || { DOCKER=/usr/bin/docker; echo "⚠ 未找到 docker —— a9000_audioserver 要手工重启"; }
+
 UPDATE_SH="$A9000_ROOT/script/cmd/update_audioserver.sh"
 if [ ! -f "$UPDATE_SH" ]; then
   # 不是致命错误：有些机器不带版本包。规则照样写（路径固定），
@@ -91,6 +105,8 @@ sed -e "s|@SERVICE_USER@|$SERVICE_USER|g" \
     -e "s|@A9000_ROOT@|$A9000_ROOT|g" \
     -e "s|@TIMEDATECTL@|$TIMEDATECTL|g" \
     -e "s|@NMCLI@|$NMCLI|g" \
+    -e "s|@SYSTEMCTL@|$SYSTEMCTL|g" \
+    -e "s|@DOCKER@|$DOCKER|g" \
     "$TEMPLATE" > "$TMP"
 
 # 语法校验。-c 检查、-f 指定文件；不通过就地退出，目标文件一个字节都不动。
@@ -128,6 +144,16 @@ if [ -f "$HA_APPLY" ]; then
   else
     echo "✗ $SERVICE_USER 仍然不能免密执行 htweb-ha-apply"
   fi
+fi
+if sudo -u "$SERVICE_USER" sudo -n -l "$SYSTEMCTL" restart heartbeat >/dev/null 2>&1; then
+  echo "✓ $SERVICE_USER 可以免密执行 systemctl restart heartbeat"
+else
+  echo "✗ $SERVICE_USER 仍然不能免密重启 heartbeat（主备配置改完要手工重启它）"
+fi
+if sudo -u "$SERVICE_USER" sudo -n -l "$DOCKER" restart a9000_audioserver >/dev/null 2>&1; then
+  echo "✓ $SERVICE_USER 可以免密执行 docker restart a9000_audioserver"
+else
+  echo "✗ $SERVICE_USER 仍然不能免密重启 a9000_audioserver（地址改完要手工重启它）"
 fi
 if [ -f "$UPDATE_SH" ]; then
   if sudo -u "$SERVICE_USER" sudo -n -l "$UPDATE_SH" >/dev/null 2>&1; then

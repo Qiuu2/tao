@@ -316,6 +316,9 @@ Web 端**不直接控制硬件**，而是：写数据库 + 通过 UDP/TCP 向后
 「主备服务器配置」要写 `/etc/hosts`、`/etc/hostname`、`/etc/ha.d/*`、`/etc/crontab`，
 走的是随包一起装的 `htweb-ha-apply`（`root:root 755`，只认 6 个目标名、内容走 stdin）；
 没装它或没给那条 sudo 时，那一页**整组跳过**并说明缺什么 —— 绝不留下改了一半的 HA 配置。
+地址或主备角色改完还要重启 `heartbeat`（systemd 单元）与 `a9000_audioserver`
+（**docker 容器**），走 `HTWEB_SVC` 那条不带通配符的规则；缺规则时保存照常完成，
+页面上会说这两个服务没能重启并给出手工命令。
 
 ⚠ 与之配套的一条：systemd 单元里**不能**有 `NoNewPrivileges=true`。
 它会禁掉 setuid 提权路径，而 sudo 正是 setuid 程序，
