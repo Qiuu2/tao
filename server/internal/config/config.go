@@ -246,8 +246,9 @@ func Default() *Config {
 			HistoryLimit: 1000,
 		},
 		Legacy: Legacy{
-			ApacheConf:  "/opt/apps/a9000/home/apache/httpd.conf",
-			SwaggerFile: "/opt/apps/a9000/html/ok112/swagger-ui/dist/swagger1.json",
+			ApacheConf: "/opt/apps/a9000/home/apache/httpd.conf",
+			// ⚠ 在 html/htweb 下，不是旧版的 html/ok112 —— 这一份跟着新前端走
+			SwaggerFile: "/opt/apps/a9000/html/htweb/swagger-ui/dist/swagger1.json",
 		},
 	}
 }

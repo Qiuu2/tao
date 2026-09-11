@@ -229,7 +229,7 @@ func TestSyncLegacyFilesEndToEnd(t *testing.T) {
 	write(t, root, "home/heartbeat/haresource", "a9000 192.168.2.159/8/eth0 ha-post\n")
 	write(t, root, "home/graylog/config/graylog.conf",
 		"http_publish_uri = http://192.168.2.159:9001/\nhttp_external_uri = http://192.168.2.159:9001/\n")
-	write(t, root, "html/ok112/ha-post.sh", "#!/bin/sh\nroute add default gw 192.168.2.1\n")
+	write(t, root, "html/htweb/ha-post.sh", "#!/bin/sh\nroute add default gw 192.168.2.1\n")
 	swagger := write(t, root, "swagger1.json", "{\n    \"host\": \"192.168.2.159:99\"\n}\n")
 
 	s := &Service{a9000Root: root, swaggerFile: swagger, etcRoot: t.TempDir()}
@@ -257,7 +257,7 @@ func TestSyncLegacyFilesEndToEnd(t *testing.T) {
 	if v := read(t, filepath.Join(root, "home/graylog/config/graylog.conf")); strings.Contains(v, "192.168.2.159") {
 		t.Errorf("graylog 里还有旧地址：%q", v)
 	}
-	if v := read(t, filepath.Join(root, "html/ok112/ha-post.sh")); !strings.Contains(v, "route add default gw 10.0.0.1") {
+	if v := read(t, filepath.Join(root, "html/htweb/ha-post.sh")); !strings.Contains(v, "route add default gw 10.0.0.1") {
 		t.Errorf("ha-post.sh 网关不对：%q", v)
 	}
 	if v := read(t, swagger); !strings.Contains(v, `"host": "10.0.0.5:99"`) {

@@ -16,9 +16,13 @@ import (
 //	<a9000>/home/heartbeat/haresource              同上
 //	<a9000>/home/graylog/config/graylog.conf       第 126 行  http_publish_uri  = http://<ip>:9001/
 //	                                               第 140 行  http_external_uri = http://<ip>:9001/
-//	<a9000>/html/ok112/ha-post.sh                  第 11 行   route add default gw <网关>
+//	<a9000>/html/htweb/ha-post.sh                  第 11 行   route add default gw <网关>
 //	                                               改完再 cp 回 /etc/ha.d/
-//	<a9000>/html/ok112/swagger-ui/dist/swagger1.json 第 11 行 "host": "<ip>:99",
+//	<a9000>/html/htweb/swagger-ui/dist/swagger1.json 第 11 行 "host": "<ip>:99",
+//
+// ⚠ 旧版这两个路径在 `html/ok112/` 下（那是旧 PHP 后台的目录）。
+//   新版这两份跟着新前端走，落在 `html/htweb/` —— 与 deploy/install.sh 的
+//   WEB_DIR 一致。swagger 的具体位置仍可由 config 的 legacy.swagger_file 覆盖。
 //
 // 这些值不跟着改的后果不是「界面不好看」：haresources 里那一行是主备切换时
 // 要接管的虚拟 IP，graylog 那两行是日志系统对外报的地址，swagger 那一行是
@@ -79,7 +83,7 @@ type syncPaths struct {
 	HACf           string   // 读服务器名用
 	GraylogConf    string
 	HAPostLive     string // /etc/ha.d/ha-post.sh
-	HAPostWork     string // <a9000>/html/ok112/ha-post.sh
+	HAPostWork     string // <a9000>/html/htweb/ha-post.sh
 	SwaggerFile    string
 	DefaultSrvName string // ha.cf 里读不到 node 时退回这个（数据库里的服务器名）
 }
@@ -100,7 +104,7 @@ func (s *Service) syncPathsFor(srvName string) syncPaths {
 			filepath.Join(root, "home/heartbeat/haresource"),
 			filepath.Join(root, "home/heartbeat/haresources"))
 		p.GraylogConf = filepath.Join(root, "home/graylog/config/graylog.conf")
-		p.HAPostWork = filepath.Join(root, "html/ok112/ha-post.sh")
+		p.HAPostWork = filepath.Join(root, "html/htweb/ha-post.sh")
 	}
 	return p
 }
@@ -282,8 +286,8 @@ func (s *Service) syncLegacyFiles(in Input, srvName string) []FileSync {
 
 	// ── ha-post.sh 的默认路由 ──
 	//
-	// 旧版的来回是：先把 /etc/ha.d 里那份拷进 ok112、改、再拷回去。
-	// 照做，好处是 ok112 下那份始终是线上那份的副本。
+	// 旧版的来回是：先把 /etc/ha.d 里那份拷进工作目录、改、再拷回去。
+	// 照做，好处是 html/htweb 下那份始终是线上那份的副本。
 	out = append(out, s.syncHAPost(p, in.Network.Gateway)...)
 
 	// ── swagger1.json 的 host：只换 IP，端口原样留着 ──
@@ -298,12 +302,12 @@ func (s *Service) syncHAPost(p syncPaths, gateway string) []FileSync {
 	what := "默认路由（ha-post.sh）"
 	line := "route add default gw " + gateway
 
-	// ok112 下没有工作副本时，直接改线上那份
+	// 工作目录下没有副本时，直接改线上那份
 	if p.HAPostWork == "" {
 		return []FileSync{replaceLine(p.HAPostLive, reDefaultRoute, line, what)}
 	}
 
-	// 先把线上那份取过来当基准（取不到就用 ok112 下现有的那份）
+	// 先把线上那份取过来当基准（取不到就用工作目录下现有的那份）
 	if raw, err := os.ReadFile(p.HAPostLive); err == nil {
 		_ = atomicWrite(p.HAPostWork, raw)
 	}
