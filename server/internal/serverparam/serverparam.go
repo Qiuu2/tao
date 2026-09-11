@@ -473,24 +473,45 @@ func (s *Service) Save(ctx context.Context, in Input, webPort string) (*SaveResu
 	var files []FileSync
 	netDirty := before.Network.IP != in.Network.IP || before.Network.Gateway != in.Network.Gateway ||
 		before.Network.SubnetMask != in.Network.SubnetMask
+	// 主备那几项动了就按新角色把这台机器重新配一遍（见 hasync.go）。
+	// 它是**整组要么全做要么全不做**的 —— 改一半的 HA 配置比一点没改糟得多。
+	// 这里只**探**，写在下面停掉 heartbeat 之后。
+	haDirty := haChanged(before, in)
+	var haT haTargets
+	var haBlocked []FileSync
+	if haDirty {
+		haT, haBlocked = s.prepareHAFiles(before, in)
+	}
+
+	// ── 先停 heartbeat，再写文件，再起回来 ──
+	//
+	// ⚠ 顺序不是随便排的。heartbeat 放下资源时照的是**当前磁盘上那份 haresources**：
+	//   先把地址从 .159 改成 .158 再 restart，停的那一半会去释放一个从没起来过的
+	//   .158，而真正挂在 eth0:0 上的 .159 没有任何人去摘 —— 现网实测就是
+	//   「改了地址，ifconfig 一点没变」。详见 svcrestart.go 开头。
+	//
+	//   探不过（haBlocked）时一个文件都不会写，那就也别停它。
+	var services []ServiceRestart
+	touchHA := netDirty || (haDirty && haBlocked == nil)
+	if touchHA {
+		services = append(services, s.StopHeartbeat(ctx))
+	}
+
 	if netDirty {
 		files = append(files, s.syncLegacyFiles(in, in.HA.Name)...)
 	}
-	// 主备那几项动了就按新角色把这台机器重新配一遍（见 hasync.go）。
-	// 它是**整组要么全做要么全不做**的 —— 改一半的 HA 配置比一点没改糟得多。
-	haDirty := haChanged(before, in)
 	if haDirty {
-		files = append(files, s.syncHAFiles(before, in)...)
+		if haBlocked != nil {
+			files = append(files, haBlocked...)
+		} else {
+			files = append(files, applyHATargets(haT)...)
+		}
 	}
 
-	// 文件都落盘了，再把吃这些配置的两个服务重启一遍（见 svcrestart.go）：
-	// heartbeat 重读 ha.cf / haresources，a9000_audioserver 重读 serverbaseparam。
-	//
-	// ⚠ 顺序：一定在文件写完**之后**（否则重启起来读的还是旧配置），
-	//   也在动网卡**之前**（网卡一切这条连接就断了，结果没人看得见）。
-	var services []ServiceRestart
-	if netDirty || haDirty {
-		services = s.restartServices(ctx)
+	if touchHA {
+		services = append(services, s.StartHeartbeat(ctx))
+		// 广播引擎读 serverbaseparam（地址 / 端口），也要跟着起一次
+		services = append(services, s.RestartAudioserver(ctx))
 	}
 
 	plan := s.planNetwork(ctx, before, in, webPort)

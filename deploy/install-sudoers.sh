@@ -145,10 +145,23 @@ if [ -f "$HA_APPLY" ]; then
     echo "✗ $SERVICE_USER 仍然不能免密执行 htweb-ha-apply"
   fi
 fi
-if sudo -u "$SERVICE_USER" sudo -n -l "$SYSTEMCTL" restart heartbeat >/dev/null 2>&1; then
-  echo "✓ $SERVICE_USER 可以免密执行 systemctl restart heartbeat"
+if sudo -u "$SERVICE_USER" sudo -n -l "$SYSTEMCTL" stop heartbeat >/dev/null 2>&1 &&
+   sudo -u "$SERVICE_USER" sudo -n -l "$SYSTEMCTL" start heartbeat >/dev/null 2>&1; then
+  echo "✓ $SERVICE_USER 可以免密执行 systemctl stop/start heartbeat"
 else
-  echo "✗ $SERVICE_USER 仍然不能免密重启 heartbeat（主备配置改完要手工重启它）"
+  echo "✗ $SERVICE_USER 仍然不能免密停/起 heartbeat（改完地址虚拟 IP 不会跟着换）"
+fi
+if [ -x /etc/init.d/heartbeat ]; then
+  if sudo -u "$SERVICE_USER" sudo -n -l /etc/init.d/heartbeat stop >/dev/null 2>&1; then
+    echo "✓ $SERVICE_USER 可以免密执行 /etc/init.d/heartbeat stop/start（SysV 那一套）"
+  else
+    echo "✗ $SERVICE_USER 仍然不能免密执行 /etc/init.d/heartbeat"
+  fi
+fi
+# 这台机器上到底有没有 heartbeat？没有的话上面配得再对也白搭，先说清楚。
+if ! "$SYSTEMCTL" cat heartbeat.service >/dev/null 2>&1 && [ ! -x /etc/init.d/heartbeat ]; then
+  echo "⚠ 这台机器上既没有 heartbeat.service，也没有 /etc/init.d/heartbeat"
+  echo "  —— 改「服务器地址」后虚拟 IP 不会自己换，页面上会如实说明"
 fi
 if sudo -u "$SERVICE_USER" sudo -n -l "$DOCKER" restart a9000_audioserver >/dev/null 2>&1; then
   echo "✓ $SERVICE_USER 可以免密执行 docker restart a9000_audioserver"

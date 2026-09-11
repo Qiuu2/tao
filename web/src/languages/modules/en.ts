@@ -1070,13 +1070,15 @@ export default {
     savedButMore: "Saved, but there is more to do",
     needExtraSteps: "These changes need extra steps before they take effect:\n\n{reasons}",
     gotIt: "Got it",
-    servicesRestarted: "Restarted: {list}",
+    servicesRestarted: "Restarted: {list} (the virtual address appears after heartbeat's initdead, about 30s)",
     servicesNotRestarted:
-      "The settings were saved and the config files updated, but these services could not be restarted — " +
-      "they are still running the old configuration:\n\n{list}\n\n" +
-      "Restart them on the server by hand:\n" +
-      "  sudo systemctl restart heartbeat\n" +
-      "  sudo docker restart a9000_audioserver",
+      "The settings were saved and the config files updated, but these services did not come back up on the " +
+      "new configuration — they are still running the old one, so the virtual address will NOT change:\n\n{list}\n\n" +
+      "Run this on the server by hand (the order matters — otherwise nothing releases the old virtual address):\n" +
+      "  sudo systemctl stop heartbeat   # no such unit? use sudo /etc/init.d/heartbeat stop\n" +
+      "  sudo systemctl start heartbeat\n" +
+      "  sudo docker restart a9000_audioserver\n\n" +
+      "Rebooting the machine has the same effect.",
     ipSwitchTitle: "The network address is switching",
     ipSwitching:
       "The server's network interface ({conn} · {device}) is switching to {address}.\n\n" +

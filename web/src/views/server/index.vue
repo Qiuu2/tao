@@ -499,26 +499,30 @@ const save = async () => {
     /*
       吃刚改的那些配置的两个服务（见 serverparam/svcrestart.go）：
 
-        heartbeat          重读 ha.cf / haresources —— 主备角色、虚拟地址
+        heartbeat          停 → 写文件 → 起。它是虚拟地址的主人，
+                           不停下来就重写 haresources 的话，旧地址没人摘
         a9000_audioserver  重读 serverbaseparam —— 地址、端口
 
-      成功就一行浅提示带过；**没能重启的要拦一下**，因为这时候库里和文件里
-      已经是新配置、跑着的服务还是旧的，两边不一致而且不会自己好。
-      missing（这台机器上没有它）不报：不是故障，也没有人需要去做什么。
+      ⚠ 这里 **missing 也要报**，跟文件同步那边不一样。
+        「这台机器上没有 heartbeat，所以我没动它」正是运维盯着 ifconfig
+        看不到新虚拟地址时唯一需要知道的那一句；咽下去只会让他以为程序坏了。
+
+      heartbeat 会出现两条（stop 和 start），按服务名去重后再展示。
     */
     const svcs = data.services ?? [];
-    const svcBad = svcs.filter(v => v.status === "failed");
+    const svcBad = svcs.filter(v => v.status === "failed" || v.status === "missing");
     const svcOK = svcs.filter(v => v.status === "updated");
     if (svcBad.length) {
-      await ElMessageBox.alert(
-        t("server.servicesNotRestarted", {
-          list: svcBad.map(v => `· ${v.name}（${v.what}）：${v.detail || v.status}`).join("\n")
-        }),
-        t("server.savedButMore"),
-        { confirmButtonText: t("server.gotIt") }
-      );
+      const seen = new Set<string>();
+      const list = svcBad
+        .filter(v => !seen.has(v.name) && seen.add(v.name))
+        .map(v => `· ${v.name}：${v.detail || v.status}`)
+        .join("\n");
+      await ElMessageBox.alert(t("server.servicesNotRestarted", { list }), t("server.savedButMore"), {
+        confirmButtonText: t("server.gotIt")
+      });
     } else if (svcOK.length) {
-      ElMessage.info(t("server.servicesRestarted", { list: svcOK.map(v => v.name).join("、") }));
+      ElMessage.info(t("server.servicesRestarted", { list: [...new Set(svcOK.map(v => v.name))].join("、") }));
     }
 
     /*

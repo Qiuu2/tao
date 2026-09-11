@@ -48,21 +48,66 @@ func TestIsNoSuchContainer(t *testing.T) {
 	}
 }
 
-// 这台机器上没有 heartbeat 单元时报 missing，不是 failed。
+// 这台机器上没有 heartbeat 时报 missing，不是 failed。
 //
-// 「没装这一套」和「装了但重启不了」要分开：前者不需要任何人做什么，
+// 「没装这一套」和「装了但动不了」要分开：前者不需要任何人做什么，
 // 后者是库里已经是新配置、跑着的服务还是旧的，必须拦住人。
-func TestRestartHeartbeatMissingIsNotFailure(t *testing.T) {
-	got := restartHeartbeat(t.Context())
+//
+// ⚠ 但两种都要报给界面 —— 「我没重启 heartbeat」正是运维盯着 ifconfig
+// 看不到新地址时要知道的那一句。
+func TestHeartbeatMissingIsNotFailure(t *testing.T) {
+	s := &Service{}
+	got := s.StopHeartbeat(t.Context())
 	if got.Name != "heartbeat" {
 		t.Fatalf("名字不对：%+v", got)
 	}
-	// CI / 开发机上都没有 heartbeat.service
+	// CI / 开发机上既没有 heartbeat.service 也没有 /etc/init.d/heartbeat
 	if got.Status != SyncMissing {
 		t.Skipf("这台机器上有 heartbeat（%s），跳过", got.Status)
 	}
 	if got.Detail == "" {
 		t.Error("报 missing 也要说清楚为什么")
+	}
+}
+
+// 探不到 systemd 单元时要退回 /etc/init.d/heartbeat，而不是直接报「没装」。
+//
+// 这套 a9000 是 ubuntu-autoinstall 装出来的，heartbeat 很可能是 SysV 那一套。
+func TestFindHeartbeatFallsBackToInitd(t *testing.T) {
+	dir := t.TempDir()
+	fake := filepath.Join(dir, "heartbeat")
+	if err := os.WriteFile(fake, []byte("#!/bin/sh\nexit 0\n"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	old := initdHeartbeat
+	initdHeartbeat = fake
+	t.Cleanup(func() { initdHeartbeat = old })
+
+	got := findHeartbeat(t.Context())
+	if got.cmd == "" {
+		t.Fatal("有 init.d 脚本时不该报「没装」")
+	}
+	if got.cmd != fake {
+		t.Skipf("这台机器上有 heartbeat.service，走的是 systemd（%s）", got.cmd)
+	}
+	if a := got.args("stop"); len(a) != 1 || a[0] != "stop" {
+		t.Errorf("init.d 那条只传动作，得到 %v", a)
+	}
+}
+
+// 不可执行的 /etc/init.d/heartbeat 不算数 —— 拿它当退路只会在 sudo 那一步炸。
+func TestFindHeartbeatIgnoresNonExecutable(t *testing.T) {
+	dir := t.TempDir()
+	fake := filepath.Join(dir, "heartbeat")
+	if err := os.WriteFile(fake, []byte("x"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	old := initdHeartbeat
+	initdHeartbeat = fake
+	t.Cleanup(func() { initdHeartbeat = old })
+
+	if got := findHeartbeat(t.Context()); got.cmd == fake {
+		t.Error("不可执行的脚本不该被当成退路")
 	}
 }
 
@@ -79,9 +124,15 @@ func TestSudoersCoversRestartCommands(t *testing.T) {
 	}
 	tpl := string(raw)
 
-	// 模板里是占位符，装的时候由 install-sudoers.sh 换成绝对路径
+	// 模板里是占位符，装的时候由 install-sudoers.sh 换成绝对路径。
+	//
+	// ⚠ heartbeat 是 stop / start 两条，**不是** restart ——
+	//   改完 haresources 再 restart 会让旧的虚拟地址没人摘，见 svcrestart.go 开头。
 	for _, want := range []string{
-		"@SYSTEMCTL@ restart heartbeat",
+		"@SYSTEMCTL@ stop heartbeat",
+		"@SYSTEMCTL@ start heartbeat",
+		initdHeartbeat + " stop",
+		initdHeartbeat + " start",
 		"@DOCKER@ restart " + audioContainer,
 	} {
 		if !strings.Contains(tpl, want) {
@@ -91,10 +142,20 @@ func TestSudoersCoversRestartCommands(t *testing.T) {
 	if !strings.Contains(tpl, "HTWEB_SVC") {
 		t.Error("HTWEB_SVC 没写进那行 NOPASSWD 列表")
 	}
-	// ⚠ 这两条不许带 *：带了就等于把「重启任意服务 / 任意容器」给了 htweb
-	for _, line := range strings.Split(tpl, "\n") {
-		if strings.HasPrefix(line, "Cmnd_Alias HTWEB_SVC") && strings.Contains(line, "*") {
-			t.Errorf("HTWEB_SVC 不许带通配符：%s", line)
+	// ⚠ 这几条不许带 *：带了就等于把「动任意服务 / 任意容器」给了 htweb。
+	//   规则跨了几行（行尾反斜杠续行），所以从 Cmnd_Alias 那行一路查到不再续行为止。
+	lines := strings.Split(tpl, "\n")
+	for i, line := range lines {
+		if !strings.HasPrefix(line, "Cmnd_Alias HTWEB_SVC") {
+			continue
+		}
+		for j := i; j < len(lines); j++ {
+			if strings.Contains(lines[j], "*") {
+				t.Errorf("HTWEB_SVC 不许带通配符：%s", lines[j])
+			}
+			if !strings.HasSuffix(strings.TrimRight(lines[j], " \t"), "\\") {
+				break
+			}
 		}
 	}
 

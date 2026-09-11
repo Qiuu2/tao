@@ -14,7 +14,8 @@
 #   （手工设时间前关掉自动校时）  → timedatectl set-ntp
 #   服务器信息里改 IP / 掩码 / 网关 → nmcli connection modify / up
 #   主备配置改 /etc 下那几个文件   → htweb-ha-apply（本目录下的小脚本）
-#   地址或主备角色改完重启两个服务 → systemctl restart heartbeat
+#   地址或主备角色改完重启两个服务 → systemctl stop/start heartbeat
+#                                  （或 /etc/init.d/heartbeat，SysV 那一套）
 #                                  docker restart a9000_audioserver
 #   版本设置的「提交」            → update_audioserver.sh，它内部全是 sudo docker
 #
@@ -54,20 +55,29 @@
 #       谁能改那个脚本，谁就等于拿到了 root。install-sudoers.sh 会检查这一点。
 #   不做主备的部署把 HTWEB_HA 删掉即可，主备那一页会整组跳过并说明原因。
 #
-# ⚠ HTWEB_SVC 这两条**一个星号都没有**：服务名和容器名都写死在规则里，
-#   htweb 只能重启 heartbeat 这一个单元和 a9000_audioserver 这一个容器，
-#   不能 stop、不能 restart 别的东西，更不能 `docker run` 任何镜像。
+# ⚠ HTWEB_SVC 这几条**一个星号都没有**：服务名和容器名都写死在规则里，
+#   htweb 只能停/起 heartbeat 这一个服务、重启 a9000_audioserver 这一个容器，
+#   动不了别的东西，更不能 `docker run` 任何镜像。
 #   （注意 `docker restart` 与 `docker run` 是两条不同的子命令，
 #   这条规则给不出后者 —— 后者在 HTWEB_AUDIO 那个脚本里，是另一回事。）
 #
-#   为什么需要：地址或主备角色改完，heartbeat 要重读 ha.cf / haresources，
-#   a9000_audioserver 要重读 serverbaseparam，不重启就还是按旧配置跑。
-#   删掉这一条的话，保存照常完成，页面上会说「这两个服务没能重启」并给出手工命令。
+#   为什么是 stop / start 两条而不是一条 restart：改完 haresources 再 restart
+#   是错的 —— heartbeat 放下资源照的是**当前磁盘上**那份 haresources，
+#   文件先改了，它就会去释放一个从没起来过的新地址，而旧的虚拟地址没人摘。
+#   必须「先停（旧配置在，旧地址被摘干净）→ 写文件 → 再起（读到新配置）」。
+#   详见 server/internal/serverparam/svcrestart.go 开头。
+#
+#   /etc/init.d/heartbeat 那两条是 SysV 的退路：这套 a9000 是 ubuntu-autoinstall
+#   装出来的，机器上不一定有 heartbeat.service。程序先探单元、探不到才走 init.d。
+#
+#   删掉这一条的话，保存照常完成，页面上会说这两个服务没能按新配置起来并给出手工命令。
 
 Cmnd_Alias HTWEB_CLOCK = @TIMEDATECTL@ set-time *, @TIMEDATECTL@ set-ntp *
 Cmnd_Alias HTWEB_NET   = @NMCLI@ connection modify *, @NMCLI@ connection up *
 Cmnd_Alias HTWEB_HA    = @A9000_ROOT@/htweb/htweb-ha-apply
-Cmnd_Alias HTWEB_SVC   = @SYSTEMCTL@ restart heartbeat, @DOCKER@ restart a9000_audioserver
+Cmnd_Alias HTWEB_SVC   = @SYSTEMCTL@ stop heartbeat, @SYSTEMCTL@ start heartbeat, \
+                         /etc/init.d/heartbeat stop, /etc/init.d/heartbeat start, \
+                         @DOCKER@ restart a9000_audioserver
 Cmnd_Alias HTWEB_AUDIO = @A9000_ROOT@/script/cmd/update_audioserver.sh
 
 @SERVICE_USER@ ALL=(root) NOPASSWD: HTWEB_CLOCK, HTWEB_NET, HTWEB_HA, HTWEB_SVC, HTWEB_AUDIO

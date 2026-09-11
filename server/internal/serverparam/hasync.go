@@ -326,7 +326,23 @@ func haChanged(before *Params, in Input) bool {
 }
 
 // syncHAFiles 把这台机器按主/备角色配好。**要么全做，要么全不做**。
+//
+// 这是「探 + 写」一把做完的入口，测试与不需要停 heartbeat 的路径用它。
+// Save 那边走的是拆开的两步（prepareHAFiles / applyHATargets）——
+// 中间要把 heartbeat 停掉，理由见 svcrestart.go 开头。
 func (s *Service) syncHAFiles(before *Params, in Input) []FileSync {
+	t, blocked := s.prepareHAFiles(before, in)
+	if blocked != nil {
+		return blocked
+	}
+	return applyHATargets(t)
+}
+
+// prepareHAFiles 只探不写：算出要动哪些文件，并确认每一个都真的写得进去。
+//
+// 返回的 blocked 非 nil 时**一个文件都不要碰** —— 改一半的 HA 配置
+// （名字改了、ha.cf 没改）比一点没改糟得多，那是主备双活的前提。
+func (s *Service) prepareHAFiles(before *Params, in Input) (haTargets, []FileSync) {
 	t := s.buildHATargets(before, in)
 
 	// ── 先整体探一遍 ──
@@ -378,15 +394,18 @@ func (s *Service) syncHAFiles(before *Params, in Input) []FileSync {
 		blocked = append(blocked, fmt.Sprintf("%s（没有删除权限，也没有可用的提权通道）", r.path))
 	}
 	if len(blocked) > 0 {
-		return []FileSync{{
+		return t, []FileSync{{
 			What:   "主备角色配置（整组未执行）",
 			Status: SyncFailed,
 			Detail: "这些文件改不了，为免留下改了一半的 HA 配置，整组都没有动：\n" +
 				strings.Join(blocked, "\n"),
 		}}
 	}
+	return t, nil
+}
 
-	// ── 再整体写 ──
+// applyHATargets 把探好的那一组改动整体写下去。只在 prepareHAFiles 放行之后调。
+func applyHATargets(t haTargets) []FileSync {
 	out := []FileSync{}
 	for _, e := range t.edits {
 		out = append(out, applyHAEdit(e))
