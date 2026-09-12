@@ -187,11 +187,64 @@ const radio = ref("");
 const { selectionChange, selectedList, selectedListIds, isSelected } = useSelection(props.rowKey);
 
 // 表格操作 Hooks
-const { tableData, pageable, searchParam, searchInitParam, getTableList, search, reset, handleSizeChange, handleCurrentChange } =
-  useTable(props.requestApi, props.initParam, props.pagination, props.dataCallback, props.requestError);
+const {
+  tableData,
+  pageable,
+  searchParam,
+  searchInitParam,
+  totalParam,
+  getTableList,
+  search,
+  reset,
+  handleSizeChange,
+  handleCurrentChange
+} = useTable(props.requestApi, props.initParam, props.pagination, props.dataCallback, props.requestError);
 
 // 清空选中数据列表
 const clearSelection = () => tableRef.value!.clearSelection();
+
+/*
+  ⚠ 把「已经不在了」的行从勾选里摘掉。
+
+  上面那句 `:reserve-selection="item.type == 'selection'"` 让 el-table 跨刷新、
+  跨翻页保留勾选 —— 翻到第 2 页再翻回来，第 1 页勾的还在，这是要的。
+  但它连**已经被删掉的行**也一起留着：
+
+    现网实测（终端管理）：勾 1 台 → 重新注册（即删除）→ 列表从 12 行变 11 行，
+    可按钮仍然显示「批量操作(1)」；再勾一台别的就变成 (2)，
+    下一次批量操作会把那个**已经不存在的 id** 一起发上去。
+
+  所以每次数据回来之后对一次账。判据是两条同时成立：
+
+    ① 这一次的请求参数和上一次**完全一样**
+       —— 参数变了（翻页、改搜索、换分区页签）而行不见了，那是正常的，
+          reserve-selection 保住它们正是我们想要的，绝不能动。
+    ② 那一行上一次**看得见**、这一次看不见
+       —— 同样的条件查两次，行没了，那就是真没了（自己删的，
+          或者别的程序删的 —— 这个库不止我们一个在写）。
+
+  这一层放在 ProTable 里而不是各个页面里：全站 15 个页面用了 selectedListIds，
+  一个都没有自己清过勾选。放页面里就等着下一个人忘。
+*/
+let lastFetchKey = "";
+let lastVisibleKeys = new Set<string>();
+
+const dropVanishedSelections = () => {
+  const key = JSON.stringify(totalParam.value ?? {});
+  const visible = new Set((tableData.value ?? []).map((r: any) => String(r[props.rowKey])));
+  if (key === lastFetchKey) {
+    for (const row of [...selectedList.value]) {
+      const k = String((row as any)[props.rowKey]);
+      // 之前看得见、现在看不见 → 没了，摘掉
+      // （toggleRowSelection 内部会 emit selection-change，selectedList 自己会跟着更新）
+      if (lastVisibleKeys.has(k) && !visible.has(k)) tableRef.value?.toggleRowSelection(row as any, false);
+    }
+  }
+  lastFetchKey = key;
+  lastVisibleKeys = visible;
+};
+
+watch(tableData, dropVanishedSelections);
 
 // 初始化表格数据 && 拖拽排序
 onMounted(() => {
