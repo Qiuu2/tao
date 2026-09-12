@@ -18,14 +18,18 @@ CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath -ldflags='-s -w' -o /tm
 cd ../web
 npx vue-tsc --noEmit --skipLibCheck && npx vite build --mode production
 
-# 装包
+# 装包（⚠ 下面这些命令假设你在**仓库根目录**，不是在 web/ 里）
+cd ..
 P=/tmp/htwebpkg; rm -rf $P; mkdir -p $P
 cp deploy/install.sh deploy/install-sudoers.sh deploy/htweb.sudoers.in \
-   deploy/htweb.service.in deploy/config.yaml.example $P/
+   deploy/htweb.service.in deploy/config.yaml.example deploy/htweb-ha-apply $P/
 cp /tmp/htweb $P/htweb
 (cd web/dist && tar -czf $P/dist.tgz .)
 tar -czf /tmp/htwebpkg.tgz -C /tmp htwebpkg
 ```
+
+⚠ `htweb-ha-apply` 别漏。少了它 `install.sh` 不会报错，只会打一行
+「主备服务器配置将只写数据库」—— 那一页就会整组跳过。
 
 ## 2. 在目标机器上装
 
@@ -71,6 +75,48 @@ sudoers 规则、systemd 单元里的路径都会跟着变。
 - `config.yaml` 已存在就**不覆盖**
 - 前端上一版留在 `html/htweb.prev`，出问题能立刻搬回来
 - sudoers、systemd 单元内容没变就不动
+
+### 只换代码的最短路径
+
+只改了 Go / Vue 代码、没动 sudoers 和 systemd 单元时，也可以不走装包，
+直接换那两样东西：
+
+```bash
+# 开发机
+cd server && CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath -ldflags='-s -w' -o /tmp/htweb ./cmd/htweb
+cd ../web  && npx vue-tsc --noEmit --skipLibCheck && npx vite build --mode production
+tar -czf /tmp/dist.tgz -C dist .
+scp /tmp/htweb /tmp/dist.tgz <账号>@<服务器>:/tmp/
+
+# 服务器
+sudo systemctl stop htweb                       # 正在跑的可执行文件直接盖会 ETXTBSY
+sudo install -o tw -g tw -m 755 /tmp/htweb /opt/apps/a9000/htweb/htweb
+sudo rm -rf /opt/apps/a9000/html/htweb.prev
+sudo mv /opt/apps/a9000/html/htweb /opt/apps/a9000/html/htweb.prev
+sudo mkdir -p /opt/apps/a9000/html/htweb
+sudo tar -xzf /tmp/dist.tgz -C /opt/apps/a9000/html/htweb
+sudo chown -R tw:tw /opt/apps/a9000/html/htweb
+sudo systemctl start htweb
+```
+
+**改了 `deploy/` 下任何东西（sudoers 模板、service 模板、htweb-ha-apply）
+就别走这条**，老老实实走第 1、2 步 —— 那几样只有 `install.sh` 会装。
+
+### 装到哪儿了：一张路径表
+
+| 路径 | 是什么 | 升级时会不会被换 |
+|---|---|---|
+| `/opt/apps/a9000/htweb/htweb` | 后端二进制 | ✅ 每次都换 |
+| `/opt/apps/a9000/htweb/config.yaml` | 配置（含数据库口令、JWT 密钥） | ❌ **已存在就不覆盖** |
+| `/opt/apps/a9000/htweb/logs/htweb.log` | 运行日志（systemd 直接追加写这里） | — |
+| `/opt/apps/a9000/htweb/htweb-ha-apply` | 主备配置写 /etc 那几个文件的小脚本（root:root 755） | ✅ 带了就换 |
+| `/opt/apps/a9000/html/htweb/` | **前端产物**（Apache 的 DocumentRoot 下） | ✅ 每次都换，上一版留在 `html/htweb.prev` |
+| `/opt/apps/a9000/html/ok112/` | 旧系统，**不动** | ❌ |
+| `/etc/systemd/system/htweb.service` | systemd 单元 | 内容变了才换 |
+| `/etc/sudoers.d/htweb` | 免密 sudo 规则 | 内容变了才换 |
+
+⚠ 注意后端在 `a9000/htweb/`，前端在 `a9000/html/htweb/` —— **一个在 html 下，
+一个不在**。写路径时最容易搞混的就是这两个。
 
 ---
 
