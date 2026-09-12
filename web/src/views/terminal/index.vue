@@ -98,6 +98,21 @@
               </el-dropdown>
             </div>
             <div class="header-right">
+              <!--
+                一个框同时查终端名称和 IP，边打边出结果。
+
+                ⚠ 不加 @keyup.enter：onSearchInput 已经把每次输入都接住了，
+                  再挂一个回车等于同一次搜索发两遍请求。
+                  清空（右边那个叉）走的是同一条路 —— clearable 也会触发 input。
+              -->
+              <el-input
+                v-model="searchKeyword"
+                class="term-search"
+                clearable
+                :placeholder="$t('term.searchTerminalNameOrIp')"
+                :prefix-icon="Search"
+                @input="onSearchInput"
+              />
               <el-tag v-if="scopeNote" type="info" size="small" effect="plain">{{ scopeNote }}</el-tag>
             </div>
           </div>
@@ -1022,7 +1037,7 @@
 import { useI18n } from "vue-i18n";
 import { ArrowDown, Folder, Link, Menu, Search } from "@element-plus/icons-vue";
 import { ElMessage, ElMessageBox } from "element-plus";
-import { computed, onMounted, reactive, ref, watch } from "vue";
+import { computed, onMounted, onUnmounted, reactive, ref, watch } from "vue";
 
 import { getBellPlanApi, getBellPlanListApi } from "@/api/modules/bell";
 import { getTypedListApi, type TypedKind } from "@/api/modules/ninemod";
@@ -1116,7 +1131,38 @@ const scopeNote = ref("");
 // initParam 被 ProTable 深度 watch，改动即触发重新拉取。
 // 排序放在这里而不是让 el-table 自己排 —— 旧版就是前端排序，
 // 只能排当前页，翻页后顺序就乱了（缺陷 D-75）。
-const initParam = reactive({ groupId: 0, category: "", orderBy: "", order: "" });
+/*
+  initParam 被 ProTable 深度 watch，改一下就重新拉一次。搜索就挂在这上面：
+  keyword 一变，列表自己跟着重查 —— 不需要「搜索」按钮。
+
+  searchKey 固定发 "any"：后端据此同时查 t.terminalname 和 t.ip
+  （见 internal/terminal/terminal.go 的 terminalSearchCond）。
+*/
+const initParam = reactive({ groupId: 0, category: "", orderBy: "", order: "", searchKey: "any", keyword: "" });
+
+/** 输入框里的原始值。它和 initParam.keyword 之间隔着一层防抖 */
+const searchKeyword = ref("");
+let searchTimer: number | undefined;
+
+/*
+  ⚠ 必须防抖。
+
+    initParam 是深度 watch 的，每一次按键都会立刻触发一次列表查询 ——
+    打「A101教室」七个字就是七次请求，而且它们回来的顺序没有保证，
+    最后落在表格里的很可能是中间某一次的结果。
+
+    300ms：比连续打字的间隔长，比人「打完了等结果」的耐心短。
+*/
+const SEARCH_DEBOUNCE_MS = 300;
+const onSearchInput = () => {
+  if (searchTimer) window.clearTimeout(searchTimer);
+  searchTimer = window.setTimeout(() => {
+    initParam.keyword = searchKeyword.value.trim();
+  }, SEARCH_DEBOUNCE_MS);
+};
+onUnmounted(() => {
+  if (searchTimer) window.clearTimeout(searchTimer);
+});
 
 const onSortChange = ({ prop, order }: { prop: string; order: string | null }) => {
   if (!order) {
@@ -1132,7 +1178,14 @@ const onSortChange = ({ prop, order }: { prop: string; order: string | null }) =
 // id | 终端名称 | 终端类型 | 任务状态 | 网络状态 | 设备状态 | IP地址 | 音量 |
 // 对讲 | 急救 | 录音 | 发言 | 左声道开路 | 右声道开路 | 温度(℃) | 湿度(RH) | 操作
 //
-// 搜索收敛成一个「设备名称查找」，与 :80 一致（IP 搜索随之取消）。
+// 搜索不走 ProTable 的列内搜索，改成工具栏上那一个框（见 header-bar 里的 el-input）。
+//
+// ⚠ 列内搜索这条路是**坏的**：ProTable 的 SearchForm 按列名发参数（?terminalname=xxx），
+//   而后端 /api/terminals 读的是 searchKey / keyword —— 两边对不上，
+//   于是这个框一直没有任何作用：12 条终端，搜 "A101" 照样回 12 条，
+//   界面上却看着像搜过了。实测确认过。
+//
+// 现在这个框：一个输入框同时查**终端名称和 IP 地址**，边打边出结果（防抖 300ms）。
 //
 // 「所属分区」列补回来了：旧版 TerminalManager/terminalmanager_form.html 的表头
 // 第 3 列就是它（终端名称 → 所属分区 → 终端类型）。早先按 :80 的参考图拿掉过，
@@ -1141,13 +1194,7 @@ const onSortChange = ({ prop, order }: { prop: string; order: string | null }) =
 const columns = reactive<ColumnProps<TerminalRow>[]>([
   { type: "selection", fixed: "left", width: 50 },
   { prop: "id", label: t("common.id"), width: 70, sortable: "custom" },
-  {
-    prop: "terminalname",
-    label: t("terminalCommon.terminalName"),
-    minWidth: 160,
-    sortable: "custom",
-    search: { el: "input", props: { placeholder: t("term.findByName") } }
-  },
+  { prop: "terminalname", label: t("terminalCommon.terminalName"), minWidth: 160, sortable: "custom" },
   { prop: "groupName", label: t("term.myZone"), width: 120, showOverflowTooltip: true },
   { prop: "typeName", label: t("terminalCommon.terminalType"), width: 130 },
   { prop: "taskstate", label: t("term.taskStateLabel"), width: 100, sortable: "custom" },
@@ -2477,6 +2524,17 @@ onMounted(async () => {
   flex-wrap: wrap;
   gap: 8px;
   align-items: center;
+}
+.header-right {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+// 够放下「A101教室音箱」或一个完整 IP，窄屏下让它自己缩
+.term-search {
+  width: 220px;
+  max-width: 100%;
 }
 .form-tip {
   display: block;

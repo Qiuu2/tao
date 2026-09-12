@@ -380,7 +380,6 @@ export default {
     autoScanSent: "自动寻检指令下发",
     intercomRequested: "被请求对讲",
     decoderTerminal: "解码终端",
-    findByName: "设备名称查找",
     settings: "设置",
     setTerminalPassword: "设置终端密码",
     microphone: "话筒",

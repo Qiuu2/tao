@@ -106,14 +106,51 @@ var orderWhitelist = map[string]string{
 	"id":           "t.id",
 }
 
+// searchWhitelist 是「只按这一列查」时能选的列。
+//
+// 界面上那个搜索框走的不是它，而是下面的 SearchKeyAny（名称或 IP 任意一个匹配）。
+// 这张表留给明确指定了列的调用方 —— 比如 openapi 那边按终端名精确找一台设备。
 var searchWhitelist = map[string]string{
 	"terminalname": "t.terminalname",
 	"ip":           "t.ip",
 }
 
+// SearchKeyAny 表示「终端名称**或** IP 地址，任意一个匹配上就算」。
+//
+// 终端管理页上只有一个搜索框，运维想搜什么就往里打什么 —— 让他先在下拉里
+// 选「按名称还是按 IP」是白加的一步，而且十有八九会选错再回来重选。
+const SearchKeyAny = "any"
+
+// terminalSearchCond 把关键词翻成 WHERE 片段。
+//
+// ⚠ searchKey 为空时按 SearchKeyAny 处理，**不是**「不过滤」。
+//
+//	原来那份代码是 `if col, ok := searchWhitelist[q.SearchKey]; ok && ...`，
+//	key 对不上就整个条件不加 —— 于是带着 keyword 却没带 searchKey 的请求
+//	会**静默返回全部数据**。现网前端发的正是 `?terminalname=xxx`
+//	（ProTable 按列名发参数），后端读的是 searchKey/keyword，两边对不上，
+//	所以终端管理的搜索框一直是**完全没作用**的：打什么都是整张表。
+//	实测 12 条终端，搜 "A101" 还是回 12 条。
+//
+//	「给了关键词却当没看见」是最坏的一种失败：界面上看着像搜过了。
+func terminalSearchCond(searchKey, keyword string) (string, []interface{}) {
+	kw := strings.TrimSpace(keyword)
+	if kw == "" {
+		return "", nil
+	}
+	esc := store.EscapeLike(kw)
+	if col, ok := searchWhitelist[searchKey]; ok {
+		return col + " LIKE ? ESCAPE '\\\\'", []interface{}{esc}
+	}
+	return "(t.terminalname LIKE ? ESCAPE '\\\\' OR t.ip LIKE ? ESCAPE '\\\\')",
+		[]interface{}{esc, esc}
+}
+
 type ListQuery struct {
-	GroupID   int64
-	Category  string
+	GroupID  int64
+	Category string
+	// SearchKey 指定只查哪一列（terminalname / ip）。
+	// 留空 = 名称或 IP 任意一个匹配，见 terminalSearchCond。
 	SearchKey string
 	Keyword   string
 	OrderBy   string
@@ -198,8 +235,8 @@ func (s *Service) List(ctx context.Context, u *auth.User, q ListQuery) (*ListRes
 	if c := categoryCond(q.Category); c != "" {
 		cond.Add(c)
 	}
-	if col, ok := searchWhitelist[q.SearchKey]; ok && q.Keyword != "" {
-		cond.Add(col+" LIKE ? ESCAPE '\\\\'", store.EscapeLike(q.Keyword))
+	if c, args := terminalSearchCond(q.SearchKey, q.Keyword); c != "" {
+		cond.Add(c, args...)
 	}
 
 	where := cond.Where()

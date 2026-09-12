@@ -378,7 +378,6 @@ export default {
     autoScanSent: "Auto-scan command sent",
     intercomRequested: "Intercom requested",
     decoderTerminal: "Decoder terminal",
-    findByName: "Search by device name",
     settings: "Settings",
     setTerminalPassword: "Set terminal password",
     microphone: "Microphone",
