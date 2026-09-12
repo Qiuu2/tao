@@ -43,16 +43,44 @@ const WAIT_SECONDS = 25;
 /** 出错之后隔这么久再试。别把一台正在重启的服务器打死 */
 const RETRY_MS = 5000;
 
+/**
+ * 两次刷新之间至少隔这么久。
+ *
+ * # ⚠ 没有这一条，现网会被自己人打垮
+ *
+ * 长轮询是「一有变化立刻返回」。而现网的 terminal 表是**一直在变**的 ——
+ * 后台 C 服务在写终端心跳（netstate）。于是：返回 → 刷列表 → 立刻再问 →
+ * 又立刻返回 → 再刷……变成一个不带刹车的死循环。
+ *
+ * 实测（本地 3328 终端 / 53248 任务，模拟 C 服务每 300ms 写一次）：
+ * **一个标签页每秒打出 165 次列表查询**。现网「点开终端管理一堆 500」
+ * 就是这么来的（另一半原因是 rev 的精度问题，见 revs 那段注释）。
+ *
+ * 2 秒：人眼觉得「立刻就变了」，而服务器每个标签页最多每 2 秒查一次列表。
+ */
+const MIN_GAP_MS = 2000;
+
 interface ChangesResp {
   code: number;
-  data?: { revs: Record<string, number>; changed: DbTopic[] };
+  /**
+   * ⚠ revs 的值是**字符串**（十六进制），不是数字。
+   *
+   *   服务端那边 rev 是 uint64，而 JS 的 Number 是 float64，精确整数上限只有
+   *   9007199254740991。按数字收就会被 JSON.parse 四舍五入：
+   *   13272240285988269346 → 13272240285988270000，发回去永远对不上，
+   *   于是服务端每次都判「变了」—— 就是上面说的那个死循环。
+   *   两头都当字符串，就没有精度可丢。
+   */
+  data?: { revs: Record<string, string>; changed: DbTopic[] };
 }
 
 export function useDbChanges(topics: DbTopic[], onChange: (changed: DbTopic[]) => void) {
   const userStore = useUserStore();
 
-  /** 手里这份版本号。第一次是空的，服务端会立刻回一份让我们对齐 */
-  let revs: Record<string, number> = {};
+  /** 手里这份版本号（十六进制字符串）。第一次是空的，服务端会立刻回一份让我们对齐 */
+  let revs: Record<string, string> = {};
+  /** 上一次真正触发刷新的时刻，用来给 MIN_GAP_MS 计时 */
+  let lastRefresh = 0;
   let ctrl: AbortController | null = null;
   let running = false;
   let stopped = false;
@@ -63,7 +91,7 @@ export function useDbChanges(topics: DbTopic[], onChange: (changed: DbTopic[]) =
     // 只报上自己关心的主题。别的表变了不该把这个页面叫醒 ——
     // 叫醒就意味着一次没必要的列表查询。
     for (const t of topics) {
-      if (revs[t] !== undefined) p.set(t, String(revs[t]));
+      if (revs[t] !== undefined) p.set(t, revs[t]);
     }
     if ([...p.keys()].length) p.set("wait", String(WAIT_SECONDS));
     return `/api/changes${p.toString() ? "?" + p.toString() : ""}`;
@@ -101,7 +129,20 @@ export function useDbChanges(topics: DbTopic[], onChange: (changed: DbTopic[]) =
         const first = Object.keys(revs).length === 0;
         revs = { ...revs, ...body.data.revs };
         // 第一轮只是对齐，页面刚加载过，不要再刷一次
-        if (!first && body.data.changed?.length) onChange(body.data.changed);
+        if (!first && body.data.changed?.length) {
+          /*
+            ⚠ 刹车。理由见 MIN_GAP_MS：现网的 terminal 表一直在变
+              （C 服务写终端心跳），不踩刹车就是一个不带间隔的死循环。
+
+            注意是**先等再刷**：等的这段时间里数据可能又变了，
+            等完这一次刷新拿到的就是最新的，不会白刷。
+          */
+          const wait = MIN_GAP_MS - (Date.now() - lastRefresh);
+          if (wait > 0) await sleep(wait);
+          if (stopped) return;
+          lastRefresh = Date.now();
+          onChange(body.data.changed);
+        }
       }
     } finally {
       running = false;

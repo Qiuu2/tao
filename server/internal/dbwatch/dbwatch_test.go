@@ -1,9 +1,12 @@
 package dbwatch
 
 import (
+	"bytes"
 	"context"
 	"database/sql"
+	"encoding/json"
 	"os"
+	"strconv"
 	"testing"
 	"time"
 
@@ -25,22 +28,68 @@ func TestMixChangesWithInput(t *testing.T) {
 
 // diff 只比「一样 / 不一样」，而且只看前端订阅过的主题。
 func TestDiffOnlyWatchesSubscribed(t *testing.T) {
-	cur := map[Topic]uint64{TopicTerminal: 100, TopicTask: 200}
+	cur := map[Topic]string{TopicTerminal: "64", TopicTask: "c8"}
 
-	if got := diff(map[Topic]uint64{TopicTerminal: 100, TopicTask: 200}, cur); len(got) != 0 {
+	if got := diff(map[Topic]string{TopicTerminal: "64", TopicTask: "c8"}, cur); len(got) != 0 {
 		t.Errorf("都一样时不该报变化：%v", got)
 	}
 	// 终端页只订阅 terminal —— task 变了不该把它叫醒（叫醒 = 白查一次列表）
-	if got := diff(map[Topic]uint64{TopicTerminal: 100}, cur); len(got) != 0 {
+	if got := diff(map[Topic]string{TopicTerminal: "64"}, cur); len(got) != 0 {
 		t.Errorf("没订阅的主题变了不该报：%v", got)
 	}
-	got := diff(map[Topic]uint64{TopicTerminal: 99, TopicTask: 200}, cur)
+	got := diff(map[Topic]string{TopicTerminal: "63", TopicTask: "c8"}, cur)
 	if len(got) != 1 || got[0] != TopicTerminal {
 		t.Errorf("该只报 terminal，得到 %v", got)
 	}
-	// ⚠ rev 是哈希，比大小没有意义：手里的比当前**大**也算变了
-	if got := diff(map[Topic]uint64{TopicTerminal: 999999}, cur); len(got) != 1 {
-		t.Errorf("rev 变小也是变了，不能按「只增不减」判：%v", got)
+	// ⚠ rev 是哈希，比大小没有意义：随便一个不一样的值都算变了
+	if got := diff(map[Topic]string{TopicTerminal: "ffffff"}, cur); len(got) != 1 {
+		t.Errorf("值不同就是变了，不能按「只增不减」判：%v", got)
+	}
+}
+
+// ⚠ 这一条是整件事的教训：rev 对外必须是字符串，且必须经得起 JSON 往返。
+//
+// 内部是 uint64（FNV-64），而 JS 的 Number 是 float64，精确整数上限
+// 只有 9007199254740991。按数字发出去，浏览器 JSON.parse 就把它四舍五入了：
+//
+//	服务端 13272240285988269346 → 浏览器 13272240285988270000
+//
+// 发回来的永远对不上，于是每次都判「变了」，长轮询立刻返回、页面立刻重查、
+// 立刻再问……实测一个标签页每秒 165 次列表查询，服务器被自己人打垮，
+// 现网表现就是「点开终端管理一堆 500」。
+func TestRevSurvivesJSONRoundTrip(t *testing.T) {
+	w := New(nil, time.Hour)
+	// 挑一个超过 JS 安全整数上限的值
+	const big = uint64(13272240285988269346)
+	w.revs[TopicTerminal] = big
+	w.ready = true
+
+	revs := w.Revs()
+	got := revs[TopicTerminal]
+	if _, err := strconv.ParseUint(got, 16, 64); err != nil {
+		t.Fatalf("rev 该是十六进制字符串，得到 %q", got)
+	}
+
+	// 过一遍 JSON（这正是浏览器拿到的东西）
+	blob, err := json.Marshal(map[string]any{"revs": revs})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if bytes.Contains(blob, []byte("13272240285988269346")) {
+		t.Fatalf("rev 被当成数字序列化了，JS 会把它四舍五入：%s", blob)
+	}
+	var back struct {
+		Revs map[string]string `json:"revs"`
+	}
+	if err := json.Unmarshal(blob, &back); err != nil {
+		t.Fatal(err)
+	}
+	if back.Revs[TopicTerminal] != got {
+		t.Errorf("JSON 往返之后对不上了：%q → %q", got, back.Revs[TopicTerminal])
+	}
+	// 往返回来的值拿去 diff，必须判「没变」
+	if d := diff(map[Topic]string{TopicTerminal: back.Revs[TopicTerminal]}, revs); len(d) != 0 {
+		t.Errorf("往返之后被判成变了 —— 这就是那个死循环：%v", d)
 	}
 }
 
@@ -90,7 +139,7 @@ func TestPollSeesForeignUpdate(t *testing.T) {
 
 	w.poll(ctx)
 	before := w.Revs()
-	if before[TopicTerminal] == 0 {
+	if before[TopicTerminal] == "" || before[TopicTerminal] == "0" {
 		t.Fatal("第一次轮询就没拿到指纹，后面比什么都没意义")
 	}
 
@@ -120,7 +169,7 @@ func TestWaitReturnsImmediatelyWhenAlreadyChanged(t *testing.T) {
 	w := New(db, time.Hour) // 不让它自己轮询，完全手动
 	w.poll(context.Background())
 
-	stale := map[Topic]uint64{TopicTerminal: 12345} // 肯定对不上
+	stale := map[Topic]string{TopicTerminal: "肯定对不上"}
 	start := time.Now()
 	_, changed := w.Wait(context.Background(), stale, 5*time.Second)
 	if len(changed) != 1 || changed[0] != TopicTerminal {

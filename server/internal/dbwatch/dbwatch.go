@@ -27,6 +27,23 @@
 // 两层的值混成一个 rev。**rev 不表示版本先后，只表示「一样 / 不一样」** ——
 // 它是哈希，比大小没有意义。
 //
+// # ⚠ rev 对外一律是**十六进制字符串**，绝不能是 JSON 数字
+//
+// 现网炸过一次，值得写在这儿：rev 内部是 uint64（FNV-64），
+// 第一版直接按数字序列化发给浏览器。而 JS 的 Number 是 float64，
+// 能精确表示的整数上限只有 9007199254740991：
+//
+//	服务端发出   13272240285988269346
+//	JSON.parse   13272240285988270000   ← 被四舍五入了
+//
+// 于是浏览器发回来的 rev **永远**对不上服务端的，diff() 每次都判「变了」，
+// 长轮询每次立刻返回，页面立刻重查列表、立刻再问一次……
+// 实测一个标签页每秒打出 **165 次**列表查询，服务器直接被自己人打垮，
+// 表现就是「点开终端管理一堆 500」。
+//
+// 所以 Revs() / Wait() 对外只认字符串，两头都不做数字解析 —— 没有数字，
+// 就没有精度可丢。
+//
 // # 为什么是长轮询，不是 SSE / WebSocket
 //
 //   - 前面挡着一层 Apache。SSE 经反向代理默认会被缓冲，表现是「事件攒着不发」，
@@ -45,6 +62,7 @@ import (
 	"fmt"
 	"hash/fnv"
 	"log"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -125,12 +143,14 @@ func (w *Watcher) Start(ctx context.Context) {
 }
 
 // Revs 返回当前各主题的版本号快照。
-func (w *Watcher) Revs() map[Topic]uint64 {
+//
+// ⚠ 值是**十六进制字符串**，不是数字。理由见文件头那段「rev 对外一律是字符串」。
+func (w *Watcher) Revs() map[Topic]string {
 	w.mu.RLock()
 	defer w.mu.RUnlock()
-	out := make(map[Topic]uint64, len(w.revs))
+	out := make(map[Topic]string, len(w.revs))
 	for k, v := range w.revs {
-		out[k] = v
+		out[k] = strconv.FormatUint(v, 16)
 	}
 	return out
 }
@@ -142,7 +162,7 @@ func (w *Watcher) Revs() map[Topic]uint64 {
 //
 // 返回当前全部版本号，以及**这一次**变了的主题。超时或 ctx 取消时
 // changed 为空，版本号照样返回，调用方据此对齐。
-func (w *Watcher) Wait(ctx context.Context, known map[Topic]uint64, timeout time.Duration) (map[Topic]uint64, []Topic) {
+func (w *Watcher) Wait(ctx context.Context, known map[Topic]string, timeout time.Duration) (map[Topic]string, []Topic) {
 	if timeout <= 0 {
 		timeout = 25 * time.Second
 	}
@@ -178,8 +198,9 @@ func (w *Watcher) Wait(ctx context.Context, known map[Topic]uint64, timeout time
 
 // diff 找出 known 里和 cur 不一致的主题。
 //
-// ⚠ 比的是「相等 / 不等」，不是大小。rev 是哈希，没有先后可言。
-func diff(known, cur map[Topic]uint64) []Topic {
+// ⚠ 比的是「相等 / 不等」，不是大小。rev 是哈希，没有先后可言 ——
+// 也正因为如此，它可以、而且必须是字符串。
+func diff(known, cur map[Topic]string) []Topic {
 	var out []Topic
 	for _, t := range Topics {
 		k, ok := known[t]
