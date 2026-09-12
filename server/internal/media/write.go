@@ -55,6 +55,10 @@ type UploadResult struct {
 	// 源是 WAV 时 SourceFormat 为空 —— WAV 不认帧头，认了也没用。
 	SourceFormat string `json:"sourceFormat,omitempty"`
 	TargetFormat string `json:"targetFormat,omitempty"`
+	// TimeLength 是转码产物的播放时长（秒），与写进 media.timelength 的是同一个值。
+	// TimeText 是它的中文写法（「3分12秒」），界面直接显示，不用自己再算一遍。
+	TimeLength int64  `json:"timelength"`
+	TimeText   string `json:"timelengthText,omitempty"`
 }
 
 type Uploader struct {
@@ -78,8 +82,9 @@ func NewUploader(db *sql.DB, mediaRoot, ffmpegPath string, maxUploadMB int64) *U
 //	C-03 media.size 单位是 KB（字节数 ÷ 1024）
 //	C-04 media.typeid 上传后固定写 'mp3'
 //	C-05 media.filename 固定格式 /backup/mediadata/<数字>.mp3
-//	C-06 timelength 写 0，由后台 C 服务扫描回填 —— 播放时长要与后台算法一致。
-//	     channel/sample/bitrate 写**转码产物实测出来的值**（见下）
+//	C-06 channel/sample/bitrate/timelength 写**转码产物实测出来的值**（见下）。
+//	     ⚠ 手册原文要求这四列一律写 0，等后台 C 服务扫描回填。四列都不照做了，
+//	       理由分两段写在下面那个 ⚠ 里。
 //	C-07 media.priority 恒写 0（该列注释标注"未使用"）
 //	C-08 media.userid 写真实上传者，否则普通用户在旧 Web 看不到自己上传的媒体
 func (u *Uploader) Upload(
@@ -194,22 +199,41 @@ func (u *Uploader) Upload(
 	}
 	res.TargetFormat = outInfo.String()
 
-	// 这三列写实测值，不写 0。
+	// 这四列写实测值，不写 0。
 	//
 	// 手册 §7.2 的 C-06 原文是「timelength/channel/sample/bitrate 上传时写 0，
 	// 不得自行用 ffprobe 填值」，理由是「与后台算法不一致 → 播放时长判定错乱」。
-	// 那条理由只对 timelength 成立：时长要跟后台一套算法，差一秒就对不上，
-	// 所以 timelength 仍然写 0。
 	//
-	// channel/sample/bitrate 是另一回事 —— 它们不是「测出来的估计值」，而是
-	// 我们**命令 ffmpeg 产出**的固定格式，上面刚刚认过头核对过。旧版
-	// upload.php 本来也在上传时就写这三列，现网数据也确实是
-	// channel=2 / sample=44100 / bitrate=128000。写 0 反而是在等后台补一件
-	// 已经确定的事，中间那段时间列表里的码率显示是空的。
+	// channel/sample/bitrate：它们不是「测出来的估计值」，而是我们**命令 ffmpeg
+	// 产出**的固定格式，上面刚刚认过头核对过。旧版 upload.php 本来也在上传时
+	// 就写这三列，现网数据也确实是 channel=2 / sample=44100 / bitrate=128000。
+	// 写 0 反而是在等后台补一件已经确定的事，中间那段时间列表里码率是空的。
 	//
-	// ⚠ 注意单位：bitrate 列存的是 bps（现网 128000），不是 kbps。
+	// ⚠ timelength 原来是照着 C-06 写 0 的，现在也写实测值 —— 需求方明确要求
+	//   「上传完成后播放时长要填上」。这是**有意偏离手册**，不是漏看，理由：
+	//
+	//     · 写 0 的实际表现是列表里显示「0分0秒」，不是留空。也就是说
+	//       C-06 想避免的「与后台不一致」，在后台扫到之前本来就已经发生了，
+	//       而且是以一个明显错误的值呈现给用户。
+	//     · C-06 反对的是「自行用 ffprobe 填值」—— 拿一个外部工具去估任意
+	//       输入格式的时长。这里不是：我们数的是**自己刚产出的那个文件**的
+	//       MP3 帧，固定 128kbps CBR / 44100Hz，时长 = 帧数 × 1152 ÷ 44100，
+	//       是算出来的精确值，不是估计。任何正确实现都会落在同一个数上，
+	//       最多差一秒的取整。
+	//     · 后台 C 服务照常扫描。它要是算出别的值，会直接覆盖这一列，
+	//       最终仍以后台为准 —— 我们填的只是「后台扫到之前」那段空窗。
+	//
+	//   真要退回去，把下面 seconds 改回 0 即可，两条 SQL 都用的是它。
+	//
+	// ⚠ 注意单位：bitrate 列存的是 bps（现网 128000），不是 kbps；
+	//   timelength 列存的是秒。
 	sizeKB := st.Size() / 1024
 	res.SizeKB = sizeKB
+
+	// 四舍五入到整秒：列是 int，截断会让每首歌都少半秒
+	seconds := int64(outInfo.Seconds + 0.5)
+	res.TimeLength = seconds
+	res.TimeText = FormatDuration(ctx, seconds)
 
 	// 5) 查重与写库，用命名锁串行化
 	//
@@ -234,8 +258,8 @@ func (u *Uploader) Upload(
 		r, insErr := u.db.ExecContext(ctx, `
 			INSERT INTO media (name, size, typeid, priority, filename, folderid,
 			                   timelength, channel, sample, bitrate, userid)
-			VALUES (?, ?, 'mp3', 0, ?, ?, 0, ?, ?, ?, ?)`,
-			baseName, sizeKB, targetRel, folderID,
+			VALUES (?, ?, 'mp3', 0, ?, ?, ?, ?, ?, ?, ?)`,
+			baseName, sizeKB, targetRel, folderID, seconds,
 			outInfo.Channels, outInfo.SampleRate, outInfo.BitrateKbps*1000, user.ID)
 		if insErr != nil {
 			_ = os.Remove(targetAbs)
@@ -253,11 +277,12 @@ func (u *Uploader) Upload(
 
 	default:
 		// 同名覆盖：保持原 id 与 userid 不变，只替换文件与需要重算的字段。
-		// timelength 归零等后台重新扫描；channel/sample/bitrate 按新产物实测值写。
+		// 四列都按新产物的实测值写 —— 覆盖之后旧的时长 / 码率就不作数了，
+		// 留着比写 0 更糟：那是**另一个文件**的时长，看着还挺像真的。
 		_, upErr := u.db.ExecContext(ctx, `
-			UPDATE media SET size = ?, filename = ?, timelength = 0,
+			UPDATE media SET size = ?, filename = ?, timelength = ?,
 			                 channel = ?, sample = ?, bitrate = ?
-			WHERE id = ?`, sizeKB, targetRel,
+			WHERE id = ?`, sizeKB, targetRel, seconds,
 			outInfo.Channels, outInfo.SampleRate, outInfo.BitrateKbps*1000, existingID)
 		if upErr != nil {
 			_ = os.Remove(targetAbs)

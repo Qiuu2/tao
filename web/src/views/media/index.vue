@@ -263,32 +263,86 @@
       </template>
     </el-dialog>
 
-    <!-- 添加媒体：表单项与按钮照 :80 的「添加媒体」弹窗（所属文件夹 / 媒体文件） -->
-    <el-drawer v-model="uploadVisible" :title="$t('media.addMedia')" size="480px" @close="uploadResults = []">
+    <!--
+      添加媒体（:80 的「添加媒体」弹窗：所属文件夹 / 媒体文件）。
+
+      # 为什么是一张表
+
+      原来是一个拖拽框加**一条总进度条**。多传几个文件时那条总进度条什么也说不清：
+      看不出在传哪一个、哪一个已经好了、哪一个失败了；而且字节一发完它就卡在
+      100%，后面服务端逐个转码的那段时间里，整个界面是死的。
+
+      现在一行一个文件，各自一条进度条，各自报自己的状态。下面的「添加媒体」
+      按钮继续往表里加，确定之后**一个一个传**（见 doUpload 的注释）。
+
+      ⚠ 播放时长要等这一行真的传完才有 —— 它是服务端在转码产物上数 MP3 帧
+        算出来的，不是浏览器能预先知道的东西。所以传完之前那一格是「—」。
+    -->
+    <el-drawer
+      v-model="uploadVisible"
+      :title="$t('media.addMedia')"
+      size="720px"
+      destroy-on-close
+      :close-on-click-modal="!uploading"
+      @close="onUploadClose"
+    >
       <el-form label-width="90px">
         <el-form-item :label="$t('media.belongFolder')">
           <!-- 目录在左树里选，这里只读回显，避免两处可改导致传到别的目录去 -->
           <el-input :model-value="folderInfo?.name ?? ''" readonly />
         </el-form-item>
-        <el-form-item :label="$t('taskCommon.mediaFile')">
-          <el-upload
-            ref="uploadRef"
-            drag
-            multiple
-            :auto-upload="false"
-            :file-list="fileList"
-            accept=".mp3,.wav"
-            :on-change="onFileChange"
-            :on-remove="onFileChange"
-            class="fill"
-          >
-            <el-icon class="el-icon--upload"><UploadFilled /></el-icon>
-            <div class="el-upload__text">
-              {{ $t("media.dragHere") }}<em>{{ $t("media.pickFile") }}</em>
-            </div>
-          </el-upload>
-        </el-form-item>
       </el-form>
+
+      <el-table :data="rows" size="small" border max-height="46vh" class="up-table">
+        <el-table-column type="index" :label="$t('common.index')" width="55" align="center" />
+        <el-table-column :label="$t('taskCommon.mediaName')" min-width="170" show-overflow-tooltip>
+          <template #default="s">
+            <div class="up-name">{{ s.row.name }}</div>
+            <div class="up-size">{{ fmtBytes(s.row.size) }}</div>
+          </template>
+        </el-table-column>
+        <el-table-column :label="$t('media.uploadProgress')" min-width="230">
+          <template #default="s">
+            <el-progress :percentage="s.row.percent" :status="progressStatus(s.row)" :stroke-width="12" text-inside />
+            <p class="up-progress-text" :class="{ bad: s.row.phase === 'failed' }">{{ rowText(s.row) }}</p>
+          </template>
+        </el-table-column>
+        <!--
+          播放时长：服务端返回的 timelengthText。没传完之前没有这个值，
+          编不出来也不该编 —— 显示「—」，比放一个占位数字诚实。
+        -->
+        <el-table-column :label="$t('taskCommon.playLength')" width="100" align="center">
+          <template #default="s">
+            <span v-if="s.row.timeText">{{ s.row.timeText }}</span>
+            <span v-else class="muted">—</span>
+          </template>
+        </el-table-column>
+        <el-table-column :label="$t('common.operation')" width="70" align="center">
+          <template #default="s">
+            <el-button type="danger" link :disabled="uploading" @click="dropRow(s.$index)">
+              {{ $t("common.remove") }}
+            </el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+      <p v-if="!rows.length" class="dlg-note">{{ $t("media.noFilePicked") }}</p>
+
+      <!--
+        「添加媒体」：只负责往上面那张表里加行，不上传。
+        :show-file-list="false" —— 文件清单已经是那张表了，el-upload 自己再列一遍是重复。
+      -->
+      <div class="up-add">
+        <el-upload
+          ref="uploadRef"
+          multiple
+          :auto-upload="false"
+          :show-file-list="false"
+          accept=".mp3,.wav"
+          :on-change="onFileChange"
+        >
+          <el-button :icon="Plus" :disabled="uploading">{{ $t("media.addMedia") }}</el-button>
+        </el-upload>
+      </div>
 
       <el-alert type="info" :closable="false" show-icon class="mb10">
         {{ $t("media.uploadLimit") }}<br />
@@ -300,53 +354,9 @@
 
       <div class="mt10">
         <el-button :disabled="uploading" @click="uploadVisible = false">{{ $t("common.cancel") }}</el-button>
-        <el-button type="primary" :loading="uploading" :disabled="!fileList.length" @click="doUpload">
-          {{ $t("common.confirm") }}{{ fileList.length ? $t("sys.nFiles", { n: fileList.length }) : "" }}
+        <el-button type="primary" :loading="uploading" :disabled="!pendingCount" @click="doUpload">
+          {{ $t("common.confirm") }}{{ pendingCount ? $t("sys.nFiles", { n: pendingCount }) : "" }}
         </el-button>
-      </div>
-
-      <!--
-        进度条。百分比走的是浏览器的 xhr.upload.onprogress，量的是
-        「字节发出去了多少」；发完之后服务端还要逐个转码，那一段没有进度可报，
-        所以到 100% 就把文案换成「服务器转码中…」。
-      -->
-      <div v-if="progress.phase" class="up-progress">
-        <el-progress
-          :percentage="progress.percent"
-          :status="progress.phase === 'transcoding' ? 'success' : undefined"
-          :stroke-width="14"
-          text-inside
-        />
-        <p class="up-progress-text">{{ progressText }}</p>
-      </div>
-
-      <div v-if="uploadResults.length" class="mt10">
-        <el-divider content-position="left">{{ $t("media.uploadResult") }}</el-divider>
-        <el-table :data="uploadResults" size="small" border>
-          <el-table-column prop="fileName" :label="$t('media.file')" min-width="120" show-overflow-tooltip />
-          <el-table-column :label="$t('media.result')" width="80" align="center">
-            <template #default="s">
-              <el-tag v-if="s.row.status === 'created'" type="success" size="small">{{ $t("common.create") }}</el-tag>
-              <el-tag v-else-if="s.row.status === 'overwritten'" type="warning" size="small">{{ $t("media.overwrite") }}</el-tag>
-              <el-tag v-else type="danger" size="small">{{ $t("media.failed") }}</el-tag>
-            </template>
-          </el-table-column>
-          <!--
-            转码前后的参数摆出来 —— 上传的码率五花八门，用户得看得见
-            「我这个 320k 单声道的文件，进来之后变成了 128k 立体声」。
-            失败的行这里改放原因，比缩在 tooltip 里靠谱。
-          -->
-          <el-table-column :label="$t('media.convert')" min-width="200">
-            <template #default="s">
-              <span v-if="s.row.status === 'failed'" class="up-bad">{{ s.row.message }}</span>
-              <span v-else class="up-fmt">
-                <span class="up-src">{{ s.row.sourceFormat || "WAV" }}</span>
-                <el-icon><Right /></el-icon>
-                <span class="up-dst">{{ s.row.targetFormat }}</span>
-              </span>
-            </template>
-          </el-table-column>
-        </el-table>
       </div>
     </el-drawer>
 
@@ -370,10 +380,8 @@ import {
   FolderOpened,
   Plus,
   Refresh,
-  Right,
   Search,
   Upload,
-  UploadFilled,
   VideoPlay,
   WarningFilled
 } from "@element-plus/icons-vue";
@@ -398,17 +406,18 @@ import {
 } from "@/api/modules/media";
 import ProTable from "@/components/ProTable/index.vue";
 import { ColumnProps } from "@/components/ProTable/interface";
+import { useGlobalStore } from "@/stores/modules/global";
 import { useUserStore } from "@/stores/modules/user";
 
 // 脚本里拼的文案用 t()；模板里的 $t 不用引入
 const { t } = useI18n();
 
 const userStore = useUserStore();
+const globalStore = useGlobalStore();
 
 const treeRef = ref();
 const proTableRef = ref();
 const audioRef = ref<HTMLAudioElement>();
-const uploadRef = ref();
 
 const treeData = ref<FolderTree>();
 const treeNodes = computed(() => treeData.value?.tree ?? []);
@@ -720,25 +729,67 @@ const confirmClear = async () => {
 
 const uploadVisible = ref(false);
 const uploading = ref(false);
-const fileList = ref<UploadUserFile[]>([]);
-const uploadResults = ref<any[]>([]);
-
-const onFileChange = (_f: any, list: UploadUserFile[]) => (fileList.value = list);
+const uploadRef = ref();
 
 /**
- * 上传进度。
+ * 待上传清单 —— 抽屉里那张表的数据源，一行一个文件。
  *
- * ⚠ 浏览器只能报「字节发出去了多少」，报不了服务器那边转码到哪一步了。
- *   媒体上传是**先传完、再转码**：字节到 100% 之后，服务端还要逐个走 ffmpeg
- *   （统一转 128kbps 立体声）。所以百分比到 100 不等于完事，这里把阶段
- *   切成「转码中」，免得用户对着一个卡在 100% 的条不知道在等什么。
+ * 原来这里是 fileList（el-upload 的清单）+ uploadResults（服务端返回的结果）
+ * 两份数据，一条总进度条。两份对不上号：结果按返回顺序排，清单按选择顺序排，
+ * 想知道「第三行那个到底成没成」得自己拿文件名去另一个数组里找。
+ *
+ * 现在只有这一份，每行自己带着进度和结果，从选中一直用到传完。
  */
-const progress = reactive({
-  percent: 0,
-  loaded: 0,
-  total: 0,
-  phase: "" as "" | "uploading" | "transcoding"
-});
+interface UpRow {
+  name: string;
+  size: number;
+  raw: File;
+  percent: number;
+  phase: "pending" | "uploading" | "transcoding" | "done" | "failed";
+  /** 服务端返回的 created / overwritten，done 时才有 */
+  status?: string;
+  /** 服务端算出来的播放时长，done 时才有 */
+  timeText?: string;
+  sourceFormat?: string;
+  targetFormat?: string;
+  message?: string;
+}
+
+const rows = ref<UpRow[]>([]);
+
+/** 还没传成功的行数 —— 「确定(N)」上的 N，也是能不能点确定的判据 */
+const pendingCount = computed(() => rows.value.filter(r => r.phase !== "done").length);
+
+/**
+ * el-upload 只负责挑文件，挑完直接进表，它自己的清单不显示（show-file-list=false）。
+ *
+ * ⚠ on-change 每选一次会带着**全量**清单回调，所以这里按「文件名 + 大小 + 修改时间」
+ *   去重，否则连点两次「添加媒体」选同一批文件，表里会出现两遍。
+ */
+const onFileChange = (_f: any, list: UploadUserFile[]) => {
+  const keyOf = (f: File) => `${f.name}|${f.size}|${f.lastModified}`;
+  const have = new Set(rows.value.map(r => keyOf(r.raw)));
+  for (const it of list) {
+    const raw = it.raw as File | undefined;
+    if (!raw || have.has(keyOf(raw))) continue;
+    have.add(keyOf(raw));
+    rows.value.push({ name: raw.name, size: raw.size, raw, percent: 0, phase: "pending" });
+  }
+  // el-upload 自己那份清单已经没人看了，清掉免得越攒越大
+  uploadRef.value?.clearFiles?.();
+};
+
+const dropRow = (i: number) => rows.value.splice(i, 1);
+
+const onUploadClose = () => {
+  // 传完的行没必要留着下次再看，没传的留着 —— 用户可能只是点错了关闭
+  rows.value = rows.value.filter(r => r.phase !== "done");
+  rows.value.forEach(r => {
+    r.percent = 0;
+    r.phase = "pending";
+    r.message = undefined;
+  });
+};
 
 const fmtBytes = (n: number) => {
   if (n >= 1024 * 1024) return (n / 1024 / 1024).toFixed(1) + " MB";
@@ -746,73 +797,133 @@ const fmtBytes = (n: number) => {
   return n + " B";
 };
 
-const progressText = computed(() => {
-  if (progress.phase === "transcoding") return t("media.transcoding");
-  if (progress.phase === "uploading" && progress.total) {
-    return `${fmtBytes(progress.loaded)} / ${fmtBytes(progress.total)}`;
-  }
-  return "";
-});
+const progressStatus = (r: UpRow) => {
+  if (r.phase === "failed") return "exception";
+  if (r.phase === "done") return "success";
+  return undefined;
+};
 
-const doUpload = async () => {
-  if (!folderInfo.value) return;
-  uploading.value = true;
-  uploadResults.value = [];
-  progress.percent = 0;
-  progress.loaded = 0;
-  progress.total = 0;
-  progress.phase = "uploading";
-  try {
+/**
+ * 进度条底下那行字。
+ *
+ * ⚠ 浏览器只能报「字节发出去了多少」，报不了服务器那边转码到哪一步。
+ *   媒体上传是先传完、再转码：字节到 100% 之后，服务端还要走一遍 ffmpeg
+ *   （统一转 128kbps 立体声）。所以 100% 不等于完事，这里把阶段切成
+ *   「服务器转码中」，免得用户对着一个卡在 100% 的条不知道在等什么。
+ */
+const rowText = (r: UpRow) => {
+  switch (r.phase) {
+    case "pending":
+      return t("media.waitingUpload");
+    case "uploading":
+      return `${fmtBytes(Math.round((r.size * r.percent) / 100))} / ${fmtBytes(r.size)}`;
+    case "transcoding":
+      return t("media.transcoding");
+    case "failed":
+      return r.message || t("media.failed");
+    default:
+      // 转码前后的参数摆出来 —— 上传的码率五花八门，用户得看得见
+      // 「我这个 320k 单声道的文件，进来之后变成了 128k 立体声」。
+      return `${r.status === "overwritten" ? t("media.overwrite") : t("common.create")} · ${
+        r.sourceFormat || "WAV"
+      } → ${r.targetFormat || ""}`;
+  }
+};
+
+/** 传一个文件，进度回写到这一行 */
+const uploadOne = (row: UpRow, folderId: number) =>
+  new Promise<any>((resolve, reject) => {
     const form = new FormData();
-    form.append("folderId", String(folderInfo.value.id));
-    fileList.value.forEach(f => f.raw && form.append("file", f.raw));
+    form.append("folderId", String(folderId));
+    form.append("file", row.raw);
 
     // ⚠ 用 XHR 不用 fetch：fetch 没有上传进度事件（没有 request 侧的
     //   ReadableStream 进度回调），要百分比就只能走 xhr.upload.onprogress。
-    const json = await new Promise<any>((resolve, reject) => {
-      const xhr = new XMLHttpRequest();
-      xhr.open("POST", "/api/media/upload");
-      xhr.setRequestHeader("x-access-token", userStore.token);
-      xhr.upload.onprogress = e => {
-        if (!e.lengthComputable) return;
-        progress.loaded = e.loaded;
-        progress.total = e.total;
-        progress.percent = Math.round((e.loaded / e.total) * 100);
-        // 字节发完了，后面等的是服务端转码
-        if (e.loaded >= e.total) progress.phase = "transcoding";
-      };
-      xhr.onload = () => {
-        try {
-          resolve(JSON.parse(xhr.responseText));
-        } catch {
-          reject(new Error(t("media.unparsableResponse", { status: xhr.status })));
-        }
-      };
-      xhr.onerror = () => reject(new Error(t("media.networkError")));
-      xhr.ontimeout = () => reject(new Error(t("media.uploadTimeout")));
-      xhr.send(form);
-    });
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", "/api/media/upload");
+    xhr.setRequestHeader("x-access-token", userStore.token);
+    // ⚠ 这一条不能漏。服务端返回的播放时长是**带语言的文案**（「3分12秒」/「3m 12s」），
+    //   由 Accept-Language 决定；上传走的是裸 XHR，不经过 axios 拦截器，
+    //   不自己补这个头的话，浏览器会带上它自己的默认值（Chromium 是 en-US），
+    //   于是中文界面上冒出一个「0m 9s」。axios 那边在 api/index.ts 里设的就是这一行。
+    xhr.setRequestHeader("Accept-Language", globalStore.language);
+    xhr.upload.onprogress = e => {
+      if (!e.lengthComputable) return;
+      row.percent = Math.round((e.loaded / e.total) * 100);
+      row.phase = e.loaded >= e.total ? "transcoding" : "uploading";
+    };
+    xhr.onload = () => {
+      try {
+        resolve(JSON.parse(xhr.responseText));
+      } catch {
+        reject(new Error(t("media.unparsableResponse", { status: xhr.status })));
+      }
+    };
+    xhr.onerror = () => reject(new Error(t("media.networkError")));
+    xhr.ontimeout = () => reject(new Error(t("media.uploadTimeout")));
+    xhr.send(form);
+  });
 
-    if (json.code !== 200) {
-      ElMessage.error(json.msg || t("media.uploadFailed"));
-      return;
+/**
+ * 确定：把还没传成功的行**一个一个**传上去。
+ *
+ * ⚠ 为什么不像原来那样一次请求带走全部文件：一次请求只有一条总进度，
+ *   而且字节全部发完之后服务端才开始逐个转码 —— 那段时间每一行都会卡在
+ *   100%，谁也不知道轮到哪个了，结果还要等最后一个转完才一起返回。
+ *   一个一个传，每一行的进度、时长、成败都在它自己走完时就落定。
+ *
+ * ⚠ 代价是后端会按文件数各通知一次 MediaChanged（原来一次请求只通知一次）。
+ *   那是「重新加载这个目录」的通知，多发几次不会错，只是多几个包。
+ *   用这个代价换「哪一个在传、哪一个好了」看得见，值。
+ *
+ * 已经传成功的行跳过：中途失败重试时不会把成功的再传一遍（也就不会触发同名覆盖）。
+ */
+const doUpload = async () => {
+  if (!folderInfo.value) return;
+  const folderId = folderInfo.value.id;
+  uploading.value = true;
+  let ok = 0;
+  let fail = 0;
+  try {
+    for (const row of rows.value) {
+      if (row.phase === "done") continue;
+      row.percent = 0;
+      row.phase = "uploading";
+      row.message = undefined;
+      try {
+        const json = await uploadOne(row, folderId);
+        if (json.code !== 200) throw new Error(json.msg || t("media.uploadFailed"));
+        const res = (json.data.results ?? [])[0];
+        if (!res) throw new Error(t("media.uploadFailed"));
+        row.percent = 100;
+        if (res.status === "failed") {
+          row.phase = "failed";
+          row.message = res.message;
+          fail++;
+        } else {
+          row.phase = "done";
+          row.status = res.status;
+          row.timeText = res.timelengthText;
+          row.sourceFormat = res.sourceFormat;
+          row.targetFormat = res.targetFormat;
+          ok++;
+        }
+      } catch (e: any) {
+        row.percent = 100;
+        row.phase = "failed";
+        row.message = e?.message ?? String(e);
+        fail++;
+      }
     }
-    uploadResults.value = json.data.results ?? [];
-    const ok = uploadResults.value.filter(r => r.status !== "failed").length;
     ElNotification({
       title: t("media.uploadDone"),
-      message: t("media.uploadSummary", { ok, fail: uploadResults.value.length - ok }),
-      type: ok ? "success" : "warning"
+      message: t("media.uploadSummary", { ok, fail }),
+      type: fail ? "warning" : "success"
     });
-    fileList.value = [];
-    uploadRef.value?.clearFiles?.();
     refreshTable();
     await loadTree();
-  } catch (e: any) {
-    ElMessage.error(t("media.uploadFailedColon") + (e?.message ?? e));
   } finally {
     uploading.value = false;
-    progress.phase = "";
   }
 };
 
@@ -839,30 +950,35 @@ onMounted(loadTree);
 </script>
 
 <style scoped lang="scss">
-.up-progress {
-  margin-top: 12px;
+.up-table {
+  margin-bottom: 10px;
+}
+.up-name {
+  line-height: 1.4;
+}
+.up-size {
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--el-text-color-secondary);
 }
 .up-progress-text {
-  margin: 6px 0 0;
+  margin: 4px 0 0;
+  overflow: hidden;
   font-size: 12px;
   color: var(--el-text-color-secondary);
-  text-align: right;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  &.bad {
+    color: var(--el-color-danger);
+  }
 }
-.up-fmt {
-  display: inline-flex;
-  gap: 6px;
-  align-items: center;
-  font-size: 12px;
+.up-add {
+  margin-bottom: 10px;
 }
-.up-src {
+.dlg-note {
+  margin: 0 0 10px;
+  font-size: 13px;
   color: var(--el-text-color-secondary);
-}
-.up-dst {
-  color: var(--el-color-success);
-}
-.up-bad {
-  font-size: 12px;
-  color: var(--el-color-danger);
 }
 
 .media-container {
