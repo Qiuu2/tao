@@ -231,8 +231,6 @@ type RestoreResult struct {
 
 type RestoreInput struct {
 	Name string
-	// ConfirmText 必须与包名逐字相同，防误点。
-	ConfirmText string
 	// SafetyBackup 恢复前先自动生成一份当前状态的备份。
 	SafetyBackup bool
 	// RestoreMedia 是否连媒体文件一起恢复。
@@ -243,9 +241,14 @@ type RestoreInput struct {
 // Restore 执行恢复。
 func (s *Service) Restore(ctx context.Context, in RestoreInput) (*RestoreResult, error) {
 	started := time.Now()
-	if in.ConfirmText != in.Name {
-		return nil, fmt.Errorf("确认文本与备份包名不一致，已取消")
-	}
+	// 早前这里要求逐字输入包名才放行。**已按需求方要求去掉** —— 界面上点确定即恢复。
+	//
+	// 剩下的防线一条都没动，而且它们比那个输入框管用：
+	//
+	//	· Precheck 结构对不上直接拒绝（ErrIncompatible），不会把线上表改成别的样子
+	//	· SafetyBackup 默认开着，恢复前先留一份当前状态
+	//	· 整个恢复是一个真事务（没有 DDL），中途出错整体回滚
+	//	· handleBackupRestore 在动手**之前**写审计 —— 恢复会把 log 表也换掉
 	pre, err := s.Precheck(ctx, in.Name)
 	if err != nil {
 		return nil, err

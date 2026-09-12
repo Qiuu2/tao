@@ -352,10 +352,14 @@
           期间广播完全中断，正在播放的任务会被打断。请避开上下课等打铃时段。
         </div>
       </el-alert>
-      <el-input v-model="rb.confirmText" :placeholder="$t('server.typeToRestart')" />
+      <!--
+        ⚠ 这里原来有一个「逐字输入『重启服务器』」的输入框，**已按要求去掉** ——
+          点确定即重启。剩下的防线：这一页挂在超管上、上面那条红底说明、
+          以及后端在发包之前写的那行审计（谁在什么时候按的）。
+      -->
       <template #footer>
         <el-button @click="rb.visible = false">{{ $t("common.cancel") }}</el-button>
-        <el-button type="danger" :loading="rb.busy" :disabled="rb.confirmText !== $t('server.restartServer')" @click="doReboot">
+        <el-button type="danger" :loading="rb.busy" @click="doReboot">
           {{ $t("server.confirmRestart") }}
         </el-button>
       </template>
@@ -616,10 +620,9 @@ const openSwitchVersion = async () => {
 
 /* ---------------- 重启服务器 ---------------- */
 
-const rb = reactive({ visible: false, busy: false, confirmText: "" });
+const rb = reactive({ visible: false, busy: false });
 
 const openReboot = () => {
-  rb.confirmText = "";
   rb.busy = false;
   rb.visible = true;
 };
@@ -627,7 +630,7 @@ const openReboot = () => {
 const doReboot = async () => {
   rb.busy = true;
   try {
-    const { data } = await rebootServerApi(rb.confirmText);
+    const { data } = await rebootServerApi();
     rb.visible = false;
     ElMessage.warning(data.note);
   } finally {

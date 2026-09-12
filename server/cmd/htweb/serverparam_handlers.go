@@ -163,28 +163,20 @@ func (a *app) handleServerVersionSwitch(w http.ResponseWriter, r *http.Request) 
 
 // ---------- 重启服务器 ----------
 
-type serverRebootReq struct {
-	ConfirmText string `json:"confirmText"`
-}
-
-// rebootConfirmText 是「重启服务器」必须逐字输入的确认文本。
-const rebootConfirmText = "重启服务器"
-
 // handleServerReboot 下发 server?state=1。
 //
 // ⚠ 这条报文实测会让**整台服务器立刻重启**，不是「重启后台服务」——
 // 现网 2026-08-25 16:09:58 发出，16:09:59 systemd 就开始走关机流程。
-// 界面上那个橙色按钮就是它，所以这里要求逐字确认，并写审计。
+//
+// 早前这里要求逐字输入「重启服务器」四个字才放行。**已按需求方要求去掉** ——
+// 界面上点确定即重启。剩下的防线是：
+//
+//	· 这个路由挂在超管上（见 main.go 的 sup()）
+//	· 界面上那个红底弹框把「整机重启、广播中断约 30 秒」写在正中间
+//	· 下面这行审计 —— 谁在什么时候按的，事后查得到
+//
+// 审计那一行因此比以前更要紧：确认文本没了，它是唯一还能追责的东西。
 func (a *app) handleServerReboot(w http.ResponseWriter, r *http.Request) {
-	var in serverRebootReq
-	if !httpx.DecodeJSON(w, r, &in) {
-		return
-	}
-	if in.ConfirmText != rebootConfirmText {
-		httpx.Fail(w, httpx.CodeBadRequest,
-			"确认文本不正确，需要逐字输入「"+rebootConfirmText+"」")
-		return
-	}
 	u := auth.From(r.Context())
 	// 审计写在发包之前：包一发机器就没了，之后什么都写不进去
 	a.auditor.Write(r.Context(), u.Username, "重启服务器（整机）", audit.ClientIP(r))

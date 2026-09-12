@@ -110,12 +110,12 @@
         <el-form-item :label="$t('backup.safeBackupFirst')">
           <el-switch v-model="rst.safetyBackup" />
         </el-form-item>
-        <el-form-item :label="$t('backup.confirmText')" required>
-          <el-input v-model="rst.confirmText" :placeholder="$t('backup.typePackageName')" />
-          <span class="form-tip block">
-            {{ $t("backup.needInput") }}<code>{{ rst.pre?.name }}</code>
-          </span>
-        </el-form-item>
+        <!--
+          ⚠ 这里原来有一个「逐字输入包名」的输入框，**已按要求去掉** ——
+            点确定即恢复。真正拦得住误操作的几条一条没动：
+            结构对不上直接拒绝、默认先留一份安全备份、整个恢复是一个真事务、
+            以及动手之前就写好的那行审计。
+        -->
       </el-form>
 
       <el-alert type="warning" :closable="false">
@@ -125,7 +125,7 @@
 
       <template #footer>
         <el-button @click="rst.visible = false">{{ $t("common.cancel") }}</el-button>
-        <el-button type="danger" :loading="rst.busy" :disabled="rst.confirmText !== rst.pre?.name" @click="doRestore">
+        <el-button type="danger" :loading="rst.busy" @click="doRestore">
           {{ $t("backup.confirmRestore") }}
         </el-button>
       </template>
@@ -259,14 +259,12 @@ const rst = reactive({
   busy: false,
   restoreMedia: true,
   safetyBackup: true,
-  confirmText: "",
   pre: null as BackupPrecheck | null
 });
 
 const openRestore = async (row: BackupItem) => {
   const { data } = await precheckBackupApi(row.name);
   rst.pre = data;
-  rst.confirmText = "";
   rst.busy = false;
   rst.restoreMedia = true;
   rst.safetyBackup = true;
@@ -284,7 +282,6 @@ const doRestore = async () => {
   try {
     const { data } = await restoreBackupApi({
       name: rst.pre.name,
-      confirmText: rst.confirmText,
       safetyBackup: rst.safetyBackup,
       restoreMedia: rst.restoreMedia
     });

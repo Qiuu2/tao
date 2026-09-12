@@ -283,6 +283,11 @@ export const previewFactoryResetApi = () =>
 export const factoryResetApi = (confirmText: string, purgeMediaFiles: boolean) =>
   http.post<FactoryResult>(PORT1 + `/api/server/factory-reset`, { confirmText, purgeMediaFiles });
 
-/** ⚠ 这会重启**整台服务器**，不是重启后台服务 */
-export const rebootServerApi = (confirmText: string) =>
-  http.post<{ sent: boolean; note: string }>(PORT1 + `/api/server/reboot`, { confirmText });
+/**
+ * 重启**整台服务器**。
+ *
+ * ⚠ 不是重启后台服务：实测指令发出后 1 秒系统就开始走关机流程。
+ *   早前要求逐字输入「重启服务器」才放行，已按要求去掉 —— 界面上点确定即重启。
+ *   接口仍挂在超管路由上，后端在发包之前写审计。
+ */
+export const rebootServerApi = () => http.post<{ sent: boolean; note: string }>(PORT1 + `/api/server/reboot`, {});

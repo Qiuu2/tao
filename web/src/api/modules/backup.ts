@@ -133,7 +133,14 @@ export const deleteBackupApi = (name: string) =>
 export const precheckBackupApi = (name: string) =>
   http.get<BackupPrecheck>(PORT1 + `/api/backups/${encodeURIComponent(name)}/restore-precheck`);
 
-export const restoreBackupApi = (data: { name: string; confirmText: string; safetyBackup: boolean; restoreMedia: boolean }) =>
+/**
+ * 恢复一个备份包。
+ *
+ * ⚠ 早前要求逐字输入包名才放行，已按要求去掉 —— 界面上点确定即恢复。
+ *   真正拦得住误操作的仍在：结构对不上直接拒绝、safetyBackup 默认先留一份、
+ *   整个恢复是一个真事务、动手之前就写审计。
+ */
+export const restoreBackupApi = (data: { name: string; safetyBackup: boolean; restoreMedia: boolean }) =>
   http.post<BackupRestoreResult>(PORT1 + `/api/backups/restore`, data);
 
 /** 下载走浏览器直连，带上 token 查询串 */

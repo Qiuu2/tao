@@ -178,7 +178,6 @@ func (a *app) handleBackupPrecheck(w http.ResponseWriter, r *http.Request) {
 
 type backupRestoreReq struct {
 	Name         string `json:"name"`
-	ConfirmText  string `json:"confirmText"`
 	SafetyBackup bool   `json:"safetyBackup"`
 	RestoreMedia bool   `json:"restoreMedia"`
 }
@@ -197,7 +196,6 @@ func (a *app) handleBackupRestore(w http.ResponseWriter, r *http.Request) {
 
 	res, err := a.backups.Restore(r.Context(), backup.RestoreInput{
 		Name:         in.Name,
-		ConfirmText:  in.ConfirmText,
 		SafetyBackup: in.SafetyBackup,
 		RestoreMedia: in.RestoreMedia,
 		Operator:     u.Username,
