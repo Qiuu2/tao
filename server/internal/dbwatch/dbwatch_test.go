@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"os"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -28,22 +29,44 @@ func TestMixChangesWithInput(t *testing.T) {
 
 // diff 只比「一样 / 不一样」，而且只看前端订阅过的主题。
 func TestDiffOnlyWatchesSubscribed(t *testing.T) {
-	cur := map[Topic]string{TopicTerminal: "64", TopicTask: "c8"}
+	cur := map[Topic]string{TopicTerminal: "64"}
 
-	if got := diff(map[Topic]string{TopicTerminal: "64", TopicTask: "c8"}, cur); len(got) != 0 {
+	if got := diff(map[Topic]string{TopicTerminal: "64"}, cur); len(got) != 0 {
 		t.Errorf("都一样时不该报变化：%v", got)
 	}
-	// 终端页只订阅 terminal —— task 变了不该把它叫醒（叫醒 = 白查一次列表）
-	if got := diff(map[Topic]string{TopicTerminal: "64"}, cur); len(got) != 0 {
-		t.Errorf("没订阅的主题变了不该报：%v", got)
+	// 没订阅的主题（以及已经撤掉的 task）传上来一律忽略
+	if got := diff(map[Topic]string{"task": "随便什么"}, cur); len(got) != 0 {
+		t.Errorf("不在 Topics 里的名字不该被理会：%v", got)
 	}
-	got := diff(map[Topic]string{TopicTerminal: "63", TopicTask: "c8"}, cur)
+	got := diff(map[Topic]string{TopicTerminal: "63"}, cur)
 	if len(got) != 1 || got[0] != TopicTerminal {
-		t.Errorf("该只报 terminal，得到 %v", got)
+		t.Errorf("该报 terminal 变了，得到 %v", got)
 	}
 	// ⚠ rev 是哈希，比大小没有意义：随便一个不一样的值都算变了
 	if got := diff(map[Topic]string{TopicTerminal: "ffffff"}, cur); len(got) != 1 {
 		t.Errorf("值不同就是变了，不能按「只增不减」判：%v", got)
+	}
+}
+
+// 只盯 terminal，不盯 task。
+//
+// 六个任务页（作息方案 / 文件广播 / 采播管理 / 终端功放 / 文字语音 / led播放）
+// 的无感刷新按需求方要求撤掉了，task 表整个不该再出现在这里 ——
+// 它是两张表里大得多的那个（现网量级 5 万行 vs 终端 3 千行），
+// 而每一拍都是一次全表 CHECKSUM。
+func TestOnlyTerminalIsWatched(t *testing.T) {
+	if len(Topics) != 1 || Topics[0] != TopicTerminal {
+		t.Errorf("只该盯 terminal 一个主题，实际 %v", Topics)
+	}
+	if len(watchedTables) != 1 || watchedTables[0] != "terminal" {
+		t.Errorf("只该对 terminal 算指纹，实际 %v", watchedTables)
+	}
+	// ⚠ 表名是直接拼进 SQL 的（CHECKSUM TABLE 不接受占位符），
+	//   所以它必须来自这里写死的常量，绝不能来自请求参数。
+	for _, tb := range watchedTables {
+		if strings.ContainsAny(tb, " ;'\"`\\()") {
+			t.Errorf("表名里有可疑字符：%q", tb)
+		}
 	}
 }
 
@@ -90,19 +113,6 @@ func TestRevSurvivesJSONRoundTrip(t *testing.T) {
 	// 往返回来的值拿去 diff，必须判「没变」
 	if d := diff(map[Topic]string{TopicTerminal: back.Revs[TopicTerminal]}, revs); len(d) != 0 {
 		t.Errorf("往返之后被判成变了 —— 这就是那个死循环：%v", d)
-	}
-}
-
-// 表名是写死的常量，绝不能从请求参数来 —— CHECKSUM TABLE 不接受占位符。
-func TestWatchedTablesAreConstants(t *testing.T) {
-	want := map[string]bool{"terminal": true, "task": true}
-	if len(watchedTables) != len(want) {
-		t.Fatalf("盯的表变了：%v", watchedTables)
-	}
-	for _, tb := range watchedTables {
-		if !want[tb] {
-			t.Errorf("%q 不该出现在这张表里", tb)
-		}
 	}
 }
 
@@ -157,9 +167,6 @@ func TestPollSeesForeignUpdate(t *testing.T) {
 	after := w.Revs()
 	if after[TopicTerminal] == before[TopicTerminal] {
 		t.Error("别的程序改了 terminal 表，rev 必须跟着变 —— 不然页面会一直显示旧数据而且毫无迹象")
-	}
-	if after[TopicTask] != before[TopicTask] {
-		t.Error("只改了 terminal，task 的 rev 不该跟着动（否则每次都会白刷一遍任务列表）")
 	}
 }
 

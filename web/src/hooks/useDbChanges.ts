@@ -36,7 +36,14 @@ import { useUserStore } from "@/stores/modules/user";
  * 三样都得关掉才能用，那还不如直接 fetch。这里的错误一律**静默重试**：
  * 它是个后台的东西，坏了顶多是「不自动刷新了」，不该打扰正在干活的人。
  */
-export type DbTopic = "terminal" | "task";
+/**
+ * 可订阅的主题。
+ *
+ * ⚠ 只有 terminal。作息方案 / 文件广播 / 采播管理 / 终端功放 / 文字语音 /
+ *   led播放 这六页曾经也接过无感刷新，按需求方要求撤掉了 —— 它们回到
+ *   「自己点刷新」。服务端那边 task 表整个不再参与（见 internal/dbwatch）。
+ */
+export type DbTopic = "terminal";
 
 /** 一轮长轮询最多挂多久（秒）。与服务端的上限对齐 */
 const WAIT_SECONDS = 25;

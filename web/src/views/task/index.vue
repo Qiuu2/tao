@@ -646,7 +646,6 @@ import HmsInput from "@/components/HmsInput/index.vue";
 import TerminalTree from "@/components/TerminalTree/index.vue";
 import { useAuthStore } from "@/stores/modules/auth";
 import type { ColumnProps, ProTableInstance } from "@/components/ProTable/interface";
-import { useDbChanges } from "@/hooks/useDbChanges";
 
 // exemodel 是周日打头的 7 位掩码（旧站表单也是「日一二三四五六」的排法）
 // 脚本里拼的文案用 t()；模板里的 $t 不用引入
@@ -734,13 +733,6 @@ const dataCallback = (data: any) => {
 };
 
 const refresh = () => proTableRef.value?.getTableList();
-
-/*
-  文件广播任务的执行状态（准备 / 执行中 / 暂停）是**后台 C 服务**写进 task 表的，
-  它不会来通知这个页面。所以盯着库看，变了就重新拉一次。
-  见 hooks/useDbChanges.ts 与 server/internal/dbwatch。
-*/
-useDbChanges(["task"], refresh);
 
 const loadFolders = async () => {
   const { data } = await getTaskFolderTreeApi();

@@ -12,17 +12,29 @@
 //
 // # 怎么看出来：两层叠一起
 //
-//	① serverbaseparam.terminalchange / taskchange / serverchange
-//	   旧系统自己的变更计数器，改完数据的程序会把它 +1。
-//	   代价是一行三个整数，几乎不要钱。
+//	① serverbaseparam.terminalchange
+//	   旧系统自己的变更计数器，改完终端的程序会把它 +1。
+//	   代价是读一行里的一个整数，几乎不要钱。
 //	   旧版 ajax.php 就只看这个（每 10 秒轮询一次，然后……把 reload 那行注释掉了，
 //	   所以这功能在旧版实际上从来没生效过）。
 //
-//	② CHECKSUM TABLE terminal, task
-//	   内容指纹，兜住**不碰那三个计数器**的写入者。
+//	② CHECKSUM TABLE terminal
+//	   内容指纹，兜住**不碰那个计数器**的写入者。
 //	   只靠 ① 的话，哪天有个脚本直接 UPDATE terminal 而没去动计数器，
 //	   页面就一直显示旧数据，而且没有任何迹象 —— 这种「静默不同步」
 //	   比慢几秒糟得多。
+//
+// # ⚠ 只盯 terminal，**不盯 task**
+//
+// 作息方案 / 文件广播 / 采播管理 / 终端功放 / 文字语音 / led播放 这六页
+// 曾经也接过无感刷新，按需求方要求撤掉了 —— 它们回到「自己点刷新」。
+//
+// 于是 task 表整个不在这里出现。这一条顺带把开销砍掉了一大半：
+// 现网 task 是这两张表里大得多的那个（实测量级 5 万行 vs 终端 3 千行），
+// 而 CHECKSUM TABLE 是一次全表扫描。
+//
+// 哪天要把某一页加回来：Topics 里加一个主题、watchedTables 里加那张表、
+// 页面上一句 useDbChanges 就够 —— 但先想清楚那张表有多大、多久变一次。
 //
 // 两层的值混成一个 rev。**rev 不表示版本先后，只表示「一样 / 不一样」** ——
 // 它是哈希，比大小没有意义。
@@ -73,22 +85,23 @@ type Topic = string
 
 const (
 	TopicTerminal Topic = "terminal"
-	TopicTask     Topic = "task"
 )
 
 // Topics 是全部可订阅主题。前端传了别的名字一律忽略。
-var Topics = []Topic{TopicTerminal, TopicTask}
+//
+// ⚠ 只有 terminal。task 那一套按需求方要求撤掉了，理由见文件头。
+var Topics = []Topic{TopicTerminal}
 
 // watchedTables 是要算指纹的表。
 //
 // ⚠ 表名**直接拼进 SQL**（CHECKSUM TABLE 不接受占位符），所以它必须是
 // 这里写死的常量，绝不能来自请求参数。
-var watchedTables = []string{"terminal", "task"}
+var watchedTables = []string{"terminal"}
 
 // DefaultInterval 是两次查库之间的间隔。
 //
-// 1.5 秒：人点一下「播放」之后最多等这么久就能看到状态变过来，
-// 快到察觉不出是轮询；同时每秒不到一次 CHECKSUM，对这两张表（现网几百到几千行）
+// 1.5 秒：终端上下线之后最多等这么久就能看到状态变过来，快到察觉不出是轮询；
+// 同时每秒不到一次 CHECKSUM，对 terminal 这张表（现网几百到几千行）
 // 是毫秒级的开销。
 const DefaultInterval = 1500 * time.Millisecond
 
@@ -242,11 +255,10 @@ func (w *Watcher) poll(ctx context.Context) {
 		w.warnOnce("checksum", err)
 		return
 	}
-	counters := w.counters(c) // 拿不到就当作 0，它只是叠加项，不单独决定 rev
 
 	next := make(map[Topic]uint64, len(Topics))
-	next[TopicTerminal] = mix(sums["terminal"], counters[0], counters[2])
-	next[TopicTask] = mix(sums["task"], counters[1], counters[2])
+	// 内容指纹叠上旧系统那个变更计数器，哪一边动了都能发现
+	next[TopicTerminal] = mix(sums["terminal"], w.terminalChange(c))
 
 	w.mu.Lock()
 	changed := !w.ready
@@ -268,21 +280,20 @@ func (w *Watcher) poll(ctx context.Context) {
 	w.mu.Unlock()
 }
 
-// counters 读旧系统自己的三个变更计数器。读不到回三个 0。
+// terminalChange 读旧系统那个终端变更计数器。读不到回 0。
 //
-// 它们是**叠加**在内容指纹上的，不单独决定 rev：某些改动（比如后台服务只更新了
-// 一个不在指纹列里的列）只体现在计数器上，反过来直接改表的脚本只体现在指纹上。
-// 两个都算进去，哪一边动了都能发现。
-func (w *Watcher) counters(ctx context.Context) [3]uint64 {
-	var a, b, c int64
-	err := w.db.QueryRowContext(ctx, `
-		SELECT COALESCE(terminalchange,0), COALESCE(taskchange,0), COALESCE(serverchange,0)
-		FROM serverbaseparam WHERE id = 1 LIMIT 1`).Scan(&a, &b, &c)
+// 它是**叠加**在内容指纹上的，不单独决定 rev：有些改动（比如后台服务只更新了
+// 一个 CHECKSUM 覆盖不到的地方）只体现在计数器上，反过来直接改表的脚本
+// 只体现在指纹上。两个都算进去，哪一边动了都能发现。
+func (w *Watcher) terminalChange(ctx context.Context) uint64 {
+	var v int64
+	err := w.db.QueryRowContext(ctx,
+		`SELECT COALESCE(terminalchange,0) FROM serverbaseparam WHERE id = 1 LIMIT 1`).Scan(&v)
 	if err != nil {
 		w.warnOnce("counters", err)
-		return [3]uint64{}
+		return 0
 	}
-	return [3]uint64{uint64(a), uint64(b), uint64(c)}
+	return uint64(v)
 }
 
 // checksums 对每张表算一次内容指纹。
@@ -295,9 +306,7 @@ func (w *Watcher) counters(ctx context.Context) [3]uint64 {
 // （13 个终端 + 26 个任务）一次不到 1 毫秒；真要长到让它吃力，
 // 把 changes.interval 调大即可。
 //
-// 顺带：task 表的 createtime 是 `ON UPDATE current_timestamp()`，
-// 所以任何一次 UPDATE 都会连带改动它 —— 指纹对 task 的改动格外敏感，
-// 这是白捡的，不是设计出来的。terminal 表没有这样的列，全靠 CHECKSUM 本身。
+// terminal 没有 `ON UPDATE current_timestamp()` 那样的列，全靠 CHECKSUM 本身。
 func (w *Watcher) checksums(ctx context.Context) (map[string]uint64, error) {
 	// ⚠ 表名来自上面写死的 watchedTables，不是请求参数 —— CHECKSUM TABLE
 	//   不接受占位符，这里是唯一能保证不被注入的方式。
