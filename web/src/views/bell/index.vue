@@ -658,6 +658,7 @@ import ProTable from "@/components/ProTable/index.vue";
 import TerminalTree from "@/components/TerminalTree/index.vue";
 import { useAuthStore } from "@/stores/modules/auth";
 import type { ColumnProps, ProTableInstance } from "@/components/ProTable/interface";
+import { useDbChanges } from "@/hooks/useDbChanges";
 import {
   addBellItemApi,
   copyBellPlanApi,
@@ -755,6 +756,13 @@ const dataCallback = (data: any) => {
 };
 
 const refresh = () => proTableRef.value?.getTableList();
+
+/*
+  作息方案落在 task 表上，而**改它的不只有这个页面**：后台 C 服务会写任务的
+  执行状态，旧版 ok112 也还在跑。所以盯着库看，变了就重新拉一次。
+  见 hooks/useDbChanges.ts 与 server/internal/dbwatch。
+*/
+useDbChanges(["task"], refresh);
 
 /* ---------------- 媒体 / 终端选择 ---------------- */
 

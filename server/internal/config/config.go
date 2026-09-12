@@ -28,6 +28,7 @@ type Config struct {
 	Dashboard Dashboard `yaml:"dashboard"`
 	Register  Register  `yaml:"register"`
 	Assistant Assistant `yaml:"assistant"`
+	Changes   Changes   `yaml:"changes"`
 	Legacy    Legacy    `yaml:"legacy"`
 }
 
@@ -221,6 +222,15 @@ type Auth struct {
 	CaptchaMode string `yaml:"captcha_mode"`
 }
 
+// Changes 是「页面不刷新也跟着变」那一套的参数（见 internal/dbwatch）。
+type Changes struct {
+	// Interval 两次查库之间的间隔。留空取 dbwatch.DefaultInterval（1.5 秒）。
+	//
+	// 调大能省开销，代价是页面反应变慢；调小到几百毫秒意义不大 ——
+	// 人眼分辨不出，而 CHECKSUM TABLE 是一次全表扫描。
+	Interval time.Duration `yaml:"interval"`
+}
+
 // 验证方式的取值。
 const (
 	CaptchaModeSlider = "slider"
@@ -249,10 +259,11 @@ func Default() *Config {
 			Host: "127.0.0.1", Port: 3306, Name: "audioserver",
 			MaxOpen: 20, MaxIdle: 5,
 		},
-		Media:  Media{Root: "/opt/apps/a9000", MaxUploadMB: 300, FFmpeg: "/opt/apps/a9000/bin/ffmpeg"},
-		Notify: Notify{Host: "127.0.0.1", Port: 0, Enabled: true},
-		SDK:    SDK{Host: "127.0.0.1", Port: 8885, Enabled: true},
-		Auth:   Auth{TTL: 8 * time.Hour, CaptchaEnabled: true, CaptchaMode: CaptchaModeSlider},
+		Media:   Media{Root: "/opt/apps/a9000", MaxUploadMB: 300, FFmpeg: "/opt/apps/a9000/bin/ffmpeg"},
+		Notify:  Notify{Host: "127.0.0.1", Port: 0, Enabled: true},
+		SDK:     SDK{Host: "127.0.0.1", Port: 8885, Enabled: true},
+		Auth:    Auth{TTL: 8 * time.Hour, CaptchaEnabled: true, CaptchaMode: CaptchaModeSlider},
+		Changes: Changes{Interval: 1500 * time.Millisecond},
 		Assistant: Assistant{
 			Enabled:      false,
 			NLUURL:       "http://127.0.0.1:5013",

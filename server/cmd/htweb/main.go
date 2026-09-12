@@ -33,6 +33,7 @@ import (
 	"htweb/internal/captcha"
 	"htweb/internal/config"
 	"htweb/internal/dashboard"
+	"htweb/internal/dbwatch"
 	"htweb/internal/enable"
 	"htweb/internal/folder"
 	"htweb/internal/holiday"
@@ -78,6 +79,9 @@ type app struct {
 	params    *serverparam.Service
 	offline   *offline.Service
 	dash      *dashboard.Service
+	// changes 盯着 terminal / task 两张表，让页面不刷新也能跟着变（见 dbwatch 包）。
+	// 库里不止 htweb 一个写入者，所以只能从库里看，不能靠自己发事件。
+	changes *dbwatch.Watcher
 	// sdk 走厂商 SDK 的二进制端口，目前只有首页那四个紧急广播按钮在用。
 	sdk       *sdkudp.Sender
 	zones     *zone.Service
@@ -137,6 +141,7 @@ func main() {
 			cfg.Media.Root),
 		offline:  offline.New(st.DB()),
 		dash:     dashboard.New(st.DB(), cfg.DashboardFile()),
+		changes:  dbwatch.New(st.DB(), cfg.Changes.Interval),
 		sdk:      sdkudp.New(cfg.SDK.Host, cfg.SDK.Port, cfg.SDK.Enabled),
 		zones:    zone.New(st.DB()),
 		holidays: holiday.New(st.DB()),
@@ -184,6 +189,8 @@ func main() {
 	purgeCtx, stopPurge := context.WithCancel(context.Background())
 	defer stopPurge()
 	a.logKeep.StartDaily(purgeCtx)
+	// 盯 terminal / task 两张表的那个轮询也跟着进程活（见 dbwatch 包）
+	a.changes.Start(purgeCtx)
 	// 助手的日常清理：过期会话、过期撤销凭据。与上面共用同一个取消上下文，
 	// 进程退出时一起停。
 	if a.assist.Enabled() {
@@ -222,6 +229,9 @@ func (a *app) routes() http.Handler {
 	// —— 认证 ——
 	mux.HandleFunc("POST /api/login", a.handleLogin)
 	mux.HandleFunc("GET /api/captcha", a.handleCaptcha)
+	// 长轮询：terminal / task 有没有被别人改过。见 changes_handlers.go。
+	// ⚠ 它会挂住最多 25 秒才返回，这是设计如此，不是卡住了。
+	mux.HandleFunc("GET /api/changes", req(a.handleChanges))
 	// 注册状态是公开的：登录页要靠它判断服务器有没有注册（旧版 login.php
 	// 就是在渲染登录页之前查 registerflag，为 0 时跳到 regist_server.php）。
 	// 只回状态与剩余天数，机器码要登录后才给。

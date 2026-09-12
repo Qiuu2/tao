@@ -55,11 +55,15 @@ type exposedGroup struct {
 // 每一条都要写清楚为什么。写不出理由的，说明它其实该开放。
 var keyDenied = map[string]string{
 	// —— 会话本身 ——
-	"POST /api/login":                  "登录是给人用的。程序有密钥，不需要也不应该拿账号密码换会话",
-	"POST /api/logout":                 "密钥没有会话可以登出，调它没有任何意义",
-	"GET /api/captcha":                 "验证码是给人看的图片",
-	"GET /api/auth/me":                 "会话自省。密钥要看自己是谁，用 /openapi/v1 那边的接口",
-	"GET /api/menu/list":               "左侧菜单，纯界面的东西",
+	"POST /api/login":    "登录是给人用的。程序有密钥，不需要也不应该拿账号密码换会话",
+	"POST /api/logout":   "密钥没有会话可以登出，调它没有任何意义",
+	"GET /api/captcha":   "验证码是给人看的图片",
+	"GET /api/auth/me":   "会话自省。密钥要看自己是谁，用 /openapi/v1 那边的接口",
+	"GET /api/menu/list": "左侧菜单，纯界面的东西",
+	"GET /api/changes": "长轮询，专给浏览器「不刷新也跟着变」用的。" +
+		"它一挂就是 25 秒，而且只回几个哈希、不回任何数据 —— " +
+		"程序要知道终端和任务的状态，直接调 /openapi/v1 那边的查询接口，" +
+		"那才是给程序设计的形状",
 	"GET /api/auth/buttons":            "按钮置灰用的，纯界面的东西",
 	"GET /api/account/password-policy": "密码强度要求，是给填表单的人看的提示",
 	"GET /api/users/password-rule":     "新建/修改用户那张表单的密码要求，同样是给填表单的人看的提示",

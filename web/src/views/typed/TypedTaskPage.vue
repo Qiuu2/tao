@@ -800,6 +800,7 @@ import TerminalTree from "@/components/TerminalTree/index.vue";
 import TerminalTreeSelect from "@/components/TerminalTree/Select.vue";
 import { useAuthStore } from "@/stores/modules/auth";
 import type { ColumnProps, ProTableInstance } from "@/components/ProTable/interface";
+import { useDbChanges } from "@/hooks/useDbChanges";
 
 // 脚本里拼的文案用 t()；模板里的 $t 不用引入
 const { t } = useI18n();
@@ -942,6 +943,13 @@ const columns = computed<ColumnProps<TypedTask>[]>(() => [
 ]);
 
 const refresh = () => proTableRef.value?.getTableList();
+
+/*
+  终端功放 / 采播管理 / 文字语音 / led播放 这四页都是按 tasktype 从 task 表捞任务，
+  而任务的执行状态是**后台 C 服务**写的，它不会来通知页面。
+  所以盯着库看，变了就重新拉一次。见 hooks/useDbChanges.ts 与 server/internal/dbwatch。
+*/
+useDbChanges(["task"], refresh);
 
 // 切换类别时（路由复用同一组件）把状态清干净
 watch(

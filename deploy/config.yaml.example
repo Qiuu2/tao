@@ -68,6 +68,14 @@ auth:
   #   把这一项改成 image 就退回图形验证码，不用改代码。
   captcha_mode: slider
 
+# 页面「不刷新也跟着变」：服务端盯着 terminal / task 两张表，
+# 有别的程序改了库就把挂在那里的浏览器叫醒（见 server/internal/dbwatch）。
+changes:
+  # 两次查库之间的间隔。
+  # 调大省开销、页面反应变慢；调小到几百毫秒没意义 —— 人眼分辨不出，
+  # 而每一次都是一遍 CHECKSUM TABLE（全表扫描）。
+  interval: 1500ms
+
 logs:
   # ⚠ 这里没有任务日志目录：任务日志那一页已经撤掉，后台 C 服务写在
   # datelog/ 下的 logYYYY-MM-DD.html 新版一概不读也不删。

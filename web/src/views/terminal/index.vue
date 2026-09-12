@@ -671,7 +671,9 @@
               :disabled="!fm.folderId"
               @input="loadFolderTerminals"
             />
-            <span class="dlg-note">{{ fm.folderName ? $t("sys.currentFolder", { name: fm.folderName }) : $t("sys.pickFolderFirst") }}</span>
+            <span class="dlg-note">{{
+              fm.folderName ? $t("sys.currentFolder", { name: fm.folderName }) : $t("sys.pickFolderFirst")
+            }}</span>
           </div>
           <el-table
             v-loading="fm.listLoading"
@@ -1088,6 +1090,7 @@ import TerminalTree from "@/components/TerminalTree/index.vue";
 import { useAuthStore } from "@/stores/modules/auth";
 import { useUserStore } from "@/stores/modules/user";
 import type { ColumnProps, ProTableInstance } from "@/components/ProTable/interface";
+import { useDbChanges } from "@/hooks/useDbChanges";
 
 // 脚本里拼的文案用 t()；模板里的 $t 不用引入
 const { t } = useI18n();
@@ -1181,6 +1184,15 @@ const dataCallback = (data: any) => {
 };
 
 const refresh = () => proTableRef.value?.getTableList();
+
+/*
+  终端的在线/离线、音量、任务状态都是**后台 C 服务**直接写进 terminal 表的，
+  它不会来通知这个页面。所以盯着库看：那张表一变就重新拉一次列表。
+  见 hooks/useDbChanges.ts 与 server/internal/dbwatch。
+
+  ⚠ 只订 terminal。task 变了不关这一页的事，叫醒它只是白查一次列表。
+*/
+useDbChanges(["terminal"], refresh);
 
 const loadGroups = async () => {
   const { data } = await getTerminalGroupTreeApi();
