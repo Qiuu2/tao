@@ -1414,6 +1414,7 @@ export default {
     minute: "分钟",
     second: "秒",
     pickCollector: "请选择采集器终端",
+    noGpsTerminal: "没有可选的校时终端 —— 只有「双向寻呼终端」和「采样终端」带授时模块，请先在终端管理里添加。",
     pickCollectorOrNone: "请先选择采集器终端，或点「不校时」",
     bellWarn: "⚠ 这台机器正按时刻表打铃：拨动系统时间会让一批任务瞬间集体触发或整批哑掉，请避开上下课时段。",
     confirmSetTime: "将把服务器系统时间设置为 {text}。",

@@ -101,7 +101,13 @@
 
       <div class="line">
         <span class="lbl">{{ $t("time.beidouSyncLabel") }}</span>
-        <!-- 下拉里是按终端分区分组的树，和全站其它选终端的地方一致 -->
+        <!--
+          下拉里是按终端分区分组的树，和全站其它选终端的地方一致。
+
+          ⚠ 列表已经由后端筛过：只有双向寻呼终端（typeid=3）和采样终端（typeid=8）
+            带授时模块，别的型号选了也收不到星历。筛选的权威在服务端
+            （timeset.GPSTerminalTypes），这里不重复判断。
+        -->
         <div class="gps-select">
           <TerminalTreeSelect
             v-model="gps"
@@ -112,6 +118,15 @@
         </div>
         <el-button :loading="saving.gps" :disabled="!canConfig || !!st?.readOnly" @click="saveGps"> {{ $t("time.beidouSync") }} </el-button>
         <el-button :loading="saving.gps" :disabled="!canConfig || !!st?.readOnly" @click="clearGps"> {{ $t("time.noSync") }} </el-button>
+      </div>
+
+      <!--
+        一个筛过的下拉最坏的样子是「空的，而且不说为什么」——
+        这个现场要是一台带授时模块的终端都没有，运维只会看到一个点不出东西的框。
+      -->
+      <div v-if="!terminals.length" class="line gps-empty">
+        <span class="lbl"></span>
+        <el-text type="info" size="small">{{ $t("time.noGpsTerminal") }}</el-text>
       </div>
     </div>
   </div>
@@ -345,6 +360,9 @@ onUnmounted(() => {
   :deep(.el-form-item__label) {
     justify-content: flex-end;
   }
+}
+.gps-empty {
+  margin-top: -8px;
 }
 .clock-actions {
   display: flex;

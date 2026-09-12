@@ -1408,6 +1408,7 @@ export default {
     minute: "Minute",
     second: "Second",
     pickCollector: "Choose a collector terminal",
+    noGpsTerminal: "No eligible terminal — only two-way paging terminals and sampling terminals carry a timing module. Add one under Terminals first.",
     pickCollectorOrNone: "Choose a collector terminal first, or click “No time sync”",
     bellWarn: "⚠ This machine is ringing to a schedule. Moving the system clock can fire a whole batch of tasks at once, or silence them all — avoid doing it around class change times.",
     confirmSetTime: "The server's system clock will be set to {text}.",

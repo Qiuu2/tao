@@ -58,6 +58,7 @@ import (
 	"htweb/internal/i18n"
 	"net"
 	"os"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -238,13 +239,21 @@ func (s *Service) SetGPSTerminal(ctx context.Context, terminalID int64) error {
 		return err
 	}
 	if terminalID > GPSOff {
-		var n int
-		if err := s.db.QueryRowContext(ctx,
-			`SELECT COUNT(*) FROM terminal WHERE id = ?`, terminalID).Scan(&n); err != nil {
+		// ⚠ 类型也要在这里校验，不能只靠下拉里筛掉。
+		//   下拉是给人看的，接口是谁都能直接打的；而 adjusttime 一旦指向
+		//   一台没有授时模块的终端，整套系统就再也没有校时来源了，
+		//   界面上还看不出任何异常 —— 这种错必须在写库之前挡住。
+		var typeID sql.NullInt64
+		err := s.db.QueryRowContext(ctx,
+			`SELECT typeid FROM terminal WHERE id = ?`, terminalID).Scan(&typeID)
+		if err == sql.ErrNoRows {
+			return fmt.Errorf("选择的校时终端不存在，请重新选择")
+		}
+		if err != nil {
 			return fmt.Errorf("校验校时终端: %w", err)
 		}
-		if n == 0 {
-			return fmt.Errorf("选择的校时终端不存在，请重新选择")
+		if !slices.Contains(GPSTerminalTypes, int(typeID.Int64)) {
+			return fmt.Errorf("这台终端不支持北斗校时（只有双向寻呼终端、采样终端带授时模块），请重新选择")
 		}
 	}
 	if _, err := s.db.ExecContext(ctx,
@@ -282,13 +291,41 @@ type TerminalOption struct {
 	GroupName string `json:"groupName"`
 }
 
+// GPSTerminalTypes 是**允许**当北斗/GPS 校时终端的 terminaltype.id。
+//
+//	3 = 双向寻呼终端
+//	8 = 采样终端
+//
+// 只有这两类机器上带授时模块，别的型号选了也收不到星历 ——
+// 而 adjusttime 一旦指向一台收不到的终端，整套系统就再也没有校时来源了，
+// 界面上还看不出任何异常。所以这里是**白名单**，不是提示。
+//
+// ⚠ 旧版 getgpsterminal.php 写的是 `terminaltype.id in(31,8)`
+//
+//	（31 = 网络音频采集器）。这里用的是 3，与旧版**不一致**，是按需求方
+//	当面确认的口径来的。哪天要改回去，只动这一行。
+var GPSTerminalTypes = []int{3, 8}
+
+// gpsTypeIn 拼出 `t.typeid IN (?,?)` 与对应的参数。
+// 从 GPSTerminalTypes 生成，避免把这两个数字在 SQL 里再抄一遍。
+func gpsTypeIn() (string, []interface{}) {
+	ph := make([]string, len(GPSTerminalTypes))
+	args := make([]interface{}, len(GPSTerminalTypes))
+	for i, v := range GPSTerminalTypes {
+		ph[i], args[i] = "?", v
+	}
+	return "t.typeid IN (" + strings.Join(ph, ",") + ")", args
+}
+
 // Terminals 列出可以当校时终端的设备。
 //
-// 旧版下拉里放的是全部终端，这里保持一致 —— 哪种型号支持 GPS 授时
-// 由现场设备决定，库里没有可靠的标志位可以筛。
+// ⚠ 只列 GPSTerminalTypes 里那几类。旧版下拉也是筛过的
+// （`terminaltype.id in(31,8)`），早前新版把这一层筛丢了，
+// 于是下拉里混着一堆根本没有授时模块的终端。
 func (s *Service) Terminals(ctx context.Context, keyword string) ([]TerminalOption, error) {
 	// 分区名在 serverplaystream，终端与分区的关系在 terminalofgroup；
 	// 一台终端理论上可能有多行，取 id 最小的那条，与 task/picker.go 的口径一致。
+	where, args := gpsTypeIn()
 	q := `SELECT t.id, COALESCE(t.terminalname,''), COALESCE(t.ip,''),
 	             COALESCE(tt.name,''), COALESCE(t.netstate,0),
 	             COALESCE((SELECT tog.groupid FROM terminalofgroup tog
@@ -297,10 +334,10 @@ func (s *Service) Terminals(ctx context.Context, keyword string) ([]TerminalOpti
 	                       JOIN serverplaystream sps ON sps.streamid = tog.groupid
 	                       WHERE tog.terminalid = t.id ORDER BY tog.id LIMIT 1), '')
 	      FROM terminal t
-	      LEFT JOIN terminaltype tt ON tt.id = t.typeid`
-	var args []interface{}
+	      LEFT JOIN terminaltype tt ON tt.id = t.typeid
+	      WHERE ` + where
 	if keyword = strings.TrimSpace(keyword); keyword != "" {
-		q += ` WHERE t.terminalname LIKE ? ESCAPE '\\'`
+		q += ` AND t.terminalname LIKE ? ESCAPE '\\'`
 		r := strings.NewReplacer(`\`, `\\`, `%`, `\%`, `_`, `\_`)
 		args = append(args, "%"+r.Replace(keyword)+"%")
 	}
