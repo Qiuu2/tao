@@ -236,10 +236,15 @@
         setshotcut()            设置快捷键 → 底部「设置快捷键」按钮
         modifyshotcut(id)       修改快捷键 → 每行「修改」
         del_terminal_shotcut(id) 删除映射   → 每行「删除」
-        view_terminal(id)       查看终端   → 「映射终端」列直接把目标列出来
+        view_terminal(id)       查看终端   → 「映射终端」列点开看目标终端表格
 
       ⚠ 只有最后一项做了合并：ok112 是跳到 displayterminal.php 去看目标终端，
-        这里目标本来就在列表里，再跳一次页只是多一步。动作本身没有少。
+        这里不跳页，改成在本页弹一张目标终端表格。动作本身没有少。
+
+      ⚠ 「映射终端」列只给台数，不把目标名字一个个平铺出来。
+        一个快捷键映射几十台终端是常事，平铺会把整行撑到看不清，
+        而且这一列真正要回答的问题是「这个键打给谁」——那是一张表，
+        不是一串标签。已删除的目标单独用红标提示台数，点进去才逐条列。
     -->
     <el-dialog v-model="sk.visible" :title="$t('term.shortcutKeyOf', { name: sk.name })" width="820px" top="8vh">
       <el-alert type="info" :closable="false" show-icon class="mb12">
@@ -252,16 +257,14 @@
         <el-table-column :label="$t('term.mappedTerminal')" min-width="230">
           <template #default="s">
             <span v-if="!s.row.targets.length" class="muted">{{ $t("term.unspecified") }}</span>
-            <el-tag
-              v-for="t in s.row.targets"
-              :key="t.terminalId"
-              size="small"
-              class="tag-gap"
-              :type="t.deleted ? 'danger' : 'info'"
-              effect="plain"
-            >
-              {{ t.deleted ? $t("sys.deletedTerminalNo", { id: t.terminalId }) : t.terminalname }}
-            </el-tag>
+            <template v-else>
+              <el-button link type="primary" @click="openShortcutTargets(s.row)">
+                {{ $t("common.nTerminals", { n: s.row.targets.length }) }}
+              </el-button>
+              <el-tag v-if="deletedTargets(s.row)" size="small" type="danger" effect="plain" class="tag-gap">
+                {{ $t("term.nTargetsDeleted", { n: deletedTargets(s.row) }) }}
+              </el-tag>
+            </template>
           </template>
         </el-table-column>
         <el-table-column :label="$t('common.operation')" width="120" align="center">
@@ -283,6 +286,44 @@
           }}</el-button>
           <el-button @click="sk.visible = false">{{ $t("common.close") }}</el-button>
         </div>
+      </template>
+    </el-dialog>
+
+    <!--
+      映射终端表格（ok112 的 displayterminal.php）。
+
+      从上面那张快捷键表的「映射终端」列点进来。ok112 是整页跳过去，
+      回来还得重新打开快捷键列表；这里就地弹一层，关掉还在原处。
+
+      ⚠ 数据全部来自已经取回的 sk.rows，不再请求一次接口 ——
+        targets 是 getShortcutKeysApi 一并带回来的，重查只会拿到同样的东西。
+      ⚠ 目标终端被删掉后 terminalkeymap 里的行还在（后端用 LEFT JOIN 保住了），
+        所以这里会出现「已删除 #id」的行。那不是脏数据显示错误，
+        是提醒这个快捷键有条映射已经打不通了，得去「修改」里摘掉。
+    -->
+    <el-dialog v-model="skTargets.visible" :title="skTargets.title" width="640px" top="10vh" append-to-body>
+      <el-table :data="skTargets.rows" size="small" border max-height="52vh">
+        <el-table-column type="index" :label="$t('common.index')" width="60" align="center" />
+        <el-table-column prop="terminalId" :label="$t('common.id')" width="90" align="center" />
+        <el-table-column :label="$t('terminalCommon.terminalName')" min-width="180" show-overflow-tooltip>
+          <template #default="s">
+            <span v-if="s.row.deleted" class="muted">{{ $t("sys.deletedTerminalNo", { id: s.row.terminalId }) }}</span>
+            <span v-else>{{ s.row.terminalname }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column :label="$t('common.status')" width="100" align="center">
+          <template #default="s">
+            <el-tag size="small" effect="plain" :type="s.row.deleted ? 'danger' : 'success'">
+              {{ s.row.deleted ? $t("common.deleted") : $t("common.normal") }}
+            </el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column :label="$t('term.keyAreaMask')" min-width="140" show-overflow-tooltip>
+          <template #default="s">{{ areaLabel(s.row.area) }}</template>
+        </el-table-column>
+      </el-table>
+      <template #footer>
+        <el-button @click="skTargets.visible = false">{{ $t("common.close") }}</el-button>
       </template>
     </el-dialog>
 
@@ -1092,6 +1133,7 @@ import type {
   QuickTaskForm,
   ShortcutKey,
   ShortcutKeyOption,
+  ShortcutKeyTarget,
   TerminalCaps,
   TerminalFolder,
   TerminalGroupNode,
@@ -1462,6 +1504,33 @@ const openShortcut = async (id: number) => {
 const refreshShortcuts = async () => {
   const { data } = await getShortcutKeysApi(sk.id);
   sk.rows = data;
+};
+
+/* 「映射终端」列点开的那张表 —— 见模板里那个 skTargets 对话框 */
+const skTargets = reactive({
+  visible: false,
+  title: "",
+  rows: [] as ShortcutKeyTarget[]
+});
+
+const deletedTargets = (row: ShortcutKey) => row.targets.filter(t => t.deleted).length;
+
+/**
+ * terminalkeymap.area 是 16 位的 '1'/'0' 掩码，一位一个分区。
+ * 全 1（建表默认）就直接说「全部分区」，否则把打开的那几位按 1 起编号列出来。
+ * 原样把 1111111111111111 贴到表格里没人看得懂。
+ */
+const areaLabel = (area: string) => {
+  const bits = (area || "").trim();
+  if (!bits || /^1+$/.test(bits)) return t("term.allAreas");
+  const on = [...bits].map((c, i) => (c === "1" ? i + 1 : 0)).filter(Boolean);
+  return on.length ? on.join("、") : t("term.noArea");
+};
+
+const openShortcutTargets = (row: ShortcutKey) => {
+  skTargets.title = t("term.targetsOfKey", { name: row.name, key: row.keyLabel });
+  skTargets.rows = row.targets;
+  skTargets.visible = true;
 };
 
 /** 列表内每行的「删除」—— 对应 ok112 的 del_terminal_shotcut(id)，只删这一条 */
@@ -2334,6 +2403,8 @@ const submitSyncTerminals = async () => {
       ElMessage.success(t("term.appendedLinks", { n: data.added }));
     }
     st.visible = false;
+    // ⚠ 这里**不**刷新列表：增补改的是 task 的终端清单，terminal 表一个字段都没动，
+    //   列表里也没有一列显示「归属哪些任务」。刷一次只是白查一遍。
   } finally {
     st.saving = false;
   }
@@ -2440,6 +2511,9 @@ const submitDelete = async () => {
     if (data.deletedCallGroups.length) extra.push(t("term.reclaimedCallGroups", { n: data.deletedCallGroups.length }));
     if (data.affectedTasks) extra.push(t("term.deletedExclusiveTasks", { n: data.affectedTasks }));
     ElMessage.success(t("term.deletedTerminals", { n: data.deleted.length, extra: extra.length ? "，" + extra.join("，") : "" }));
+    // 删掉的 id 立刻从勾选里摘掉，别让它跟着下一次批量操作再发一遍。
+    // （ProTable 自己也会对账兜底，但那一层在退页时会放弃 —— 见 dropSelections 的注释）
+    proTableRef.value?.dropSelections(data.deleted);
     refresh();
     loadGroups();
   } finally {

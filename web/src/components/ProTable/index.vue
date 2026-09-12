@@ -246,6 +246,22 @@ const dropVanishedSelections = () => {
 
 watch(tableData, dropVanishedSelections);
 
+/**
+ * 页面明确知道哪几行没了（自己刚删掉的）时，直接摘掉，不用等下一次对账。
+ *
+ * 上面那层对账有个前提：两次请求参数完全一样。可删掉最后一页的最后一行会退页，
+ * 参数就变了，对账只好放弃 —— 它分不清「行没了」和「翻页了」。
+ * 删除方自己报一声，比任何猜测都准，两层叠着用：
+ * 知道 id 的走这里，不知道的（别的程序删的）由对账兜底。
+ */
+const dropSelections = (keys: (string | number)[]) => {
+  const drop = new Set(keys.map(String));
+  if (!drop.size) return;
+  for (const row of [...selectedList.value]) {
+    if (drop.has(String((row as any)[props.rowKey]))) tableRef.value?.toggleRowSelection(row as any, false);
+  }
+};
+
 // 初始化表格数据 && 拖拽排序
 onMounted(() => {
   dragSort();
@@ -432,6 +448,7 @@ defineExpose({
   handleSizeChange,
   handleCurrentChange,
   clearSelection,
+  dropSelections,
   enumMap
 });
 </script>
