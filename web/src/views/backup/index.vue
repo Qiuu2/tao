@@ -107,14 +107,13 @@
         <el-form-item :label="$t('backup.restoreMedia')">
           <el-switch v-model="rst.restoreMedia" />
         </el-form-item>
-        <el-form-item :label="$t('backup.safeBackupFirst')">
-          <el-switch v-model="rst.safetyBackup" />
-        </el-form-item>
         <!--
-          ⚠ 这里原来有一个「逐字输入包名」的输入框，**已按要求去掉** ——
-            点确定即恢复。真正拦得住误操作的几条一条没动：
-            结构对不上直接拒绝、默认先留一份安全备份、整个恢复是一个真事务、
-            以及动手之前就写好的那行审计。
+          ⚠ 这里原来有两样东西，**都已按要求去掉**：
+            「逐字输入包名」的输入框，和「先做安全备份」那个开关。
+            现在点确定就直接覆盖，**恢复之前的数据不做任何留存**。
+
+          还在的：结构对不上直接拒绝、整个恢复是一个真事务（中途出错回滚到
+          恢复前）、以及动手之前就写好的那行审计。
         -->
       </el-form>
 
@@ -258,7 +257,6 @@ const rst = reactive({
   visible: false,
   busy: false,
   restoreMedia: true,
-  safetyBackup: true,
   pre: null as BackupPrecheck | null
 });
 
@@ -267,7 +265,6 @@ const openRestore = async (row: BackupItem) => {
   rst.pre = data;
   rst.busy = false;
   rst.restoreMedia = true;
-  rst.safetyBackup = true;
   rst.visible = true;
   if (!data.compatible) ElMessage.error(data.recommendation);
 };
@@ -282,13 +279,11 @@ const doRestore = async () => {
   try {
     const { data } = await restoreBackupApi({
       name: rst.pre.name,
-      safetyBackup: rst.safetyBackup,
       restoreMedia: rst.restoreMedia
     });
     rst.visible = false;
     let msg = t("backup.restoreDone", { tables: data.tablesRestored, deleted: data.rowsDeleted, inserted: data.rowsInserted });
     if (data.mediaRestored) msg += t("backup.mediaRestoredN", { n: data.mediaRestored });
-    if (data.safetyBackup) msg += t("backup.safetyBackupName", { name: data.safetyBackup });
     ElMessage.success(msg);
     if (data.mediaFailed?.length) {
       ElMessage.warning(t("backup.mediaFailed", { n: data.mediaFailed.length, names: data.mediaFailed.join("、") }));

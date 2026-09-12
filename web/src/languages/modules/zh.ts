@@ -20,7 +20,8 @@ export default {
     applyDefaultNoise: "应用默认噪声",
     applyConfirm: "会把默认噪声值刷到选中的 {n} 条任务的每一个噪声设备上，覆盖已经标定好的值。确定要继续吗？",
     applied: "已更新 {n} 条噪声值",
-    defaultNoiseNote: "这是全站共用的一份基准：新挑一个噪声设备时先拿它填上。改它不影响已经建好的任务，要刷过去请用列表上的「应用默认噪声」。",
+    defaultNoiseNote:
+      "这是全站共用的一份基准：新挑一个噪声设备时先拿它填上。改它不影响已经建好的任务，要刷过去请用列表上的「应用默认噪声」。",
     noiseNote: "意思是「音量开到这一档时，这个设备量到的环境噪声该是多少 dB」，后台据此把音量调上去或调下来。",
     atVolume: "音量 {v} —— 噪声值",
     deviceNoiseTitle: "{name} · 噪声值",
@@ -222,7 +223,7 @@ export default {
     alarmZone: "报警分区",
     setVolume: "设置音量",
     adjustVolume: "调整音量",
-    pickTerminalFirst: "请先勾选终端",
+    pickTerminalFirst: "请先勾选终端"
   },
   taskCommon: {
     task: "任务",
@@ -253,7 +254,7 @@ export default {
     pickStartDate: "请选择开始日期",
     deleteFolder: "删除目录",
     idleTransfer: "空闲传输",
-    nowTransfer: "立即传输",
+    nowTransfer: "立即传输"
   },
   term: {
     batchOps: "批量操作",
@@ -478,7 +479,7 @@ export default {
     noTaskToAppend: "没有可增补的任务",
     chars1to32: "1 ~ 32 个字符",
     digitsLettersHanzi: "仅数字 / 字母 / 汉字",
-    egCallFloor: "例如：呼叫A栋一层",
+    egCallFloor: "例如：呼叫A栋一层"
   },
   zone: {
     memberTerminals: "成员终端 {n} 台",
@@ -499,7 +500,7 @@ export default {
     movingWarn: "有 <b>{n}</b> 台终端当前属于别的分区，保存后会被移过来。确认继续？",
     droppedDeleted: "该分区里有 {n} 台终端已被删除，已自动从成员列表中移除",
     resetWarn: "这次删除会把 <b>{n}</b> 条任务的分区号复位，这些任务将不再按分区限定播放范围。确认继续？",
-    zoneLabel: "分区",
+    zoneLabel: "分区"
   },
   media: {
     clearFolderBtn: "清空目录",
@@ -584,7 +585,7 @@ export default {
     bitrateNote: "上传的 MP3 码率各不相同（32k 到 320k 都有），服务端会先认文件头确认格式， 再统一转成",
     bitrateTarget: "128kbps 立体声",
     sampleRateNote: "（提示音目录 16000Hz，其余 44100Hz）， 并在尾部追加 2 秒静音（沿用原系统约定）。",
-    recordLibNote: "录音库：仅可试听 / 下载 / 删除",
+    recordLibNote: "录音库：仅可试听 / 下载 / 删除"
   },
   task: {
     powerSubDeleted: "功放子任务 {id} 一并删除",
@@ -655,7 +656,7 @@ export default {
     enablePlan: "启用方案",
     disablePlan: "停用方案",
     taskVolume: "任务音量",
-    deleteTaskTitle: "删除任务",
+    deleteTaskTitle: "删除任务"
   },
   bell: {
     bellMusic: "作息音乐",
@@ -777,7 +778,7 @@ export default {
     highest10: "（10最高）",
     goBack: "返回",
     continueWord: "继续",
-    planNameSearch: "方案名称",
+    planNameSearch: "方案名称"
   },
   typed: {
     taskFolder: "任务目录",
@@ -854,10 +855,11 @@ export default {
     confirmDeleteFolder: "确认删除目录「{name}」？目录里的 {n} 条任务会一起被删除，不可恢复。",
     confirmDeleteScreens: "确认删除选中的 {n} 块 LED 屏？会连带清掉它们在任务里的绑定。",
     confirmDeleteTasks: "确认删除选中的 {n} 条{what}任务？会连带清掉终端绑定、遥控绑定与离线副本，不可恢复。",
-    droppedTerminals: "该任务里有 {n} 台终端已被删除，已自动移除",
+    droppedTerminals: "该任务里有 {n} 台终端已被删除，已自动移除"
   },
   offline: {
-    summaryLine: "离线副本 {media} 个媒体 / {task} 个任务 · 下发关系 {mediaLinks} 条媒体 / {taskLinks} 条任务 · 标记为离线的任务 {marked} 个",
+    summaryLine:
+      "离线副本 {media} 个媒体 / {task} 个任务 · 下发关系 {mediaLinks} 条媒体 / {taskLinks} 条任务 · 标记为离线的任务 {marked} 个",
     push: "下发",
     pushTask: "下发任务",
     pushMedia: "下发媒体",
@@ -866,7 +868,8 @@ export default {
     taskPushNote: "任务下发会连同它的铃声清单一起下发，并自动补齐 offlinemedia 副本 —— 没有副本终端就拿不到文件。",
     clearAll: "清空全部离线数据",
     confirmClear: "确认清空",
-    clearWarn: "会清空 offlinemedia、offlinemediaofterminal、offlinetask、offlinetaskofterminal 四张表， 并把 task.offlinestate 全部复位为 0。旧版这个动作只有前端一个 confirm 保护。",
+    clearWarn:
+      "会清空 offlinemedia、offlinemediaofterminal、offlinetask、offlinetaskofterminal 四张表， 并把 task.offlinestate 全部复位为 0。旧版这个动作只有前端一个 confirm 保护。",
     fullTableDelete: "这是四条无 WHERE 的全表删除",
     typeToConfirm: "逐字输入：清空全部离线数据",
     copyMissing: "副本缺失",
@@ -910,7 +913,7 @@ export default {
     pickTerminalFirst: "请选择终端",
     idleDelete: "空闲删除",
     nowDelete: "立即删除",
-    tip: "提示",
+    tip: "提示"
   },
   user: {
     newGroup: "新建用户组",
@@ -1010,7 +1013,7 @@ export default {
     cameraWindN: "监控软件 {n}",
     deletedSummary: "已删除 {users} 个用户、{tasks} 条任务、{media} 个媒体",
     syncedVerb: "已同步{verb} {n} 条任务",
-    recalcPriority: "重算了 {n} 条任务的优先级",
+    recalcPriority: "重算了 {n} 条任务的优先级"
   },
   server: {
     serverInfo: "服务器信息",
@@ -1060,7 +1063,8 @@ export default {
     restartServer: "重启服务器",
     confirmRestart: "确认重启",
     wholeMachine: "这会重启整台服务器，不是重启后台服务",
-    restartImpact: "现网实测：指令发出后 1 秒系统就开始走关机流程，约 30 秒后服务恢复。 期间广播完全中断，正在播放的任务会被打断。请避开上下课等打铃时段。",
+    restartImpact:
+      "现网实测：指令发出后 1 秒系统就开始走关机流程，约 30 秒后服务恢复。 期间广播完全中断，正在播放的任务会被打断。请避开上下课等打铃时段。",
     on: "开启",
     off: "关闭",
     cancelSpaced: "取 消",
@@ -1092,13 +1096,12 @@ export default {
       "从虚拟地址打开的则不受影响。\n\n" +
       "新地址：{url}\n\n" +
       "若几十秒后新地址仍打不开，说明网卡没切成功，请到服务器本机上查看。",
-    ipNotApplied:
-      "设置已经存进数据库，但网卡的真实地址没有跟着改成主/备服务器地址：\n\n{reason}\n\n系统网卡需要另行修改。",
+    ipNotApplied: "设置已经存进数据库，但网卡的真实地址没有跟着改成主/备服务器地址：\n\n{reason}\n\n系统网卡需要另行修改。",
     filesNotSynced:
       "旧系统里这几个文件记着同一个地址，这次没能跟着改（其余文件已同步）：\n\n{list}\n\n请到服务器上核对一下，改完不用重启 htweb。",
     serverRunning: "服务器运行",
     serverStopped: "服务器终止",
-    unknownState: "未知状态 {v}",
+    unknownState: "未知状态 {v}"
   },
   backup: {
     restoredRelogin: "数据已恢复，所有会话已失效，请重新登录。{hint}",
@@ -1108,7 +1111,6 @@ export default {
     schemaMismatch: "这个包与当前数据库结构不一致，列表里会标成「不可恢复」",
     emptyFile: "这个文件是空的",
     mediaRestoredN: "，媒体 {n} 个",
-    safetyBackupName: "；安全备份 {name}",
     backupNow: "立即备份",
     uploadPackage: "上传备份包",
     restore: "恢复",
@@ -1120,7 +1122,10 @@ export default {
     afterRestore: "恢复完成后",
     allSessionsGone: "所有人的登录会话都会失效",
     includingYou: "，包括你自己 —— 因为用户表也被一起恢复了。",
-    irreversible: "这是不可撤销的操作。恢复期间后台广播服务读到的数据会发生突变， 请避开上下课等打铃时段执行。",
+    irreversible:
+      "这是不可撤销的操作，而且**恢复之前的数据不会被留存** —— 恢复错了包，原来的数据就没了。" +
+      "需要退路请先在这一页手工「新建备份」。\n" +
+      "恢复期间后台广播服务读到的数据会发生突变，请避开上下课等打铃时段执行。",
     notePlaceholder: "备注（可选，只用于文件名）",
     package: "备份包",
     content: "内容",
@@ -1131,7 +1136,6 @@ export default {
     willClear: "将清除",
     diff: "差异",
     restoreMedia: "恢复媒体文件",
-    safeBackupFirst: "先做安全备份",
     operator: "操作人",
     generatedAt: "生成时间",
     structureFingerprint: "结构指纹",
@@ -1147,7 +1151,7 @@ export default {
     restoreDone: "恢复完成：{tables} 张表，清除 {deleted} 行、写入 {inserted} 行",
     mediaFailed: "{n} 个媒体文件恢复失败：{names}",
     dangerous: "危险操作",
-    goSignIn: "去登录",
+    goSignIn: "去登录"
   },
   log: {
     pendingCutoffTip: "点确定即清掉 {date} 之前的",
@@ -1177,7 +1181,7 @@ export default {
     retentionIs: "日志保留 {label}",
     deletedRows: "已删除 {n} 条，剩余 {kept} 条（审计记录 #{audit}）",
     confirmCleanBy: "确定按「{label}」清理操作日志？",
-    cutoffSummary: "；{cutoff} 之前的操作日志 {rows} 条已清理",
+    cutoffSummary: "；{cutoff} 之前的操作日志 {rows} 条已清理"
   },
   cloud: {
     isCopyNotSource: "这里是离线副本，不是原任务",
@@ -1219,14 +1223,15 @@ export default {
     bulkDone: "{action}：媒体 {media} 条、任务 {task} 条已置为「{state}」，实际传输由后台广播服务完成",
     syncDone: "时间同步指令已下发 {n} 台",
     syncSkipped: "，跳过 {n} 台",
-    pickTerminalFirst: "请先勾选终端",
+    pickTerminalFirst: "请先勾选终端"
   },
   rights: {
     groupResource: "资源管理",
     groupTask: "任务管理",
     groupSystem: "系统",
     terminal: "终端管理",
-    terminalTip: "终端管理页的全部写操作：参数、音量、启停、密码、开关、快捷键、寻呼组、快捷任务、终端替换、删除；云广播管理 → 音乐传输；时间设置 → 下发校时",
+    terminalTip:
+      "终端管理页的全部写操作：参数、音量、启停、密码、开关、快捷键、寻呼组、快捷任务、终端替换、删除；云广播管理 → 音乐传输；时间设置 → 下发校时",
     zone: "分区管理",
     zoneTip: "终端分区的增删改；噪声检测 → 噪声设备、声场分区",
     alarm: "报警管理",
@@ -1250,7 +1255,7 @@ export default {
     remote: "遥控管理",
     remoteTip: "遥控任务；云广播管理 → 任务传送；基础配置 → 服务器信息、时间设置里的 NTP / GPS；用户管理 → 注册服务",
     user: "用户管理",
-    userTip: "用户与用户组的查看与维护",
+    userTip: "用户与用户组的查看与维护"
   },
   enable: {
     expired: "已过期",
@@ -1273,7 +1278,7 @@ export default {
     startDateRequired: "请选择开始日期",
     pickStartTime: "请选择开始时间",
     startDate2: "起始日期",
-    requiredNotFilled: "带 * 的项还没填完",
+    requiredNotFilled: "带 * 的项还没填完"
   },
   holiday: {
     effectiveToday: "今天生效",
@@ -1293,7 +1298,7 @@ export default {
     deletedN: "已删除 {n} 条",
     enabledN: "已启用 {n} 条",
     disabledN: "已停用 {n} 条",
-    pickFirst: "请先勾选节假日",
+    pickFirst: "请先勾选节假日"
   },
   alarmMap: {
     channelNo: "通道 {n}",
@@ -1321,7 +1326,7 @@ export default {
     clearedNSkipped: "已取消 {n} 条，{skipped} 条无权操作或已不存在",
     pickMappingFirst: "请先勾选映射",
     hostOption: "{name}（{ip} · {n} 路）",
-    abnormal: "异常",
+    abnormal: "异常"
   },
   alarmArea: {
     mappingCount: "映射 {n}",
@@ -1346,7 +1351,7 @@ export default {
     confirmCascade: "这次删除会连带删掉 <b>{n}</b> 条报警映射，对应通道触发时将不再播放任何内容。确认继续？",
     droppedTerminals: "该分区里有 {n} 台终端已被删除，已自动从成员列表中移除",
     pickAreaFirst: "请先勾选报警分区",
-    terminalInArea: "{name}（已属于 {area}）",
+    terminalInArea: "{name}（已属于 {area}）"
   },
   noise: {
     addZone: "添加分区",
@@ -1387,7 +1392,7 @@ export default {
     confirmDeleteDevices: "确认删除选中的 {n} 台噪声设备？",
     deletedDevicesN: "已删除 {n} 台",
     pickDeviceFirst: "请先勾选噪声设备",
-    pickOneDevice: "请勾选一条设备",
+    pickOneDevice: "请勾选一条设备"
   },
   time: {
     noSync: "不校时",
@@ -1418,9 +1423,10 @@ export default {
     beidouDisabled: "已停用北斗校时",
     beidouSet: "已设置北斗校时终端",
     serverTimeSet: "已设置服务器时间",
-    ntpWillStop: "保存时会先停掉这台机器上的自动校时服务（ntp / chronyd / systemd-timesyncd）—— 不停的话系统会拒绝手工设置时间。它们只是被停掉，没有禁用开机自启。",
+    ntpWillStop:
+      "保存时会先停掉这台机器上的自动校时服务（ntp / chronyd / systemd-timesyncd）—— 不停的话系统会拒绝手工设置时间。它们只是被停掉，没有禁用开机自启。",
     serverTimeSetAt: "服务器时间已设置为 {time}",
-    timeNotKept: "时间没留住",
+    timeNotKept: "时间没留住"
   },
   remote: {
     keyNo: "{n} 键",
@@ -1441,7 +1447,7 @@ export default {
     deletedN: "已删除 {n} 条绑定",
     pickFirst: "请先勾选遥控任务",
     nameRequired: "请输入名称",
-    pickOneTask: "请选择一个任务",
+    pickOneTask: "请选择一个任务"
   },
   console: {
     devApi: "开发者接口",
@@ -1450,14 +1456,15 @@ export default {
     peekFirstN: "只看前 {n} 个",
     expandAllFields: "展开全部 {n} 个字段",
     moreFieldsHidden: "还有 {n} 个字段没显示 ——",
-    bodyPlaceholder: "比如 { \"ids\": [1, 2] }",
+    bodyPlaceholder: '比如 { "ids": [1, 2] }',
     executeForReal: "执行（会真的生效）",
     sendRequest: "发送请求",
     commonApis: "常用接口",
     commonApisHint: "编号寻址（名字也认）、参数是人话、路径带版本号，只增不改。集成优先用这些。",
     allApis: "全部功能接口",
     allApisHint: "界面自己用的那套，覆盖每一个页面功能。跟着界面走，改版时可能变。",
-    allApisDesc: "它覆盖到这个页面功能的每一个动作，但参数就是界面在用的那套，这里没有逐条抄（抄了势必抄错、也跟不上改动）。要看确切参数，用浏览器开发者工具看一次界面发的请求最准。另外这一组跟着界面走，页面改版时可能变；能用「常用接口」解决的，优先用那边。",
+    allApisDesc:
+      "它覆盖到这个页面功能的每一个动作，但参数就是界面在用的那套，这里没有逐条抄（抄了势必抄错、也跟不上改动）。要看确切参数，用浏览器开发者工具看一次界面发的请求最准。另外这一组跟着界面走，页面改版时可能变；能用「常用接口」解决的，优先用那边。",
     uiApiNote: "这是「全部功能接口」里的一条 —— 界面自己用的那套接口",
     serverHost: "http://广播服务器:8080",
     yourKey: "你的密钥",
@@ -1479,7 +1486,8 @@ export default {
     addressingBody: "媒体、终端、分区、任务、分组都同时认",
     idWord: "编号",
     andName: "和名字，但只有编号是唯一的 ——",
-    nameNotUnique: "媒体名和终端名在库里没有唯一约束，真的可以重名，重了接口只能报错要你改用编号。 编号从对应的查询接口里拿（终端状态、媒体列表、任务列表）。 只有",
+    nameNotUnique:
+      "媒体名和终端名在库里没有唯一约束，真的可以重名，重了接口只能报错要你改用编号。 编号从对应的查询接口里拿（终端状态、媒体列表、任务列表）。 只有",
     bellException: "是例外：它根本没有编号，只能用名字。",
     keyHeaderPrefix: "对接方每个请求带上请求头",
     keyHeader: "X-API-Key: 那串密钥",
@@ -1490,7 +1498,8 @@ export default {
     baseUrlTail: "开头",
     valueTableTitle: "取值对照表",
     counterIntuitive: "有几个字段的取值是反直觉的",
-    counterIntuitiveDesc: "标红的那几行，凭直觉猜必然猜错，而猜错了不会报错 —— 只会让广播在错误的时间、以错误的顺序、在错误的那一天响。集成前请先看一遍。",
+    counterIntuitiveDesc:
+      "标红的那几行，凭直觉猜必然猜错，而猜错了不会报错 —— 只会让广播在错误的时间、以错误的顺序、在错误的那一天响。集成前请先看一遍。",
     valueMeaning: "返回里的 0/1 是什么意思，看这个。有几个取值是反直觉的。",
     downloadSpec: "下载 OpenAPI 文件",
     downloadSpecHint: "标准 OpenAPI 3.0，可以直接导进 Postman / Apifox / 代码生成器。",
@@ -1529,7 +1538,7 @@ export default {
     name: "名称",
     yes: "是",
     no: "否",
-    bell: "作息方案",
+    bell: "作息方案"
   },
   keys: {
     newKey: "新建密钥",
@@ -1571,7 +1580,7 @@ export default {
     deleteWarnTail: "只是想先停下来查一查的话，用「停用」。",
     deleted: "已删除",
     enabled: "已启用",
-    disabledNow: "已停用，这把密钥立刻就调不通了",
+    disabledNow: "已停用，这把密钥立刻就调不通了"
   },
   ai: {
     title: "AI 助手",
@@ -1594,7 +1603,7 @@ export default {
     inputPlaceholder: "说一句话，比如「今天有哪些任务」",
     stopThat: "停止「{what}」",
     thatOne: "刚才那个",
-    chineseOnly: "助手只认中文指令，回话也是中文。下面这几句可以直接用。",
+    chineseOnly: "助手只认中文指令，回话也是中文。下面这几句可以直接用。"
   },
   register: {
     title: "注册服务",
@@ -1605,7 +1614,8 @@ export default {
     machineCodeTitle: "机器码，用户需要把机器码复制下来发到厂家，厂家会算出一个注册码给用户完成注册",
     licenceCode: "注册码",
     licenceCodeRequired: "请输入注册码",
-    licenceCodeTitle: "注册码,用户在此输入厂家给的注册码完成注册，如果用户没有注册，则此处会有红色字体提示用户当前状态是适用期还是已过期",
+    licenceCodeTitle:
+      "注册码,用户在此输入厂家给的注册码完成注册，如果用户没有注册，则此处会有红色字体提示用户当前状态是适用期还是已过期",
     submitTitle: "用户输入注册码后点击注册，弹出成功后完成注册后即可",
     submit: "注 册",
     trial: "试用",
@@ -1618,7 +1628,7 @@ export default {
     backToLogin: "返回登录",
     trialDaysNotice: "您有5天的试用期，请尽快注册",
     codeCopied: "机器码已复制",
-    copyNotAllowed: "浏览器不允许自动复制，请手动选中机器码复制",
+    copyNotAllowed: "浏览器不允许自动复制，请手动选中机器码复制"
   },
   theme: {
     drawerTitle: "布局设置",
@@ -1644,7 +1654,7 @@ export default {
     tabs: "标签栏",
     tabsIcon: "标签栏图标",
     footer: "页脚",
-    watermark: "水印",
+    watermark: "水印"
   },
   http: {
     network: "网络错误！请您稍后重试",
@@ -1659,7 +1669,7 @@ export default {
     e502: "网关错误！",
     e503: "服务不可用！",
     e504: "网关超时！",
-    eDefault: "请求失败！",
+    eDefault: "请求失败！"
   },
   upload: {
     dragHere: "将文件拖到此处，或",
@@ -1683,7 +1693,7 @@ export default {
     imgTooLargeMB: "上传图片大小不能超过 {n}M！",
     imgFailed: "图片上传失败，请您重新上传！",
     imgOk: "图片上传成功！",
-    imgLimit: "当前最多只能上传 {n} 张图片，请移除后上传！",
+    imgLimit: "当前最多只能上传 {n} 张图片，请移除后上传！"
   },
   block: {
     IN_USE_TASK: "正被任务使用",
@@ -1694,7 +1704,7 @@ export default {
     SYSTEM_RESERVED: "系统预置媒体库，不可删除",
     NO_PERMISSION: "无权操作",
     MEDIA_IN_USE: "目录内有媒体正被使用",
-    NOT_FOUND: "对象不存在",
+    NOT_FOUND: "对象不存在"
   },
   jsErr: {
     eval: "错误的使用了Eval",
@@ -1704,64 +1714,64 @@ export default {
     type: "使用了错误的类型或对象",
     uri: "URI错误",
     internal: "Javascript引擎内部错误",
-    unknown: "未知错误",
+    unknown: "未知错误"
   },
   colSetting: {
     title: "列设置",
     colName: "列名",
     sortable: "排序",
     visible: "显示",
-    empty: "暂无可配置列",
+    empty: "暂无可配置列"
   },
   treeFilter: {
     expandAll: "展开全部",
     collapseAll: "折叠全部",
     filterPlaceholder: "输入关键字进行过滤",
-    all: "全部",
+    all: "全部"
   },
   handle: {
     confirm: "是否{action}?",
     done: "{action}成功!",
-    tip: "温馨提示",
+    tip: "温馨提示"
   },
   route: {
     login: "登录",
     register: "注册服务",
     p403: "403页面",
     p404: "404页面",
-    p500: "500页面",
+    p500: "500页面"
   },
   greet: {
     earlyMorning: "凌晨好 🌛",
     morning: "早上好 ⛅",
     noon: "中午好 🌞",
     afternoon: "下午好 🌞",
-    evening: "晚上好 🌛",
+    evening: "晚上好 🌛"
   },
   termSelect: {
     pickTerminal: "选择终端",
     unspecified: "（不指定）",
     offlineSuffix: "（离线）",
-    zoneNo: "分区 {id}",
+    zoneNo: "分区 {id}"
   },
   hms: {
     hour: "时",
     minute: "分",
-    second: "秒",
+    second: "秒"
   },
   size: {
     large: "大型",
     default: "默认",
-    small: "小型",
+    small: "小型"
   },
   colorErr: {
     hex: "输入错误的hex颜色值",
     hexShort: "输入错误的hex",
-    rgb: "输入错误的rgb颜色值",
+    rgb: "输入错误的rgb颜色值"
   },
   dict: {
     male: "男",
-    female: "女",
+    female: "女"
   },
   sys: {
     themeReset: "主题颜色已重置为 {color}",
@@ -1802,7 +1812,7 @@ export default {
     sendFailed: "没能把这句话发出去，检查一下网络再试试。",
     noReply: "（没有回话）",
     me: "我",
-    assistantName: "小电",
+    assistantName: "小电"
   },
   pwd: {
     current: "旧密码",
@@ -1821,7 +1831,7 @@ export default {
     lengthRule: "长度必须在 {min}~{max} 之间",
     complexRule: "必须同时包含数字、大写字母、小写字母和符号",
     changedTitle: "密码已修改",
-    changedTip: "下次登录请用新密码。这次不用重新登录。",
+    changedTip: "下次登录请用新密码。这次不用重新登录。"
   },
   menu: {
     dashboard: "看板",

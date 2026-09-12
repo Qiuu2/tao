@@ -25,7 +25,8 @@ export default {
     zoneCount: "{t} terminal(s) / {d} noise device(s)",
     searchTreePlaceholder: "Search terminal or noise device name",
     noZone: "No sound-field zones yet — create one under “Sound-field zones”",
-    offTreeTerminals: "{n} bound terminal(s) are not of a broadcast-capable type, so they are not on the tree and will be removed from this task on save",
+    offTreeTerminals:
+      "{n} bound terminal(s) are not of a broadcast-capable type, so they are not on the tree and will be removed from this task on save",
     droppedDevices: "{n} noise device(s) were deleted and are not restored"
   },
   app: {
@@ -216,7 +217,7 @@ export default {
     alarmZone: "Alarm zone",
     setVolume: "Set volume",
     adjustVolume: "Adjust volume",
-    pickTerminalFirst: "Select a terminal first",
+    pickTerminalFirst: "Select a terminal first"
   },
   taskCommon: {
     task: "Task",
@@ -247,7 +248,7 @@ export default {
     pickStartDate: "Pick a start date",
     deleteFolder: "Delete folder",
     idleTransfer: "Transfer when idle",
-    nowTransfer: "Transfer now",
+    nowTransfer: "Transfer now"
   },
   term: {
     batchOps: "Bulk actions",
@@ -285,12 +286,14 @@ export default {
     loopUnit: "{n}×",
     andMore: "…and {n} more",
     clearAllZonesNote: "Once all zones are gone this terminal goes back to “can page every online terminal”.",
-    reregisterWhatItDoes: "⚠ What it actually does is delete the terminal record. Devices that are online re-register themselves (with a new terminal ID),",
+    reregisterWhatItDoes:
+      "⚠ What it actually does is delete the terminal record. Devices that are online re-register themselves (with a new terminal ID),",
     deletedExclusiveTasks: "{n} exclusive tasks deleted",
     reclaimedZones: "{n} empty zones reclaimed",
     reclaimedCallGroups: "{n} empty call groups reclaimed",
     appendedWithSkips: "{n} links added; {blocked} tasks skipped: {detail}",
-    confirmDeleteQuickTasks: "This deletes the {n} selected quick tasks together with their media, target terminals and key bindings. It cannot be undone. Continue?",
+    confirmDeleteQuickTasks:
+      "This deletes the {n} selected quick tasks together with their media, target terminals and key bindings. It cannot be undone. Continue?",
     confirmReregisterN: "This re-registers the {n} selected terminals.",
     confirmClearKeys: "This clears all {n} shortcut keys on “{name}”. It cannot be undone. Continue?",
     deletedTerminals: "{n} terminals deleted{extra}",
@@ -306,7 +309,8 @@ export default {
     stateOf: "State {name}",
     confirmDeleteZones: "Delete {n} paging zones ({names})?",
     confirmDeleteKey: "Delete shortcut key “{name}” (key {key})?",
-    confirmDeleteFolder: "Delete folder “{name}”? Its subfolders and the folder membership of the terminals inside are cleared too (the terminals themselves are untouched).",
+    confirmDeleteFolder:
+      "Delete folder “{name}”? Its subfolders and the folder membership of the terminals inside are cleared too (the terminals themselves are untouched).",
     confirmRenumber: "Change the ID of “{name}” from {from} to {to}? If the target ID is already taken, that record is deleted.",
     confirmRemoveFromFolder: "Remove the {n} selected terminals from “{name}”?",
     terminalNo: "Terminal {id}",
@@ -337,7 +341,8 @@ export default {
     cancelEmergency: "Cancel emergency",
     setEmergency: "Set emergency",
     emergency: "Emergency",
-    reregisterNote: "Also: after re-registration the tasks that used to run on these terminals will no longer run — you must re-select terminals in each task.",
+    reregisterNote:
+      "Also: after re-registration the tasks that used to run on these terminals will no longer run — you must re-select terminals in each task.",
     rightChannelOpen: "Right channel open",
     leftChannelOpen: "Left channel open",
     syncTime: "Sync time",
@@ -472,7 +477,7 @@ export default {
     noTaskToAppend: "No tasks to add to",
     chars1to32: "1–32 characters",
     digitsLettersHanzi: "Digits, letters or Chinese characters only",
-    egCallFloor: "e.g. Call Block A floor 1",
+    egCallFloor: "e.g. Call Block A floor 1"
   },
   zone: {
     memberTerminals: "{n} member terminals",
@@ -493,7 +498,7 @@ export default {
     movingWarn: "<b>{n}</b> terminals currently belong to another zone and will be moved here on save. Continue?",
     droppedDeleted: "{n} terminals in this zone had been deleted and were removed from the member list",
     resetWarn: "This deletion resets the zone number on <b>{n}</b> tasks; they will no longer be limited to a zone. Continue?",
-    zoneLabel: "Zone",
+    zoneLabel: "Zone"
   },
   media: {
     clearFolderBtn: "Empty folder",
@@ -575,10 +580,12 @@ export default {
     overwrite: "overwrite",
     existingMedia: "the existing media.",
     failed: "Failed",
-    bitrateNote: "Uploaded MP3s come at all sorts of bitrates (32k to 320k). The server checks the file header first, then converts everything to",
+    bitrateNote:
+      "Uploaded MP3s come at all sorts of bitrates (32k to 320k). The server checks the file header first, then converts everything to",
     bitrateTarget: "128 kbps stereo",
-    sampleRateNote: "(16 kHz for the prompt-tone folder, 44.1 kHz elsewhere), and appends 2 seconds of silence — the same convention as the original system.",
-    recordLibNote: "Recording library: preview, download and delete only",
+    sampleRateNote:
+      "(16 kHz for the prompt-tone folder, 44.1 kHz elsewhere), and appends 2 seconds of silence — the same convention as the original system.",
+    recordLibNote: "Recording library: preview, download and delete only"
   },
   task: {
     powerSubDeleted: "Amplifier subtask {id} is deleted too",
@@ -598,7 +605,8 @@ export default {
     levelN: "Level {n}",
     minutesN: "{n} min",
     secondsN: "{n}s",
-    deleteCleansAll: "Deleting a task also clears its media list, terminal list, shortcut-key mappings and offline records, and this",
+    deleteCleansAll:
+      "Deleting a task also clears its media list, terminal list, shortcut-key mappings and offline records, and this",
     theseKept: "These tasks will not be deleted:",
     emergencySet: "Mark urgent",
     emergencyUnset: "Clear urgent",
@@ -630,7 +638,8 @@ export default {
     batchDoneWithSkip: "{action} finished: {ok} succeeded, {skip} skipped",
     batchDone: "{action} succeeded on {ok} tasks",
     editTask: "Edit task: {name}",
-    deleteFolderConfirm: "Deleting folder “{name}” also deletes every task in its <b>entire subtree</b>. This cannot be undone. Continue?",
+    deleteFolderConfirm:
+      "Deleting folder “{name}” also deletes every task in its <b>entire subtree</b>. This cannot be undone. Continue?",
     deleteSummary: "{folders} folders, {tasks} tasks and {subs} subtasks",
     mediaCount: "{n} media",
     mediaId: "Media {id}",
@@ -649,7 +658,7 @@ export default {
     enablePlan: "Enable plan",
     disablePlan: "Disable plan",
     taskVolume: "Task volume",
-    deleteTaskTitle: "Delete tasks",
+    deleteTaskTitle: "Delete tasks"
   },
   bell: {
     bellMusic: "Bell tone",
@@ -771,7 +780,7 @@ export default {
     highest10: "(10 is highest)",
     goBack: "Back",
     continueWord: "Continue",
-    planNameSearch: "Plan name",
+    planNameSearch: "Plan name"
   },
   typed: {
     taskFolder: "Task folder",
@@ -847,20 +856,24 @@ export default {
     starRequired: "Some required fields (marked *) are still empty",
     confirmDeleteFolder: "Delete folder “{name}”? The {n} tasks inside are deleted too, and this cannot be undone.",
     confirmDeleteScreens: "Delete the {n} selected LED screens? Their bindings in tasks are cleared too.",
-    confirmDeleteTasks: "Delete the {n} selected {what} tasks? Terminal bindings, remote bindings and offline copies are cleared too, and this cannot be undone.",
-    droppedTerminals: "{n} terminals in this task had been deleted and were removed automatically",
+    confirmDeleteTasks:
+      "Delete the {n} selected {what} tasks? Terminal bindings, remote bindings and offline copies are cleared too, and this cannot be undone.",
+    droppedTerminals: "{n} terminals in this task had been deleted and were removed automatically"
   },
   offline: {
-    summaryLine: "Offline copies: {media} media / {task} tasks · push links: {mediaLinks} media / {taskLinks} tasks · tasks marked offline: {marked}",
+    summaryLine:
+      "Offline copies: {media} media / {task} tasks · push links: {mediaLinks} media / {taskLinks} tasks · tasks marked offline: {marked}",
     push: "Push",
     pushTask: "Push tasks",
     pushMedia: "Push media",
     pushMode: "Push mode",
     pushSingle: "Push individually",
-    taskPushNote: "Pushing a task also pushes its tone list and fills in the missing offlinemedia copies — without a copy the terminal cannot fetch the file.",
+    taskPushNote:
+      "Pushing a task also pushes its tone list and fills in the missing offlinemedia copies — without a copy the terminal cannot fetch the file.",
     clearAll: "Clear all offline data",
     confirmClear: "Confirm clear",
-    clearWarn: "This empties the four tables offlinemedia, offlinemediaofterminal, offlinetask and offlinetaskofterminal, and resets every task.offlinestate to 0. In the old version this action was guarded by nothing but a front-end confirm.",
+    clearWarn:
+      "This empties the four tables offlinemedia, offlinemediaofterminal, offlinetask and offlinetaskofterminal, and resets every task.offlinestate to 0. In the old version this action was guarded by nothing but a front-end confirm.",
     fullTableDelete: "These are four full-table deletes with no WHERE clause",
     typeToConfirm: "Type it out: Clear all offline data",
     copyMissing: "Copy missing",
@@ -904,7 +917,7 @@ export default {
     pickTerminalFirst: "Choose terminals",
     idleDelete: "Delete when idle",
     nowDelete: "Delete now",
-    tip: "Notice",
+    tip: "Notice"
   },
   user: {
     newGroup: "New user group",
@@ -918,7 +931,8 @@ export default {
     noRights: "No permissions",
     viewOrEditInfo: "View / edit description",
     systemGroupUndeletable: "The system user group cannot be deleted",
-    systemGroupNotice: "This is the system user group and holds every permission. Its name, level and permissions are read-only — only the description can be changed.",
+    systemGroupNotice:
+      "This is the system user group and holds every permission. Its name, level and permissions are read-only — only the description can be changed.",
     groupName: "Group name",
     groupNameRequired: "Enter a group name",
     groupLevel: "Group level",
@@ -1004,7 +1018,7 @@ export default {
     cameraWindN: "Monitoring software {n}",
     deletedSummary: "{users} users, {tasks} tasks and {media} media files deleted",
     syncedVerb: "{n} tasks {verb}d in step",
-    recalcPriority: "Priority recalculated on {n} tasks",
+    recalcPriority: "Priority recalculated on {n} tasks"
   },
   server: {
     serverInfo: "Server info",
@@ -1054,7 +1068,8 @@ export default {
     restartServer: "Restart server",
     confirmRestart: "Confirm restart",
     wholeMachine: "This restarts the whole machine, not just the background service",
-    restartImpact: "Measured in the field: the shutdown sequence starts one second after the command and service is back in about 30 seconds. Broadcasting stops completely in between and anything playing is cut off — avoid class-change bell times.",
+    restartImpact:
+      "Measured in the field: the shutdown sequence starts one second after the command and service is back in about 30 seconds. Broadcasting stops completely in between and anything playing is cut off — avoid class-change bell times.",
     on: "On",
     off: "Off",
     cancelSpaced: "Cancel",
@@ -1081,7 +1096,7 @@ export default {
     ipSwitchTitle: "The network address is switching",
     ipSwitching:
       "The server's network interface ({conn} · {device}) is switching to {address}.\n\n" +
-      "That is this machine's real address (the primary/backup pair), not the virtual address in the \"Server address\" field.\n\n" +
+      'That is this machine\'s real address (the primary/backup pair), not the virtual address in the "Server address" field.\n\n' +
       "If you opened this page on that address the connection is about to drop, which is expected; " +
       "if you opened it on the virtual address nothing changes.\n\n" +
       "New address: {url}\n\n" +
@@ -1092,17 +1107,17 @@ export default {
       "These legacy files record the same address and could not be updated (the rest were synced):\n\n{list}\n\nCheck them on the server; no htweb restart is needed afterwards.",
     serverRunning: "Running",
     serverStopped: "Stopped",
-    unknownState: "Unknown state {v}",
+    unknownState: "Unknown state {v}"
   },
   backup: {
     restoredRelogin: "The data has been restored and every session was invalidated. Please sign in again.{hint}",
     reloginTitle: "Sign in again",
-    finalConfirm: "Last check: this wipes everything currently in the database and writes the backup's contents in its place. It cannot be undone.",
+    finalConfirm:
+      "Last check: this wipes everything currently in the database and writes the backup's contents in its place. It cannot be undone.",
     confirmDeletePkg: "Delete the backup package “{name}”? It cannot be recovered.",
     schemaMismatch: "This package does not match the current database schema, so the list marks it “not restorable”",
     emptyFile: "This file is empty",
     mediaRestoredN: ", {n} media files",
-    safetyBackupName: "; safety backup {name}",
     backupNow: "Back up now",
     uploadPackage: "Upload a package",
     restore: "Restore",
@@ -1114,7 +1129,10 @@ export default {
     afterRestore: "Once the restore finishes",
     allSessionsGone: "everyone is signed out",
     includingYou: ", including you — the user table is restored too.",
-    irreversible: "This cannot be undone. What the broadcast service reads changes abruptly during the restore — avoid class-change bell times.",
+    irreversible:
+      "This cannot be undone, and the data being replaced is NOT kept anywhere — restore the wrong package and it is gone. " +
+      "If you want a way back, create a backup by hand on this page first.\n" +
+      "What the broadcast service reads changes abruptly during the restore — avoid class-change bell times.",
     notePlaceholder: "Note (optional, used in the file name only)",
     package: "Package",
     content: "Contents",
@@ -1125,7 +1143,6 @@ export default {
     willClear: "Will clear",
     diff: "Difference",
     restoreMedia: "Restore media files",
-    safeBackupFirst: "Take a safety backup first",
     operator: "By",
     generatedAt: "Created at",
     structureFingerprint: "Schema fingerprint",
@@ -1141,7 +1158,7 @@ export default {
     restoreDone: "Restore finished: {tables} tables — {deleted} rows cleared, {inserted} rows written",
     mediaFailed: "{n} media files could not be restored: {names}",
     dangerous: "Dangerous action",
-    goSignIn: "Go to sign-in",
+    goSignIn: "Go to sign-in"
   },
   log: {
     pendingCutoffTip: "Confirm to clear everything before {date}",
@@ -1158,8 +1175,10 @@ export default {
     cutoffDate: "Cut-off date",
     pickCutoff: "Choose a cut-off date",
     notRecorded: "(not recorded)",
-    deleteUsesDelete: "Cleanup uses DELETE, so it can be rolled back and does not reset auto-increment (the old version used TRUNCATE).",
-    serviceWrites: "of them were written by the broadcast service (temp-file cleanup, playback channels and so on). They are deleted too, and the service keeps writing more.",
+    deleteUsesDelete:
+      "Cleanup uses DELETE, so it can be rolled back and does not reset auto-increment (the old version used TRUNCATE).",
+    serviceWrites:
+      "of them were written by the broadcast service (temp-file cleanup, playback channels and so on). They are deleted too, and the service keeps writing more.",
     noteAmong: "Note: ",
     backendService: "Broadcast service",
     keyword: "Keyword",
@@ -1171,7 +1190,7 @@ export default {
     retentionIs: "Log retention: {label}",
     deletedRows: "{n} rows deleted, {kept} left (audit record #{audit})",
     confirmCleanBy: "Clean up the operation log by “{label}”?",
-    cutoffSummary: "; {rows} operation-log rows before {cutoff} cleaned up",
+    cutoffSummary: "; {rows} operation-log rows before {cutoff} cleaned up"
   },
   cloud: {
     isCopyNotSource: "These are the offline copies, not the original tasks",
@@ -1209,18 +1228,20 @@ export default {
     standalone: "Pushed on its own",
     emptyInventory: "This terminal holds no offline content yet.",
     inventoryTitle: "Offline content on {name}",
-    bulkConfirm: "“{action}” will run on the {n} selected terminals. The offline content on them will be deleted and cannot be recovered.",
+    bulkConfirm:
+      "“{action}” will run on the {n} selected terminals. The offline content on them will be deleted and cannot be recovered.",
     bulkDone: "{action}: {media} media and {task} tasks set to “{state}”. The broadcast service performs the actual transfer.",
     syncDone: "Time-sync command sent to {n} terminals",
     syncSkipped: ", {n} skipped",
-    pickTerminalFirst: "Select at least one terminal first",
+    pickTerminalFirst: "Select at least one terminal first"
   },
   rights: {
     groupResource: "Resources",
     groupTask: "Tasks",
     groupSystem: "System",
     terminal: "Terminal management",
-    terminalTip: "Every write action on the Terminals page: settings, volume, start/stop, password, power, shortcut keys, paging groups, quick tasks, terminal replacement, deletion. Also Cloud broadcast → Music transfer, and Time settings → push time sync.",
+    terminalTip:
+      "Every write action on the Terminals page: settings, volume, start/stop, password, power, shortcut keys, paging groups, quick tasks, terminal replacement, deletion. Also Cloud broadcast → Music transfer, and Time settings → push time sync.",
     zone: "Zone management",
     zoneTip: "Create, edit and delete terminal zones. Also Noise monitoring → noise devices and sound-field zones.",
     alarm: "Alarm management",
@@ -1242,9 +1263,10 @@ export default {
     led: "LED display",
     ledTip: "Create / edit / delete / start / stop LED display tasks, plus LED task folders and LED devices",
     remote: "Remote control",
-    remoteTip: "Remote tasks. Also Cloud broadcast → Task transfer; Basic settings → Server info and the NTP / GPS parts of Time settings; Users → Licensing.",
+    remoteTip:
+      "Remote tasks. Also Cloud broadcast → Task transfer; Basic settings → Server info and the NTP / GPS parts of Time settings; Users → Licensing.",
     user: "User management",
-    userTip: "View and maintain users and user groups",
+    userTip: "View and maintain users and user groups"
   },
   enable: {
     expired: "Expired",
@@ -1254,7 +1276,8 @@ export default {
     disableAll: "Disable all",
     includeThisTime: "Include",
     options: "Option",
-    includeTip: "Only tasks with “Include” ticked are written into this plan. Each radio starts on that task's current enabled state.",
+    includeTip:
+      "Only tasks with “Include” ticked are written into this plan. Each radio starts on that task's current enabled state.",
     noSelectableTask: "No tasks to choose from",
     addPlan: "New activation plan",
     editPlan: "Edit activation plan #{id}",
@@ -1267,7 +1290,7 @@ export default {
     startDateRequired: "Pick a start date",
     pickStartTime: "Pick a start time",
     startDate2: "Start date",
-    requiredNotFilled: "Some required fields (*) are still empty",
+    requiredNotFilled: "Some required fields (*) are still empty"
   },
   holiday: {
     effectiveToday: "In effect today",
@@ -1287,11 +1310,12 @@ export default {
     deletedN: "{n} deleted",
     enabledN: "{n} enabled",
     disabledN: "{n} disabled",
-    pickFirst: "Select at least one holiday first",
+    pickFirst: "Select at least one holiday first"
   },
   alarmMap: {
     channelNo: "Channel {n}",
-    noAlarmHost: "There is no terminal of type “Alarm host” yet. Go to Terminals first and set the alarm host's terminal type to “Alarm host”.",
+    noAlarmHost:
+      "There is no terminal of type “Alarm host” yet. Go to Terminals first and set the alarm host's terminal type to “Alarm host”.",
     channelN: "Channel {n}",
     channel: "Channel",
     mappedChannel: "Mapped channel",
@@ -1315,7 +1339,7 @@ export default {
     clearedNSkipped: "{n} cleared; {skipped} were not permitted or no longer exist",
     pickMappingFirst: "Select at least one mapping first",
     hostOption: "{name} ({ip} · {n} channels)",
-    abnormal: "Fault",
+    abnormal: "Fault"
   },
   alarmArea: {
     mappingCount: "{n} mappings",
@@ -1337,10 +1361,11 @@ export default {
     searchByAreaName: "Search by zone name",
     editArea: "Edit alarm zone: {name}",
     deletedSummary: "{areas} zones and {mappings} mappings deleted; {terminals} terminals removed from their zone",
-    confirmCascade: "This will also delete <b>{n}</b> alarm mappings — those channels will then play nothing when triggered. Continue?",
+    confirmCascade:
+      "This will also delete <b>{n}</b> alarm mappings — those channels will then play nothing when triggered. Continue?",
     droppedTerminals: "{n} terminals in this zone no longer exist and were dropped from the member list",
     pickAreaFirst: "Select at least one alarm zone first",
-    terminalInArea: "{name} (already in {area})",
+    terminalInArea: "{name} (already in {area})"
   },
   noise: {
     addZone: "New zone",
@@ -1356,7 +1381,8 @@ export default {
     terminalsOf: "Terminals in {name}",
     editZoneTitle: "Edit sound-field zone: {name}",
     deleteZoneTitle: "Delete sound-field zones",
-    confirmDeleteZones: "Delete the {n} selected sound-field zones? Member terminals and probes are removed from the zone; the devices themselves are kept.",
+    confirmDeleteZones:
+      "Delete the {n} selected sound-field zones? Member terminals and probes are removed from the zone; the devices themselves are kept.",
     zoneDeletedSummary: "{zones} zones deleted; {terminals} terminals and {devices} probes removed from their zone",
     droppedTerminals: "{n} terminals in this zone no longer exist and were dropped",
     pickZoneFirst: "Select at least one sound-field zone first",
@@ -1381,7 +1407,7 @@ export default {
     confirmDeleteDevices: "Delete the {n} selected noise devices?",
     deletedDevicesN: "{n} deleted",
     pickDeviceFirst: "Select at least one noise device first",
-    pickOneDevice: "Tick exactly one device",
+    pickOneDevice: "Tick exactly one device"
   },
   time: {
     noSync: "No time sync",
@@ -1404,17 +1430,20 @@ export default {
     minute: "Minute",
     second: "Second",
     pickCollector: "Choose a collector terminal",
-    noGpsTerminal: "No eligible terminal — only network audio collectors and sampling terminals carry a timing module. Add one under Terminals first.",
+    noGpsTerminal:
+      "No eligible terminal — only network audio collectors and sampling terminals carry a timing module. Add one under Terminals first.",
     pickCollectorOrNone: "Choose a collector terminal first, or click “No time sync”",
-    bellWarn: "⚠ This machine is ringing to a schedule. Moving the system clock can fire a whole batch of tasks at once, or silence them all — avoid doing it around class change times.",
+    bellWarn:
+      "⚠ This machine is ringing to a schedule. Moving the system clock can fire a whole batch of tasks at once, or silence them all — avoid doing it around class change times.",
     confirmSetTime: "The server's system clock will be set to {text}.",
     confirmSetTitle: "Confirm",
     beidouDisabled: "BeiDou time sync disabled",
     beidouSet: "BeiDou time-sync terminal set",
     serverTimeSet: "Server clock set",
-    ntpWillStop: "Saving first stops this machine's automatic time sync (ntp / chronyd / systemd-timesyncd) — otherwise the system refuses to set the time by hand. They are stopped, not disabled at boot.",
+    ntpWillStop:
+      "Saving first stops this machine's automatic time sync (ntp / chronyd / systemd-timesyncd) — otherwise the system refuses to set the time by hand. They are stopped, not disabled at boot.",
     serverTimeSetAt: "Server time set to {time}",
-    timeNotKept: "The time did not stick",
+    timeNotKept: "The time did not stick"
   },
   remote: {
     keyNo: "Key {n}",
@@ -1435,7 +1464,7 @@ export default {
     deletedN: "{n} bindings deleted",
     pickFirst: "Select at least one remote task first",
     nameRequired: "Enter a name",
-    pickOneTask: "Choose a task",
+    pickOneTask: "Choose a task"
   },
   console: {
     devApi: "Developer API",
@@ -1444,14 +1473,17 @@ export default {
     peekFirstN: "Show only the first {n}",
     expandAllFields: "Expand all {n} fields",
     moreFieldsHidden: "{n} more fields are hidden — ",
-    bodyPlaceholder: "e.g. { \"ids\": [1, 2] }",
+    bodyPlaceholder: 'e.g. { "ids": [1, 2] }',
     executeForReal: "Run it (for real)",
     sendRequest: "Send request",
     commonApis: "Recommended APIs",
-    commonApisHint: "Addressed by ID (names work too), plain-language parameters, versioned paths, additive only. Prefer these for integrations.",
+    commonApisHint:
+      "Addressed by ID (names work too), plain-language parameters, versioned paths, additive only. Prefer these for integrations.",
     allApis: "All feature APIs",
-    allApisHint: "The set the web UI itself uses. It covers every page feature, but it follows the UI and may change when a page is redesigned.",
-    allApisDesc: "It covers every action this page can perform, but its parameters are whatever the UI sends — they are not transcribed here (a transcript would be wrong somewhere and would fall behind changes). To see the exact parameters, watch one request from the UI in your browser's developer tools. This group also follows the UI and may change when a page is redesigned, so prefer Recommended APIs whenever they can do the job.",
+    allApisHint:
+      "The set the web UI itself uses. It covers every page feature, but it follows the UI and may change when a page is redesigned.",
+    allApisDesc:
+      "It covers every action this page can perform, but its parameters are whatever the UI sends — they are not transcribed here (a transcript would be wrong somewhere and would fall behind changes). To see the exact parameters, watch one request from the UI in your browser's developer tools. This group also follows the UI and may change when a page is redesigned, so prefer Recommended APIs whenever they can do the job.",
     uiApiNote: "This is one of the All feature APIs — the set the web UI itself uses",
     serverHost: "http://broadcast-server:8080",
     yourKey: "your-api-key",
@@ -1462,10 +1494,12 @@ export default {
     networkErrorBody: "The request never went out. Check the server address, or whether the browser blocked it as cross-origin.",
     help40001: "The request is wrong. The msg above says what — fix that; retrying will not help.",
     help401: "Invalid key: mistyped, disabled, expired or deleted. Check the API keys page, or issue a new one.",
-    help40301: "Not permitted: the account this key belongs to is missing the matching permission — grant it on the Users page. The server may also be in read-only standby mode.",
+    help40301:
+      "Not permitted: the account this key belongs to is missing the matching permission — grant it on the Users page. The server may also be in read-only standby mode.",
     help40401: "No such object.",
     help50001: "Server error — worth retrying. If it keeps happening, have an administrator check the server log.",
-    intro: "Third-party systems (school administration, access control, fire alarm) can call these APIs directly to make the broadcast system play something or look something up.",
+    intro:
+      "Third-party systems (school administration, access control, fire alarm) can call these APIs directly to make the broadcast system play something or look something up.",
     introTail: "Every API below can be ",
     tryHere: "tried right here",
     introTail2: " — what comes back is exactly what the calling program will get.",
@@ -1473,7 +1507,8 @@ export default {
     addressingBody: "Media, terminals, zones, tasks and groups all accept both an ",
     idWord: "ID",
     andName: " and a name, but only the ID is unique — ",
-    nameNotUnique: "media names and terminal names have no unique constraint in the database, so duplicates really do happen; when they do the API can only refuse and ask you to use the ID. Get IDs from the matching query APIs (terminal status, media list, task list). Only ",
+    nameNotUnique:
+      "media names and terminal names have no unique constraint in the database, so duplicates really do happen; when they do the API can only refuse and ask you to use the ID. Get IDs from the matching query APIs (terminal status, media list, task list). Only ",
     bellException: " is an exception: it has no ID at all, so a name is the only way.",
     keyHeaderPrefix: "The caller sends the header ",
     keyHeader: "X-API-Key: <the key>",
@@ -1484,7 +1519,8 @@ export default {
     baseUrlTail: "",
     valueTableTitle: "Value reference",
     counterIntuitive: "A few fields have counter-intuitive values",
-    counterIntuitiveDesc: "The rows marked in red are ones intuition gets wrong every time, and getting them wrong raises no error — it just makes the broadcast play at the wrong time, in the wrong order, on the wrong day. Read them before you integrate.",
+    counterIntuitiveDesc:
+      "The rows marked in red are ones intuition gets wrong every time, and getting them wrong raises no error — it just makes the broadcast play at the wrong time, in the wrong order, on the wrong day. Read them before you integrate.",
     valueMeaning: "What the 0s and 1s in a response mean. A few of them are counter-intuitive.",
     downloadSpec: "Download the OpenAPI file",
     downloadSpecHint: "Standard OpenAPI 3.0 — import it straight into Postman, Apifox or a code generator.",
@@ -1502,7 +1538,8 @@ export default {
     tryItKey: "Key used by Try it",
     keyPlaceholder: "Paste a key, like hb_xxxxxxxx_xxxxxxxx…",
     pasteKeyFirst: "Paste a key above first",
-    noKeyHint: "No key? Issue one on the API keys page — the server stores only a digest, so a key already issued cannot be shown again.",
+    noKeyHint:
+      "No key? Issue one on the API keys page — the server stores only a digest, so a key already issued cannot be shown again.",
     keyPrefilled: "Filled in with the key you just created",
     requestPath: "Request path",
     pathPlaceholder: "/api/… — replace {id} with a real value and append the query string",
@@ -1523,7 +1560,7 @@ export default {
     name: "Name",
     yes: "Yes",
     no: "No",
-    bell: "Bell schedules",
+    bell: "Bell schedules"
   },
   keys: {
     newKey: "New key",
@@ -1545,12 +1582,15 @@ export default {
     lastUsed: "Last used",
     key: "Key",
     adminWarnTitle: "This is an administrator account — the key will hold every permission",
-    adminWarnDesc: "For a third-party integration, create a separate account and tick only the permissions it genuinely needs — do not lend out the administrator.",
-    rightsNote: "A key's permissions are exactly its owner account's permissions. Grant the third party what you want by configuring that account on the Users page.",
+    adminWarnDesc:
+      "For a third-party integration, create a separate account and tick only the permissions it genuinely needs — do not lend out the administrator.",
+    rightsNote:
+      "A key's permissions are exactly its owner account's permissions. Grant the third party what you want by configuring that account on the Users page.",
     sameAsUi: "This key can do exactly what that account can do in the web UI.",
     saveNowTitle: "Save this key now",
     onlyChanceTitle: "This is the only time the full key is shown",
-    onlyChanceDesc: "The server stores only a digest of it — once this window closes nobody can retrieve it. If you lose it, delete this key and issue a new one.",
+    onlyChanceDesc:
+      "The server stores only a digest of it — once this window closes nobody can retrieve it. If you lose it, delete this key and issue a new one.",
     savedIt: "I have saved it",
     tryIt: "Try it out",
     usagePrefix: "Usage: send the header ",
@@ -1561,11 +1601,12 @@ export default {
     copiedToClipboard: "Copied to the clipboard",
     copyNotAllowed: "This browser will not copy automatically — select the string above yourself",
     confirmDelete: "Delete this key?",
-    deleteWarn: "After “{name}” is deleted, any system calling with it gets a 401 immediately, and there is no longer any record of whose key it was or when it was issued.",
+    deleteWarn:
+      "After “{name}” is deleted, any system calling with it gets a 401 immediately, and there is no longer any record of whose key it was or when it was issued.",
     deleteWarnTail: "If you only want to pause it while you look into something, use Disable instead.",
     deleted: "Deleted",
     enabled: "Enabled",
-    disabledNow: "Disabled — this key stops working immediately",
+    disabledNow: "Disabled — this key stops working immediately"
   },
   ai: {
     title: "AI assistant",
@@ -1588,18 +1629,21 @@ export default {
     inputPlaceholder: "Say something, e.g. “今天有哪些任务”",
     stopThat: "Stop “{what}”",
     thatOne: "that last one",
-    chineseOnly: "The assistant understands Chinese commands only, and answers in Chinese. The examples below work as they are.",
+    chineseOnly: "The assistant understands Chinese commands only, and answers in Chinese. The examples below work as they are."
   },
   register: {
     title: "Licensing",
     serverState: "Server state",
     machineCode: "Machine code",
     machineCodeEmpty: "(no machine code read)",
-    machineCodeTip: "The machine code. Copy it and send it to the vendor; they compute a licence code from it that completes the registration.",
-    machineCodeTitle: "The machine code. Copy it and send it to the vendor; they compute a licence code from it that completes the registration",
+    machineCodeTip:
+      "The machine code. Copy it and send it to the vendor; they compute a licence code from it that completes the registration.",
+    machineCodeTitle:
+      "The machine code. Copy it and send it to the vendor; they compute a licence code from it that completes the registration",
     licenceCode: "Licence code",
     licenceCodeRequired: "Enter the licence code",
-    licenceCodeTitle: "The licence code. Enter the code the vendor gave you to complete registration; while unregistered, red text here says whether you are in the trial period or past it",
+    licenceCodeTitle:
+      "The licence code. Enter the code the vendor gave you to complete registration; while unregistered, red text here says whether you are in the trial period or past it",
     submitTitle: "Enter the licence code and click Register; registration is done once the success message appears",
     submit: "Register",
     trial: "Trial",
@@ -1607,12 +1651,13 @@ export default {
     claimConfirm: "The server restarts once claimed, and the trial lasts 5 days. Claim it?",
     claimOk: "Claim it",
     trialUsed: "This server has already used its trial period; it cannot be claimed a second time.",
-    trialFileMissing: "The trial start file cannot be read, so the days remaining cannot be worked out — check the path at config file → register.serial_file.",
+    trialFileMissing:
+      "The trial start file cannot be read, so the days remaining cannot be worked out — check the path at config file → register.serial_file.",
     cannotLogin: "You cannot sign in on this server yet — register or claim the trial first, then come back to the sign-in page.",
     backToLogin: "Back to sign-in",
     trialDaysNotice: "You have a 5-day trial period — please register soon",
     codeCopied: "Machine code copied",
-    copyNotAllowed: "The browser will not copy automatically — select the machine code and copy it yourself",
+    copyNotAllowed: "The browser will not copy automatically — select the machine code and copy it yourself"
   },
   theme: {
     drawerTitle: "Layout settings",
@@ -1638,7 +1683,7 @@ export default {
     tabs: "Tab bar",
     tabsIcon: "Tab bar icons",
     footer: "Footer",
-    watermark: "Watermark",
+    watermark: "Watermark"
   },
   http: {
     network: "Network error — please try again shortly",
@@ -1653,7 +1698,7 @@ export default {
     e502: "Bad gateway",
     e503: "Service unavailable",
     e504: "Gateway timeout",
-    eDefault: "The request failed",
+    eDefault: "The request failed"
   },
   upload: {
     dragHere: "Drop a file here, or ",
@@ -1677,7 +1722,7 @@ export default {
     imgTooLargeMB: "The image may not exceed {n} MB",
     imgFailed: "The image upload failed — please try again",
     imgOk: "Image uploaded",
-    imgLimit: "At most {n} images — remove one before uploading another",
+    imgLimit: "At most {n} images — remove one before uploading another"
   },
   block: {
     IN_USE_TASK: "In use by a task",
@@ -1688,7 +1733,7 @@ export default {
     SYSTEM_RESERVED: "A system media library — it cannot be deleted",
     NO_PERMISSION: "Not permitted",
     MEDIA_IN_USE: "Media inside the folder are in use",
-    NOT_FOUND: "No such object",
+    NOT_FOUND: "No such object"
   },
   jsErr: {
     eval: "Eval was used incorrectly",
@@ -1698,64 +1743,64 @@ export default {
     type: "The wrong type or object was used",
     uri: "URI error",
     internal: "Internal JavaScript engine error",
-    unknown: "Unknown error",
+    unknown: "Unknown error"
   },
   colSetting: {
     title: "Columns",
     colName: "Column",
     sortable: "Sortable",
     visible: "Shown",
-    empty: "No configurable columns",
+    empty: "No configurable columns"
   },
   treeFilter: {
     expandAll: "Expand all",
     collapseAll: "Collapse all",
     filterPlaceholder: "Type to filter",
-    all: "All",
+    all: "All"
   },
   handle: {
     confirm: "{action}?",
     done: "{action} done",
-    tip: "Notice",
+    tip: "Notice"
   },
   route: {
     login: "Sign in",
     register: "Licensing",
     p403: "403",
     p404: "404",
-    p500: "500",
+    p500: "500"
   },
   greet: {
     earlyMorning: "Good early morning 🌛",
     morning: "Good morning ⛅",
     noon: "Good afternoon 🌞",
     afternoon: "Good afternoon 🌞",
-    evening: "Good evening 🌛",
+    evening: "Good evening 🌛"
   },
   termSelect: {
     pickTerminal: "Pick terminals",
     unspecified: "(unspecified)",
     offlineSuffix: " (offline)",
-    zoneNo: "Zone {id}",
+    zoneNo: "Zone {id}"
   },
   hms: {
     hour: "h",
     minute: "m",
-    second: "s",
+    second: "s"
   },
   size: {
     large: "Large",
     default: "Default",
-    small: "Small",
+    small: "Small"
   },
   colorErr: {
     hex: "That hex colour is not valid",
     hexShort: "That hex value is not valid",
-    rgb: "That rgb colour is not valid",
+    rgb: "That rgb colour is not valid"
   },
   dict: {
     male: "Male",
-    female: "Female",
+    female: "Female"
   },
   sys: {
     themeReset: "The primary colour has been reset to {color}",
@@ -1796,7 +1841,7 @@ export default {
     sendFailed: "That message could not be sent — check the network and try again.",
     noReply: "(no reply)",
     me: "Me",
-    assistantName: "Dian",
+    assistantName: "Dian"
   },
   pwd: {
     current: "Current password",
@@ -1815,7 +1860,7 @@ export default {
     lengthRule: "Must be {min} to {max} characters long",
     complexRule: "Must contain a digit, an uppercase letter, a lowercase letter and a symbol",
     changedTitle: "Password changed",
-    changedTip: "Use the new password next time you sign in. You do not need to sign in again now.",
+    changedTip: "Use the new password next time you sign in. You do not need to sign in again now."
   },
   menu: {
     dashboard: "Dashboard",

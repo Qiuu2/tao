@@ -220,7 +220,6 @@ type RestoreResult struct {
 	RowsInserted      int64    `json:"rowsInserted"`
 	MediaRestored     int      `json:"mediaRestored"`
 	MediaFailed       []string `json:"mediaFailed"`
-	SafetyBackup      string   `json:"safetyBackup"`
 	Elapsed           string   `json:"elapsed"`
 	SessionsInvalided bool     `json:"sessionsInvalidated"`
 	// BackendNeedsRestart 提醒调用方：后台 C 服务内存里还是恢复前的数据。
@@ -231,8 +230,6 @@ type RestoreResult struct {
 
 type RestoreInput struct {
 	Name string
-	// SafetyBackup 恢复前先自动生成一份当前状态的备份。
-	SafetyBackup bool
 	// RestoreMedia 是否连媒体文件一起恢复。
 	RestoreMedia bool
 	Operator     string
@@ -241,14 +238,21 @@ type RestoreInput struct {
 // Restore 执行恢复。
 func (s *Service) Restore(ctx context.Context, in RestoreInput) (*RestoreResult, error) {
 	started := time.Now()
-	// 早前这里要求逐字输入包名才放行。**已按需求方要求去掉** —— 界面上点确定即恢复。
+	// # ⚠ 这里**不留退路**，两道保险都是按需求方要求去掉的
 	//
-	// 剩下的防线一条都没动，而且它们比那个输入框管用：
+	// 早前有两条：逐字输入包名才放行、以及恢复前自动生成一份
+	// auto-before-restore 的安全备份（BR-273）。现在都没有了 ——
+	// 点确定就直接覆盖，**恢复之前的数据不做任何留存**。
+	//
+	// 所以这件事现在是不可逆的：恢复错了包，原来的数据就没了，
+	// 除非之前有人手工备份过。
+	//
+	// 还在的防线：
 	//
 	//	· Precheck 结构对不上直接拒绝（ErrIncompatible），不会把线上表改成别的样子
-	//	· SafetyBackup 默认开着，恢复前先留一份当前状态
-	//	· 整个恢复是一个真事务（没有 DDL），中途出错整体回滚
-	//	· handleBackupRestore 在动手**之前**写审计 —— 恢复会把 log 表也换掉
+	//	· 整个恢复是一个真事务（没有 DDL），中途出错整体回滚到恢复前
+	//	· handleBackupRestore 在动手**之前**写审计 —— 恢复会把 log 表也换掉，
+	//	  写晚一步这条记录就跟着没了
 	pre, err := s.Precheck(ctx, in.Name)
 	if err != nil {
 		return nil, err
@@ -258,15 +262,6 @@ func (s *Service) Restore(ctx context.Context, in RestoreInput) (*RestoreResult,
 	}
 
 	out := &RestoreResult{Name: in.Name, MediaFailed: []string{}}
-
-	// 先做安全备份（BR-273）。它失败就不要继续 —— 没有退路的恢复不该开始。
-	if in.SafetyBackup {
-		sb, err := s.Create(ctx, "auto-before-restore", in.Operator)
-		if err != nil {
-			return nil, fmt.Errorf("生成安全备份失败，已取消恢复: %w", err)
-		}
-		out.SafetyBackup = sb.Name
-	}
 
 	p, err := s.Path(in.Name)
 	if err != nil {

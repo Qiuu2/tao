@@ -83,7 +83,6 @@ export interface BackupRestoreResult {
   rowsInserted: number;
   mediaRestored: number;
   mediaFailed: string[];
-  safetyBackup: string;
   elapsed: string;
   sessionsInvalidated: boolean;
   /** 后台 C 服务内存里仍是恢复前的数据，需要人工选时机重启 */
@@ -136,11 +135,14 @@ export const precheckBackupApi = (name: string) =>
 /**
  * 恢复一个备份包。
  *
- * ⚠ 早前要求逐字输入包名才放行，已按要求去掉 —— 界面上点确定即恢复。
- *   真正拦得住误操作的仍在：结构对不上直接拒绝、safetyBackup 默认先留一份、
- *   整个恢复是一个真事务、动手之前就写审计。
+ * ⚠ **这是不可逆的。** 早前的两道保险（逐字输入包名、恢复前自动留一份
+ *   安全备份）都已按要求去掉：点确定就直接覆盖，恢复之前的数据不做任何留存。
+ *   恢复错了包，原来的数据就没了，除非之前有人手工备份过。
+ *
+ *   还在的：结构对不上直接拒绝、整个恢复是一个真事务（中途出错回滚到恢复前）、
+ *   动手之前就写审计。
  */
-export const restoreBackupApi = (data: { name: string; safetyBackup: boolean; restoreMedia: boolean }) =>
+export const restoreBackupApi = (data: { name: string; restoreMedia: boolean }) =>
   http.post<BackupRestoreResult>(PORT1 + `/api/backups/restore`, data);
 
 /** 下载走浏览器直连，带上 token 查询串 */
