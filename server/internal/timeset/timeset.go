@@ -119,6 +119,9 @@ func (s *Service) Get(ctx context.Context) (*State, error) {
 	}
 	st.ReadOnly = model == 2
 	st.ClockAbility = s.probeClock(ctx)
+	// 选了北斗校时终端之后，手工拨表的值会被它拨回来 —— 那两个按钮该是灰的。
+	// 界面上同时会显示 clockBlockReason，说明「先点不校时」这条出路。
+	st.ClockAbility.applyGPSBlock(st.GPSTerminalID)
 
 	now := time.Now()
 	st.ServerTime = now.Format("2006-01-02 15:04:05")
@@ -253,7 +256,7 @@ func (s *Service) SetGPSTerminal(ctx context.Context, terminalID int64) error {
 			return fmt.Errorf("校验校时终端: %w", err)
 		}
 		if !slices.Contains(GPSTerminalTypes, int(typeID.Int64)) {
-			return fmt.Errorf("这台终端不支持北斗校时（只有双向寻呼终端、采样终端带授时模块），请重新选择")
+			return fmt.Errorf("这台终端不支持北斗校时（只有网络音频采集器、采样终端带授时模块），请重新选择")
 		}
 	}
 	if _, err := s.db.ExecContext(ctx,
@@ -293,18 +296,20 @@ type TerminalOption struct {
 
 // GPSTerminalTypes 是**允许**当北斗/GPS 校时终端的 terminaltype.id。
 //
-//	3 = 双向寻呼终端
-//	8 = 采样终端
+//	31 = 网络音频采集器
+//	 8 = 采样终端
 //
 // 只有这两类机器上带授时模块，别的型号选了也收不到星历 ——
 // 而 adjusttime 一旦指向一台收不到的终端，整套系统就再也没有校时来源了，
 // 界面上还看不出任何异常。所以这里是**白名单**，不是提示。
 //
-// ⚠ 旧版 getgpsterminal.php 写的是 `terminaltype.id in(31,8)`
+// 与旧版 getgpsterminal.php 的 `terminaltype.id in(31,8)` 一致。
 //
-//	（31 = 网络音频采集器）。这里用的是 3，与旧版**不一致**，是按需求方
-//	当面确认的口径来的。哪天要改回去，只动这一行。
-var GPSTerminalTypes = []int{3, 8}
+// ⚠ 31 很容易被看成 3（双向寻呼终端）—— 那是完全不同的一类设备，
+//
+//	而且选错之后没有任何报错，只会在半年后表现成「所有铃都晚了几分钟」。
+//	这一版一度写成了 3，是需求方当场纠正回来的。改这一行之前请再确认一次。
+var GPSTerminalTypes = []int{31, 8}
 
 // gpsTypeIn 拼出 `t.typeid IN (?,?)` 与对应的参数。
 // 从 GPSTerminalTypes 生成，避免把这两个数字在 SQL 里再抄一遍。

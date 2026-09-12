@@ -74,6 +74,38 @@ type ClockAbility struct {
 	// NTPWarning 在 NTPActive 时给一句提醒，界面显示在按钮旁边。
 	// 它**不是**阻断原因 —— 关不关自动校时由操作员在界面上明确勾选，见 SetClock。
 	NTPWarning string `json:"ntpWarning"`
+	// GPSActive 为 true 表示这台服务器的时间由北斗校时终端授时
+	// （serverbaseparam.adjusttime > 0）。这时候手工拨表是**没有意义**的，
+	// 见 blockedByGPS。
+	GPSActive bool `json:"gpsActive"`
+}
+
+// blockedByGPS 是「已经交给北斗校时终端了」时挡住手工拨表的那句话。
+//
+// # 为什么这是阻断而不是提醒
+//
+// 选了校时终端之后，服务器的时间就由那台终端上的授时模块定期喂进来。
+// 这时候手工拨过去的值撑不了多久就会被它拨回来 —— 和自动校时守护是同一类问题，
+// 区别只在于 NTP 那个可以顺手停掉，而北斗校时是运维在这一页上**明确选过**的
+// 配置，程序不该替他撤销。
+//
+// 所以这里把两个按钮直接置灰，并且把「先点不校时」这条出路写在旁边 ——
+// 那是他在这一页上一步就能做到的动作。
+const blockedByGPS = "当前由北斗校时终端授时，手工设置的时间会被它拨回去。" +
+	"要手工设置请先在本页点「不校时」，设置完再重新选回校时终端"
+
+// applyGPSBlock 在已启用北斗校时时把这两个按钮判死。
+//
+// 单独一个函数：Get() 展示能力、SetClock() 真正拦截，两处必须用同一句话、
+// 同一个条件 —— 界面上写着「因为 X 所以不能点」，绕过界面直接打接口时
+// 报的却是另一回事，是最让人不信任一个系统的那种不一致。
+func (ab *ClockAbility) applyGPSBlock(gpsTerminalID int64) {
+	if gpsTerminalID <= 0 {
+		return
+	}
+	ab.GPSActive = true
+	ab.CanSet = false
+	ab.Reason = blockedByGPS
 }
 
 // ntpUnits 是允许停的自动校时服务名单。**写死**，不从参数来 ——
@@ -218,6 +250,9 @@ func (s *Service) SetClock(ctx context.Context, value string, stopNTP bool) (*Cl
 	}
 
 	ab := s.probeClock(ctx)
+	// ⚠ 界面上那两个按钮已经置灰了，但接口谁都能直接打 ——
+	//   与北斗校时终端的类型白名单同一条规矩：下拉/置灰是给人看的，拦截在这里。
+	ab.applyGPSBlock(s.gpsTerminalID(ctx))
 	if !ab.CanSet {
 		return nil, fmt.Errorf("%s", ab.Reason)
 	}
@@ -330,4 +365,16 @@ func (s *Service) stopNTPServices(ctx context.Context, units []string) []string 
 		}
 	}
 	return stopped
+}
+
+// gpsTerminalID 读 serverbaseparam.adjusttime。读不到就当没启用 ——
+// 这一列读失败时把手工拨表也一起挡掉，只会让人在一台本就出问题的机器上
+// 更加束手无策。
+func (s *Service) gpsTerminalID(ctx context.Context) int64 {
+	var id int64
+	if err := s.db.QueryRowContext(ctx,
+		`SELECT COALESCE(adjusttime,0) FROM serverbaseparam WHERE id = 1 LIMIT 1`).Scan(&id); err != nil {
+		return 0
+	}
+	return id
 }

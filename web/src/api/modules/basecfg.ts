@@ -200,6 +200,13 @@ export interface TimeState {
   ntpUnits: string[];
   /** ntpActive 时的一句提醒，显示在按钮旁边；不是阻断原因 */
   ntpWarning: string;
+  /**
+   * 服务器时间已经交给北斗校时终端了（serverbaseparam.adjusttime > 0）。
+   *
+   * ⚠ 这时候 canSetClock 一定是 false —— 手工拨的值会被那台终端拨回来。
+   *   要手工设置得先点「不校时」。判断由服务端做，前端照着 canSetClock 走就行。
+   */
+  gpsActive: boolean;
 }
 
 /**

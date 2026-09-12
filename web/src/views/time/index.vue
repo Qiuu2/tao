@@ -104,7 +104,7 @@
         <!--
           下拉里是按终端分区分组的树，和全站其它选终端的地方一致。
 
-          ⚠ 列表已经由后端筛过：只有双向寻呼终端（typeid=3）和采样终端（typeid=8）
+          ⚠ 列表已经由后端筛过：只有网络音频采集器（typeid=31）和采样终端（typeid=8）
             带授时模块，别的型号选了也收不到星历。筛选的权威在服务端
             （timeset.GPSTerminalTypes），这里不重复判断。
         -->
@@ -244,7 +244,23 @@ const years = computed(() => {
 });
 const daysInMonth = computed(() => new Date(cf.year, cf.month, 0).getDate());
 
-/** 服务端没有改时钟的能力时按钮置灰；能力由 /api/time 的 canSetClock 告知 */
+/*
+  「设置服务器时间」「同步当前时间」这两个按钮能不能点。
+
+  权威在服务端的 canSetClock 一个字段上，前端不自己叠条件 ——
+  它已经把三种情况折进去了：
+
+    · 没有 timedatectl / 缺免密 sudo        → 装 install-sudoers.sh
+    · **已经选了北斗校时终端**（adjusttime > 0）→ 手工拨的值会被它拨回来，
+                                              先点「不校时」才谈得上手工设置
+    · 备机模式（readOnly 另算，见下）
+
+  为什么不在前端写 `&& !st.gpsTerminalId`：那样界面和接口就成了两套判断，
+  哪天改一处忘一处，界面上写着「因为 X 不能点」而接口报的是另一回事 ——
+  这是最让人不信任一个系统的那种不一致。服务端 SetClock 里拦的也是同一个条件。
+
+  按钮为什么是灰的，下面那条 alert 会照着 clockBlockReason 原样说明。
+*/
 const canSetClock = computed(() => !!st.value?.canSetClock && !st.value?.readOnly);
 
 const setClock = async (from: "manual" | "browser") => {
@@ -294,6 +310,17 @@ const setClock = async (from: "manual" | "browser") => {
     // 停掉了哪几个服务、下一次还会不会被拨回来 —— 都是他要知道的
     if (data.note) ElMessage.info(data.note);
     await load();
+    /*
+      ⚠ 这里必须重填时间表单。
+
+        load() 只更新了「服务器当前时间」那个走秒的基准，上面年/月/日/时/分/秒
+        那六个下拉还停在按下按钮之前的值 —— 「同步当前时间」尤其明显：
+        时间明明已经拨成浏览器的了，表单里却还是旧的，看着像没生效。
+
+        每分钟那次 resync 刻意**不**重填（用户可能正在下拉里选值，不能冲掉他），
+        但刚点完按钮这一次是他自己要的，重填才对。
+    */
+    fillClockForm();
   } finally {
     clockBusy.value = false;
   }
