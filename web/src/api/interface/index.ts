@@ -46,8 +46,18 @@ export namespace Login {
      * 为 false 时 captchaId / image 不下发，前端应隐藏输入框并撤掉必填校验。
      */
     enabled: boolean;
+    /**
+     * 用哪一种验证，对应 auth.captcha_mode。
+     *
+     *   slider（默认）滑动到最右边 —— 登录框里不用输任何东西
+     *   image        看图输 4 位数字
+     *
+     * ⚠ 两者强度不同：滑动完全发生在浏览器里，服务端只保证 captchaId
+     *   是刚发的、没过期、没用过，挡不住脚本化的暴力试密码。
+     */
+    mode?: "slider" | "image";
     captchaId?: string;
-    /** PNG 的 data URI，可直接作为 img src */
+    /** PNG 的 data URI，可直接作为 img src。只有 image 模式才有 */
     image?: string;
   }
   /** 用户组的 13 项功能权限位，取值 0/1 */

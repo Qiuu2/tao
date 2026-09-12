@@ -42,6 +42,7 @@ const (
 )
 
 type entry struct {
+	// code 是图形验证码上那 4 位数字。滑动验证时为空 —— 它没有「答案」可言。
 	code      string
 	expiresAt time.Time
 }
@@ -95,6 +96,43 @@ func (s *Store) Generate() (id string, dataURI string, err error) {
 	return id, "data:image/png;base64," + base64.StdEncoding.EncodeToString(buf.Bytes()), nil
 }
 
+// GenerateSlider 发一张**滑动验证**的一次性凭据。不画图 —— 滑块没有答案。
+//
+// # ⚠ 滑动验证挡不住脚本，这一点必须说清楚
+//
+// 「按住滑块拖到最右边」这件事完全发生在浏览器里，服务端无从验证它真的
+// 发生过。所以这个凭据能保证的**只有**三件事：
+//
+//	· 它是这台服务器刚发出去的（不是随手编的）
+//	· 没过期（TTL 与图形验证码同一套，默认 3 分钟）
+//	· 没用过（一次性，防重放）
+//
+// 也就是说：想暴力试密码的脚本必须每试一次就先来领一张新凭据，
+// 但它照样试得动。图形验证码那种「机器认不出来」的性质，滑动验证没有。
+//
+// 换成滑动是产品上的选择（见 auth.captcha_mode）。真要防暴力破解，
+// 该加的是登录失败限流，不是指望这个滑块。
+func (s *Store) GenerateSlider() string {
+	id := randomID()
+	s.mu.Lock()
+	s.m[id] = entry{expiresAt: time.Now().Add(s.ttl)}
+	s.mu.Unlock()
+	return id
+}
+
+// VerifyTicket 只校验「这个 id 是本机刚发的、没过期、没用过」，不比对任何答案。
+// 滑动验证走这条。
+func (s *Store) VerifyTicket(id string) bool {
+	if id == "" {
+		return false
+	}
+	s.mu.Lock()
+	e, ok := s.m[id]
+	delete(s.m, id) // 无论过没过期都作废
+	s.mu.Unlock()
+	return ok && !time.Now().After(e.expiresAt)
+}
+
 // Verify 校验并立即作废该验证码（一次性使用，防重放）。
 func (s *Store) Verify(id, input string) bool {
 	if id == "" || input == "" {
@@ -106,6 +144,11 @@ func (s *Store) Verify(id, input string) bool {
 	s.mu.Unlock()
 
 	if !ok || time.Now().After(e.expiresAt) {
+		return false
+	}
+	// ⚠ 滑动凭据没有 code。拿它走图形那条路必须判死，
+	//   否则「输入空串」就等于验证通过了。
+	if e.code == "" {
 		return false
 	}
 	return strings.EqualFold(strings.TrimSpace(input), e.code)

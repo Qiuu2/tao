@@ -24,7 +24,11 @@
         </template>
       </el-input>
     </el-form-item>
-    <el-form-item v-if="captchaRequired" prop="captcha">
+    <!-- 滑动验证。图形验证码那条路留着，由服务端 auth.captcha_mode 选（默认 slider） -->
+    <el-form-item v-if="captchaRequired && captchaMode === 'slider'">
+      <SliderCaptcha ref="sliderRef" @success="sliderPassed = true" />
+    </el-form-item>
+    <el-form-item v-else-if="captchaRequired" prop="captcha">
       <div class="captcha-row">
         <!--
           ⚠ 这里**不要**再挂 @keyup.enter。
@@ -65,12 +69,13 @@
 import { useI18n } from "vue-i18n";
 import { CircleClose, PictureFilled, UserFilled } from "@element-plus/icons-vue";
 import type { ElForm } from "element-plus";
-import { ElNotification } from "element-plus";
+import { ElMessage, ElNotification } from "element-plus";
 import { computed, onBeforeUnmount, onMounted, reactive, ref } from "vue";
 import { useRouter } from "vue-router";
 
 import { Login } from "@/api/interface";
 import { getCaptchaApi, loginApi } from "@/api/modules/login";
+import SliderCaptcha from "./SliderCaptcha.vue";
 import { HOME_URL } from "@/config";
 import { initDynamicRouter } from "@/routers/modules/dynamicRouter";
 import { useKeepAliveStore } from "@/stores/modules/keepAlive";
@@ -92,12 +97,28 @@ const loading = ref(false);
 // 初值 true：拿到响应前先按「需要」渲染，避免关闭态一闪而过。
 const captchaRequired = ref(true);
 
+/**
+ * 用哪一种验证。服务端 auth.captcha_mode 说了算：
+ *   slider（默认）滑动到最右边，登录框里不用输任何东西
+ *   image        看图输 4 位数字
+ */
+const captchaMode = ref<"slider" | "image">("slider");
+const sliderRef = ref<InstanceType<typeof SliderCaptcha>>();
+/** 滑块拖到头了没。滑动模式下它就是「能不能提交」的闸门 */
+const sliderPassed = ref(false);
+
 // 必填校验跟着 captchaRequired 走。el-form-item 上的 v-if 卸载时本就会从表单注销，
 // 这里再撤掉规则是第二道保险 —— 避免哪天 v-if 改成 v-show 就变成永远校验不过。
+//
+// ⚠ 滑动模式下**没有** captcha 规则：那个框根本不存在，
+//   留着必填规则会让表单永远校验不过。滑没滑到头由 sliderPassed 单独把关。
 const loginRules = computed(() => ({
   username: [{ required: true, message: t("login.usernameRequired"), trigger: "blur" }],
   password: [{ required: true, message: t("login.passwordRequired"), trigger: "blur" }],
-  captcha: captchaRequired.value ? [{ required: true, message: t("login.captchaRequired"), trigger: "blur" }] : []
+  captcha:
+    captchaRequired.value && captchaMode.value === "image"
+      ? [{ required: true, message: t("login.captchaRequired"), trigger: "blur" }]
+      : []
 }));
 const captchaImage = ref("");
 
@@ -109,10 +130,15 @@ const loginForm = reactive<Login.ReqLoginForm>({
 });
 
 const refreshCaptcha = async () => {
+  // 凭据是一次性的，换一张就得让滑块从头再滑一遍
+  sliderPassed.value = false;
+  sliderRef.value?.reset();
   try {
     const { data } = await getCaptchaApi();
-    // enabled 由服务端的 auth.captcha_enabled 决定，是唯一权威来源
+    // enabled / mode 由服务端的 auth.captcha_enabled / auth.captcha_mode 决定，
+    // 是唯一权威来源 —— 前端不自行猜测
     captchaRequired.value = data.enabled;
+    captchaMode.value = data.mode === "image" ? "image" : "slider";
     if (!data.enabled) {
       captchaImage.value = "";
       loginForm.captchaId = "";
@@ -138,6 +164,11 @@ const login = (formEl: FormInstance | undefined) => {
       第二个就必然报「验证码错误」。
   */
   if (loading.value) return;
+  // 滑动模式下这是唯一的闸门（那个输入框不存在，表单规则管不到它）
+  if (captchaRequired.value && captchaMode.value === "slider" && !sliderPassed.value) {
+    ElMessage.warning(t("login.slideFirst"));
+    return;
+  }
   loading.value = true;
   formEl.validate(async valid => {
     if (!valid) {

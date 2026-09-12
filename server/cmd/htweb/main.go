@@ -878,9 +878,22 @@ func (a *app) handleLogin(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// 注意：这里没有、也不会有旧系统的 htjy123 万能验证码分支（BR-78）
-	if a.cfg.Auth.CaptchaEnabled && !a.cap.Verify(in.CaptchaID, in.Captcha) {
-		httpx.Fail(w, httpx.CodeBadCaptcha, "验证码错误")
-		return
+	//
+	// 两种模式走两条路：
+	//   slider  只认「这张凭据是本机刚发的、没过期、没用过」——
+	//           滑动这件事本身发生在浏览器里，服务端验不了（见 captcha 包注释）
+	//   image   比对图上那 4 位数字
+	if a.cfg.Auth.CaptchaEnabled {
+		ok := false
+		if a.cfg.Auth.CaptchaMode == config.CaptchaModeSlider {
+			ok = a.cap.VerifyTicket(in.CaptchaID)
+		} else {
+			ok = a.cap.Verify(in.CaptchaID, in.Captcha)
+		}
+		if !ok {
+			httpx.Fail(w, httpx.CodeBadCaptcha, "验证已失效，请重新滑动验证后再登录")
+			return
+		}
 	}
 
 	token, u, err := a.authMgr.Login(r.Context(), in.Username, in.Password)
@@ -921,7 +934,16 @@ func (a *app) handleLogin(w http.ResponseWriter, r *http.Request) {
 // 一张根本不会被校验的图。
 func (a *app) handleCaptcha(w http.ResponseWriter, r *http.Request) {
 	if !a.cfg.Auth.CaptchaEnabled {
-		httpx.OK(w, map[string]any{"enabled": false})
+		httpx.OK(w, map[string]any{"enabled": false, "mode": a.cfg.Auth.CaptchaMode})
+		return
+	}
+	// 滑动验证：只发一张一次性凭据，不画图。前端渲染滑块，拖到最右边就算过。
+	if a.cfg.Auth.CaptchaMode == config.CaptchaModeSlider {
+		httpx.OK(w, map[string]any{
+			"enabled":   true,
+			"mode":      config.CaptchaModeSlider,
+			"captchaId": a.cap.GenerateSlider(),
+		})
 		return
 	}
 	id, uri, err := a.cap.Generate()
@@ -929,7 +951,8 @@ func (a *app) handleCaptcha(w http.ResponseWriter, r *http.Request) {
 		httpx.Internal(w, "生成验证码", err)
 		return
 	}
-	httpx.OK(w, map[string]any{"enabled": true, "captchaId": id, "image": uri})
+	httpx.OK(w, map[string]any{
+		"enabled": true, "mode": config.CaptchaModeImage, "captchaId": id, "image": uri})
 }
 
 // handleLogout 自己记审计，不走中间件。

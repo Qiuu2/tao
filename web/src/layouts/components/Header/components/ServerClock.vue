@@ -50,6 +50,7 @@ import { useI18n } from "vue-i18n";
 import { computed, onMounted, onUnmounted, ref } from "vue";
 import { Clock } from "@element-plus/icons-vue";
 import { getServerNowApi } from "@/api/modules/basecfg";
+import { onServerClockChanged } from "@/utils/serverClockBus";
 
 const { t } = useI18n();
 
@@ -112,16 +113,26 @@ const sync = async () => {
 
 let tick: number | undefined;
 let syncTimer: number | undefined;
+let offClockChanged: (() => void) | undefined;
 
 onMounted(() => {
   sync();
   tick = window.setInterval(() => (nowMs.value = Date.now()), 1000);
   syncTimer = window.setInterval(sync, SYNC_MS);
+
+  /*
+    「时间设置」页刚把服务器时间拨过去时，立刻重对一次。
+
+    ⚠ 少了这一条，顶栏会顶着旧时间接着走，最多 3 分钟才自己纠回来 ——
+      而运维改完时第一眼看的就是这个钟，看见没变就以为没设置成功。
+  */
+  offClockChanged = onServerClockChanged(sync);
 });
 
 onUnmounted(() => {
   if (tick) window.clearInterval(tick);
   if (syncTimer) window.clearInterval(syncTimer);
+  offClockChanged?.();
 });
 </script>
 

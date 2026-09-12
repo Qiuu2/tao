@@ -209,7 +209,23 @@ type Auth struct {
 	TTL time.Duration `yaml:"ttl"`
 	// CaptchaEnabled 登录是否强制校验验证码（业务规则 BR-76）。
 	CaptchaEnabled bool `yaml:"captcha_enabled"`
+	// CaptchaMode 用哪一种验证：
+	//
+	//	slider （默认）滑动验证 —— 登录框里不用输任何东西，按住滑块拖到最右边
+	//	image        图形验证码 —— 看图输 4 位数字
+	//
+	// ⚠ 两者的强度**不一样**。滑动完全发生在浏览器里，服务端只能保证那张凭据
+	//   是新鲜的、一次性的（见 captcha.GenerateSlider 的注释）；
+	//   它挡不住脚本化的暴力试密码，图形验证码可以。
+	//   要防暴力破解，该加的是登录失败限流，不是指望这个滑块。
+	CaptchaMode string `yaml:"captcha_mode"`
 }
+
+// 验证方式的取值。
+const (
+	CaptchaModeSlider = "slider"
+	CaptchaModeImage  = "image"
+)
 
 func Load(path string) (*Config, error) {
 	raw, err := os.ReadFile(path)
@@ -236,7 +252,7 @@ func Default() *Config {
 		Media:  Media{Root: "/opt/apps/a9000", MaxUploadMB: 300, FFmpeg: "/opt/apps/a9000/bin/ffmpeg"},
 		Notify: Notify{Host: "127.0.0.1", Port: 0, Enabled: true},
 		SDK:    SDK{Host: "127.0.0.1", Port: 8885, Enabled: true},
-		Auth:   Auth{TTL: 8 * time.Hour, CaptchaEnabled: true},
+		Auth:   Auth{TTL: 8 * time.Hour, CaptchaEnabled: true, CaptchaMode: CaptchaModeSlider},
 		Assistant: Assistant{
 			Enabled:      false,
 			NLUURL:       "http://127.0.0.1:5013",
@@ -275,6 +291,16 @@ func (c *Config) validate() error {
 	}
 	if c.Auth.TTL <= 0 {
 		c.Auth.TTL = 8 * time.Hour
+	}
+	// 拼错一个字（比如 "slide"）不该悄悄退回默认值 —— 那样管理员以为自己开着
+	// 图形验证码，实际跑的是滑动。宁可起不来，也不要静默换一种强度。
+	switch strings.TrimSpace(c.Auth.CaptchaMode) {
+	case "":
+		c.Auth.CaptchaMode = CaptchaModeSlider
+	case CaptchaModeSlider, CaptchaModeImage:
+	default:
+		return fmt.Errorf("auth.captcha_mode 只能是 %q 或 %q，当前是 %q",
+			CaptchaModeSlider, CaptchaModeImage, c.Auth.CaptchaMode)
 	}
 	// 助手的几个时限给兜底值：配错成 0 会让超时立刻触发、会话永远算过期，
 	// 表现是「助手时好时坏」，很难查。

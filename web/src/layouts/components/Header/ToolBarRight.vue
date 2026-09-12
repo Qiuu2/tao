@@ -5,7 +5,6 @@
     <div class="header-icon">
       <AssemblySize id="assemblySize" />
       <Language id="language" />
-      <SearchMenu id="searchMenu" />
       <ThemeSetting id="themeSetting" />
       <Fullscreen id="fullscreen" />
     </div>
@@ -23,7 +22,6 @@ import AssemblySize from "./components/AssemblySize.vue";
 import Avatar from "./components/Avatar.vue";
 import Fullscreen from "./components/Fullscreen.vue";
 import Language from "./components/Language.vue";
-import SearchMenu from "./components/SearchMenu.vue";
 import ServerClock from "./components/ServerClock.vue";
 import ThemeSetting from "./components/ThemeSetting.vue";
 
