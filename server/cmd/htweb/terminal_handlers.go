@@ -420,10 +420,6 @@ func (a *app) handleTerminalReplace(w http.ResponseWriter, r *http.Request) {
 		switch {
 		case errors.Is(err, terminal.ErrReplaceSame):
 			httpx.Fail(w, httpx.CodeBadRequest, "目标 ID 与源终端相同")
-		case errors.Is(err, terminal.ErrReplaceTypeMismatch):
-			httpx.Fail(w, httpx.CodeBadRequest, "目标终端与源终端型号不同，不能替换")
-		case errors.Is(err, terminal.ErrReplaceTargetOnline):
-			httpx.Fail(w, httpx.CodeBadRequest, "目标终端在线，不能被替换")
 		default:
 			failTerminal(w, "终端替换", err)
 		}

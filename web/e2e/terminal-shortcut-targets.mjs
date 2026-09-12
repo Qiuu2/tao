@@ -23,14 +23,40 @@
  *
  *   node e2e/terminal-shortcut-targets.mjs
  *
- * ⚠ 它**不改库**，只读。但需要库里至少有一台终端配了快捷键。
- *   E2E_KEY_OWNER 指定那台终端的名字（默认「广播室主话筒」）。
+ * ⚠ 需要库里至少有一台终端配了快捷键。E2E_KEY_OWNER 指定那台终端的名字
+ *   （默认「广播室主话筒」）。
+ *
+ * ⚠ ② ④ ⑤ 要的两种数据（指向已删除终端的映射、非全 1 的分区掩码）现成的库里
+ *   通常没有，所以这个脚本**自己往 terminalkeymap 插一行、改一行**，跑完再删掉改回。
+ *   第一版是我手工在库里造完再跑的，后来把手工数据清了，这两条就红了 ——
+ *   测试要自己准备自己的数据，不能指望上一次跑剩下的东西还在。
+ *   库不是本地的就改 SEED / UNSEED 两条命令。
  */
 const BASE = process.env.E2E_BASE || "http://127.0.0.1:5199";
 const CHROME = process.env.E2E_CHROME || "/opt/pw-browsers/chromium-1194/chrome-linux/chrome";
 const OWNER = process.env.E2E_KEY_OWNER || "广播室主话筒";
 
+/** 造数据：给第一个快捷键挂一个已删除的目标，再把某一条的分区掩码改成非全 1 */
+const SEED =
+  process.env.E2E_SEED_DB ||
+  `mariadb -uroot audioserver -e "INSERT INTO terminalkeymap (keyid,terminalid,area,groupid) SELECT MIN(keyid),999999,'1111111111111111',999999 FROM terminalkeymap; UPDATE terminalkeymap SET area='1011000000000000' WHERE id=(SELECT * FROM (SELECT MIN(id) FROM terminalkeymap) x)"`;
+const UNSEED =
+  process.env.E2E_UNSEED_DB ||
+  `mariadb -uroot audioserver -e "DELETE FROM terminalkeymap WHERE terminalid=999999; UPDATE terminalkeymap SET area='1111111111111111' WHERE area='1011000000000000'"`;
+
 const { chromium } = await import(process.env.E2E_PLAYWRIGHT || "/opt/node22/lib/node_modules/playwright/index.mjs");
+const { execSync } = await import("node:child_process");
+
+execSync(SEED, { stdio: "pipe" });
+// 不管中途怎么退，造的数据都要清掉
+const cleanup = () => {
+  try {
+    execSync(UNSEED, { stdio: "pipe" });
+  } catch {
+    console.log("  ! 清理造的数据失败，手工执行：" + UNSEED);
+  }
+};
+process.on("exit", cleanup);
 
 let fails = 0;
 const ok = (c, m) => {
@@ -104,7 +130,7 @@ ok(linkBtns >= 1, `映射终端列里有 ${linkBtns} 个可点的链接`);
 console.log("② 目标里有已删除的，红标报台数");
 const delTag = dlg.locator(".el-table__body td:nth-child(4) .el-tag--danger").first();
 const hasDelTag = (await delTag.count()) > 0;
-ok(hasDelTag, hasDelTag ? `红标写着「${(await delTag.innerText()).trim()}」` : "没有已删除的目标（库里没造这种数据？）");
+ok(hasDelTag, hasDelTag ? `红标写着「${(await delTag.innerText()).trim()}」` : "没看到「N 台已删除」的红标");
 
 // ── ③ 点开看表格 ──
 console.log("③ 点「N 台」弹出目标终端表格");
@@ -148,7 +174,7 @@ console.log("⑤ 分区掩码不能原样贴 1111111111111111");
 ok(!/1{8,}/.test(body), "表里没有出现成串的 1");
 ok(body.includes("全部分区"), "全 1 的显示成「全部分区」");
 const partial = body.match(/(\d+(?:、\d+)+)/);
-ok(!!partial, partial ? `部分开放的列成了位号「${partial[1]}」` : "没有部分开放的掩码（库里没造这种数据？）");
+ok(!!partial, partial ? `部分开放的列成了位号「${partial[1]}」` : "没看到按位号列出来的掩码");
 
 await b.close();
 console.log(fails ? `\n✗ ${fails} 条没过` : "\n✓ 全过");

@@ -159,6 +159,23 @@
         </template>
 
         <!--
+          快捷键列：点进去就是「查看快捷键」那个对话框（ok112 的
+          view_terminal_shotcut_mapping.php），不用先勾中再翻批量操作菜单。
+
+          ⚠ 判据和批量菜单里那一项是同一个 caps.shortcut —— 终端类型不支持快捷键
+            的（普通音箱之类）显示「—」而不是给个点不动的链接。两处用同一个字段，
+            不会出现「菜单里灰着、列里却能点」这种自相矛盾。
+          ⚠ 查看是只读的，不看 canControl；对话框里的改 / 删 / 设置才要权限，
+            那几个按钮本来就已经按 canControl 置灰了。
+        -->
+        <template #hasShortcutKey="scope">
+          <el-button v-if="scope.row.caps?.shortcut" link type="primary" @click="openShortcut(scope.row.id)">
+            {{ scope.row.hasShortcutKey ? $t("common.view") : $t("common.setUp") }}
+          </el-button>
+          <span v-else class="muted">—</span>
+        </template>
+
+        <!--
           ⚠ 开路 = 线路断了。lopencircuit / ropencircuit 为 1 时是「开路」，
           所以 1 显示「开路」（红），0 显示「正常」。别把它读成「通」。
         -->
@@ -947,14 +964,18 @@
     <!--
       终端替换（ok112 的 getterminalid.php）。
       现场换了新硬件，让它接管旧记录的 ID，旧 ID 上的任务 / 分区 / 快捷键绑定就继续生效。
+
+      ⚠ ok112 在目标 ID 已被占用时还要求「两台同型号」且「目标离线」。
+        这两条按需求方要求去掉了 —— 后端也一并删了校验，见
+        server/internal/terminal/replace.go 里 Replace 上面那段 ⚠。
+        所以这里的提示只讲**会发生什么**（目标那条记录被删掉、绑定被接管），
+        不再讲「需要满足什么」—— 已经没有条件了，写了就是骗人。
     -->
     <el-dialog v-model="rp.visible" :title="$t('term.terminalReplace')" width="560px">
       <el-alert type="warning" :closable="false" show-icon class="mb12">
         {{ $t("term.putSelected") }} <b>{{ rp.name }} · 当前 ID {{ rp.sourceId }}</b> {{ $t("term.renameIdTo") }}
         <br />
-        {{ $t("term.targetIdTaken") }}<b>{{ $t("term.sameModel") }}</b
-        >{{ $t("term.andTarget") }}<b>{{ $t("term.isOffline") }}</b
-        >{{ $t("term.sourceRecordDeletedText") }}
+        {{ $t("term.targetIdTakenNote") }}
       </el-alert>
       <el-input-number
         v-model="rp.targetId"
@@ -1245,6 +1266,13 @@ const columns = reactive<ColumnProps<TerminalRow>[]>([
   { prop: "ip", label: t("common.ipAddress"), width: 130, sortable: "custom" },
   { prop: "volume", label: t("common.volume"), width: 80, sortable: "custom" },
   { prop: "isspeech", label: t("term.intercom"), width: 70 },
+  // 快捷键：一步点进 ok112 的 view_terminal_shotcut_mapping.php。
+  // 原来只有「批量操作 → 查看快捷键」一条路，要先勾中、再翻菜单、菜单项还按
+  // 终端类型置灰 —— 想看一眼哪台配过键，得一台一台试。这一列直接把答案摆出来。
+  //
+  // ⚠ 位置照 ok112 的表头：对讲状态 → **快捷键** → 紧急终端 → 录音 → 发言。
+  //   别往后挪 —— 这张表一共 20 列，本来就要横向滚动，位置一变就更难找。
+  { prop: "hasShortcutKey", label: t("term.shortcutKey"), width: 90 },
   { prop: "instancy", label: t("term.emergency"), width: 70 },
   { prop: "isrecord", label: t("term.recording"), width: 70 },
   { prop: "issponsor", label: t("term.speak"), width: 70 },

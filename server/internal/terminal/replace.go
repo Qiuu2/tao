@@ -46,10 +46,6 @@ import (
 var (
 	// ErrReplaceSame 源和目标是同一个 id。
 	ErrReplaceSame = errors.New("源终端与目标 ID 相同")
-	// ErrReplaceTypeMismatch 目标已存在但型号不同。
-	ErrReplaceTypeMismatch = errors.New("目标终端与源终端型号不同")
-	// ErrReplaceTargetOnline 目标已存在且在线。
-	ErrReplaceTargetOnline = errors.New("目标终端在线，不能被替换")
 )
 
 // ReplaceResult 说明这次替换实际做了什么。
@@ -95,11 +91,23 @@ var refTables = []string{
 //
 //   - dstID 空闲 —— 纯改号。源终端连同它的全部关联行一起迁到新 id，
 //     绑定关系原样保留。
-//   - dstID 已被占用 —— 真正的替换。要求两台同型号、且目标离线
-//     （在线说明设备还活着，不该被顶掉，与 ok112 判据一致）。
-//     目标那条 terminal 记录被删除，但**它的关联行保留下来**，
-//     由改号后的源终端接管；源终端自己原有的关联行则被清掉，
-//     否则同一个 id 上会出现两套重复绑定。
+//   - dstID 已被占用 —— 真正的替换。目标那条 terminal 记录被删除，
+//     但**它的关联行保留下来**，由改号后的源终端接管；源终端自己原有的
+//     关联行则被清掉，否则同一个 id 上会出现两套重复绑定。
+//
+// ⚠ 这里**不**再校验「两台同型号」和「目标离线」—— 需求方明确要求去掉。
+//
+//	ok112（getterminalid.php）两条都有：型号不同不给换，目标在线不给换。
+//	去掉之后有两个后果，是知情选择，不是漏判：
+//
+//	  · 型号可以不同。旧 id 上的绑定会落到一台能力不一样的硬件上，
+//	    比如原来是带屏的话筒、换成一只普通音箱，那些只对话筒有意义的
+//	    绑定（快捷键、寻呼授权）就成了摆设。界面按 caps 置灰，不会崩，
+//	    但也不会替谁挡住。
+//	  · 目标在线也照换。在线说明那台设备还活着，替换会把它的 terminal
+//	    记录删掉 —— 设备本身还在网上，下次注册会再拿一个新 id 回来。
+//
+//	所以确认框里把「目标记录会被删除」这件事说清楚，由操作的人决定。
 func (s *Service) Replace(ctx context.Context, u *auth.User, srcID, dstID int64) (*ReplaceResult, error) {
 	if srcID == dstID {
 		return nil, ErrReplaceSame
@@ -127,9 +135,10 @@ func (s *Service) Replace(ctx context.Context, u *auth.User, srcID, dstID int64)
 	}
 	defer func() { _ = tx.Rollback() }()
 
-	var srcType int
+	// 源终端必须还在（CheckBound 查的是权限绑定，不保证行没被别的会话删掉）
+	var exists int
 	if err := tx.QueryRowContext(ctx,
-		`SELECT typeid FROM terminal WHERE id = ?`, srcID).Scan(&srcType); err != nil {
+		`SELECT 1 FROM terminal WHERE id = ?`, srcID).Scan(&exists); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, ErrNotFound
 		}
@@ -138,23 +147,16 @@ func (s *Service) Replace(ctx context.Context, u *auth.User, srcID, dstID int64)
 
 	out := &ReplaceResult{SourceID: srcID, TargetID: dstID}
 
-	var dstType, dstNet int
 	var dstName string
 	err = tx.QueryRowContext(ctx,
-		`SELECT typeid, COALESCE(netstate,0), COALESCE(terminalname,'') FROM terminal WHERE id = ?`,
-		dstID).Scan(&dstType, &dstNet, &dstName)
+		`SELECT COALESCE(terminalname,'') FROM terminal WHERE id = ?`, dstID).Scan(&dstName)
 	switch {
 	case errors.Is(err, sql.ErrNoRows):
 		out.Mode = "renumber"
 	case err != nil:
 		return nil, fmt.Errorf("查询目标终端: %w", err)
 	default:
-		if dstType != srcType {
-			return nil, ErrReplaceTypeMismatch
-		}
-		if dstNet != 0 {
-			return nil, ErrReplaceTargetOnline
-		}
+		// 型号与在线状态都不再拦 —— 见 Replace 上面那段 ⚠
 		out.Mode = "takeover"
 		out.TargetName = dstName
 	}
