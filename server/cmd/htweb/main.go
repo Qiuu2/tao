@@ -40,6 +40,7 @@ import (
 	"htweb/internal/httpx"
 	"htweb/internal/i18n"
 	"htweb/internal/logs"
+	"htweb/internal/mapview"
 	"htweb/internal/media"
 	"htweb/internal/notify"
 	"htweb/internal/offline"
@@ -93,6 +94,8 @@ type app struct {
 	enables   *enable.Service
 	sounds    *sound.Service
 	registers *register.Service
+	// maps 是「资源管理 → 地图」：底图 + 终端摆在图上的位置（见 internal/mapview）
+	maps *mapview.Service
 
 	// openAPI 是开发者接口（/openapi/v1）。它不是第二套业务逻辑 ——
 	// 只多了一层密钥认证和编号/名字寻址，动作仍交给上面那些 service。
@@ -132,6 +135,7 @@ func main() {
 		terminals: terminal.New(st.DB()),
 		tasks:     task.New(st.DB()),
 		alarms:    alarm.New(st.DB()),
+		maps:      mapview.New(st.DB(), cfg.Media.Root),
 		bells:     bell.New(st.DB()),
 		assist:    assistant.New(st.DB(), cfg.Assistant),
 		auditor:   audit.New(st.DB()),
@@ -633,6 +637,22 @@ func (a *app) routes() http.Handler {
 	mux.HandleFunc("PUT /api/remote-keys/{id}", rmt(a.handleRemoteUpdate))
 	mux.HandleFunc("DELETE /api/remote-keys", rmt(a.handleRemoteDelete))
 
+	// —— 地图（资源管理 → 地图）——
+	//
+	// 读只要登录，与终端列表同口径：可见范围由 userterminal 在 SQL 里收敛，
+	// 没绑终端的人看到的是一张空图。写走 terminalpriv —— 把终端摆到图上
+	// 本质上是终端配置，与「终端管理」同一把钥匙，不另起一套。
+	mux.HandleFunc("GET /api/maps", req(a.handleMapList))
+	mux.HandleFunc("POST /api/maps", trm(a.handleMapCreate))
+	mux.HandleFunc("PUT /api/maps/{id}", trm(a.handleMapRename))
+	mux.HandleFunc("DELETE /api/maps/{id}", trm(a.handleMapDelete))
+	mux.HandleFunc("POST /api/maps/{id}/image", trm(a.handleMapImageUpload))
+	// <img src> 带不了自定义请求头，令牌只能放 query —— 与媒体试听同一条路子
+	mux.HandleFunc("GET /api/maps/{id}/image", a.authMgr.RequireAllowQueryToken(a.handleMapImage))
+	mux.HandleFunc("GET /api/maps/{id}/terminals", req(a.handleMapTerminals))
+	mux.HandleFunc("POST /api/maps/{id}/terminals", trm(a.handleMapPlace))
+	mux.HandleFunc("DELETE /api/maps/{id}/terminals", trm(a.handleMapRemove))
+
 	// —— 时间设置（旧版 set_server_time）——
 	//
 	// NTP 与 GPS 校时终端是服务器级配置，按 serverpriv；
@@ -1104,6 +1124,9 @@ func (a *app) handleMenu(w http.ResponseWriter, r *http.Request) {
 		// 增删改由接口按 terminalgrouppriv 拦。
 		menu("/zone", "zone", "/zone/index", "Guide", "终端分区"),
 	}
+	// 地图与终端管理同源：列表回答「哪一台怎么样」，地图回答「它在哪」。
+	// 可见范围同样由 userterminal 收敛，所以和终端列表一样只要登录。
+	res = append(res, menu("/map", "map", "/map/index", "Location", "地图"))
 	if u.IsAdmin || u.Rights.MediaPriv == 1 || u.Rights.FolderPriv == 1 {
 		res = append(res, menu("/media", "media", "/media/index", "Files", "文件管理"))
 	}

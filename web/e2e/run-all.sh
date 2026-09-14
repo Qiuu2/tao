@@ -29,7 +29,7 @@ DIR="$(cd "$(dirname "$0")" && pwd)"
 
 TESTS=("$@")
 if [ ${#TESTS[@]} -eq 0 ]; then
-  TESTS=(login-slider terminal-grid terminal-selection terminal-shortcut-targets terminal-shortcut-column media-upload alarm-mapping-channels remote-edit)
+  TESTS=(login-slider terminal-grid terminal-selection terminal-shortcut-targets terminal-shortcut-column media-upload alarm-mapping-channels remote-edit map)
 fi
 
 echo "== 备份基线到 $DUMP =="

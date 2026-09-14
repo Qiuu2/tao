@@ -37,10 +37,18 @@ var auditLabels = map[string]string{
 	//        （实测落出来是一行 user='-'）。
 	// 两个都由各自的 handler 在合适的时刻自己记一行。
 
-	"POST /api/folders":                  "新建媒体目录",
-	"PUT /api/folders/{id}":              "修改媒体目录",
-	"DELETE /api/folders":                "删除媒体目录",
-	"POST /api/media/upload":             "上传媒体",
+	"POST /api/folders":      "新建媒体目录",
+	"PUT /api/folders/{id}":  "修改媒体目录",
+	"DELETE /api/folders":    "删除媒体目录",
+	"POST /api/media/upload": "上传媒体",
+
+	// 地图（资源管理 → 地图）
+	"POST /api/maps":                     "新建底图",
+	"PUT /api/maps/{id}":                 "重命名底图",
+	"DELETE /api/maps/{id}":              "删除底图",
+	"POST /api/maps/{id}/image":          "更换底图图片",
+	"POST /api/maps/{id}/terminals":      "在地图上摆放终端",
+	"DELETE /api/maps/{id}/terminals":    "从地图上移除终端",
 	"DELETE /api/media":                  "删除媒体",
 	"POST /api/folders/{id}/media:clear": "清空媒体目录",
 

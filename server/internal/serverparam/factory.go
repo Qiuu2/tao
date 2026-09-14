@@ -55,6 +55,14 @@ var clearTables = []string{
 	"assistant_session", "assistant_message", "assistant_setting",
 	"assistant_task_override", "assistant_runtime_play", "assistant_undo",
 
+	// ⚠ 地图那两张（db/map_tables.sql）：底图记录与「终端摆在图上哪个位置」。
+	// 恢复出厂会把 terminal 清空，摆放记录跟着全指向空气；底图本身是这一家
+	// 现场的校园平面图，交付给下一家也不该留着。
+	//
+	// ⚠ 清表清不掉磁盘上的底图图片（/backup/mapdata/*）——
+	// 恢复出厂本来就有一步清媒体文件，底图跟着那一步走，见下面的 media 清理。
+	"map_image", "map_terminal",
+
 	// ⚠ api_key 是发给第三方的**长期凭据**（db/openapi_tables.sql）。
 	// 恢复出厂 = 这台机器要重新交付给别人用，之前发出去的密钥必须全部作废 ——
 	// 留着等于把上一家的钥匙交给下一家。清掉之后第三方会立刻收到 401，

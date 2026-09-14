@@ -128,6 +128,22 @@ var keyDenied = map[string]string{
 	"POST /api/dashboard/emergency":    "紧急广播必须由人在界面上按，不开放给密钥调用",
 	"GET /api/media/{id}/stream":       "音频流，浏览器 <audio> 用的；下载走 /download",
 	"GET /api/backups/{name}/download": "备份包下载，浏览器 window.open 用的",
+
+	// —— 地图 ——
+	//
+	// 整块是**界面上的可视化编辑器**：传一张校园平面图，用鼠标把终端拖到图上。
+	// 坐标是「图上的百分比」，只有对着那张图才有意义，程序拿去没有用处。
+	// 要终端的状态和位置信息，用 /api/terminals 和 /openapi/v1 那组，
+	// 那边给的是编号、名字、分区这些跨系统能对上的东西。
+	"GET /api/maps":                   "地图是界面上的可视化编辑器，底图清单对程序没有意义",
+	"POST /api/maps":                  "同上，新建底图是人在界面上做的事",
+	"PUT /api/maps/{id}":              "改底图名称，人在界面上改的",
+	"DELETE /api/maps/{id}":           "同上；删底图会连带清掉图上所有终端的摆放",
+	"POST /api/maps/{id}/image":       "上传底图图片，浏览器表单用的",
+	"GET /api/maps/{id}/image":        "底图图片，浏览器 <img> 用的",
+	"GET /api/maps/{id}/terminals":    "图上终端的坐标是那张图的百分比，脱离底图没有意义",
+	"POST /api/maps/{id}/terminals":   "拖动摆放是鼠标动作，程序没有「拖到哪」这个概念",
+	"DELETE /api/maps/{id}/terminals": "从图上拿掉一个点，同样只在界面上才有意义",
 }
 
 // exposedGroups 是开放清单本体，按界面功能分组。

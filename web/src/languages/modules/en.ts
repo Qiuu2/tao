@@ -506,6 +506,35 @@ export default {
     resetWarn: "This deletion resets the zone number on <b>{n}</b> tasks; they will no longer be limited to a zone. Continue?",
     zoneLabel: "Zone"
   },
+  mapView: {
+    baseMaps: "Base maps",
+    newMap: "New",
+    newMapTip: "Name this base map, e.g. “Teaching Building 1F”",
+    nameRequired: "Name is required",
+    renameMap: "Rename",
+    deleteMap: "Delete map",
+    noMapYet: "No base map yet — use “New” above to add one.",
+    pickOrCreate: "Pick a base map on the left, or create one",
+    uploadMap: "Replace image",
+    uploaded: "Base map replaced",
+    uploadFailed: "Failed to upload the base map",
+    addTerminal: "Add terminals",
+    removeTerminal: "Remove from map",
+    placeholderTip: "Placeholder — no image uploaded yet",
+    placeholderHint: "Use “Replace image” to upload a floor plan",
+    placedN: "{n} on this map",
+    placedOk: "{n} terminal(s) placed — drag them into position",
+    pickerNote: "Only terminals not yet on this map",
+    allPlaced: "Every available terminal is already on this map.",
+    dragHint:
+      "Drag a dot to move it; double-click to take a terminal off the map. Green = idle, orange = playing, grey = offline, red = terminal deleted.",
+    confirmDelete:
+      "Delete base map “{name}”? The {n} terminal(s) placed on it are removed from the map (the terminals themselves are untouched).",
+    confirmRemove: "Take “{name}” off this map? It only stops showing here; the terminal itself is untouched.",
+    removed: "Removed from the map",
+    deletedNo: "Deleted #{id}",
+    deletedTip: "This terminal (#{id}) has been deleted — the dot is just a marker"
+  },
   media: {
     clearFolderBtn: "Empty folder",
     deletedMediaWithSkip: "{n} media files deleted; {skipped} skipped because they are referenced",

@@ -60,6 +60,21 @@ GRANT SELECT, INSERT, UPDATE, DELETE ON `audioserver`.* TO 'htweb'@'%';
 零 DDL 是这套系统与旧库共存的前提。账号本身没有 DDL 权限，
 等于给「不小心改了表结构」加了最后一道锁。
 
+### 新建表的脚本（用**另一个**有 DDL 权限的账号跑，跑一次）
+
+htweb 自己建不了表（上面那个账号没 DDL），所以这几张要管理员单独执行。
+**都是幂等的，可以重复跑**；漏跑的后果是对应功能一进去就报「表还没建」。
+
+```bash
+mysql -uroot audioserver < db/assistant_tables.sql   # AI 助手，6 张
+mysql -uroot audioserver < db/openapi_tables.sql     # 开发者接口，2 张
+mysql -uroot audioserver < db/map_tables.sql         # 地图，2 张 + 默认底图
+```
+
+> ⚠ `map_tables.sql` 开头那句 `SET NAMES utf8` 不能删 —— 少了它，默认底图名
+> 「南昌理工学院」会被双重编码，界面上显示成一串乱码。其余两个脚本没有中文字面量，
+> 不受影响。
+
 ## 3. 换了账号或路径？
 
 ```bash
