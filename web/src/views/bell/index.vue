@@ -52,11 +52,7 @@
             >
               {{ $t("bell.disablePlan") }}
             </el-button>
-            <el-button
-              type="warning"
-              :disabled="!btn.edit || scope.selectedList.length !== 1"
-              @click="openVolume(scope.selectedList)"
-            >
+            <el-button type="warning" :disabled="!btn.edit || !scope.isSelected" @click="openVolume(scope.selectedList)">
               {{ $t("terminalCommon.adjustVolume") }}
             </el-button>
             <el-button
@@ -136,6 +132,10 @@
 
     <!-- 调整音量：整个方案改一次，功放子任务一起改 -->
     <el-dialog v-model="vol.visible" :title="$t('terminalCommon.adjustVolume')" width="440px">
+      <!-- 一次能调几个方案，就得让人看清改的是哪几个 -->
+      <div class="del-names mb12">
+        <el-tag v-for="n in vol.planNames" :key="n" size="small" effect="plain">{{ n }}</el-tag>
+      </div>
       <el-slider v-model="vol.value" :min="0" :max="100" show-input />
       <template #footer>
         <el-button @click="vol.visible = false">{{ $t("common.cancel") }}</el-button>
@@ -231,10 +231,16 @@
             <div :class="{ 'date-chg': isChecked(row) && schedMask !== row.exemodel }">
               <span v-if="row.exemodel === '1111111'" class="muted">{{ $t("taskCommon.everyDay") }}</span>
               <span v-else-if="row.exemodel === '0000000'" class="muted">{{ $t("taskCommon.manual") }}</span>
+              <!--
+                只画**勾上的**那几天。
+                原来七天全画出来、没勾的刷成灰色 —— 一行里七个格子，灰的比亮的还多，
+                真正要看的「这条到底哪几天响」反而得一个个数过去。按需求方要求，
+                没勾的直接不显示。
+              -->
               <template v-else>
-                <span v-for="(w, i) in weekLabels" :key="i" class="wk" :class="{ on: row.exemodel?.[i] === '1' }">
-                  {{ w }}
-                </span>
+                <template v-for="(w, i) in weekLabels" :key="i">
+                  <span v-if="row.exemodel?.[i] === '1'" class="wk on">{{ w }}</span>
+                </template>
               </template>
             </div>
             <!-- 新星期用文字，别再摆一排格子：一行放不下会把行撑成三行 -->
@@ -289,11 +295,11 @@
 
         <el-row :gutter="16">
           <el-col :span="12">
-            <!-- 旧版 maxlength="8" -->
+            <!-- 旧版是 maxlength="8"，按需求方要求放宽到 12 -->
             <el-form-item :label="$t('bell.planName')" prop="planName">
               <el-input
                 v-model="dlg.form.planName"
-                maxlength="8"
+                :maxlength="PLAN_NAME_MAX"
                 show-word-limit
                 :disabled="!!dlg.savedPlanName"
                 :placeholder="$t('bell.planNamePlaceholder')"
@@ -489,7 +495,20 @@
           @selection-change="onItemSelectionChange"
         >
           <el-table-column type="selection" width="40" align="center" />
-          <el-table-column type="index" :label="$t('common.index')" width="46" align="center" />
+          <!--
+            序号是单选（旧版 modifybell.html:424 那个 `<input type=radio name="belltaskid">`）。
+            选中哪一行，哪一行才可编辑，其余行锁住 —— 旧版 getonebelltaskterminal()
+            干的就是这件事：把选中行的输入框 disabled=false，其它行全 true。
+            这样一次只改一条，不会在满屏输入框里改错行。
+
+            ⚠ 只在**修改方案**里这么锁。新建方案是一条条往里填，锁了就没法连着录。
+            左边那列复选框留着 —— 批量修改和「删除任务」按的是它，两者不是一回事。
+          -->
+          <el-table-column :label="$t('common.index')" width="60" align="center">
+            <template #default="{ $index }">
+              <el-radio v-model="activeItem" :value="$index" class="idx-radio">{{ $index + 1 }}</el-radio>
+            </template>
+          </el-table-column>
           <el-table-column min-width="120">
             <template #header><span class="req-star">*</span> {{ $t("bell.lessonName") }}</template>
             <template #default="{ row, $index }">
@@ -497,6 +516,7 @@
                 v-model="row.taskname"
                 size="small"
                 maxlength="12"
+                :disabled="itemLocked($index)"
                 :placeholder="$t('bell.lessonName')"
                 :class="{ 'is-bad': itemErrors[$index]?.taskname }"
                 @input="itemErrors[$index] && (itemErrors[$index].taskname = '')"
@@ -512,6 +532,7 @@
                 value-format="HH:mm:ss"
                 size="small"
                 placeholder="00:00:00"
+                :disabled="itemLocked($index)"
                 class="fill"
                 :class="{ 'is-bad': itemErrors[$index]?.playtime }"
                 @change="itemErrors[$index] && (itemErrors[$index].playtime = '')"
@@ -520,7 +541,7 @@
             </template>
           </el-table-column>
           <el-table-column :label="$t('bell.bellMusic')" min-width="134">
-            <template #default="{ row }">
+            <template #default="{ row, $index }">
               <span v-if="dlg.mode === 'batch'" :class="{ muted: !batchMediaName(row) }">{{
                 batchMediaName(row) || $t("sys.notSet")
               }}</span>
@@ -533,6 +554,7 @@
                   v-model="row.mediaId"
                   filterable
                   clearable
+                  :disabled="itemLocked($index)"
                   remote
                   reserve-keyword
                   size="small"
@@ -557,10 +579,16 @@
           </el-table-column>
           <!-- 旧版「播放时长」是个弹层：选时长就是 时/分/秒 三个下拉，选次数是 00~99 -->
           <el-table-column :label="$t('taskCommon.playLength')" width="204">
-            <template #default="{ row }">
+            <template #default="{ row, $index }">
               <span v-if="dlg.mode === 'batch'">{{ batchLenText(row) }}</span>
               <div v-else class="len-cell">
-                <el-select v-model="row.timelengthtype" size="small" style="width: 74px" @change="onLenTypeChange(row)">
+                <el-select
+                  v-model="row.timelengthtype"
+                  size="small"
+                  style="width: 74px"
+                  :disabled="itemLocked($index)"
+                  @change="onLenTypeChange(row)"
+                >
                   <el-option :label="$t('common.duration')" :value="1" />
                   <el-option :label="$t('bell.times')" :value="2" />
                 </el-select>
@@ -570,6 +598,7 @@
                   value-format="HH:mm:ss"
                   size="small"
                   :placeholder="$t('bell.hhmmss')"
+                  :disabled="itemLocked($index)"
                   style="width: 116px"
                 />
                 <template v-else>
@@ -579,6 +608,7 @@
                     :max="99"
                     size="small"
                     :controls="false"
+                    :disabled="itemLocked($index)"
                     style="width: 78px"
                   />
                   <span class="dlg-note">{{ $t("term.times") }}</span>
@@ -634,7 +664,12 @@
 
     <!-- 删除确认 -->
     <el-dialog v-model="del.visible" :title="$t('bell.deletePlanTitle')" width="560px">
-      <el-alert type="error" :closable="false" class="mb12"> 将删除方案「{{ del.planName }}」的全部内容，不可恢复。 </el-alert>
+      <el-alert type="error" :closable="false" class="mb12">
+        {{ $t("bell.deleteNPlans", { n: del.planNames.length }) }}
+        <div class="del-names">
+          <el-tag v-for="n in del.planNames" :key="n" size="small" type="danger" effect="plain">{{ n }}</el-tag>
+        </div>
+      </el-alert>
       <el-descriptions :column="2" border size="small">
         <el-descriptions-item :label="$t('bell.bellItems')">{{
           $t("bell.entryCount", { n: del.impact?.items ?? 0 })
@@ -648,9 +683,8 @@
         <el-descriptions-item :label="$t('bell.offlineLinks')">{{ del.impact?.offlineTaskRows ?? 0 }} 行</el-descriptions-item>
       </el-descriptions>
       <el-alert v-if="del.impact?.sameNameOtherTasks" type="warning" :closable="false" class="mt12">
-        库里还有 {{ $t("bell.entryCount", { n: del.impact.sameNameOtherTasks }) }}任务的名称也叫「{{
-          del.planName
-        }}」，但它们不属于本方案。 <b>{{ $t("bell.newKeepsThem") }}</b> {{ $t("bell.oldWouldDelete") }}
+        {{ $t("bell.sameNameOthers", { n: del.impact.sameNameOtherTasks }) }}
+        <b>{{ $t("bell.newKeepsThem") }}</b> {{ $t("bell.oldWouldDelete") }}
       </el-alert>
       <template #footer>
         <el-button @click="del.visible = false">{{ $t("common.cancel") }}</el-button>
@@ -972,6 +1006,22 @@ const removeItemAt = async (idx: number) => {
 
 /* 表头上方的「删除任务」：勾几行删几行，没入库的空行和已入库的课时都能删 */
 const selectedItems = ref<ItemRow[]>([]);
+
+/**
+ * 序号那一列的单选：当前在改哪一行。-1 = 还没选。
+ *
+ * 旧版 modifybell.html 的课时表第一格就是个 radio，选中哪一行、哪一行的输入框
+ * 才 enabled（getonebelltaskterminal()）。这里照做。
+ */
+const activeItem = ref(-1);
+
+/**
+ * 这一行现在能不能改。
+ *
+ * 只有**修改方案**才锁：新建是一条条往里录，锁了就没法连着填。
+ * 还没选任何一行时也不锁 —— 否则一打开修改，整张表都是灰的，像坏了。
+ */
+const itemLocked = (idx: number) => dlg.mode === "edit" && activeItem.value >= 0 && activeItem.value !== idx;
 const onItemSelectionChange = (rows: ItemRow[]) => (selectedItems.value = rows);
 const itemCountNote = computed(() =>
   selectedItems.value.length
@@ -1003,6 +1053,8 @@ const removeSelectedItems = async () => {
   dlg.items = items;
   itemErrors.value = errs;
   selectedItems.value = [];
+  // 删完之后行号全变了，原来选中的那一行已经不是同一条，清掉
+  activeItem.value = -1;
   itemsError.value = "";
   ElMessage.success(t("bell.removedLessons", { n: removed }));
 };
@@ -1013,8 +1065,18 @@ const removeSelectedItems = async () => {
    并把光标定位过去。这里用 el-form 的 rules 做同一件事，表格里的行则自己维护
    一份 itemErrors，因为它不在 el-form 的 model 里。 */
 
-/** 旧版 isChinaOrNumbOrLett()：只允许中文、字母、数字 */
-const isNameOk = (v: string) => /^[\u4e00-\u9fa5A-Za-z0-9]+$/.test(v);
+/**
+ * 方案名称的长度上限。
+ *
+ * 旧版 addbelltask.html 是 maxlength="8"，按需求方要求放宽到 12。
+ * 课时名称那一格本来就是 12（旧版 modifybell.html:425），两边现在对齐了。
+ *
+ * ⚠ 「只能中文/字母/数字」那条限制**去掉了**（旧版 isChinaOrNumbOrLett()）：
+ * 现场的名字里本来就有「第一节(上)」「课间操-上午」这种带括号带横杠的写法，
+ * 挡住只是给人添堵。真正必须挡的在后端 bell.checkPlanName —— ? & = 是下发给
+ * 后台 C 服务的报文分隔符，控制字符也不行，那一层不能松。
+ */
+const PLAN_NAME_MAX = 12;
 
 const emptyItemError = () => ({ taskname: "", playtime: "" });
 const itemErrors = ref<ReturnType<typeof emptyItemError>[]>([]);
@@ -1029,7 +1091,7 @@ const planRules: FormRules = {
       validator: (_r, _v, cb) => {
         const v = dlg.form.planName.trim();
         if (!v) return cb(new Error(t("bell.planNamePlaceholder")));
-        if (!isNameOk(v)) return cb(new Error(t("bell.planNameCharset")));
+        if (v.length > PLAN_NAME_MAX) return cb(new Error(t("bell.planNameTooLong", { n: PLAN_NAME_MAX })));
         cb();
       }
     }
@@ -1093,8 +1155,6 @@ const validateItemAt = (idx: number) => {
   const name = (it.taskname ?? "").trim();
   if (!name) {
     err.taskname = t("bell.lessonNameRequired");
-  } else if (!isNameOk(name)) {
-    err.taskname = t("bell.onlyHanziLetterDigit");
   } else {
     // 后端按 (info, taskname) 定位条目，方案内重名会互相覆盖
     const dup = dlg.items.findIndex((o, i) => i !== idx && (o.taskname ?? "").trim() === name);
@@ -1167,6 +1227,8 @@ const resetPlanErrors = async () => {
   itemErrors.value = dlg.items.map(() => emptyItemError());
   itemsError.value = "";
   selectedItems.value = [];
+  // 每次打开对话框都从「谁都没选」开始：一进来整张表就是灰的会像坏了
+  activeItem.value = -1;
   await nextTick();
   planFormRef.value?.clearValidate();
 };
@@ -1190,12 +1252,13 @@ const applyMask = (mask: string) => {
 
 /* ---------------- 调整音量 ---------------- */
 
-const vol = reactive({ visible: false, saving: false, planName: "", value: 80 });
+const vol = reactive({ visible: false, saving: false, planNames: [] as string[], value: 80 });
 
 const openVolume = (raw: Record<string, any>[]) => {
   const rows = (raw ?? []) as unknown as BellPlan[];
-  if (rows.length !== 1) return ElMessage.warning(t("bell.pickOnlyOnePlan"));
-  vol.planName = rows[0].planName;
+  if (!rows.length) return ElMessage.warning(t("bell.pickPlanFirst"));
+  // 勾几个调几个 —— 一次把几个方案的音量统一到同一个值，是现场常干的事
+  vol.planNames = rows.map(r => r.planName);
   // 列表行里没带音量（那是方案级属性，在详情里），默认给 80，用户自己拖
   vol.value = 80;
   vol.visible = true;
@@ -1204,9 +1267,19 @@ const openVolume = (raw: Record<string, any>[]) => {
 const submitVolume = async () => {
   vol.saving = true;
   try {
-    const { data } = await setBellPlanVolumeApi(vol.planName, vol.value);
+    // 勾几个调几个。后端按方案名一条条改，所以这里顺序发完 ——
+    // 中途少发一条，表现就是「有的方案没跟着变」。
+    let affected = 0;
+    for (const name of vol.planNames) {
+      const { data } = await setBellPlanVolumeApi(name, vol.value);
+      affected += data.affectedTasks;
+    }
     vol.visible = false;
-    ElMessage.success(t("bell.volumeChanged", { name: data.planName, vol: data.volume, n: data.affectedTasks }));
+    ElMessage.success(
+      vol.planNames.length === 1
+        ? t("bell.volumeChanged", { name: vol.planNames[0], vol: vol.value, n: affected })
+        : t("bell.volumeChangedN", { plans: vol.planNames.length, vol: vol.value, n: affected })
+    );
     refresh();
   } finally {
     vol.saving = false;
@@ -1635,7 +1708,9 @@ const submitBatch = async () => {
 const del = reactive({
   visible: false,
   busy: false,
-  planName: "",
+  /** 这次要删的全部方案名。勾几个就是几个 —— 不是只删第一个 */
+  planNames: [] as string[],
+  /** 各方案影响面的合计 */
   impact: null as BellDeleteImpact | null
 });
 
@@ -1651,15 +1726,14 @@ const batchCmd = async (cmd: string, raw: Record<string, any>[]) => {
     return onMoreCmd("copy", rows[0]);
   }
   if (cmd === "delete") {
-    // 删除要看影响面弹窗，一次处理一条；多选时只对第一条打开，
-    // 免得连开一串确认框把人淹掉。
-    if (rows.length > 1) {
-      await ElMessageBox.confirm(t("bell.deleteOneAtATime", { name: rows[0].planName }), t("bell.deleteOneByOne"), {
-        type: "warning",
-        confirmButtonText: t("bell.continueWord")
-      });
-    }
-    return onMoreCmd("delete", rows[0]);
+    // 勾了几个就删几个。
+    //
+    // ⚠ 这里原来只删 rows[0]，还弹一句「一次删一个」—— 勾两个只没了一个，
+    //   剩下那个还在列表里，人以为没删掉又点一次。按需求方要求改成全删。
+    //
+    // 影响面还是要看，所以把每个方案的预览拉回来**合并成一屏**：
+    // 连开 N 个确认框才是真的把人淹掉。
+    return openDelete(rows);
   }
   for (const r of rows) await onMoreCmd(cmd, r);
 };
@@ -1692,22 +1766,63 @@ const onMoreCmd = async (cmd: string | number | object, row: BellPlan) => {
       refresh();
       break;
     }
-    case "delete": {
-      const { data } = await previewDeleteBellPlanApi(row.planName);
-      del.planName = row.planName;
-      del.impact = data;
-      del.busy = false;
-      del.visible = true;
-      break;
-    }
+  }
+};
+
+/**
+ * 打开删除确认：把选中的每个方案的影响面拉回来，合并成一屏。
+ *
+ * 逐个预览是因为后端就是按方案名一条条算的；合并展示是因为
+ * 「确认 N 次」对人是折磨，而这几个数字加起来看反而更清楚。
+ */
+const openDelete = async (rows: BellPlan[]) => {
+  del.busy = true;
+  try {
+    const impacts = await Promise.all(rows.map(r => previewDeleteBellPlanApi(r.planName).then(res => res.data)));
+    del.planNames = rows.map(r => r.planName);
+    del.impact = impacts.reduce(
+      (a, b) => ({
+        planName: "",
+        items: a.items + b.items,
+        powerSubTasks: a.powerSubTasks + b.powerSubTasks,
+        mediaRows: a.mediaRows + b.mediaRows,
+        terminalRows: a.terminalRows + b.terminalRows,
+        keyMapRows: a.keyMapRows + b.keyMapRows,
+        offlineTaskRows: a.offlineTaskRows + b.offlineTaskRows,
+        offlineMediaRows: a.offlineMediaRows + b.offlineMediaRows,
+        sameNameOtherTasks: a.sameNameOtherTasks + b.sameNameOtherTasks
+      }),
+      {
+        planName: "",
+        items: 0,
+        powerSubTasks: 0,
+        mediaRows: 0,
+        terminalRows: 0,
+        keyMapRows: 0,
+        offlineTaskRows: 0,
+        offlineMediaRows: 0,
+        sameNameOtherTasks: 0
+      } as BellDeleteImpact
+    );
+    del.visible = true;
+  } finally {
+    del.busy = false;
   }
 };
 
 const confirmDelete = async () => {
   del.busy = true;
   try {
-    const { data } = await deleteBellPlanApi(del.planName);
-    ElMessage.success(t("bell.deletedItems", { items: data.items, power: data.powerSubTasks }));
+    // 一条条发（后端按方案名删），但**全部发完**才收工 —— 中途少发一条，
+    // 表现就是「勾了两个只删掉一个」。
+    let items = 0;
+    let power = 0;
+    for (const name of del.planNames) {
+      const { data } = await deleteBellPlanApi(name);
+      items += data.items;
+      power += data.powerSubTasks;
+    }
+    ElMessage.success(t("bell.deletedItems", { items, power }));
     del.visible = false;
     refresh();
   } finally {
@@ -1764,6 +1879,16 @@ const confirmDelete = async () => {
   display: flex;
   gap: 4px;
   align-items: center;
+}
+
+/* 序号那一列的单选：只要那个圆点和数字，不要 Element 默认的一堆左右留白 */
+.idx-radio {
+  height: auto;
+  margin-right: 0;
+  :deep(.el-radio__label) {
+    padding-left: 4px;
+    font-size: 12px;
+  }
 }
 .item-row {
   display: flex;

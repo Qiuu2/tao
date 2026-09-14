@@ -59,3 +59,30 @@ func TestItemMediaRejectsBadIDs(t *testing.T) {
 		t.Error("同一个媒体挂两次应当被拒绝")
 	}
 }
+
+// 方案名称的上限是 12 个**字**，不是 12 个字节。
+//
+// 界面上那个 maxlength 挡不住开发者接口（POST /openapi/v1/schedules 走同一个
+// Service），所以这一层必须有；而按字节算的话，四个汉字就顶掉 12 个额度，
+// 中文名字基本没法用。
+func TestPlanNameLength(t *testing.T) {
+	okName := strings.Repeat("课", 12) // 12 个汉字 = 36 字节
+	if _, err := checkPlanName(okName); err != nil {
+		t.Errorf("12 个汉字应当放行（按字算不按字节算）：%v", err)
+	}
+	if _, err := checkPlanName(strings.Repeat("课", 13)); err == nil {
+		t.Error("13 个字应当被拒绝")
+	}
+	// 去掉「只能中文/字母/数字」之后，这些得放行
+	for _, n := range []string{"第一节(上)", "课间操-上午", "A班 早读"} {
+		if _, err := checkPlanName(n); err != nil {
+			t.Errorf("%q 应当放行（字符集限制已按需求方要求去掉）：%v", n, err)
+		}
+	}
+	// 但报文分隔符和控制字符这一层不能松
+	for _, n := range []string{"a?b", "a&b", "a=b", "a\x01b"} {
+		if _, err := checkPlanName(n); err == nil {
+			t.Errorf("%q 应当被拒绝 —— ? & = 是下发给 C 服务的报文分隔符", n)
+		}
+	}
+}

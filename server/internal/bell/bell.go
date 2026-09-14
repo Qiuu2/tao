@@ -388,13 +388,19 @@ func (s *Service) fillDuplicateTimes(ctx context.Context, items []Plan, names []
 // 后台通知以**方案名字符串**作为标识（`project?state=1&name=<方案名>`），
 // 名字里出现 ? & = 会把报文切断，后台解析到的方案名就不是我们发的那个。
 // 旧版对此毫无防护，方案名直接拼进 SQL 也直接拼进报文。
+// planNameMaxRunes 方案名称的字数上限，与前端 PLAN_NAME_MAX 对齐。
+const planNameMaxRunes = 12
+
 func checkPlanName(name string) (string, error) {
 	name = strings.TrimSpace(name)
 	if name == "" {
 		return "", fmt.Errorf("方案名称不能为空")
 	}
-	if len(name) > 255 {
-		return "", fmt.Errorf("方案名称过长：按 UTF-8 计 %d 字节，上限 255 字节", len(name))
+	// 上限 12 个**字**（不是字节）—— 旧版 addbelltask.html 是 maxlength="8"，
+	// 按需求方要求放宽到 12，与课时名称那一格（旧版 modifybell.html:425）对齐。
+	// 界面上也有 maxlength，但界面挡不住开发者接口，所以这一层必须有。
+	if n := len([]rune(name)); n > planNameMaxRunes {
+		return "", fmt.Errorf("方案名称最多 %d 个字，实际 %d 个", planNameMaxRunes, n)
 	}
 	for _, bad := range []string{"?", "&", "="} {
 		if strings.Contains(name, bad) {
