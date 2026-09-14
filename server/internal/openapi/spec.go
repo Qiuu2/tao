@@ -149,7 +149,7 @@ type Spec struct {
 	// 毫无意义，而其中好几个的取值是**反直觉**的：
 	//
 	//	projectstate  0 才是启用
-	//	israndomplay  0 是随机、1 是顺序
+	//	israndomplay  1 是随机、0 是顺序（列注释正好写反）
 	//	priority      数字**小**的优先级高
 	//	exemodel      7 位掩码，**周日打头**
 	//
@@ -234,10 +234,10 @@ func codeTables() []CodeTable {
 		{
 			Field: "israndomplay",
 			Title: "播放顺序",
-			Desc:  "⚠ 取值反直觉：**0 是随机、1 是顺序**。列名里的 random 会让人读反。",
+			Desc:  "⚠ 库里那一列的注释写反了：**1 是随机、0 是顺序**（旧版那个复选框叫「随机播放」，value=1）。",
 			Values: []CodeValue{
-				{"0", "随机播放", true},
-				{"1", "顺序播放", true},
+				{"0", "顺序播放", true},
+				{"1", "随机播放", true},
 			},
 		},
 		{

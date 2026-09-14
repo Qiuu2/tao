@@ -2678,7 +2678,7 @@
           "taskname": "升旗仪式-国歌",
           "tasktype": 2,
           "israndomplay": 0,
-          "playModeText": "随机",
+          "playModeText": "顺序",
           "projectstate": 0,
           "state": 1,
           "stateText": "执行中",
@@ -2688,9 +2688,9 @@
           "enddate": "2026-12-31",
           "playtime": "07:50:00",
           "endtime": "07:53:00",
-          "timelengthtype": 0,
+          "timelengthtype": 1,
           "timelength": 180,
-          "timelengthText": "循环 180 次",
+          "timelengthText": "播放 180 秒",
           "exemodel": "1000000",
           "weekdays": [
             1
@@ -2733,7 +2733,7 @@
           "taskname": "运动会入场式",
           "tasktype": 2,
           "israndomplay": 0,
-          "playModeText": "随机",
+          "playModeText": "顺序",
           "projectstate": 0,
           "state": 0,
           "stateText": "准备",
@@ -2743,9 +2743,9 @@
           "enddate": "2026-12-31",
           "playtime": "08:30:00",
           "endtime": "08:45:00",
-          "timelengthtype": 0,
+          "timelengthtype": 1,
           "timelength": 900,
-          "timelengthText": "循环 900 次",
+          "timelengthText": "播放 900 秒",
           "exemodel": "0000000",
           "weekdays": [],
           "priority": 7,
@@ -2798,7 +2798,7 @@
           "taskname": "课间轻音乐",
           "tasktype": 2,
           "israndomplay": 0,
-          "playModeText": "随机",
+          "playModeText": "顺序",
           "projectstate": 0,
           "state": 0,
           "stateText": "准备",
@@ -2808,9 +2808,9 @@
           "enddate": "2026-12-31",
           "playtime": "09:45:00",
           "endtime": "10:00:00",
-          "timelengthtype": 0,
+          "timelengthtype": 1,
           "timelength": 900,
-          "timelengthText": "循环 900 次",
+          "timelengthText": "播放 900 秒",
           "exemodel": "1111100",
           "weekdays": [
             1,
@@ -2825,29 +2825,17 @@
           "folderId": 1,
           "ownerUserId": 1,
           "ownerUserName": "admin",
-          "powerTaskId": 0,
+          "powerTaskId": 70395,
           "media": [
             {
               "mediaId": 126,
               "name": "04.爱的纪念（下课）.mp3",
               "size": 350,
-              "sort": 1,
+              "sort": 0,
               "deleted": false
             }
           ],
           "terminals": [
-            {
-              "terminalId": 1,
-              "terminalname": "A101教室音箱",
-              "typeName": "一体化音箱",
-              "netstate": 1,
-              "taskstate": 1,
-              "ip": "192.168.2.11",
-              "volume": 80,
-              "groupId": 0,
-              "area": "",
-              "deleted": false
-            },
             {
               "terminalId": 8,
               "terminalname": "操场号角01",
@@ -2856,8 +2844,8 @@
               "taskstate": 1,
               "ip": "192.168.2.41",
               "volume": 95,
-              "groupId": 0,
-              "area": "",
+              "groupId": 3,
+              "area": "11111111",
               "deleted": false
             }
           ],
@@ -2869,7 +2857,7 @@
           "taskname": "午间食堂背景music",
           "tasktype": 2,
           "israndomplay": 0,
-          "playModeText": "随机",
+          "playModeText": "顺序",
           "projectstate": 0,
           "state": 1,
           "stateText": "执行中",
@@ -2879,9 +2867,9 @@
           "enddate": "2026-12-31",
           "playtime": "11:40:00",
           "endtime": "12:20:00",
-          "timelengthtype": 0,
+          "timelengthtype": 1,
           "timelength": 2400,
-          "timelengthText": "循环 2400 次",
+          "timelengthText": "播放 2400 秒",
           "exemodel": "1111100",
           "weekdays": [
             1,
@@ -2928,7 +2916,7 @@
           "taskname": "消防疏散演练",
           "tasktype": 2,
           "israndomplay": 0,
-          "playModeText": "随机",
+          "playModeText": "顺序",
           "projectstate": 0,
           "state": 0,
           "stateText": "准备",
@@ -2938,9 +2926,9 @@
           "enddate": "2026-12-31",
           "playtime": "15:00:00",
           "endtime": "15:02:00",
-          "timelengthtype": 0,
+          "timelengthtype": 1,
           "timelength": 120,
-          "timelengthText": "循环 120 次",
+          "timelengthText": "播放 120 秒",
           "exemodel": "0000000",
           "weekdays": [],
           "priority": 10,
@@ -2961,18 +2949,6 @@
           ],
           "terminals": [
             {
-              "terminalId": 1,
-              "terminalname": "A101教室音箱",
-              "typeName": "一体化音箱",
-              "netstate": 1,
-              "taskstate": 1,
-              "ip": "192.168.2.11",
-              "volume": 80,
-              "groupId": 0,
-              "area": "",
-              "deleted": false
-            },
-            {
               "terminalId": 4,
               "terminalname": "A201教室音箱",
               "typeName": "一体化音箱",
@@ -2980,7 +2956,7 @@
               "taskstate": 1,
               "ip": "192.168.2.21",
               "volume": 80,
-              "groupId": 1,
+              "groupId": 0,
               "area": "",
               "deleted": false
             },
@@ -3029,7 +3005,7 @@
           "taskname": "晚自习预备",
           "tasktype": 2,
           "israndomplay": 0,
-          "playModeText": "随机",
+          "playModeText": "顺序",
           "projectstate": 0,
           "state": 1,
           "stateText": "执行中",
@@ -3039,9 +3015,9 @@
           "enddate": "2026-12-31",
           "playtime": "18:50:00",
           "endtime": "18:50:30",
-          "timelengthtype": 0,
+          "timelengthtype": 1,
           "timelength": 30,
-          "timelengthText": "循环 30 次",
+          "timelengthText": "播放 30 秒",
           "exemodel": "1111100",
           "weekdays": [
             1,
@@ -3068,18 +3044,6 @@
           ],
           "terminals": [
             {
-              "terminalId": 1,
-              "terminalname": "A101教室音箱",
-              "typeName": "一体化音箱",
-              "netstate": 1,
-              "taskstate": 1,
-              "ip": "192.168.2.11",
-              "volume": 80,
-              "groupId": 0,
-              "area": "",
-              "deleted": false
-            },
-            {
               "terminalId": 2,
               "terminalname": "A102教室音箱",
               "typeName": "一体化音箱",
@@ -3087,7 +3051,7 @@
               "taskstate": 0,
               "ip": "192.168.2.12",
               "volume": 75,
-              "groupId": 1,
+              "groupId": 0,
               "area": "",
               "deleted": false
             },
@@ -3099,7 +3063,7 @@
               "taskstate": 1,
               "ip": "192.168.2.21",
               "volume": 80,
-              "groupId": 1,
+              "groupId": 0,
               "area": "",
               "deleted": false
             },
@@ -3111,7 +3075,7 @@
               "taskstate": 0,
               "ip": "192.168.2.22",
               "volume": 80,
-              "groupId": 1,
+              "groupId": 0,
               "area": "",
               "deleted": false
             }
@@ -3136,7 +3100,7 @@
           "taskname": "升旗仪式-国歌",
           "tasktype": 2,
           "israndomplay": 0,
-          "playModeText": "随机",
+          "playModeText": "顺序",
           "projectstate": 0,
           "state": 1,
           "stateText": "执行中",
@@ -3146,9 +3110,9 @@
           "enddate": "2026-12-31",
           "playtime": "07:50:00",
           "endtime": "07:53:00",
-          "timelengthtype": 0,
+          "timelengthtype": 1,
           "timelength": 180,
-          "timelengthText": "循环 180 次",
+          "timelengthText": "播放 180 秒",
           "exemodel": "1000000",
           "weekdays": [
             1
@@ -3191,7 +3155,7 @@
           "taskname": "运动会入场式",
           "tasktype": 2,
           "israndomplay": 0,
-          "playModeText": "随机",
+          "playModeText": "顺序",
           "projectstate": 0,
           "state": 0,
           "stateText": "准备",
@@ -3201,9 +3165,9 @@
           "enddate": "2026-12-31",
           "playtime": "08:30:00",
           "endtime": "08:45:00",
-          "timelengthtype": 0,
+          "timelengthtype": 1,
           "timelength": 900,
-          "timelengthText": "循环 900 次",
+          "timelengthText": "播放 900 秒",
           "exemodel": "0000000",
           "weekdays": [],
           "priority": 7,
@@ -3256,7 +3220,7 @@
           "taskname": "课间轻音乐",
           "tasktype": 2,
           "israndomplay": 0,
-          "playModeText": "随机",
+          "playModeText": "顺序",
           "projectstate": 0,
           "state": 0,
           "stateText": "准备",
@@ -3266,9 +3230,9 @@
           "enddate": "2026-12-31",
           "playtime": "09:45:00",
           "endtime": "10:00:00",
-          "timelengthtype": 0,
+          "timelengthtype": 1,
           "timelength": 900,
-          "timelengthText": "循环 900 次",
+          "timelengthText": "播放 900 秒",
           "exemodel": "1111100",
           "weekdays": [
             1,
@@ -3283,29 +3247,17 @@
           "folderId": 1,
           "ownerUserId": 1,
           "ownerUserName": "admin",
-          "powerTaskId": 0,
+          "powerTaskId": 70395,
           "media": [
             {
               "mediaId": 126,
               "name": "04.爱的纪念（下课）.mp3",
               "size": 350,
-              "sort": 1,
+              "sort": 0,
               "deleted": false
             }
           ],
           "terminals": [
-            {
-              "terminalId": 1,
-              "terminalname": "A101教室音箱",
-              "typeName": "一体化音箱",
-              "netstate": 1,
-              "taskstate": 1,
-              "ip": "192.168.2.11",
-              "volume": 80,
-              "groupId": 0,
-              "area": "",
-              "deleted": false
-            },
             {
               "terminalId": 8,
               "terminalname": "操场号角01",
@@ -3314,8 +3266,8 @@
               "taskstate": 1,
               "ip": "192.168.2.41",
               "volume": 95,
-              "groupId": 0,
-              "area": "",
+              "groupId": 3,
+              "area": "11111111",
               "deleted": false
             }
           ],
@@ -3327,7 +3279,7 @@
           "taskname": "午间食堂背景music",
           "tasktype": 2,
           "israndomplay": 0,
-          "playModeText": "随机",
+          "playModeText": "顺序",
           "projectstate": 0,
           "state": 1,
           "stateText": "执行中",
@@ -3337,9 +3289,9 @@
           "enddate": "2026-12-31",
           "playtime": "11:40:00",
           "endtime": "12:20:00",
-          "timelengthtype": 0,
+          "timelengthtype": 1,
           "timelength": 2400,
-          "timelengthText": "循环 2400 次",
+          "timelengthText": "播放 2400 秒",
           "exemodel": "1111100",
           "weekdays": [
             1,
@@ -3386,7 +3338,7 @@
           "taskname": "消防疏散演练",
           "tasktype": 2,
           "israndomplay": 0,
-          "playModeText": "随机",
+          "playModeText": "顺序",
           "projectstate": 0,
           "state": 0,
           "stateText": "准备",
@@ -3396,9 +3348,9 @@
           "enddate": "2026-12-31",
           "playtime": "15:00:00",
           "endtime": "15:02:00",
-          "timelengthtype": 0,
+          "timelengthtype": 1,
           "timelength": 120,
-          "timelengthText": "循环 120 次",
+          "timelengthText": "播放 120 秒",
           "exemodel": "0000000",
           "weekdays": [],
           "priority": 10,
@@ -3419,18 +3371,6 @@
           ],
           "terminals": [
             {
-              "terminalId": 1,
-              "terminalname": "A101教室音箱",
-              "typeName": "一体化音箱",
-              "netstate": 1,
-              "taskstate": 1,
-              "ip": "192.168.2.11",
-              "volume": 80,
-              "groupId": 0,
-              "area": "",
-              "deleted": false
-            },
-            {
               "terminalId": 4,
               "terminalname": "A201教室音箱",
               "typeName": "一体化音箱",
@@ -3438,7 +3378,7 @@
               "taskstate": 1,
               "ip": "192.168.2.21",
               "volume": 80,
-              "groupId": 1,
+              "groupId": 0,
               "area": "",
               "deleted": false
             },
@@ -3487,7 +3427,7 @@
           "taskname": "晚自习预备",
           "tasktype": 2,
           "israndomplay": 0,
-          "playModeText": "随机",
+          "playModeText": "顺序",
           "projectstate": 0,
           "state": 1,
           "stateText": "执行中",
@@ -3497,9 +3437,9 @@
           "enddate": "2026-12-31",
           "playtime": "18:50:00",
           "endtime": "18:50:30",
-          "timelengthtype": 0,
+          "timelengthtype": 1,
           "timelength": 30,
-          "timelengthText": "循环 30 次",
+          "timelengthText": "播放 30 秒",
           "exemodel": "1111100",
           "weekdays": [
             1,
@@ -3526,18 +3466,6 @@
           ],
           "terminals": [
             {
-              "terminalId": 1,
-              "terminalname": "A101教室音箱",
-              "typeName": "一体化音箱",
-              "netstate": 1,
-              "taskstate": 1,
-              "ip": "192.168.2.11",
-              "volume": 80,
-              "groupId": 0,
-              "area": "",
-              "deleted": false
-            },
-            {
               "terminalId": 2,
               "terminalname": "A102教室音箱",
               "typeName": "一体化音箱",
@@ -3545,7 +3473,7 @@
               "taskstate": 0,
               "ip": "192.168.2.12",
               "volume": 75,
-              "groupId": 1,
+              "groupId": 0,
               "area": "",
               "deleted": false
             },
@@ -3557,7 +3485,7 @@
               "taskstate": 1,
               "ip": "192.168.2.21",
               "volume": 80,
-              "groupId": 1,
+              "groupId": 0,
               "area": "",
               "deleted": false
             },
@@ -3569,7 +3497,7 @@
               "taskstate": 0,
               "ip": "192.168.2.22",
               "volume": 80,
-              "groupId": 1,
+              "groupId": 0,
               "area": "",
               "deleted": false
             }
@@ -6955,7 +6883,7 @@
           "taskname": "升旗仪式-国歌",
           "tasktype": 2,
           "israndomplay": 0,
-          "playModeText": "随机",
+          "playModeText": "顺序",
           "projectstate": 0,
           "state": 1,
           "stateText": "执行中",
@@ -6965,9 +6893,9 @@
           "enddate": "2026-12-31",
           "playtime": "07:50:00",
           "endtime": "07:53:00",
-          "timelengthtype": 0,
+          "timelengthtype": 1,
           "timelength": 180,
-          "timelengthText": "循环 180 次",
+          "timelengthText": "播放 180 秒",
           "exemodel": "1000000",
           "weekdays": [
             1
@@ -7010,7 +6938,7 @@
           "taskname": "运动会入场式",
           "tasktype": 2,
           "israndomplay": 0,
-          "playModeText": "随机",
+          "playModeText": "顺序",
           "projectstate": 0,
           "state": 0,
           "stateText": "准备",
@@ -7020,9 +6948,9 @@
           "enddate": "2026-12-31",
           "playtime": "08:30:00",
           "endtime": "08:45:00",
-          "timelengthtype": 0,
+          "timelengthtype": 1,
           "timelength": 900,
-          "timelengthText": "循环 900 次",
+          "timelengthText": "播放 900 秒",
           "exemodel": "0000000",
           "weekdays": [],
           "priority": 7,
@@ -7075,7 +7003,7 @@
           "taskname": "课间轻音乐",
           "tasktype": 2,
           "israndomplay": 0,
-          "playModeText": "随机",
+          "playModeText": "顺序",
           "projectstate": 0,
           "state": 0,
           "stateText": "准备",
@@ -7085,9 +7013,9 @@
           "enddate": "2026-12-31",
           "playtime": "09:45:00",
           "endtime": "10:00:00",
-          "timelengthtype": 0,
+          "timelengthtype": 1,
           "timelength": 900,
-          "timelengthText": "循环 900 次",
+          "timelengthText": "播放 900 秒",
           "exemodel": "1111100",
           "weekdays": [
             1,
@@ -7102,29 +7030,17 @@
           "folderId": 1,
           "ownerUserId": 1,
           "ownerUserName": "admin",
-          "powerTaskId": 0,
+          "powerTaskId": 70395,
           "media": [
             {
               "mediaId": 126,
               "name": "04.爱的纪念（下课）.mp3",
               "size": 350,
-              "sort": 1,
+              "sort": 0,
               "deleted": false
             }
           ],
           "terminals": [
-            {
-              "terminalId": 1,
-              "terminalname": "A101教室音箱",
-              "typeName": "一体化音箱",
-              "netstate": 1,
-              "taskstate": 1,
-              "ip": "192.168.2.11",
-              "volume": 80,
-              "groupId": 0,
-              "area": "",
-              "deleted": false
-            },
             {
               "terminalId": 8,
               "terminalname": "操场号角01",
@@ -7133,8 +7049,8 @@
               "taskstate": 1,
               "ip": "192.168.2.41",
               "volume": 95,
-              "groupId": 0,
-              "area": "",
+              "groupId": 3,
+              "area": "11111111",
               "deleted": false
             }
           ],
@@ -7146,7 +7062,7 @@
           "taskname": "午间食堂背景music",
           "tasktype": 2,
           "israndomplay": 0,
-          "playModeText": "随机",
+          "playModeText": "顺序",
           "projectstate": 0,
           "state": 1,
           "stateText": "执行中",
@@ -7156,9 +7072,9 @@
           "enddate": "2026-12-31",
           "playtime": "11:40:00",
           "endtime": "12:20:00",
-          "timelengthtype": 0,
+          "timelengthtype": 1,
           "timelength": 2400,
-          "timelengthText": "循环 2400 次",
+          "timelengthText": "播放 2400 秒",
           "exemodel": "1111100",
           "weekdays": [
             1,
@@ -7205,7 +7121,7 @@
           "taskname": "消防疏散演练",
           "tasktype": 2,
           "israndomplay": 0,
-          "playModeText": "随机",
+          "playModeText": "顺序",
           "projectstate": 0,
           "state": 0,
           "stateText": "准备",
@@ -7215,9 +7131,9 @@
           "enddate": "2026-12-31",
           "playtime": "15:00:00",
           "endtime": "15:02:00",
-          "timelengthtype": 0,
+          "timelengthtype": 1,
           "timelength": 120,
-          "timelengthText": "循环 120 次",
+          "timelengthText": "播放 120 秒",
           "exemodel": "0000000",
           "weekdays": [],
           "priority": 10,
@@ -7238,18 +7154,6 @@
           ],
           "terminals": [
             {
-              "terminalId": 1,
-              "terminalname": "A101教室音箱",
-              "typeName": "一体化音箱",
-              "netstate": 1,
-              "taskstate": 1,
-              "ip": "192.168.2.11",
-              "volume": 80,
-              "groupId": 0,
-              "area": "",
-              "deleted": false
-            },
-            {
               "terminalId": 4,
               "terminalname": "A201教室音箱",
               "typeName": "一体化音箱",
@@ -7257,7 +7161,7 @@
               "taskstate": 1,
               "ip": "192.168.2.21",
               "volume": 80,
-              "groupId": 1,
+              "groupId": 0,
               "area": "",
               "deleted": false
             },
@@ -7306,7 +7210,7 @@
           "taskname": "晚自习预备",
           "tasktype": 2,
           "israndomplay": 0,
-          "playModeText": "随机",
+          "playModeText": "顺序",
           "projectstate": 0,
           "state": 1,
           "stateText": "执行中",
@@ -7316,9 +7220,9 @@
           "enddate": "2026-12-31",
           "playtime": "18:50:00",
           "endtime": "18:50:30",
-          "timelengthtype": 0,
+          "timelengthtype": 1,
           "timelength": 30,
-          "timelengthText": "循环 30 次",
+          "timelengthText": "播放 30 秒",
           "exemodel": "1111100",
           "weekdays": [
             1,
@@ -7345,18 +7249,6 @@
           ],
           "terminals": [
             {
-              "terminalId": 1,
-              "terminalname": "A101教室音箱",
-              "typeName": "一体化音箱",
-              "netstate": 1,
-              "taskstate": 1,
-              "ip": "192.168.2.11",
-              "volume": 80,
-              "groupId": 0,
-              "area": "",
-              "deleted": false
-            },
-            {
               "terminalId": 2,
               "terminalname": "A102教室音箱",
               "typeName": "一体化音箱",
@@ -7364,7 +7256,7 @@
               "taskstate": 0,
               "ip": "192.168.2.12",
               "volume": 75,
-              "groupId": 1,
+              "groupId": 0,
               "area": "",
               "deleted": false
             },
@@ -7376,7 +7268,7 @@
               "taskstate": 1,
               "ip": "192.168.2.21",
               "volume": 80,
-              "groupId": 1,
+              "groupId": 0,
               "area": "",
               "deleted": false
             },
@@ -7388,7 +7280,7 @@
               "taskstate": 0,
               "ip": "192.168.2.22",
               "volume": 80,
-              "groupId": 1,
+              "groupId": 0,
               "area": "",
               "deleted": false
             }
@@ -16088,7 +15980,7 @@
           "ownerUserId": 1,
           "ownerName": "admin",
           "disableday": "0000-00-00",
-          "runStatus": "ready"
+          "runStatus": "done"
         },
         {
           "index": 12,

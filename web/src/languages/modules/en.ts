@@ -130,6 +130,8 @@ export default {
     operationFailed: "Failed",
     loading: "Loading…",
     noData: "No data",
+    loadFailed: "Could not load (the request failed — this is not an empty list)",
+    retry: "Retry",
     startDate: "Start date",
     endDate: "End date",
     startTime: "Start time",

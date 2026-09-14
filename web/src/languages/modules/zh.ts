@@ -138,6 +138,8 @@ export default {
     operationFailed: "操作失败",
     loading: "加载中…",
     noData: "暂无数据",
+    loadFailed: "没读到数据（请求失败了，不是真的没有）",
+    retry: "重试",
     startDate: "开始日期",
     endDate: "结束日期",
     startTime: "开始时间",

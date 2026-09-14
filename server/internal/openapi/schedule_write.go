@@ -164,9 +164,9 @@ func (s *Service) CreateSchedule(ctx context.Context, u *auth.User, in ScheduleI
 			Volume:   volume,
 			Priority: priority,
 			PrePower: in.PrePower,
-			// 0 = 随机、1 = 顺序（BR-163，取值反直觉）。打铃固定顺序播 ——
-			// 一条铃通常只有一个媒体，随机在这里没有意义。
-			IsRandomPlay: 1,
+			// ⚠ **1 = 随机、0 = 顺序**（列注释写反了，见 task.Item.IsRandomPlay）。
+			// 打铃固定顺序播 —— 一条铃通常只有一个媒体，随机在这里没有意义。
+			IsRandomPlay: 0,
 		},
 		Terminals: terms,
 		Items:     items,

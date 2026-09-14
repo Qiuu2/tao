@@ -158,7 +158,21 @@
               <span class="muted">{{ $t("term.gridPicked", { n: b.selectedListIds.length, total: b.data.length }) }}</span>
             </div>
 
-            <div v-if="b.data.length" class="term-grid">
+            <!--
+              ⚠ 三种状态要分得开，不能一律画成「暂无数据」：
+
+                正在加载  → 转圈（列表接口带 loading:false，没有全屏遮罩，
+                            这一段以前显示的就是「暂无数据」——「全部终端有 19 个，
+                            但右边网格中显示暂无数据」说的就是它）
+                加载失败  → 说明白，并给一个「重试」
+                真的没有  → 才是「暂无数据」
+            -->
+            <div v-if="b.loading && !b.data.length" v-loading="true" class="grid-loading"></div>
+            <div v-else-if="b.loadFailed && !b.data.length" class="table-empty">
+              <div>{{ $t("common.loadFailed") }}</div>
+              <el-button type="primary" link @click="b.reload()">{{ $t("common.retry") }}</el-button>
+            </div>
+            <div v-else-if="b.data.length" class="term-grid">
               <div
                 v-for="row in b.data"
                 :key="row.id"
@@ -2794,6 +2808,9 @@ onMounted(async () => {
 
 .grid-wrap {
   padding: 4px 0 2px;
+}
+.grid-loading {
+  min-height: 220px;
 }
 .grid-bar {
   display: flex;

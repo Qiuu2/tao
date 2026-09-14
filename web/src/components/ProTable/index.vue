@@ -54,9 +54,18 @@
       :select-all="selectAll"
       :page-all-selected="pageAllSelected"
       :page-some-selected="pageSomeSelected"
+      :loading="loading"
+      :load-failed="loadFailed"
+      :reload="getTableList"
     />
+    <!--
+      ⚠ v-loading 是后补的：列表接口里有几个带 `{ loading: false }`（要无感刷新，
+        不能每次都盖一层全屏遮罩），于是请求在路上那一段表格是空的，
+        显示的就是「暂无数据」。不加这一层，「在加载」和「真的没有」分不开。
+    -->
     <el-table
       v-else
+      v-loading="loading"
       v-bind="$attrs"
       :id="uuid"
       ref="tableRef"
@@ -213,6 +222,8 @@ const { selectionChange, selectedList, selectedListIds, isSelected } = useSelect
 // 表格操作 Hooks
 const {
   tableData,
+  loading,
+  loadFailed,
   pageable,
   searchParam,
   searchInitParam,
@@ -519,6 +530,8 @@ const dragSort = () => {
 defineExpose({
   element: tableRef,
   tableData: processTableData,
+  loading,
+  loadFailed,
   radio,
   pageable,
   searchParam,

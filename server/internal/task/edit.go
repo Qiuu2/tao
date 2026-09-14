@@ -159,6 +159,11 @@ func (s *Service) Get(ctx context.Context, u *auth.User, id int64) (*Detail, err
 		return nil, ErrNoPermission
 	}
 	d.StartDate, d.EndDate, d.DisableDay = startDate.String, endDate.String, disableDay.String
+	// ⚠ 库里躺着一批 timelengthtype = 0 的存量行，`COALESCE(...,1)` 挡不住它
+	//   （挡的是 NULL）。不归一的话表单上两个 radio 一个都不选中，
+	//   人一点保存就把 timelength 写成「循环次数」那一格的默认值 1 ——
+	//   2400 秒的背景音乐从此变成「循环 1 次」。见 task.NormLengthType。
+	d.TimeLengthTy = NormLengthType(d.TimeLengthTy)
 
 	items := []Item{{TaskID: id}}
 	if err := s.fillMedia(ctx, items, []int64{id}); err != nil {
@@ -251,8 +256,8 @@ func (s *Service) validate(ctx context.Context, u *auth.User, in *Input, ownerID
 		return fmt.Errorf("方案状态只能是 0（启用）或 1（停用）")
 	}
 	if in.IsRandomPlay != 0 && in.IsRandomPlay != 1 {
-		// BR-163：0 = 随机，1 = 顺序，取值反直觉但必须保持
-		return fmt.Errorf("播放方式只能是 0（随机）或 1（顺序）")
+		// ⚠ 1 = 随机、0 = 顺序（列注释写反了，见 task.Item.IsRandomPlay）
+		return fmt.Errorf("播放方式只能是 0（顺序）或 1（随机）")
 	}
 	for _, spec := range []struct {
 		name string

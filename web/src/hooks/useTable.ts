@@ -19,6 +19,10 @@ export const useTable = (
   const state = reactive<Table.StateProps>({
     // 表格数据
     tableData: [],
+    // 正在请求
+    loading: false,
+    // 上一次请求失败了
+    loadFailed: false,
     // 分页数据
     pageable: {
       // 当前页数
@@ -55,8 +59,25 @@ export const useTable = (
    * @description 获取表格数据
    * @return void
    * */
+  /*
+   * ⚠ loading 与 loadFailed 是后补的，补的是一个真实的误报：
+   *
+   * 终端管理的网格视图直接画 `v-if="data.length" ... v-else 暂无数据`。
+   * 列表接口带的是 `{ loading: false }`（这一页要无感刷新，不能每次都盖一层
+   * 全屏遮罩），于是**请求还在路上的那一段，界面上就是一张「暂无数据」**——
+   * 服务器慢一点就看得见，现场报上来的原话是「全部终端有 19 个，
+   * 但右边网格中显示暂无数据」。
+   *
+   * 更糟的是下面这个 catch：请求失败时 tableData 保持原样（初次进页面就是空），
+   * 也没有任何标记，于是「请求挂了」和「真的一台都没有」长得一模一样，
+   * 而且会一直挂着，直到下一次刷新碰巧成功。
+   *
+   * 所以：请求期间 loading = true，失败时 loadFailed = true 且**不动已有数据**
+   * （宁可显示上一批旧数据，也别把人看着的东西清空）。
+   */
   const getTableList = async () => {
     if (!api) return;
+    state.loading = true;
     try {
       // 先把初始化参数和分页参数放到总参数里面
       Object.assign(state.totalParam, initParam, isPageable ? pageParam.value : {});
@@ -65,15 +86,21 @@ export const useTable = (
         data = dataCallBack(data);
       }
 
-      state.tableData = isPageable ? data.list : data;
+      // 后端返回的形状不对时（list 缺失）当空列表处理，别让 undefined 流进表格 ——
+      // 下游一个 .length 就是一片白屏
+      state.tableData = (isPageable ? data?.list : data) ?? [];
       // 解构后台返回的分页数据 (如果有分页更新分页信息)
       if (isPageable) {
-        state.pageable.total = data.total;
+        state.pageable.total = data?.total ?? 0;
       }
+      state.loadFailed = false;
     } catch (error) {
+      state.loadFailed = true;
       if (requestError) {
         requestError(error);
       }
+    } finally {
+      state.loading = false;
     }
   };
 

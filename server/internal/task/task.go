@@ -144,7 +144,20 @@ type Item struct {
 	TaskID   int64  `json:"taskid"`
 	TaskName string `json:"taskname"`
 	TaskType int    `json:"tasktype"`
-	// IsRandomPlay 取值反直觉：0 = 随机，1 = 顺序（BR-163），必须原样保留。
+	// IsRandomPlay：**1 = 随机、0 = 顺序**。
+	//
+	// # israndomplay 到底哪个是随机
+	//
+	// **1 = 随机，0 = 顺序。** 库里那一列的注释写的是「0表示随机1表示顺序」，
+	// 与 projectstate 一样，**注释是错的**。旧版两处都指向同一个结论：
+	//
+	//	添加/修改表单是一个**复选框**，label「随机播放」、title「选中歌曲将随机播放」、
+	//	value="1"（AddFileTask_form.html:929、ModifyFileTask_form.html:935），
+	//	而且修改页是 `if(israndomplay == 1) checkbox.checked = true`（:937）；
+	//	列表模板 `if(israndomplay == 0) 顺序 else 随机`
+	//	（FileTaskManager_from.html:134）。
+	//
+	// 新版一度照着列注释写成「0 = 随机、1 = 顺序」，结果整张列表的播放模式全反了。
 	IsRandomPlay int    `json:"israndomplay"`
 	PlayModeText string `json:"playModeText"`
 	ProjectState int    `json:"projectstate"`
@@ -357,11 +370,12 @@ func (s *Service) List(ctx context.Context, u *auth.User, q ListQuery) (*ListRes
 // decorate 填充纯展示派生字段，避免前端各自解释一遍编码。
 func decorate(ctx context.Context, it *Item) {
 	l := i18n.From(ctx)
-	// BR-163：0 = 随机，1 = 顺序。写反了播放顺序就错了。
+	// ⚠ 1 = 随机、0 = 顺序（见 IsRandomPlay 上的说明）。这里一度写反，
+	// 整张列表的「播放模式」全是错的。
 	if it.IsRandomPlay == 1 {
-		it.PlayModeText = i18n.T(l, "顺序")
-	} else {
 		it.PlayModeText = i18n.T(l, "随机")
+	} else {
+		it.PlayModeText = i18n.T(l, "顺序")
 	}
 	switch it.State {
 	case RunStateReady:
@@ -381,10 +395,11 @@ func decorate(ctx context.Context, it *Item) {
 	// BR-164：1 = 按秒数，2 = 按循环次数
 	// 「播放 N 秒 / 循环 N 次」这类量词句，中英语序不同，
 	// 所以翻的是**格式串**再 Sprintf，而不是拿拼好的成品去查字典。
-	if it.TimeLengthTyp == 1 {
-		it.LengthText = fmt.Sprintf(i18n.T(l, "播放 %d 秒"), it.TimeLength)
-	} else {
+	it.TimeLengthTyp = NormLengthType(it.TimeLengthTyp)
+	if it.TimeLengthTyp == 2 {
 		it.LengthText = fmt.Sprintf(i18n.T(l, "循环 %d 次"), it.TimeLength)
+	} else {
+		it.LengthText = fmt.Sprintf(i18n.T(l, "播放 %d 秒"), it.TimeLength)
 	}
 	it.Weekdays = parseWeekdays(it.ExeModel)
 	if it.Media == nil {
@@ -393,6 +408,31 @@ func decorate(ctx context.Context, it *Item) {
 	if it.Terminals == nil {
 		it.Terminals = []TerminalItem{}
 	}
+}
+
+// NormLengthType 把 timelengthtype 归一成 1（按秒数）或 2（按循环次数）。
+//
+// # 为什么需要它
+//
+// 写入侧一律校验「只能是 1 或 2」，但**库里躺着一批 0**：现网
+// tasktype = 1（作息打铃）和 2（文件广播）的存量行全是 0，
+// timelength 则是 30 / 180 / 900 / 2400 这种数 —— 一眼就知道是秒。
+//
+// 旧版没有「0 是什么」这一说：两个表单的第一个 radio（时长）都带着
+// `checked="checked"`（AddFileTask_form.html:583、ModifyFileTask_form.html:554、
+// modifybell.html:191），`if(timelengthtype==1)` / `else if(==2)` 两个分支都不命中
+// 时，界面上选中的就是「时长」。所以 **0 等同于 1**。
+//
+// ⚠ 写成 `== 1 ? 秒 : 次` 是错的 —— 那会把 0 当成「循环 N 次」：
+// 列表里 2400 秒的背景音乐显示成「循环 2400 次」，更糟的是进了编辑表单再一保存，
+// 就把 timelengthtype 真的写成 2，数据从此变成「循环 2400 次」。
+// 现场报上来的「改文件广播，点保存内容就不对了」就是这个。
+// 判据要写成 `== 2 ? 次 : 秒`。
+func NormLengthType(v int) int {
+	if v == 2 {
+		return 2
+	}
+	return 1
 }
 
 // parseWeekdays 把 7 位掩码转成 [1..7]（掩码是周日打头的，所以 1 = 周日）。

@@ -29,7 +29,7 @@ export interface TaskRow {
   taskid: number;
   taskname: string;
   tasktype: number;
-  /** 取值反直觉：0 = 随机，1 = 顺序。服务端已给出 playModeText，界面用它 */
+  /** ⚠ 1 = 随机、0 = 顺序（列注释写反了）。服务端已给出 playModeText，界面用它 */
   israndomplay: number;
   playModeText: string;
   projectstate: number;

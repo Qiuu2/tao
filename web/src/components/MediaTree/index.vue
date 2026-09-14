@@ -54,6 +54,13 @@
       <template #default="{ data }">
         <span class="mt-node">
           <el-icon v-if="!data.isLeaf"><Folder /></el-icon>
+          <!--
+            播放顺序直接标在媒体名前面，红色。
+            旧版就是这么干的（skin/js/frame/select_item_sequence.js:81）：
+              tree2.setItemText(id, "<font color='red'><b>N</b>-|</font>" + 原名)
+            所以下面不用再另摆一份「已选清单」——「标注在下面」那一块已经去掉了。
+          -->
+          <span v-if="orderOf(data) > 0" class="mt-seq">{{ orderOf(data) }}-|</span>
           <span class="mt-label">{{ data.label }}</span>
           <span v-if="!data.isLeaf && data.mediaCount" class="mt-count">{{ data.mediaCount }}</span>
         </span>
@@ -163,6 +170,17 @@ const loadNode = async (node: any, resolve: (data: MediaNode[]) => void) => {
   syncChecked();
 };
 
+/**
+ * 这一条媒体排第几。没被选中回 0。
+ *
+ * 序号就是**勾选的先后**（见 onCheck），与旧版 sel_item_seq 一样：
+ * 先勾的先播。要调顺序就取消再勾一次。
+ */
+const orderOf = (data: MediaNode) => {
+  if (data?.mediaId === undefined) return 0;
+  return props.modelValue.indexOf(data.mediaId) + 1;
+};
+
 /** 取值只认叶子，且必须带 mediaId —— 文件夹节点不是可选项 */
 const onCheck = (data: MediaNode) => {
   let picked = (treeRef.value?.getCheckedNodes(true) ?? []) as MediaNode[];
@@ -172,10 +190,20 @@ const onCheck = (data: MediaNode) => {
     picked = [data];
     treeRef.value?.setCheckedKeys([mediaKey(data.mediaId)], false);
   }
-  emit(
-    "update:modelValue",
-    picked.filter(n => n.mediaId !== undefined).map(n => n.mediaId as number)
-  );
+  const ids = picked.filter(n => n.mediaId !== undefined).map(n => n.mediaId as number);
+  /*
+   * ⚠ 顺序要按**勾选的先后**，不能直接用 getCheckedNodes 的返回。
+   *
+   * 那个方法给的是**树的顺序**（按库、按文件名排），于是「先勾国歌再勾报幕词」
+   * 和反过来勾，出来的清单一模一样 —— 播放顺序根本表达不出来。
+   * 旧版是自己维护一个 sel_item_seq，勾了 push、取消了 splice
+   * （skin/js/frame/select_item_sequence.js）。这里等价地做：
+   * 已经在清单里的保持原位次，新勾的接在后面。
+   */
+  const seen = new Set(ids);
+  const kept = props.modelValue.filter(id => seen.has(id));
+  const added = ids.filter(id => !kept.includes(id));
+  emit("update:modelValue", [...kept, ...added]);
 };
 
 const syncChecked = () => {
@@ -234,6 +262,12 @@ onMounted(loadTree);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+/* 播放顺序：红色加粗，跟旧版 <font color='red'><b>N</b>-|</font> 一个样子 */
+.mt-seq {
+  flex: none;
+  font-weight: 700;
+  color: var(--el-color-danger);
 }
 .mt-count {
   flex: none;

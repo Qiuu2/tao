@@ -41,7 +41,7 @@ type Playback struct {
 	PrePower     int `json:"prepower"`
 	DataSendMode int `json:"datasendmodel"`
 	// IsRandomPlay 对应 :80「添加方案」里的「播放模式（随机 / 顺序）」。
-	// ⚠ 取值反直觉：**0 = 随机、1 = 顺序**（列注释「0表示随机1表示顺序」是对的，
+	// ⚠ **1 = 随机、0 = 顺序**（列注释「0表示随机1表示顺序」是**错的**，
 	//    反直觉的是「0 竟然是随机」）。旧版建作息条目时写死 0，
 	//    这里放开成可选，默认仍是 0，和旧版建出来的行一致。
 	IsRandomPlay int `json:"israndomplay"`
@@ -236,6 +236,10 @@ func (s *Service) Get(ctx context.Context, u *auth.User, planName string) (*Deta
 			return nil, err
 		}
 		it.StateText = stateText(ctx, it.ProjectState)
+		// ⚠ 存量行里 timelengthtype 有 0（现网作息条目全是 0，timelength 是
+		//   30 / 210 / 1500 这种秒数）。不归一的话界面按「循环次数」显示，
+		//   一保存就真写成 2，1500 秒的大课间变成「循环 1500 次」。
+		it.TimeLengthTy = task.NormLengthType(it.TimeLengthTy)
 		it.StartDate, it.EndDate, it.ExeModel = a.start, a.end, a.exe
 		it.Volume, it.Priority, it.PrePower = a.vol, a.pri, a.pre
 		it.DataSendMode, it.IsRandomPlay = a.snd, a.rnd
@@ -932,7 +936,7 @@ func duplicateTimeWarnings(items []ItemInput) []string {
 
 // insertItem 写一条打铃条目，prepower > 0 时连同功放子任务一起写。
 //
-// normRandom 把播放模式收敛到 0/1。⚠ 0 = 随机、1 = 顺序，别看反。
+// normRandom 把播放模式收敛到 0/1。⚠ 1 = 随机、0 = 顺序，别看反。
 func normRandom(v int) int {
 	if v == 1 {
 		return 1

@@ -89,7 +89,7 @@ type TaskInput struct {
 	Enabled *bool `json:"enabled"`
 	// Sequential 为真表示顺序播，假表示随机播。默认顺序。
 	//
-	// ⚠ 库里那一列（israndomplay）取值反直觉：0 = 随机、1 = 顺序（BR-163）。
+	// ⚠ 库里那一列（israndomplay）：**1 = 随机、0 = 顺序**（列注释写反了）。
 	//   对外不暴露这个坑，只给一个语义明确的布尔。
 	Sequential *bool `json:"sequential"`
 
@@ -923,13 +923,14 @@ func projectStateOf(enabled *bool, old *task.Detail) int {
 	return 0
 }
 
-// randomPlayOf：库里 0 = 随机、1 = 顺序（BR-163，取值反直觉）。默认顺序。
+// randomPlayOf：库里 **1 = 随机、0 = 顺序**（列注释写反了，见 task.Item.IsRandomPlay）。
+// 默认顺序。
 func randomPlayOf(sequential *bool, old *task.Detail) int {
 	if sequential != nil {
 		if *sequential {
-			return 1
+			return 0
 		}
-		return 0
+		return 1
 	}
 	if old != nil {
 		return old.IsRandomPlay
@@ -1228,7 +1229,7 @@ func (s *Service) GetTask(ctx context.Context, u *auth.User, ref Ref) (*TaskDeta
 		Priority:   d.Priority,
 		PrePower:   d.PrePower,
 		Enabled:    d.ProjectState == 0, // 0 才是启用
-		Sequential: d.IsRandomPlay == 1, // 1 才是顺序
+		Sequential: d.IsRandomPlay == 0, // 0 才是顺序（1 是随机）
 		Multicast:  d.DataSendMode == 1,
 		LocalFirst: d.LocalPlay == 1,
 		Media:      []NamedItem{},

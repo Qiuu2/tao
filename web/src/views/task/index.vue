@@ -315,7 +315,13 @@
           <el-col :span="12">
             <!-- 旧版 maxlength="8"：任务名称最大 8 字节 -->
             <el-form-item :label="$t('taskCommon.taskName')" required>
-              <el-input v-model="dlg.form.taskname" maxlength="8" show-word-limit :placeholder="$t('task.taskNameRequired')" />
+              <!-- 旧版是 maxlength="8"，按需求方要求放宽到 12（与作息方案名一致） -->
+              <el-input
+                v-model="dlg.form.taskname"
+                :maxlength="TASK_NAME_MAX"
+                show-word-limit
+                :placeholder="$t('task.taskNameRequired')"
+              />
             </el-form-item>
           </el-col>
           <el-col :span="12">
@@ -337,7 +343,7 @@
           </el-col>
           <el-col :span="12">
             <el-form-item :label="$t('term.randomPlay')">
-              <!-- 旧版是一个复选框；⚠ 取值反直觉：0 = 随机、1 = 顺序 -->
+              <!-- 旧版是一个复选框「随机播放」value=1；⚠ 1 = 随机、0 = 顺序，列注释写反了 -->
               <el-checkbox v-model="randomOn">{{ $t("task.randomHint") }}</el-checkbox>
             </el-form-item>
           </el-col>
@@ -388,7 +394,7 @@
           <el-radio-group v-model="dlg.form.playback.timelengthtype" class="len-group">
             <div class="len-line">
               <el-radio :value="1">{{ $t("common.duration") }}</el-radio>
-              <HmsInput v-model="durationSec" :disabled="dlg.form.playback.timelengthtype !== 1" />
+              <HmsInput v-model="durationSec" :disabled="dlg.form.playback.timelengthtype === 2" />
             </div>
             <div class="len-line">
               <el-radio :value="2">{{ $t("taskCommon.loopTimes") }}</el-radio>
@@ -501,17 +507,13 @@
               <!-- 旧版这里是一棵「媒体库 → 音频文件」的树，不是一条长下拉 -->
               <MediaTree v-model="selectedMediaIds" :selected-names="selectedMediaNames" height="300px" style="width: 100%" />
             </el-form-item>
-            <el-form-item v-if="selectedMediaIds.length" label-width="0">
-              <div class="sortable">
-                <div v-for="(id, i) in selectedMediaIds" :key="id" class="sort-item">
-                  <span class="sort-idx">{{ i + 1 }}</span>
-                  <span class="sort-name">{{ mediaLabel(id) }}</span>
-                  <el-button link :icon="ArrowUp" :disabled="i === 0" @click="moveMedia(i, -1)" />
-                  <el-button link :icon="ArrowDown" :disabled="i === selectedMediaIds.length - 1" @click="moveMedia(i, 1)" />
-                  <el-button link type="danger" :icon="Close" @click="selectedMediaIds.splice(i, 1)" />
-                </div>
-              </div>
-            </el-form-item>
+            <!--
+              ⚠ 这里原来还有一块「已选清单」，每行一个序号 + 上移/下移/删除。
+                按需求方要求去掉 —— 序号现在直接红色标在树里那条媒体的名字前面
+                （MediaTree 的 .mt-seq），与旧版
+                skin/js/frame/select_item_sequence.js 的做法一致。
+                调顺序＝取消再勾一次（旧版也是这样，它压根没有上移下移）。
+            -->
           </el-col>
           <el-col :span="12">
             <el-divider content-position="left">{{ $t("terminalCommon.terminalList") }}</el-divider>
@@ -595,18 +597,7 @@
 
 <script setup lang="tsx" name="taskList">
 import { useI18n } from "vue-i18n";
-import {
-  ArrowDown,
-  ArrowUp,
-  CirclePlus,
-  Close,
-  Delete,
-  EditPen,
-  FolderAdd,
-  VideoPause,
-  VideoPlay,
-  WarningFilled
-} from "@element-plus/icons-vue";
+import { CirclePlus, Delete, EditPen, FolderAdd, VideoPause, VideoPlay, WarningFilled } from "@element-plus/icons-vue";
 import { ElMessage, ElMessageBox, ElNotification } from "element-plus";
 import { computed, onMounted, reactive, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
@@ -869,12 +860,14 @@ const searchMedia = async (kw: string) => {
 
 const mediaLabel = (id: number) => mediaNames[id] ?? t("task.mediaId", { id });
 
-const moveMedia = (i: number, delta: number) => {
-  const arr = selectedMediaIds.value;
-  const j = i + delta;
-  if (j < 0 || j >= arr.length) return;
-  [arr[i], arr[j]] = [arr[j], arr[i]];
-};
+/**
+ * 任务名称的长度上限。
+ *
+ * 旧版两张表单都是 `maxlength="8"`（AddFileTask_form.html / ModifyFileTask_form.html），
+ * 按需求方要求放宽到 12 —— 与作息方案名那一格对齐。
+ * ⚠ 按**字**算不按字节算：maxlength 数的是字符，四个汉字顶不掉 12 个额度。
+ */
+const TASK_NAME_MAX = 12;
 
 const terminalOptions = ref<TaskTerminalOption[]>([]);
 const terminalLoading = ref(false);
@@ -947,10 +940,18 @@ const priorityRange = reactive({ min: 10, max: 109 });
 
 /* 旧版是一页到底的表单，没有分步；这里几个 ref 是把界面上的开关映射到库里的列。 */
 
-/** 随机播放复选框。⚠ 取值反直觉：0 = 随机、1 = 顺序 */
+/**
+ * 随机播放复选框。
+ *
+ * ⚠ **1 = 随机、0 = 顺序**。库里那一列的注释写的是「0表示随机1表示顺序」，
+ * 和 projectstate 一样**注释是错的** —— 旧版那个复选框标着「随机播放」、
+ * title「选中歌曲将随机播放」、`value="1"`，修改页还写着
+ * `if(israndomplay == 1) checked = true`（ModifyFileTask_form.html:935~939）。
+ * 这里一度按列注释写反，勾上「随机播放」存进去的反而是顺序。
+ */
 const randomOn = computed({
-  get: () => dlg.form.israndomplay === 0,
-  set: v => (dlg.form.israndomplay = v ? 0 : 1)
+  get: () => dlg.form.israndomplay === 1,
+  set: v => (dlg.form.israndomplay = v ? 1 : 0)
 });
 
 /** 播放模式：0 普通、1 间隔时间。库里没有这一列，用 interval_s 是否为 0 反推 */
@@ -980,7 +981,9 @@ const intCycleTimes = ref(1);
 
 /** 把库里的 timelength / intplaylength 拆回两个输入框 */
 const splitLengths = (pb: { timelengthtype: number; timelength: number; intplaylengthtype: number; intplaylength: number }) => {
-  durationSec.value = pb.timelengthtype === 1 ? pb.timelength : 60;
+  // ⚠ `=== 2 ? 次数 : 秒数`，不是 `=== 1 ? 秒数 : 次数` —— 库里有 timelengthtype = 0
+  //   的存量行，写反了它们会被当成「循环 N 次」，一保存数据就坏（见 task.NormLengthType）
+  durationSec.value = pb.timelengthtype === 2 ? 60 : pb.timelength;
   cycleTimes.value = pb.timelengthtype === 2 ? pb.timelength : 1;
   intDurationSec.value = pb.intplaylengthtype === 1 ? pb.intplaylength : 60;
   intCycleTimes.value = pb.intplaylengthtype === 2 ? pb.intplaylength : 1;
@@ -1126,10 +1129,14 @@ const submit = async () => {
     ...f,
     playback: {
       ...pb,
-      // 时长 / 循环次数按选中的类型合成成 timelength 这一列
-      timelength: pb.timelengthtype === 1 ? durationSec.value : cycleTimes.value,
-      // 普通模式下不写间隔那几项
+      // 时长 / 循环次数按选中的类型合成成 timelength 这一列。
+      // ⚠ 判据同上：只有明确的 2 才是次数
+      timelengthtype: pb.timelengthtype === 2 ? 2 : 1,
+      timelength: pb.timelengthtype === 2 ? cycleTimes.value : durationSec.value,
+      // 普通模式下不写间隔那几项 —— intplaylengthtype 也要一起复位，
+      // 留着旧的 2 会让下次打开时「间隔次数」那一栏带着上次的选择
       interval_s: playMode.value === 1 ? pb.interval_s : 0,
+      intplaylengthtype: playMode.value === 1 ? pb.intplaylengthtype : 1,
       intplaylength: playMode.value === 1 ? (pb.intplaylengthtype === 1 ? intDurationSec.value : intCycleTimes.value) : 0
     },
     // 关掉 led播放 就传 null —— 服务端据此删掉已有的 LED 子任务
@@ -1375,27 +1382,6 @@ onMounted(async () => {
   font-size: 12px;
   font-weight: 600;
   color: var(--el-text-color-secondary);
-}
-.sortable {
-  width: 100%;
-}
-.sort-item {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  padding: 2px 0;
-}
-.sort-idx {
-  width: 22px;
-  font-size: 12px;
-  color: var(--el-text-color-secondary);
-  text-align: right;
-}
-.sort-name {
-  flex: 1;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 .form-tip {
   margin-left: 10px;

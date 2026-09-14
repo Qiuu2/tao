@@ -677,6 +677,18 @@
           <el-button @click="selectAllItems">{{ $t("common.selectAll") }}</el-button>
           <el-button @click="clearItemSelection">{{ $t("common.cancel") }}</el-button>
         </template>
+        <!--
+          ⚠ 这个「确定」是补上来的。
+
+          旧版这两个页面没有提交按钮（那段 HTML 是注释掉的），保存全靠每一行的
+          「添加 / 修改」。新版一度把「一次性把没入库的行和改过的方案头全存了」
+          这件事挂在**关闭时的二次确认**上（弹「保存并返回 / 直接返回」）。
+          需求方要求关闭直接关，那个确认框去掉了 —— 于是这件事必须有自己的按钮，
+          否则整体保存就没有入口，改了方案头不点任何一行就再也存不进去。
+        -->
+        <el-button v-if="dlg.mode !== 'batch'" type="primary" :loading="dlg.saving" @click="submitAll">
+          {{ $t("common.confirm") }}
+        </el-button>
         <el-button @click="closeDialog">{{ $t("bell.goBack") }}</el-button>
       </template>
     </el-dialog>
@@ -1016,7 +1028,7 @@ const itemPayload = (it: ItemRow, withScope = false) => ({
   taskname: it.taskname.trim(),
   playtime: it.playtime,
   timelengthtype: it.timelengthtype,
-  timelength: it.timelengthtype === 1 ? hmsToSec(it.lengthhms) : it.timelength,
+  timelength: it.timelengthtype === 2 ? it.timelength : hmsToSec(it.lengthhms),
   // 一课时一铃声：没选就传空数组（后端据此把这条的 mediaoftask 清干净）
   media: it.mediaId ? [{ mediaId: it.mediaId, sort: 0 }] : [],
   ...(withScope ? { terminals: terminalsForm(), applyTerminals: true, attrs: headerAttrs() } : {})
@@ -1620,10 +1632,21 @@ const openEdit = async (row: BellPlan, mode: "edit" | "batch" = "edit") => {
       taskid: it.taskid,
       taskname: it.taskname,
       playtime: it.playtime,
-      // 旧库里存在 timelengthtype=0 的历史行，界面只有「时长/次数」两种，按次数归一
-      timelengthtype: it.timelengthtype === 1 ? 1 : 2,
-      timelength: it.timelengthtype === 1 ? 1 : it.timelength,
-      lengthhms: it.timelengthtype === 1 ? secToHms(it.timelength) : "00:00:30",
+      /*
+       * ⚠ 判据是 `=== 2 ? 次数 : 秒数`，**不能写成 `=== 1 ? 秒数 : 次数`**。
+       *
+       * 库里躺着一批 timelengthtype = 0 的存量行（现网作息条目全是 0，
+       * timelength 是 30 / 210 / 1500 这种秒数）。旧版两个表单的第一个 radio
+       * 「时长」都带 checked（modifybell.html:191），两个分支都不命中时选中的
+       * 就是它 —— 所以 0 等同于 1。
+       *
+       * 这里一度按次数归一，后果是 1500 秒的大课间显示成「循环 1500 次」，
+       * 再一保存就把 timelengthtype 真写成 2，数据从此坏掉。
+       * 服务端也归一了一次（task.NormLengthType），这里再挡一道。
+       */
+      timelengthtype: it.timelengthtype === 2 ? 2 : 1,
+      timelength: it.timelengthtype === 2 ? it.timelength : 1,
+      lengthhms: it.timelengthtype === 2 ? "00:00:30" : secToHms(it.timelength),
       busy: false,
       // 一课时一铃声：只回填第一个。老数据可能挂了不止一个 ——
       // 记下原来有几个，界面上标出来，保存时会只剩第一个，不能闷声丢掉。
@@ -1777,49 +1800,24 @@ const saveAllPending = async () => {
   }
 };
 
-/** 有没有填过东西 —— 用来判断「什么都没写」时可以直接关掉 */
-const hasAnyInput = () => !!dlg.form.planName.trim() || dlg.items.some(it => it.taskname.trim());
+/** 「确定」：把没入库的行和改过的方案头一次性落库，成功就关掉 */
+const submitAll = async () => {
+  if (await saveAllPending()) dlg.visible = false;
+};
 
 /**
- * 「返回」。旧版这两个页面没有提交按钮，离开就是离开；这里多问一句，
- * 免得刚填的东西无声无息地没了。
+ * 「返回」—— 直接关，不再问第二遍。
+ *
+ * 这里原来会先数一下「方案头改过没有 / 有几行还没入库」，再弹一个
+ * 「保存并返回 / 直接返回」的确认框。按需求方要求去掉：这一页的保存本来就是
+ * **行内即时生效**的（每一行的「添加 / 修改」当场写库，与旧版
+ * addonebellplan.php / modifyonebellplan.php 一样），底下还补了一个「确定」整体落一次，
+ * 想存的人有两处能存，关窗口再拦一道纯属添堵。
+ *
+ * ⚠ 代价说清楚：没点过「添加 / 修改」也没点「确定」的改动，关掉就没了。
+ * 这与旧版一致 —— 旧版那两个页面压根没有提交按钮，离开就是离开。
  */
-const closeDialog = async () => {
-  const pending = dlg.items.filter(it => !it.taskid).length;
-  const dirty = headerDirty.value;
-  if (currentPlanName.value && (dirty || pending)) {
-    const what = [dirty ? t("bell.planPropsChanged") : "", pending ? t("bell.pendingRows", { n: pending }) : ""]
-      .filter(Boolean)
-      .join("，");
-    try {
-      await ElMessageBox.confirm(t("bell.willNotSave", { what }), t("bell.unsavedChanges"), {
-        confirmButtonText: t("bell.saveAndBack"),
-        cancelButtonText: t("bell.backDirectly"),
-        distinguishCancelAndClose: true,
-        type: "warning"
-      });
-    } catch (e) {
-      // 点右上角的 × 表示「我再想想」，留在对话框里
-      if (e === "close") return;
-      dlg.visible = false;
-      return;
-    }
-    if (!(await saveAllPending())) return;
-  } else if (!currentPlanName.value && hasAnyInput()) {
-    try {
-      await ElMessageBox.confirm(t("bell.noLessonSavedNote"), t("bell.notSavedYet"), {
-        confirmButtonText: t("bell.saveAndBack"),
-        cancelButtonText: t("bell.backDirectly"),
-        distinguishCancelAndClose: true,
-        type: "warning"
-      });
-    } catch (e) {
-      if (e === "close") return;
-      dlg.visible = false;
-      return;
-    }
-    if (!(await saveAllPending())) return;
-  }
+const closeDialog = () => {
   dlg.visible = false;
 };
 
