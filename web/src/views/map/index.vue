@@ -19,6 +19,20 @@
 
   默认那条底图记录 filename 是空的，这里画一张占位图（底图名字 + 一层网格）。
   占位图上照样能摆终端 —— 坐标是百分比，等真图传上来原样对得上，不用重摆。
+
+  # 加终端是右键点在图上，不是工具栏按钮
+
+  原来「添加终端」在工具栏：选完一批，全堆在左上角，再一台台拖到位置上。
+  可实际用的时候，人是先想好「这台在三楼东头」才去加的 —— 位置是这个动作的
+  一部分，不该是加完之后的第二步。所以改成在目标位置点右键：菜单里选终端，
+  落点就是刚才右键的那个点，一步到位。移出地图同理，在终端上点右键。
+
+  # 状态用图标区分，不只是颜色
+
+  原来全是圆点，靠颜色分状态。颜色在投影仪上、在色觉障碍的人眼里都可能分不开，
+  而且「橙色」只能表达一个笼统的「在播」—— 定时播放、对讲、寻呼在现场是三件
+  完全不同的事。改成一状态一图标（形状可分），颜色只作辅助，
+  右下角配一张图例。口径与终端列表的 taskstate 一致，见 pinKind()。
 -->
 <template>
   <div class="map-page">
@@ -66,9 +80,6 @@
               {{ $t("mapView.uploadMap") }}
             </el-button>
           </el-upload>
-          <el-button :icon="Plus" :disabled="!canEdit || !current" @click="openPicker">
-            {{ $t("mapView.addTerminal") }}
-          </el-button>
           <el-button :icon="EditPen" :disabled="!canEdit || !current" @click="onRename">
             {{ $t("mapView.renameMap") }}
           </el-button>
@@ -85,7 +96,7 @@
           写死的话换一张长宽比不同的底图就会被拉伸变形，摆好的点跟着错位。
       -->
       <div v-loading="loading" class="canvas-wrap">
-        <div v-if="current" ref="canvasRef" class="canvas" :style="{ aspectRatio: aspect }">
+        <div v-if="current" ref="canvasRef" class="canvas" :style="{ aspectRatio: aspect }" @contextmenu="onCanvasMenu">
           <img v-if="current.hasImage" class="canvas-img" :src="withToken(current.imageUrl!)" :alt="current.name" />
           <!--
             占位底图画在 SVG 里，而不是往安装包里塞一张图片 ——
@@ -103,25 +114,64 @@
             <text x="800" y="545" text-anchor="middle" class="ph-sub">{{ $t("mapView.placeholderHint") }}</text>
           </svg>
 
-          <!-- 终端点：拖动改位置，双击拿下来 -->
+          <!--
+            终端点：按住拖动改位置，点右键移出地图。
+            图标按状态换（pinKind），颜色只是辅助 —— 见文件头注释。
+          -->
           <div
             v-for="p in placements"
             :key="p.terminalId"
             class="pin"
-            :class="[pinClass(p), { dragging: dragId === p.terminalId }]"
+            :class="[`k-${pinKind(p)}`, { dragging: dragId === p.terminalId }]"
             :style="{ left: p.x + '%', top: p.y + '%' }"
             :title="pinTitle(p)"
+            :data-kind="pinKind(p)"
+            :data-terminal-id="p.terminalId"
             @pointerdown="onPinDown($event, p)"
-            @dblclick.stop="removeOne(p)"
+            @contextmenu.stop="onPinMenu($event, p)"
           >
-            <span class="pin-dot"></span>
+            <span class="pin-icon">
+              <el-icon><component :is="KIND_ICON[pinKind(p)]" /></el-icon>
+            </span>
             <span class="pin-label">{{ p.missing ? $t("mapView.deletedNo", { id: p.terminalId }) : p.terminalname }}</span>
+          </div>
+
+          <!--
+            图例钉在画布右下角。没有图例，「一状态一图标」就变成了让人猜谜 ——
+            只画出图上真的出现过的那几种，否则七个图标一字排开比地图本身还显眼。
+          -->
+          <div v-if="legendKinds.length" class="legend">
+            <span class="legend-title">{{ $t("mapView.legend") }}</span>
+            <span v-for="k in legendKinds" :key="k" class="legend-item" :class="`k-${k}`">
+              <el-icon><component :is="KIND_ICON[k]" /></el-icon>
+              {{ $t(KIND_LABEL[k]) }}
+            </span>
           </div>
         </div>
         <el-empty v-else-if="!loading" :description="$t('mapView.pickOrCreate')" />
       </div>
 
       <p class="map-note">{{ $t("mapView.dragHint") }}</p>
+    </div>
+
+    <!--
+      右键菜单。自己画一个而不是找组件：菜单只有两三项，
+      而画布是 overflow:hidden 的 —— 菜单必须用 fixed 定位脱出去，
+      否则贴着右下角点右键时菜单会被裁掉一半。
+    -->
+    <div v-if="ctx.visible" class="ctx-menu" :style="{ left: ctx.left + 'px', top: ctx.top + 'px' }" @contextmenu.prevent>
+      <div v-if="ctx.pin" class="ctx-head" :title="ctx.pin.terminalname">
+        {{ ctx.pin.missing ? $t("mapView.deletedNo", { id: ctx.pin.terminalId }) : ctx.pin.terminalname }}
+      </div>
+      <button v-if="ctx.pin" class="ctx-item danger" @click="ctxRemove">
+        <el-icon><Delete /></el-icon>{{ $t("mapView.removeHere") }}
+      </button>
+      <button v-else class="ctx-item" @click="ctxAddHere">
+        <el-icon><Plus /></el-icon>{{ $t("mapView.addHere") }}
+      </button>
+      <button class="ctx-item" @click="ctxRefresh">
+        <el-icon><Refresh /></el-icon>{{ $t("mapView.ctxRefresh") }}
+      </button>
     </div>
 
     <!-- 添加终端：只列还没上图的 -->
@@ -135,7 +185,7 @@
           :prefix-icon="Search"
           :placeholder="$t('term.searchTerminalNameOrIp')"
         />
-        <span class="muted">{{ $t("mapView.pickerNote") }}</span>
+        <span class="muted">{{ $t("mapView.pickerNote") }} · {{ $t("mapView.pickerNoteHere") }}</span>
       </div>
       <el-table :data="pickerRows" size="small" border max-height="46vh" row-key="id" @selection-change="onPickChange">
         <el-table-column type="selection" width="48" />
@@ -157,9 +207,25 @@
 
 <script setup lang="ts" name="mapView">
 import { useI18n } from "vue-i18n";
-import { Delete, EditPen, Picture, PictureFilled, Plus, Refresh, Search, Upload as UploadIcon } from "@element-plus/icons-vue";
+import {
+  Bell,
+  CircleCloseFilled,
+  Delete,
+  EditPen,
+  Headset,
+  Microphone,
+  Picture,
+  PictureFilled,
+  Plus,
+  Refresh,
+  Search,
+  SwitchButton,
+  Upload as UploadIcon,
+  VideoPlay,
+  WarningFilled
+} from "@element-plus/icons-vue";
 import { ElMessage, ElMessageBox, type UploadUserFile } from "element-plus";
-import { computed, onMounted, reactive, ref, watch } from "vue";
+import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from "vue";
 
 import {
   createMapApi,
@@ -173,6 +239,7 @@ import {
   type MapPlacement
 } from "@/api/modules/mapview";
 import { getTerminalListApi, type TerminalRow } from "@/api/modules/terminal";
+import { useDbChanges } from "@/hooks/useDbChanges";
 import { useAuthStore } from "@/stores/modules/auth";
 import { useGlobalStore } from "@/stores/modules/global";
 import { useUserStore } from "@/stores/modules/user";
@@ -341,22 +408,105 @@ const onPickImage = async (f: UploadUserFile) => {
   }
 };
 
-/* ---------------- 摆终端 ---------------- */
+/* ---------------- 终端点的状态与图标 ---------------- */
 
-// 颜色口径与终端列表一致：离线灰、播放中橙、空闲绿、记录已失效红
-const pinClass = (p: MapPlacement) => {
+/**
+ * 一状态一图标。
+ *
+ * # 为什么不只用颜色
+ *
+ * 原来全是圆点靠颜色分。颜色在投影仪上、在色觉障碍的人眼里都可能分不开；
+ * 更要紧的是「橙色 = 在播」把三件完全不同的事压成了一件 ——
+ * 定时播放、有人在对讲、正在寻呼，现场处理方式完全不一样。
+ *
+ * # 分组口径
+ *
+ * taskstate 有 13 个取值（见终端列表的 TASK_STATE_TEXT），全画成 13 个图标
+ * 没人记得住。按「现场要怎么反应」归成几类，与终端列表的文案同源：
+ *
+ *   定时播放(1,12) 点播(3) 选播(4) 本地扩音(7) USB播放(8) → 在播
+ *   正在对讲(2) 准备对讲(6) 请求对讲(9) 被请求对讲(10)     → 对讲
+ *   寻呼(5) 播放寻呼(11)                                   → 寻呼
+ *   准备就绪(0)                                            → 空闲
+ *
+ * # 判断顺序不能换
+ *
+ * 记录失效 → 离线 → 在播/对讲/寻呼 → 设备已停止 → 空闲。
+ * 「设备已停止」必须排在任务状态之后：一台正在播的终端显然不是停止的，
+ * 反过来判就会把在播的画成停止。
+ */
+type PinKind = "gone" | "off" | "playing" | "intercom" | "paging" | "stopped" | "idle";
+
+const TASK_PLAYING = new Set([1, 3, 4, 7, 8, 12]);
+const TASK_INTERCOM = new Set([2, 6, 9, 10]);
+const TASK_PAGING = new Set([5, 11]);
+
+const pinKind = (p: MapPlacement): PinKind => {
   if (p.missing) return "gone";
   if (p.netstate !== 1) return "off";
-  return p.taskstate === 1 ? "playing" : "idle";
+  if (TASK_PLAYING.has(p.taskstate)) return "playing";
+  if (TASK_INTERCOM.has(p.taskstate)) return "intercom";
+  if (TASK_PAGING.has(p.taskstate)) return "paging";
+  if (p.devicestate !== 1) return "stopped";
+  return "idle";
+};
+
+const KIND_ICON: Record<PinKind, any> = {
+  gone: WarningFilled,
+  off: CircleCloseFilled,
+  playing: VideoPlay,
+  intercom: Microphone,
+  paging: Bell,
+  stopped: SwitchButton,
+  idle: Headset
+};
+
+const KIND_LABEL: Record<PinKind, string> = {
+  gone: "mapView.stGone",
+  off: "mapView.stOffline",
+  playing: "mapView.stPlaying",
+  intercom: "mapView.stIntercom",
+  paging: "mapView.stPaging",
+  stopped: "mapView.stStopped",
+  idle: "mapView.stIdle"
+};
+
+// 图例只列图上真的出现过的那几种，按固定顺序 ——
+// 七个图标一字排开会比地图本身还显眼，而且大多数时候图上只有两三种状态。
+const KIND_ORDER: PinKind[] = ["idle", "playing", "intercom", "paging", "stopped", "off", "gone"];
+const legendKinds = computed(() => {
+  const seen = new Set(placements.value.map(pinKind));
+  return KIND_ORDER.filter(k => seen.has(k));
+});
+
+// 任务状态的完整文案，与终端列表同一套 term.* 词条 —— 图标归了类，
+// 鼠标悬停时还是要能看到确切是哪一种。
+const TASK_TEXT_KEY: Record<number, string> = {
+  0: "term.ready",
+  1: "term.timedPlay",
+  2: "term.inIntercom",
+  3: "term.onDemand",
+  4: "term.selectivePlay",
+  5: "term.paging",
+  6: "term.readyIntercom",
+  7: "term.localAmp",
+  8: "term.usbPlay",
+  9: "term.requestIntercom",
+  10: "term.intercomRequested",
+  11: "term.playPaging",
+  12: "term.timedPlay"
 };
 
 const pinTitle = (p: MapPlacement) => {
   if (p.missing) return t("mapView.deletedTip", { id: p.terminalId });
   const net = p.netstate === 1 ? t("common.online") : t("common.offline");
-  const task = p.taskstate === 1 ? t("terminalCommon.playing") : t("terminalCommon.idle");
+  const key = TASK_TEXT_KEY[p.taskstate];
+  const task = p.netstate !== 1 ? t("term.disconnect") : key ? t(key) : t("term.stateOf", { name: p.taskstate });
   const dev = p.devicestate === 1 ? t("common.started") : t("common.stopped");
   return `${p.terminalname} · #${p.terminalId}\n${p.typeName} · ${p.ip}\n${net} · ${task} · ${dev}\n${t("common.volume")} ${p.volume}`;
 };
+
+/* ---------------- 摆终端 ---------------- */
 
 /**
  * 拖动摆放。
@@ -368,13 +518,16 @@ const pinTitle = (p: MapPlacement) => {
 const dragId = ref(0);
 let dragMoved = false;
 
-const pctOf = (e: PointerEvent) => {
+/** 视口坐标 → 画布内百分比。拖动和右键两条路都走这里，省得两份换算跑偏。 */
+const pctOfClient = (clientX: number, clientY: number) => {
   const box = canvasRef.value?.getBoundingClientRect();
   if (!box || !box.width || !box.height) return null;
-  const x = ((e.clientX - box.left) / box.width) * 100;
-  const y = ((e.clientY - box.top) / box.height) * 100;
+  const x = ((clientX - box.left) / box.width) * 100;
+  const y = ((clientY - box.top) / box.height) * 100;
   return { x: Math.min(100, Math.max(0, x)), y: Math.min(100, Math.max(0, y)) };
 };
+
+const pctOf = (e: PointerEvent) => pctOfClient(e.clientX, e.clientY);
 
 const onPinDown = (e: PointerEvent, p: MapPlacement) => {
   if (!canEdit.value) return;
@@ -411,7 +564,92 @@ const onPinDown = (e: PointerEvent, p: MapPlacement) => {
   el.addEventListener("pointercancel", up);
 };
 
-/** 双击把终端从图上拿下来。只删摆放记录，终端本身一根毛都不动。 */
+/* ---------------- 右键菜单 ---------------- */
+
+/**
+ * 右键菜单。
+ *
+ * 菜单本身用 fixed 定位（clientX/clientY 就是视口坐标，直接能用），
+ * 但**要落哪个点**记的是画布内的百分比 —— 菜单弹出到点中终端之间，
+ * 页面可能滚动、侧栏可能收起，等到真要写库时再去算就晚了。
+ */
+const ctx = reactive({
+  visible: false,
+  left: 0,
+  top: 0,
+  /** 右键点在画布上的百分比位置，加终端就落在这儿 */
+  at: { x: 50, y: 50 },
+  /** 右键点在某个终端上时是它，点在空白处是 null */
+  pin: null as MapPlacement | null
+});
+
+// 菜单大概的尺寸，用来避免贴着右边/下边弹出时被视口切掉
+const CTX_W = 180;
+const CTX_H = 132;
+
+const openCtx = (e: MouseEvent, pin: MapPlacement | null) => {
+  // 只读用户、还没选底图时**不拦**浏览器自己的右键菜单 ——
+  // 拦了又不给菜单，右键就成了一个「按下去什么都不发生」的死操作。
+  if (!canEdit.value || !current.value) return;
+  const at = pctOfClient(e.clientX, e.clientY);
+  if (!at) return;
+  e.preventDefault();
+  ctx.at = at;
+  ctx.pin = pin;
+  ctx.left = Math.min(e.clientX, window.innerWidth - CTX_W);
+  ctx.top = Math.min(e.clientY, window.innerHeight - CTX_H);
+  ctx.visible = true;
+};
+
+const closeCtx = () => (ctx.visible = false);
+
+const onCanvasMenu = (e: MouseEvent) => openCtx(e, null);
+const onPinMenu = (e: MouseEvent, p: MapPlacement) => openCtx(e, p);
+
+const ctxAddHere = () => {
+  closeCtx();
+  openPicker(ctx.at);
+};
+
+const ctxRemove = async () => {
+  const p = ctx.pin;
+  closeCtx();
+  // 点「取消」时 ElMessageBox 是 reject 的，不接住就变成一条未捕获的 rejection。
+  // 用户改主意不是错误。
+  if (p) await removeOne(p).catch(() => undefined);
+};
+
+const ctxRefresh = async () => {
+  closeCtx();
+  await reloadAll();
+};
+
+// 点别处、按 Esc、滚动都关掉菜单。
+// ⚠ pointerdown 而不是 click：菜单项自己的 click 要先跑完，
+//   用 click 收尾的话在冒泡到 document 时菜单已经被关了，点不中。
+const onDocDown = (e: Event) => {
+  if (!ctx.visible) return;
+  if ((e.target as HTMLElement)?.closest?.(".ctx-menu")) return;
+  closeCtx();
+};
+const onEsc = (e: KeyboardEvent) => {
+  if (e.key === "Escape") closeCtx();
+};
+
+onMounted(() => {
+  document.addEventListener("pointerdown", onDocDown, true);
+  document.addEventListener("keydown", onEsc);
+  window.addEventListener("scroll", closeCtx, true);
+  window.addEventListener("resize", closeCtx);
+});
+onBeforeUnmount(() => {
+  document.removeEventListener("pointerdown", onDocDown, true);
+  document.removeEventListener("keydown", onEsc);
+  window.removeEventListener("scroll", closeCtx, true);
+  window.removeEventListener("resize", closeCtx);
+});
+
+/** 把终端从图上拿下来。只删摆放记录，终端本身一根毛都不动。 */
 const removeOne = async (p: MapPlacement) => {
   if (!canEdit.value) return;
   const name = p.missing ? t("mapView.deletedNo", { id: p.terminalId }) : p.terminalname || `#${p.terminalId}`;
@@ -428,7 +666,9 @@ const picker = reactive({
   saving: false,
   keyword: "",
   all: [] as TerminalRow[],
-  picked: [] as TerminalRow[]
+  picked: [] as TerminalRow[],
+  /** 右键点的那个位置（画布内百分比），选中的终端就落在这儿 */
+  at: { x: 50, y: 50 }
 });
 
 const onPickChange = (rows: TerminalRow[]) => (picker.picked = rows);
@@ -442,7 +682,8 @@ const pickerRows = computed(() => {
     .filter(row => !kw || `${row.terminalname}`.toLowerCase().includes(kw) || `${row.ip}`.toLowerCase().includes(kw));
 });
 
-const openPicker = async () => {
+const openPicker = async (at: { x: number; y: number }) => {
+  picker.at = at;
   picker.visible = true;
   picker.keyword = "";
   picker.picked = [];
@@ -453,29 +694,62 @@ const openPicker = async () => {
 };
 
 /**
- * 确定：把选中的终端在左上角铺成一排排，等着用户拖到正确位置。
+ * 确定：把选中的终端落到**刚才右键的那个点**上。
  *
- * ⚠ 不要摆在画布正中间：一来占位底图的名字就写在中间，点和字叠在一起；
- *   二来间距小了名字会互相盖住，看不出到底放了几台。所以从左上角起步、
- *   横向 16%、纵向 11% 地铺开，一排 6 个 —— 一次选十几台也不会挤成一团。
+ * 一次选多台时不能全压在同一个坐标 —— 完全重叠的点拖不开、也数不出有几台。
+ * 所以第一台正落在右键的位置（人指的就是这儿，必须精确），其余的绕着它
+ * 撒成一小圈：半径 4%、每台转 60°，第七台起半径加一档。
+ *
+ * ⚠ 结果要夹在 2%~98%：右键点在边角上时，撒出去的那几台会算到画布外面，
+ *   存进去就是个永远拖不回来的点。
  */
+const RING_R = 4;
+const RING_N = 6;
+
 const submitPicker = async () => {
   picker.saving = true;
   try {
+    const clamp = (v: number) => Math.min(98, Math.max(2, v));
     let i = 0;
     for (const row of picker.picked) {
-      const x = 10 + (i % 6) * 16;
-      const y = 10 + Math.floor(i / 6) * 11;
-      await placeMapTerminalApi(currentId.value, row.id, Math.min(x, 95), Math.min(y, 95));
+      let x = picker.at.x;
+      let y = picker.at.y;
+      if (i > 0) {
+        const ring = Math.ceil(i / RING_N);
+        const ang = ((i - 1) % RING_N) * (Math.PI / 3);
+        x += Math.cos(ang) * RING_R * ring;
+        y += Math.sin(ang) * RING_R * ring;
+      }
+      await placeMapTerminalApi(currentId.value, row.id, clamp(x), clamp(y));
       i++;
     }
-    ElMessage.success(t("mapView.placedOk", { n: picker.picked.length }));
+    ElMessage.success(picker.picked.length > 1 ? t("mapView.placedOk", { n: picker.picked.length }) : t("mapView.placedHere"));
     picker.visible = false;
     await Promise.all([loadPlacements(), loadMaps()]);
   } finally {
     picker.saving = false;
   }
 };
+
+/*
+  图标要跟着状态走，就得知道状态变了。
+
+  终端的在线/离线、任务状态都是**后台 C 服务**直接写进 terminal 表的，
+  它不会来通知这个页面 —— 所以盯着库看，那张表一变就重新拉一次摆放。
+  见 hooks/useDbChanges.ts 与 server/internal/dbwatch。
+
+  ⚠ 三种时候不能刷：正在拖、右键菜单开着、选终端的对话框开着。
+    刷新会整个换掉 placements 数组，正拖着的那个点会跳回原位（拖到一半白拖），
+    菜单里记着的那台也会变成另一个对象。这几种都是人正在操作的时刻，
+    晚两秒再刷没有任何损失。
+
+  ⚠ 只重拉摆放，不重拉底图清单：底图不会被 C 服务改，
+    每次都跟着查一遍纯属白花一次请求。
+*/
+useDbChanges(["terminal"], () => {
+  if (dragId.value || ctx.visible || picker.visible) return;
+  void loadPlacements();
+});
 
 onMounted(reloadAll);
 </script>
@@ -618,38 +892,135 @@ onMounted(reloadAll);
     cursor: grabbing;
   }
 }
-.pin-dot {
-  width: 14px;
-  height: 14px;
-  border: 2px solid #fff;
+
+/*
+  图标底下垫一个白圈：底图五花八门（航拍图、CAD 线稿、深色平面图），
+  图标直接贴在上面经常看不清。白底 + 细边 + 投影，压在什么图上都读得出来。
+*/
+.pin-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  background: #ffffff;
+  border: 2px solid currentcolor;
   border-radius: 50%;
   box-shadow: 0 1px 4px rgb(0 0 0 / 35%);
+  .el-icon {
+    font-size: 14px;
+  }
 }
 .pin-label {
   max-width: 110px;
   padding: 0 4px;
   overflow: hidden;
+  text-overflow: ellipsis;
   font-size: 12px;
   line-height: 16px;
   color: var(--el-text-color-primary);
-  text-overflow: ellipsis;
   white-space: nowrap;
   background: rgb(255 255 255 / 78%);
   border-radius: 3px;
 }
-.pin.idle .pin-dot {
-  background: var(--el-color-success);
+
+/*
+  一状态一颜色，但**颜色只是辅助** —— 形状（图标）才是主要区分手段，
+  见文件头注释。图例里用的是同一组 .k-* 类，两边不会走偏。
+*/
+.k-idle {
+  color: var(--el-color-success);
 }
-.pin.playing .pin-dot {
-  background: var(--el-color-warning);
+.k-playing {
+  color: var(--el-color-warning);
 }
-.pin.off .pin-dot {
-  background: var(--el-text-color-placeholder);
+.k-intercom {
+  color: var(--el-color-primary);
 }
-.pin.gone .pin-dot {
-  background: var(--el-color-danger);
+.k-paging {
+  color: #8957e5;
+}
+.k-stopped {
+  color: var(--el-text-color-secondary);
+}
+.k-off {
+  color: var(--el-text-color-placeholder);
+}
+.k-gone {
+  color: var(--el-color-danger);
 }
 
+/* 图例：钉在画布右下角，不抢地图本身的注意力 */
+.legend {
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  align-items: center;
+  max-width: 70%;
+  padding: 5px 9px;
+  font-size: 12px;
+  background: rgb(255 255 255 / 86%);
+  border: 1px solid var(--el-border-color-lighter);
+  border-radius: 4px;
+}
+.legend-title {
+  color: var(--el-text-color-secondary);
+}
+.legend-item {
+  display: flex;
+  gap: 3px;
+  align-items: center;
+  .el-icon {
+    font-size: 13px;
+  }
+}
+
+/*
+  右键菜单。fixed 定位是必须的 —— 画布是 overflow:hidden，
+  菜单画在里面的话，贴着边角点右键会被裁掉一半。
+*/
+.ctx-menu {
+  position: fixed;
+  z-index: 2200;
+  min-width: 172px;
+  padding: 4px;
+  background: var(--el-bg-color-overlay);
+  border: 1px solid var(--el-border-color-light);
+  border-radius: 4px;
+  box-shadow: var(--el-box-shadow-light);
+}
+.ctx-head {
+  max-width: 220px;
+  padding: 4px 10px 6px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 12px;
+  color: var(--el-text-color-secondary);
+  white-space: nowrap;
+  border-bottom: 1px solid var(--el-border-color-lighter);
+}
+.ctx-item {
+  display: flex;
+  gap: 7px;
+  align-items: center;
+  width: 100%;
+  padding: 7px 10px;
+  font-size: 13px;
+  color: var(--el-text-color-primary);
+  cursor: pointer;
+  background: none;
+  border: 0;
+  border-radius: 3px;
+  &:hover {
+    background: var(--el-fill-color-light);
+  }
+  &.danger {
+    color: var(--el-color-danger);
+  }
+}
 .map-note,
 .dlg-note {
   margin: 8px 0 0;

@@ -42,6 +42,9 @@ import { useUserStore } from "@/stores/modules/user";
  * ⚠ 只有 terminal。作息方案 / 文件广播 / 采播管理 / 终端功放 / 文字语音 /
  *   led播放 这六页曾经也接过无感刷新，按需求方要求撤掉了 —— 它们回到
  *   「自己点刷新」。服务端那边 task 表整个不再参与（见 internal/dbwatch）。
+ *
+ * 订这个主题的现在有两页：终端管理（刷列表）和地图（换状态图标）。
+ * 两边订的是同一件事 —— 终端的在线/离线、任务状态由后台 C 服务直接写库。
  */
 export type DbTopic = "terminal";
 
