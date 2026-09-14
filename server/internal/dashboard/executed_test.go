@@ -33,3 +33,46 @@ func TestExecutedOn(t *testing.T) {
 		}
 	}
 }
+
+// 「所属分类」这一格：模块名 +（归属名）。
+//
+// 这一列原来直接显示 filetaskfree.name，对作息方案是错的 —— 它的条目按
+// task.info（方案名）归组，parentid 指的那个 filetaskfree 行只是建任务时的默认值。
+// 现网七条作息条目的 parentid 全是 1（admin），显示出来就是「admin」，
+// 看的人根本认不出属于哪个方案。
+func TestCategoryOf(t *testing.T) {
+	cases := []struct {
+		name                        string
+		taskType                    int
+		info, fileFolder, ledFolder string
+		wantModule, wantGroup       string
+	}{
+		{"作息方案：括号里是方案名，不是 parentid 指的那个目录", 1, "春季作息", "admin", "", "作息方案", "春季作息"},
+		{"作息方案也可能是 tasktype 15", 15, "秋季作息", "admin", "", "作息方案", "秋季作息"},
+		{"文件广播：括号里是任务分组", 2, "每周一", "走廊与操场", "", "文件广播", "走廊与操场"},
+		{"文件广播的另一个取值 7", 7, "", "食堂", "", "文件广播", "食堂"},
+		{"终端功放没有分组", 5, "", "admin", "", "终端功放", ""},
+		{"采播管理没有分组", 3, "", "admin", "", "采播管理", ""},
+		{"文字语音：tasktype 15 但 info 是空的", 15, "", "admin", "", "文字语音", ""},
+		{"文字语音的另外两个取值", 17, "", "", "", "文字语音", ""},
+		{"led播放：括号里是 LED 目录", 30, "", "", "一号楼大屏", "led播放", "一号楼大屏"},
+	}
+	for _, c := range cases {
+		m, g := categoryOf(c.taskType, c.info, c.fileFolder, c.ledFolder)
+		if m != c.wantModule || g != c.wantGroup {
+			t.Errorf("%s：categoryOf(%d,%q,%q,%q) = (%q,%q)，想要 (%q,%q)",
+				c.name, c.taskType, c.info, c.fileFolder, c.ledFolder, m, g, c.wantModule, c.wantGroup)
+		}
+	}
+}
+
+// ⚠ 15 同时属于作息方案和文字语音，靠 info 分。这条单独钉住 ——
+// 判断顺序一旦写反，所有作息条目都会变成「文字语音」。
+func TestCategoryOfTaskType15SplitsByInfo(t *testing.T) {
+	if m, _ := categoryOf(15, "春季作息", "", ""); m != "作息方案" {
+		t.Errorf("tasktype=15 且 info 非空 → 作息方案，实际 %q", m)
+	}
+	if m, _ := categoryOf(15, "", "", ""); m != "文字语音" {
+		t.Errorf("tasktype=15 且 info 为空 → 文字语音，实际 %q", m)
+	}
+}

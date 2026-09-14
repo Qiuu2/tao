@@ -65,7 +65,12 @@ export interface BrowseItem {
   index: number;
   taskId: number;
   taskName: string;
+  /** 分组/目录名，没有就是空串（作息方案不按目录归组，见 category） */
   folderName: string;
+  /** 属于「任务管理」下的哪个模块：作息方案 / 文件广播 / 终端功放 / … */
+  module: string;
+  /** 给人看的那一格：模块名（归属名），如「作息方案（春季作息）」 */
+  category: string;
   weekdays: number[];
   cycleText: string;
   playtime: string;

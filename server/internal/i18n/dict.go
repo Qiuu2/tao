@@ -36,7 +36,6 @@ var codeDict = map[string]string{
 	"未绑定":        "Not bound",
 	"(未分区)":      "(No zone)",
 	"(分区已删除)":    "(Zone deleted)",
-	"(未分组)":      "(No folder)",
 	"1 个月":       "1 month",
 	"3 个月":       "3 months",
 	"半年":         "6 months",

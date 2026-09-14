@@ -295,10 +295,26 @@ func (s *Service) assertFileTasks(ctx context.Context, ids []int64) error {
 // ---------- 浏览任务 ----------
 
 type BrowseItem struct {
-	Index      int    `json:"index"`
-	TaskID     int64  `json:"taskId"`
-	TaskName   string `json:"taskName"`
+	Index    int    `json:"index"`
+	TaskID   int64  `json:"taskId"`
+	TaskName string `json:"taskName"`
+	// FolderName 是分组/目录名，没有就是空串。文件广播来自 filetaskfree，
+	// led播放来自 ledtaskfree；作息方案不按这两张表分组（它按 task.info 归组）。
 	FolderName string `json:"folderName"`
+	// Module 是这条任务属于「任务管理」下的哪一个模块（作息方案 / 文件广播 / …）。
+	Module string `json:"module"`
+	// Category 是给人看的那一格：模块名 + 括号里的归属。
+	//
+	// 这一列原来直接显示 filetaskfree.name，对作息方案是错的 ——
+	// 作息方案的条目按 task.info（方案名）归组，parentid 指着的那个
+	// filetaskfree 行只是个默认值，于是「早读预备铃」的所属分类显示成「admin」，
+	// 看的人根本认不出它属于哪个方案。按需求方要求改成：
+	//
+	//	作息方案（春季作息）    ← 括号里是方案名，来自 task.info
+	//	文件广播（走廊与操场）  ← 括号里是任务分组名
+	//	led播放（一号楼大屏）
+	//	终端功放                ← 这几类没有分组，就只写模块名
+	Category string `json:"category"`
 	// Weekdays 是播放周期，7 位掩码转成 [1..7]（1 = 周日）
 	Weekdays  []int  `json:"weekdays"`
 	CycleText string `json:"cycleText"`
@@ -463,7 +479,9 @@ func (s *Service) Browse(ctx context.Context, u *auth.User, q BrowseQuery) (*Bro
 
 	args := append(append([]interface{}{}, cond.Args()...), q.Pager.PageSize, q.Pager.Offset())
 	rows, err := s.db.QueryContext(ctx, `
-		SELECT t.taskid, COALESCE(t.taskname,''), COALESCE(f.name,'(未分组)'),
+		SELECT t.taskid, COALESCE(t.taskname,''),
+		       COALESCE(t.tasktype,0), COALESCE(t.info,''),
+		       COALESCE(f.name,''), COALESCE(lf.name,''),
 		       COALESCE(t.exemodel,'0000000'), TIME_FORMAT(t.playtime,'%H:%i:%s'),
 		       COALESCE(t.state,0), COALESCE(t.projectstate,0),
 		       COALESCE(DATE_FORMAT(t.startdate,'%Y-%m-%d'),''),
@@ -472,7 +490,8 @@ func (s *Service) Browse(ctx context.Context, u *auth.User, q BrowseQuery) (*Bro
 		       `+active+`,
 		       COALESCE(CAST(t.disableday AS CHAR),'')
 		FROM task t
-		LEFT JOIN filetaskfree f ON f.id = t.parentid`+where+`
+		LEFT JOIN filetaskfree f ON f.id = t.parentid
+		LEFT JOIN ledtaskfree lf ON lf.id = t.parentid`+where+`
 		ORDER BY t.playtime ASC, t.taskid ASC
 		LIMIT ? OFFSET ?`, args...)
 	if err != nil {
@@ -484,22 +503,74 @@ func (s *Service) Browse(ctx context.Context, u *auth.User, q BrowseQuery) (*Bro
 	for rows.Next() {
 		var it BrowseItem
 		var mask string
-		if err := rows.Scan(&it.TaskID, &it.TaskName, &it.FolderName, &mask, &it.PlayTime,
+		var taskType int
+		var info, fileFolder, ledFolder string
+		if err := rows.Scan(&it.TaskID, &it.TaskName, &taskType, &info, &fileFolder, &ledFolder,
+			&mask, &it.PlayTime,
 			&it.State, &it.ProjectState, &it.StartDate, &it.EndDate,
 			&it.Terminals, &it.EnabledToday, &it.DisableDay); err != nil {
 			return nil, err
 		}
+		it.Module, it.FolderName = categoryOf(taskType, info, fileFolder, ledFolder)
+		it.Category = categoryText(ctx, it.Module, it.FolderName)
 		it.Executed = executedOn(viewDate, today, nowClock, it.PlayTime)
 		i++
 		it.Index = i
 		it.Weekdays = parseWeekdays(mask)
 		it.CycleText = i18n.CycleText(ctx, mask)
 		it.StateText = i18n.TC(ctx, stateText(it.State))
-		// 「(未分组)」是 SQL 里的兜底值，不是用户起的分组名，所以要翻
-		it.FolderName = i18n.TC(ctx, it.FolderName)
+
 		out.Items = append(out.Items, it)
 	}
 	return out, rows.Err()
+}
+
+// categoryOf 判断这条任务属于「任务管理」下的哪个模块，以及它在模块里归在哪。
+//
+// # 为什么不能只看 parentid
+//
+// 这一列原来直接显示 `filetaskfree.name`。对文件广播是对的，对**作息方案就是错的** ——
+// 作息方案的条目按 `task.info`（方案名）归组，`parentid` 指着的那个 filetaskfree 行
+// 只是建任务时填的默认值。现网数据里七条作息条目的 parentid 全是 1（admin），
+// 于是「早读预备铃」的所属分类显示成「admin」，看的人根本认不出它属于哪个方案。
+//
+// # tasktype = 15 归谁
+//
+// 15 同时属于作息方案和文字语音，靠 info 分：作息方案的 info 是方案名（非空），
+// 文字语音的是空串（契约 C-38）。这里的判断顺序保证了这一点 —— 先认 info 非空的
+// 作息方案，剩下的 15 才落到文字语音。
+//
+// 返回 (模块名, 归属名)。归属名为空表示这个模块本来就不分组（终端功放/采播/文字语音）。
+func categoryOf(taskType int, info, fileFolder, ledFolder string) (string, string) {
+	switch {
+	case (taskType == 1 || taskType == 15) && info != "":
+		// 括号里放方案名 —— 这正是需求方要的「是哪个方案中的」
+		return "作息方案", info
+	case taskType == 2 || taskType == 7:
+		return "文件广播", fileFolder
+	case taskType == 5:
+		return "终端功放", ""
+	case taskType == 3:
+		return "采播管理", ""
+	case taskType == 15 || taskType == 17 || taskType == 19:
+		return "文字语音", ""
+	case taskType == 24 || taskType == 30:
+		return "led播放", ledFolder
+	default:
+		// 不认识的 tasktype 不瞎猜，把号码摆出来 —— 比编一个模块名强
+		return fmt.Sprintf("任务类型 %d", taskType), fileFolder
+	}
+}
+
+// categoryText 拼成给人看的那一格：模块名（归属名）。
+//
+// 模块名要翻译（界面有中英文），括号里的方案名/分组名是用户自己起的，原样保留。
+func categoryText(ctx context.Context, module, group string) string {
+	m := i18n.TC(ctx, module)
+	if group == "" {
+		return m
+	}
+	return m + "（" + group + "）"
 }
 
 // executedOn 判断「所看那一天」这条任务到没到执行时间。

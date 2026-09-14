@@ -252,7 +252,13 @@
       <el-table :data="tasks" v-loading="tasksLoading" size="small" :empty-text="$t('common.noData')">
         <el-table-column prop="index" :label="$t('common.index')" width="70" />
         <el-table-column prop="taskName" :label="$t('dash.taskName')" min-width="160" show-overflow-tooltip />
-        <el-table-column prop="folderName" :label="$t('dash.folder')" width="130" show-overflow-tooltip />
+        <!--
+          所属分类 = 模块名（归属名）。
+          原来这一格直接显示 filetaskfree.name，对作息方案是错的 —— 它的条目按
+          task.info（方案名）归组，parentid 指的那个目录只是建任务时的默认值，
+          于是「早读预备铃」显示成「admin」，认不出属于哪个方案。见后端 categoryOf。
+        -->
+        <el-table-column prop="category" :label="$t('dash.folder')" min-width="150" show-overflow-tooltip />
         <el-table-column prop="cycleText" :label="$t('dash.weekdays')" width="140" />
         <el-table-column prop="playtime" :label="$t('dash.playTime')" width="110" />
         <!--

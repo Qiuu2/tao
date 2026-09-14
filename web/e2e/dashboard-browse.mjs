@@ -17,6 +17,8 @@
  *   ⑤ 换一个星期，「看的是哪一天」跟着变，启用/停用的判定也跟着那一天走
  *   ⑥ 状态列是「未执行 / 已执行」，判据是执行时间 vs **服务器**当前时刻
  *   ⑦ 单独停用日**原样**显示库里那一列（0000-00-00 也照显）
+ *   ⑧ 所属分类 = 模块名（归属名）—— 作息方案的括号里是**方案名**，
+ *     不是 parentid 指的那个默认目录
  */
 const BASE = process.env.E2E_BASE || "http://127.0.0.1:5199";
 const CHROME = process.env.E2E_CHROME || "/opt/pw-browsers/chromium-1194/chrome-linux/chrome";
@@ -193,6 +195,36 @@ console.log("⑦ 单独停用日原样显示库里那一列");
   ok(
     shown.every(v => dbVals.includes(v)),
     "显示的每个值都来自库里那一列：" + JSON.stringify(dbVals)
+  );
+}
+
+// ⑧ 所属分类要认得出是哪个方案 / 哪个分组
+console.log("⑧ 所属分类 = 模块名（归属名）");
+{
+  const names = (await p.locator(".panel .el-table__body .el-table__row td:nth-child(2)").allInnerTexts()).map(v => v.trim());
+  const cats = (await p.locator(".panel .el-table__body .el-table__row td:nth-child(3)").allInnerTexts()).map(v => v.trim());
+  const of = n => cats[names.indexOf(n)] || "(没找到这一行)";
+
+  // 作息方案的条目：括号里必须是**方案名**，不是 parentid 指的那个目录。
+  // 现网这几条的 parentid 全是 1（filetaskfree 里的 admin 默认组），
+  // 原来就是显示成「admin」—— 这一条专门钉住别再退回去。
+  const planName = q1("SELECT info FROM task WHERE tasktype IN (1,15) AND COALESCE(info,'')<>'' LIMIT 1");
+  const lesson = q1(`SELECT taskname FROM task WHERE info='${planName}' ORDER BY taskid LIMIT 1`);
+  console.log(`   作息条目「${lesson}」→ ${of(lesson)}`);
+  ok(of(lesson) === `作息方案（${planName}）`, `作息条目显示成「作息方案（${planName}）」`);
+  ok(of(lesson) !== "admin", "不再是 parentid 指的那个默认目录名「admin」");
+
+  // 其余几类：模块名要对得上
+  const want = { 终端功放: 5, 采播管理: 3 };
+  for (const [mod, ty] of Object.entries(want)) {
+    const nm = q1(`SELECT taskname FROM task WHERE tasktype=${ty} AND channel=0 AND sec_task_id=0 LIMIT 1`);
+    if (!nm) continue;
+    console.log(`   ${mod}「${nm}」→ ${of(nm)}`);
+    ok(of(nm) === mod, `${mod}这一类显示成「${mod}」（它本来就不分组，不带括号）`);
+  }
+  ok(
+    cats.every(c => c && c !== "(未分组)"),
+    "没有哪一行还是空的或「(未分组)」"
   );
 }
 
