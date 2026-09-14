@@ -89,14 +89,18 @@ export interface BrowseItem {
    */
   disableday: string;
   /**
-   * 状态那一列：已执行 / 执行中 / 准备执行。
+   * 状态那一列。后端按**服务器时钟**与 `task.state` 一起算（见 runStatusOf）：
    *
-   * 后端按**服务器时钟**与 `task.state` 一起算（见 runStatusOf）：
-   * state 非 0（1 执行 / 2 暂停 / 3 立即执行）= running，
-   * state 为 0 时才拿执行时间和此刻比 —— 过了点 done，没到点 ready。
-   * 只有看今天时 state 才算数，切到别的星期一律按日期判。
+   *   done     已执行     state = 0 且执行时间已经过了
+   *   ready    准备执行   state = 0 且还没到点
+   *   running  正在执行   state = 1
+   *   paused   暂停       state = 2
+   *   playnow  立即执行   state = 3
+   *
+   * 只有 state = 0 才去比时间；也只有看今天时 state 才算数，
+   * 切到别的星期一律按日期判（拿实时 state 说「上周二那条正在执行」是假的）。
    */
-  runStatus: "done" | "running" | "ready";
+  runStatus: "done" | "ready" | "running" | "paused" | "playnow";
   /** 这条任务归谁（task.task_user_id）。0 表示库里就没写 */
   ownerUserId: number;
   /** 归属账号名。账号被删掉时回空串 —— 界面画「—」，不让整行消失 */

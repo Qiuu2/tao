@@ -596,25 +596,33 @@ const setDay = async (disable: boolean) => {
 };
 
 /**
- * 状态列：后端给的是 key（done / running / ready），界面负责文案与颜色。
+ * 状态列：后端给的是 key，界面负责文案与颜色。
  *
- * ⚠ 颜色是需求方定的：执行中标红（danger）、准备执行标绿（success）。
+ *   done 已执行 / ready 准备执行 / running 正在执行 / paused 暂停 / playnow 立即执行
+ *
+ * ⚠ 颜色：正在执行与立即执行标红（这两种此刻真的在出声），准备执行标绿，
+ * 暂停标橙（既不在响也不是排着等），已执行不着色。红与绿是需求方定的；
  * 旧版正好反过来 —— 它把「准备●」刷成红色、执行中刷绿色
  * （Browse_active_task_form.html:129 / 111），不照抄。
  */
-const STATUS_TAG: Record<string, "danger" | "success" | "info"> = {
+const STATUS_TAG: Record<string, "danger" | "success" | "warning" | "info"> = {
   running: "danger",
+  playnow: "danger",
+  paused: "warning",
   ready: "success",
   done: "info"
 };
 const STATUS_KEY: Record<string, string> = {
   running: "dash.running",
+  playnow: "dash.playNow",
+  paused: "dash.paused",
   ready: "dash.readyRun",
   done: "dash.done"
 };
 /** 鼠标悬停时说清楚这个状态是怎么判出来的 —— 光三个字看不出依据 */
 const statusTip = (row: BrowseItem) => {
-  if (row.runStatus === "running") return t("dash.runningTip", { s: row.state });
+  // state 非 0 的那三种直接由后台的实时状态决定，跟钟点无关
+  if (row.runStatus !== "done" && row.runStatus !== "ready") return t("dash.runningTip", { s: row.state });
   return t(row.runStatus === "done" ? "dash.doneTip" : "dash.readyRunTip", { d: viewDate.value, t: row.playtime });
 };
 

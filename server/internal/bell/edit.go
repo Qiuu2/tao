@@ -68,6 +68,27 @@ type ItemInput struct {
 	// 修改条目则不动终端。
 	Terminals      []task.TerminalRef `json:"terminals"`
 	ApplyTerminals bool               `json:"applyTerminals"`
+	// Attrs 是这一条目自己的「方案级」属性。nil 表示这次不动它们。
+	//
+	// 旧版行内「修改」（modifyonebellplan.php）的 URL 里就带着这一整组：
+	// getprepower / getstartdate / getenddate / getexemodel /
+	// task_default_volume / task_priority_text / sendmode ——
+	// 也就是上面那排控件当时的值，只写给这一条目。
+	Attrs *ItemAttrs `json:"attrs"`
+}
+
+// ItemAttrs 是一个打铃条目自己的「方案级」属性。
+//
+// 名义上方案级、实际每行 task 各存一份 —— 见 Item 上的说明。
+type ItemAttrs struct {
+	StartDate    string `json:"startdate"`
+	EndDate      string `json:"enddate"`
+	ExeModel     string `json:"exemodel"`
+	PrePower     int    `json:"prepower"`
+	Volume       int    `json:"defaultvolume"`
+	Priority     int    `json:"priority"`
+	DataSendMode int    `json:"datasendmodel"`
+	IsRandomPlay int    `json:"israndomplay"`
 }
 
 // LEDConf 是方案级的 LED 字幕设置。
@@ -110,11 +131,22 @@ type Item struct {
 	PowerPlayTime string `json:"powerPlayTime"`
 	// DuplicateTime 表示同方案里还有别的条目排在同一时刻（只提示，不拦截）。
 	DuplicateTime bool `json:"duplicateTime"`
-	// 起止日期与星期掩码理论上组内一致（方案级），但可以被「智能排课」按条目改掉，
-	// 所以这里逐条目也给一份，界面才好显示各条目当前排在哪个日期段。
-	StartDate string `json:"startdate"`
-	EndDate   string `json:"enddate"`
-	ExeModel  string `json:"exemodel"`
+	// 下面这几项名义上是「方案级」，实际每一行 task 各存一份，完全可以不一致
+	// （「智能排课」按条目改日期，行内「修改」按条目改这一整组）。
+	//
+	// 旧版 modifybell.html 的课时表 radio 一选中，就会把**这一课时自己的**
+	// 这几项灌回上面那排控件（getonetaskterminal.php 返回
+	// `taskname#prepower#defaultvolume#startdate#enddate#info#exemodel#priority#…`，
+	// getonetaskterminal.js 逐个 document.getElementById(...).value = ...）。
+	// 所以逐条目都得给一份，不能只给方案级那一份。
+	StartDate    string `json:"startdate"`
+	EndDate      string `json:"enddate"`
+	ExeModel     string `json:"exemodel"`
+	PrePower     int    `json:"prepower"`
+	Volume       int    `json:"defaultvolume"`
+	Priority     int    `json:"priority"`
+	DataSendMode int    `json:"datasendmodel"`
+	IsRandomPlay int    `json:"israndomplay"`
 	// TerminalCount 是这一条目自己挂了几台终端。
 	// 各条目理论上一致（整表提交会统一套），但行内「修改」是按条目写的，
 	// 所以完全可能不一致 —— 界面据此提示这一节课单独配了几台。
@@ -205,6 +237,8 @@ func (s *Service) Get(ctx context.Context, u *auth.User, planName string) (*Deta
 		}
 		it.StateText = stateText(ctx, it.ProjectState)
 		it.StartDate, it.EndDate, it.ExeModel = a.start, a.end, a.exe
+		it.Volume, it.Priority, it.PrePower = a.vol, a.pri, a.pre
+		it.DataSendMode, it.IsRandomPlay = a.snd, a.rnd
 		it.Media = []task.MediaItem{}
 		ids = append(ids, it.TaskID)
 		times[it.PlayTime]++
@@ -1343,6 +1377,14 @@ func (s *Service) AddItem(ctx context.Context, u *auth.User, planName string,
 		PlanName: planName, Schedule: d.Schedule, Playback: d.Playback,
 		Items: []ItemInput{it}, LED: d.LED,
 	}
+	// 带了 Attrs 就按带的建 —— 旧版行内「添加」（modifyonebellplan.php 的
+	// taskid=-1 分支）写的就是上面那排控件当时的值，不是方案里别的课时那一份。
+	// 没带才沿用方案级那一份。
+	if a := it.Attrs; a != nil {
+		in.Schedule = Schedule{StartDate: a.StartDate, EndDate: a.EndDate, ExeModel: a.ExeModel}
+		in.Playback = Playback{Volume: a.Volume, Priority: a.Priority, PrePower: a.PrePower,
+			DataSendMode: a.DataSendMode, IsRandomPlay: a.IsRandomPlay}
+	}
 	// 带了终端就按带的存 —— 旧版行内「添加」（modifyonebellplan.php 的 taskid=-1
 	// 分支）写的就是终端树当时的选择，不是方案里别的课时那一份。
 	//
@@ -1385,15 +1427,16 @@ func (s *Service) AddItem(ctx context.Context, u *auth.User, planName string,
 func (s *Service) UpdateItem(ctx context.Context, u *auth.User, planName string,
 	taskID int64, it ItemInput) (int, error) {
 
-	if _, err := s.assertPlan(ctx, u, planName); err != nil {
+	owner, err := s.assertPlan(ctx, u, planName)
+	if err != nil {
 		return 0, err
 	}
 	var curName string
-	var volume int
-	err := s.db.QueryRowContext(ctx,
-		`SELECT COALESCE(taskname,''), COALESCE(defaultvolume,80)
+	var volume, curPriority int
+	err = s.db.QueryRowContext(ctx,
+		`SELECT COALESCE(taskname,''), COALESCE(defaultvolume,80), COALESCE(priority,0)
 		 FROM task WHERE taskid = ? AND info = ? AND `+planScope(""),
-		taskID, planName).Scan(&curName, &volume)
+		taskID, planName).Scan(&curName, &volume, &curPriority)
 	if errors.Is(err, sql.ErrNoRows) {
 		return 0, ErrNotFound
 	}
@@ -1443,6 +1486,16 @@ func (s *Service) UpdateItem(ctx context.Context, u *auth.User, planName string,
 			return 0, err
 		}
 	}
+	// 方案级那一组（起止日期 / 星期 / 提前开电源 / 音量 / 任务级别 / 发送模式）。
+	// 同样先校验再开事务 —— checkPriority 要查用户组级别。
+	if it.Attrs != nil {
+		// 任务级别沿用这一条现有的值当「旧值」：历史数据里 priority < 10 的条目
+		// 不该连改个名字都被区间校验挡下（与 Update 的 oldPri 同一条理由）。
+		if err := s.checkItemAttrs(ctx, it.Attrs, owner, &curPriority); err != nil {
+			return 0, err
+		}
+		volume = it.Attrs.Volume
+	}
 
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
@@ -1488,6 +1541,21 @@ func (s *Service) UpdateItem(ctx context.Context, u *auth.User, planName string,
 	}
 	if err := writeMedia(ctx, tx, taskID, it.Media); err != nil {
 		return 0, err
+	}
+	// 方案级那一组：只写这一条目（含它的功放 / LED 子任务）。
+	//
+	// 这是旧版行内「修改」本来就在做的事（modifyonebellplan.php 的 URL 里
+	// 带着 getprepower / getstartdate / getenddate / getexemodel /
+	// task_default_volume / task_priority_text / sendmode）。新版一度漏掉了
+	// 整组 —— 表现为「任务级别改成 10、点了修改，重新打开还是原来那个数」。
+	if it.Attrs != nil {
+		if err := writeItemAttrs(ctx, tx, taskID, it.Attrs); err != nil {
+			return 0, err
+		}
+		// prepower 变了，功放子任务要跟着建 / 删 / 改时间
+		if err := resyncItemPower(ctx, tx, planName, owner, taskID, &it, it.Attrs); err != nil {
+			return 0, err
+		}
 	}
 	// 终端按条目重写。
 	//

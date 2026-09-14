@@ -102,11 +102,14 @@ func TestCategoryTextOnlyBellCarriesGroup(t *testing.T) {
 	}
 }
 
-// 状态列：已执行 / 执行中 / 准备执行。
+// 状态列：已执行 / 准备执行 / 正在执行 / 暂停 / 立即执行。
 //
-// 旧版 Browse_active_task_form.html 就是这个结构 —— **只有 state = 0 才比时间**。
-// 1 执行、2 暂停、3 立即执行都表示后台此刻手里攥着这条任务，一律「执行中」。
+// 需求方定的判据：先看这一天排不排得上（列表本身已经筛过），再看 state；
+// **只有 state = 0 才拿钟点去分「已执行 / 准备执行」**。
+// 旧版 Browse_active_task_form.html 的分支结构一样（它也只在 state = 0 的
+// 分支里写 JS 比时间）。
 //
+// ⚠ 一度把 1 / 2 / 3 合并成一个「执行中」，按需求方要求拆开。
 // ⚠ state 是此时此刻的值，只有看今天时才算数。
 func TestRunStatusOf(t *testing.T) {
 	const today = "2026-09-14"
@@ -119,15 +122,18 @@ func TestRunStatusOf(t *testing.T) {
 		playTime string
 		want     string
 	}{
-		{"state=1 执行中", 1, today, "08:00:00", "running"},
-		{"state=2 暂停也算后台攥着它，显示执行中", 2, today, "08:00:00", "running"},
-		{"state=3 立即执行", 3, today, "18:00:00", "running"},
-		{"state=0 且过了点 → 已执行", 0, today, "08:00:00", "done"},
-		{"state=0 且没到点 → 准备执行", 0, today, "18:00:00", "ready"},
-		{"看过去的某天：那天早过完了", 0, "2026-09-13", "23:59:59", "done"},
-		{"看将来的某天：还没到", 0, "2026-09-16", "00:00:01", "ready"},
-		{"⚠ 看别的日子时 state 不算数：昨天那条不能说成执行中", 1, "2026-09-13", "08:00:00", "done"},
-		{"⚠ 看将来某天同理", 1, "2026-09-16", "08:00:00", "ready"},
+		{"state=0 且过了点 → 已执行", 0, today, "08:00:00", StatusDone},
+		{"state=0 且没到点 → 准备执行", 0, today, "18:00:00", StatusReady},
+		{"state=0 正好卡在这一秒 → 已执行（到点就该响了）", 0, today, now, StatusDone},
+		{"state=1 → 正在执行", 1, today, "08:00:00", StatusRunning},
+		{"state=1 就算还没到点也是正在执行（人手工点的）", 1, today, "18:00:00", StatusRunning},
+		{"state=2 → 暂停", 2, today, "08:00:00", StatusPaused},
+		{"state=3 → 立即执行", 3, today, "18:00:00", StatusPlayNow},
+		{"不认识的 state 当 0 处理，不编新状态", 9, today, "08:00:00", StatusDone},
+		{"看过去的某天：那天早过完了", 0, "2026-09-13", "23:59:59", StatusDone},
+		{"看将来的某天：还没到", 0, "2026-09-16", "00:00:01", StatusReady},
+		{"⚠ 看别的日子时 state 不算数：昨天那条不能说成正在执行", 1, "2026-09-13", "08:00:00", StatusDone},
+		{"⚠ 看将来某天同理", 3, "2026-09-16", "08:00:00", StatusReady},
 	}
 	for _, c := range cases {
 		if got := runStatusOf(c.state, c.viewDate, today, now, c.playTime); got != c.want {

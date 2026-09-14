@@ -7801,18 +7801,6 @@
       },
       "terminals": [
         {
-          "terminalId": 1,
-          "terminalname": "A101教室音箱",
-          "typeName": "一体化音箱",
-          "netstate": 1,
-          "taskstate": 1,
-          "ip": "192.168.2.11",
-          "volume": 6,
-          "groupId": 0,
-          "area": "11111111",
-          "deleted": false
-        },
-        {
           "terminalId": 2,
           "terminalname": "A102教室音箱",
           "typeName": "一体化音箱",
@@ -7897,7 +7885,12 @@
           "startdate": "2026-01-01",
           "enddate": "2026-12-31",
           "exemodel": "0111110",
-          "terminalCount": 6
+          "prepower": 1,
+          "defaultvolume": 66,
+          "priority": 10,
+          "datasendmodel": 0,
+          "israndomplay": 0,
+          "terminalCount": 5
         },
         {
           "taskid": 1002,
@@ -7922,7 +7915,12 @@
           "startdate": "2026-01-01",
           "enddate": "2026-12-31",
           "exemodel": "0111110",
-          "terminalCount": 6
+          "prepower": 1,
+          "defaultvolume": 66,
+          "priority": 10,
+          "datasendmodel": 0,
+          "israndomplay": 0,
+          "terminalCount": 5
         },
         {
           "taskid": 1003,
@@ -7947,7 +7945,12 @@
           "startdate": "2026-01-01",
           "enddate": "2026-12-31",
           "exemodel": "0111110",
-          "terminalCount": 6
+          "prepower": 1,
+          "defaultvolume": 66,
+          "priority": 10,
+          "datasendmodel": 0,
+          "israndomplay": 0,
+          "terminalCount": 5
         },
         {
           "taskid": 1004,
@@ -7972,7 +7975,12 @@
           "startdate": "2026-01-01",
           "enddate": "2026-12-31",
           "exemodel": "0111110",
-          "terminalCount": 6
+          "prepower": 1,
+          "defaultvolume": 66,
+          "priority": 10,
+          "datasendmodel": 0,
+          "israndomplay": 0,
+          "terminalCount": 5
         },
         {
           "taskid": 1005,
@@ -7997,7 +8005,12 @@
           "startdate": "2026-01-01",
           "enddate": "2026-12-31",
           "exemodel": "0111110",
-          "terminalCount": 6
+          "prepower": 1,
+          "defaultvolume": 66,
+          "priority": 10,
+          "datasendmodel": 0,
+          "israndomplay": 0,
+          "terminalCount": 5
         },
         {
           "taskid": 1006,
@@ -8022,7 +8035,12 @@
           "startdate": "2026-01-01",
           "enddate": "2026-12-31",
           "exemodel": "0111110",
-          "terminalCount": 6
+          "prepower": 1,
+          "defaultvolume": 66,
+          "priority": 10,
+          "datasendmodel": 0,
+          "israndomplay": 0,
+          "terminalCount": 5
         },
         {
           "taskid": 1007,
@@ -8047,7 +8065,12 @@
           "startdate": "2026-01-01",
           "enddate": "2026-12-31",
           "exemodel": "0111110",
-          "terminalCount": 6
+          "prepower": 1,
+          "defaultvolume": 66,
+          "priority": 10,
+          "datasendmodel": 0,
+          "israndomplay": 0,
+          "terminalCount": 5
         }
       ],
       "ownerUserId": 1,
@@ -15279,18 +15302,6 @@
       "taskid": 1001,
       "terminals": [
         {
-          "terminalId": 1,
-          "terminalname": "A101教室音箱",
-          "typeName": "一体化音箱",
-          "netstate": 1,
-          "taskstate": 1,
-          "ip": "192.168.2.11",
-          "volume": 6,
-          "groupId": 0,
-          "area": "11111111",
-          "deleted": false
-        },
-        {
           "terminalId": 2,
           "terminalname": "A102教室音箱",
           "typeName": "一体化音箱",
@@ -15359,18 +15370,6 @@
     "data": {
       "taskid": 1002,
       "terminals": [
-        {
-          "terminalId": 1,
-          "terminalname": "A101教室音箱",
-          "typeName": "一体化音箱",
-          "netstate": 1,
-          "taskstate": 1,
-          "ip": "192.168.2.11",
-          "volume": 6,
-          "groupId": 0,
-          "area": "11111111",
-          "deleted": false
-        },
         {
           "terminalId": 2,
           "terminalname": "A102教室音箱",
@@ -15441,18 +15440,6 @@
       "taskid": 1003,
       "terminals": [
         {
-          "terminalId": 1,
-          "terminalname": "A101教室音箱",
-          "typeName": "一体化音箱",
-          "netstate": 1,
-          "taskstate": 1,
-          "ip": "192.168.2.11",
-          "volume": 6,
-          "groupId": 0,
-          "area": "11111111",
-          "deleted": false
-        },
-        {
           "terminalId": 2,
           "terminalname": "A102教室音箱",
           "typeName": "一体化音箱",
@@ -15521,18 +15508,6 @@
     "data": {
       "taskid": 1004,
       "terminals": [
-        {
-          "terminalId": 1,
-          "terminalname": "A101教室音箱",
-          "typeName": "一体化音箱",
-          "netstate": 1,
-          "taskstate": 1,
-          "ip": "192.168.2.11",
-          "volume": 6,
-          "groupId": 0,
-          "area": "11111111",
-          "deleted": false
-        },
         {
           "terminalId": 2,
           "terminalname": "A102教室音箱",
@@ -15603,18 +15578,6 @@
       "taskid": 1005,
       "terminals": [
         {
-          "terminalId": 1,
-          "terminalname": "A101教室音箱",
-          "typeName": "一体化音箱",
-          "netstate": 1,
-          "taskstate": 1,
-          "ip": "192.168.2.11",
-          "volume": 6,
-          "groupId": 0,
-          "area": "11111111",
-          "deleted": false
-        },
-        {
           "terminalId": 2,
           "terminalname": "A102教室音箱",
           "typeName": "一体化音箱",
@@ -15684,18 +15647,6 @@
       "taskid": 1006,
       "terminals": [
         {
-          "terminalId": 1,
-          "terminalname": "A101教室音箱",
-          "typeName": "一体化音箱",
-          "netstate": 1,
-          "taskstate": 1,
-          "ip": "192.168.2.11",
-          "volume": 6,
-          "groupId": 0,
-          "area": "11111111",
-          "deleted": false
-        },
-        {
           "terminalId": 2,
           "terminalname": "A102教室音箱",
           "typeName": "一体化音箱",
@@ -15764,18 +15715,6 @@
     "data": {
       "taskid": 1007,
       "terminals": [
-        {
-          "terminalId": 1,
-          "terminalname": "A101教室音箱",
-          "typeName": "一体化音箱",
-          "netstate": 1,
-          "taskstate": 1,
-          "ip": "192.168.2.11",
-          "volume": 6,
-          "groupId": 0,
-          "area": "11111111",
-          "deleted": false
-        },
         {
           "terminalId": 2,
           "terminalname": "A102教室音箱",
@@ -16066,7 +16005,7 @@
           "ownerUserId": 1,
           "ownerName": "admin",
           "disableday": "0000-00-00",
-          "runStatus": "ready"
+          "runStatus": "done"
         },
         {
           "index": 9,
@@ -16095,7 +16034,7 @@
           "ownerUserId": 1,
           "ownerName": "admin",
           "disableday": "0000-00-00",
-          "runStatus": "ready"
+          "runStatus": "done"
         },
         {
           "index": 10,
@@ -16122,7 +16061,7 @@
           "ownerUserId": 1,
           "ownerName": "admin",
           "disableday": "0000-00-00",
-          "runStatus": "ready"
+          "runStatus": "done"
         },
         {
           "index": 11,

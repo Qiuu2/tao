@@ -15,7 +15,8 @@
  *   ③ **停用的任务（projectstate=1）一条都不出现**
  *   ④ 「单独停用日」列显示 task.disableday
  *   ⑤ 换一个星期，「看的是哪一天」跟着变，列表跟着那一天走
- *   ⑥ 状态列是「已执行 / 执行中 / 准备执行」，按 task.state + **服务器**当前时刻判
+ *   ⑥ 状态列五个取值（已执行 / 准备执行 / 正在执行 / 暂停 / 立即执行），
+ *     只有 state = 0 才拿钟点去分前两个
  *   ⑦ 单独停用日**原样**显示库里那一列（0000-00-00 也照显）
  *   ⑧ 所属分类：只有作息方案带括号（里面是**方案名**），
  *     不是 parentid 指的那个默认目录
@@ -230,8 +231,8 @@ console.log("⑤ 星期改选「周日」，看的日期要跟着变");
     "它的 exemodel 里周一那一位确实是 0（筛掉它的就是这一位）"
   );
 }
-// ⑥ 状态列：已执行 / 执行中 / 准备执行
-console.log("⑥ 状态列是「已执行 / 执行中 / 准备执行」");
+// ⑥ 状态列五个取值
+console.log("⑥ 状态列：已执行 / 准备执行 / 正在执行 / 暂停 / 立即执行");
 {
   await p.reload({ waitUntil: "domcontentloaded" });
   await p.waitForTimeout(4000);
@@ -240,21 +241,28 @@ console.log("⑥ 状态列是「已执行 / 执行中 / 准备执行」");
   const tm = await colTexts(COL.playtime);
   const names = await colTexts(COL.name);
   console.log("   状态取值:", JSON.stringify([...new Set(st)]), " 服务器现在:", nowClock);
+  const ALL = ["已执行", "准备执行", "正在执行", "暂停", "立即执行"];
   ok(
-    st.every(v => ["已执行", "执行中", "准备执行"].includes(v)),
-    "只有「已执行 / 执行中 / 准备执行」三种取值"
+    st.every(v => ALL.includes(v)),
+    `只有这五种取值：${ALL.join(" / ")}`
   );
-  // 每一行该显示什么，直接拿库里的 state 和服务器时钟算一遍对答案：
-  // state 非 0（1 执行 / 2 暂停 / 3 立即执行）= 执行中，0 才比时间
+  // 每一行该显示什么，直接拿库里的 state 和服务器时钟算一遍对答案。
+  // 判据：只有 state = 0 才比时间；1/2/3 各是各的。
   const stateOf = n => Number(q1(`SELECT COALESCE(state,0) FROM task WHERE taskname='${n}' AND sec_task_id=0 LIMIT 1`));
+  const wantOf = (n, playtime) => {
+    const s0 = stateOf(n);
+    if (s0 === 1) return "正在执行";
+    if (s0 === 2) return "暂停";
+    if (s0 === 3) return "立即执行";
+    return playtime <= nowClock ? "已执行" : "准备执行";
+  };
   const bad = st.filter((v, i) => {
-    const want = stateOf(names[i]) !== 0 ? "执行中" : tm[i] <= nowClock ? "已执行" : "准备执行";
+    const want = wantOf(names[i], tm[i]);
     if (v !== want) console.log(`   对不上：${names[i]} 显示「${v}」，按 state+时钟应该是「${want}」`);
     return v !== want;
   }).length;
   ok(bad === 0, `每行都与「task.state + 服务器当前时刻」对得上（${bad} 行对不上）`);
 
-  // 颜色：执行中标红、准备执行标绿（需求方定的，旧版正好相反，不照抄）
   const tagClass = async txt => {
     const tag = p.locator(".panel .el-table__body .el-table__row .el-tag", { hasText: txt }).first();
     return (await tag.count()) ? (await tag.getAttribute("class")) || "" : "";
@@ -262,19 +270,26 @@ console.log("⑥ 状态列是「已执行 / 执行中 / 准备执行」");
   const readyCls = await tagClass("准备执行");
   console.log("   「准备执行」的 tag class:", readyCls || "(这一屏没有准备执行的行)");
   if (readyCls) ok(readyCls.includes("el-tag--success"), "「准备执行」是绿的（el-tag--success）");
-  // 把一条任务临时置成执行中，看颜色对不对（跑完还原）
+
+  // 1 / 2 / 3 各试一遍：把同一条任务的 state 依次改掉，看文案和颜色
   const victim = names[0];
   const oldState = stateOf(victim);
-  execSync(SQL(`UPDATE task SET state=1 WHERE taskname='${victim}' AND sec_task_id=0`), { stdio: "pipe" });
-  await p.reload({ waitUntil: "domcontentloaded" });
-  await p.waitForTimeout(4000);
-  const nowSt = await colTexts(COL.status);
-  const nowNm = await colTexts(COL.name);
-  console.log(`   把「${victim}」的 state 改成 1 之后：${nowSt[nowNm.indexOf(victim)]}`);
-  ok(nowSt[nowNm.indexOf(victim)] === "执行中", "state=1 的那条显示成「执行中」");
-  const runCls = await tagClass("执行中");
-  console.log("   「执行中」的 tag class:", runCls);
-  ok(runCls.includes("el-tag--danger"), "「执行中」是红的（el-tag--danger）");
+  for (const [stv, text, cls] of [
+    [1, "正在执行", "el-tag--danger"],
+    [2, "暂停", "el-tag--warning"],
+    [3, "立即执行", "el-tag--danger"]
+  ]) {
+    execSync(SQL(`UPDATE task SET state=${stv} WHERE taskname='${victim}' AND sec_task_id=0`), { stdio: "pipe" });
+    await p.reload({ waitUntil: "domcontentloaded" });
+    await p.waitForTimeout(4000);
+    const nowSt = await colTexts(COL.status);
+    const nowNm = await colTexts(COL.name);
+    const shown = nowSt[nowNm.indexOf(victim)];
+    const cl = await tagClass(text);
+    console.log(`   state=${stv} → 「${shown}」，tag class: ${cl}`);
+    ok(shown === text, `state=${stv} 的那条显示成「${text}」`);
+    ok(cl.includes(cls), `「${text}」用的是 ${cls}`);
+  }
   execSync(SQL(`UPDATE task SET state=${oldState} WHERE taskname='${victim}' AND sec_task_id=0`), { stdio: "pipe" });
   await p.reload({ waitUntil: "domcontentloaded" });
   await p.waitForTimeout(4000);

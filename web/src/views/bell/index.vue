@@ -292,6 +292,18 @@
       -->
       <el-form ref="planFormRef" :model="dlg.form" :rules="planRules" label-width="90px">
         <el-divider content-position="left">{{ $t("bell.taskConfig") }}</el-divider>
+        <!--
+          ⚠ 提前开电源 / 音量 / 任务级别 / 起止日期 / 星期这几项名义上是「方案级」，
+          实际每一行 task 各存一份，可以不一致。选中下面某个课时之后，这排控件
+          显示的就是**那一课时自己的**值（旧版 getonetaskterminal.js 同样如此），
+          所以这行字必须摆在这儿 —— 混淆就发生在这排控件上。
+        -->
+        <div v-if="termScopeNote" class="dlg-note mb6">
+          {{ termScopeNote }}
+          <el-button v-if="termScopeIdx >= 0" link type="primary" @click="activeItem = -1">
+            {{ $t("bell.backToPlanTerminals") }}
+          </el-button>
+        </div>
 
         <el-row :gutter="16">
           <el-col :span="12">
@@ -914,7 +926,22 @@ const emptyItemRow = () => ({
   /** 老数据原本挂了几个铃声。>1 时界面要说清楚保存会只留第一个 */
   legacyMediaCount: 0,
   /** 这一课时自己挂了几台终端。各课时可以不一样，见 termScopeNote */
-  terminalCount: 0
+  terminalCount: 0,
+  /*
+   * 这一课时自己的「方案级」属性。
+   *
+   * 名义上方案级、实际每行 task 各存一份，可以不一致。旧版 modifybell.html 的
+   * radio 一选中就把这几项灌回上面那排控件（getonetaskterminal.js），
+   * 行上的「修改」再把控件当时的值只写给这一课时。这里照做。
+   */
+  startdate: "",
+  enddate: "",
+  exemodel: "",
+  prepower: 15,
+  defaultvolume: 80,
+  priority: 10,
+  datasendmodel: 0,
+  israndomplay: 0
 });
 type ItemRow = ReturnType<typeof emptyItemRow>;
 
@@ -974,18 +1001,25 @@ const currentPlanName = computed(() => (dlg.isEdit ? dlg.originalName : dlg.save
 /**
  * 一行 → 提交给后端的条目。时长模式下把 时:分:秒 换算成秒。
  *
- * withTerminals = true 时把终端树当前的选择一起送出去，只存给这一条目 ——
- * 行上的「添加 / 修改」走这条路（旧版 modifyonebellplan.php 就是这么写的）。
- * 整体「确定」不用带：那条路径的终端是方案级的，由 terminals + applyTerminals 统一套。
+ * withScope = true 时把**上面那排控件 + 终端树**当前的值一起送出去，
+ * 只存给这一条目 —— 行上的「添加 / 修改」走这条路。旧版
+ * modifyonebellplan.php 的 URL 里带的就是这一整套：
+ * getprepower / getstartdate / getenddate / getexemodel /
+ * task_default_volume / task_priority_text / sendmode / getterminalid。
+ *
+ * ⚠ 一度只带了终端、没带那排控件，表现就是「任务级别改成 10、点了修改，
+ * 重新打开还是原来那个数」—— 改动被悄悄丢掉了。
+ *
+ * 整体「确定」不用带：那条路径这些字段是方案级的，由 updateBellPlanApi 统一套。
  */
-const itemPayload = (it: ItemRow, withTerminals = false) => ({
+const itemPayload = (it: ItemRow, withScope = false) => ({
   taskname: it.taskname.trim(),
   playtime: it.playtime,
   timelengthtype: it.timelengthtype,
   timelength: it.timelengthtype === 1 ? hmsToSec(it.lengthhms) : it.timelength,
   // 一课时一铃声：没选就传空数组（后端据此把这条的 mediaoftask 清干净）
   media: it.mediaId ? [{ mediaId: it.mediaId, sort: 0 }] : [],
-  ...(withTerminals ? { terminals: terminalsForm(), applyTerminals: true } : {})
+  ...(withScope ? { terminals: terminalsForm(), applyTerminals: true, attrs: headerAttrs() } : {})
 });
 
 /** 删掉库里的课时之后：刷新列表；如果连方案都没了，就把状态收拾干净 */
@@ -1051,38 +1085,80 @@ const itemLocked = (idx: number) => dlg.mode === "edit" && activeItem.value >= 0
    这里照做，并且补上旧版漏掉的一件事：功放与 LED 子任务的终端清单跟着一起重写
    （见 bell.UpdateItem）。 */
 
-/** 方案级的那份终端清单（打开对话框时读到的）。取消选中课时就回到它 */
+/** 方案级的那一份（打开对话框时读到的）。取消选中课时就回到它 */
 const planTerminalIds = ref<number[]>([]);
 const planTerminalAreas = ref<Record<number, string>>({});
-/** 终端树现在显示的是谁的：-1 = 整个方案，>=0 = 第几个课时 */
+const planHeader = ref("");
+/** 上面那排控件 + 终端树现在显示的是谁的：-1 = 整个方案，>=0 = 第几个课时 */
 const termScopeIdx = ref(-1);
 const termLoading = ref(false);
 
-const snapshotPlanTerminals = () => {
+/** 上面那排「方案级」控件当前的取值 */
+const headerAttrs = () => ({
+  startdate: dateRange.value[0],
+  enddate: dateRange.value[1],
+  exemodel: maskFromWeekdays(),
+  prepower: dlg.form.playback.prepower,
+  defaultvolume: dlg.form.playback.defaultvolume,
+  priority: dlg.form.playback.priority,
+  datasendmodel: dlg.form.playback.datasendmodel,
+  israndomplay: dlg.form.playback.israndomplay
+});
+
+/** 把一组属性灌进上面那排控件 */
+const applyAttrs = (a: {
+  startdate: string;
+  enddate: string;
+  exemodel: string;
+  prepower: number;
+  defaultvolume: number;
+  priority: number;
+  datasendmodel: number;
+  israndomplay: number;
+}) => {
+  if (a.startdate && a.enddate) dateRange.value = [a.startdate, a.enddate];
+  if (a.exemodel) applyMask(a.exemodel);
+  dlg.form.playback.prepower = a.prepower;
+  dlg.form.playback.defaultvolume = a.defaultvolume;
+  dlg.form.playback.priority = a.priority;
+  dlg.form.playback.datasendmodel = a.datasendmodel;
+  dlg.form.playback.israndomplay = a.israndomplay;
+};
+
+const snapshotPlanScope = () => {
   planTerminalIds.value = [...selectedTerminalIds.value];
   planTerminalAreas.value = { ...terminalAreas.value };
+  planHeader.value = JSON.stringify(headerAttrs());
   termScopeIdx.value = -1;
 };
 
-/** 把树切回方案级那一份 */
-const showPlanTerminals = () => {
+/** 把上面那排控件和终端树一起切回方案级那一份 */
+const showPlanScope = () => {
   selectedTerminalIds.value = [...planTerminalIds.value];
   terminalAreas.value = { ...planTerminalAreas.value };
+  if (planHeader.value) applyAttrs(JSON.parse(planHeader.value));
   termScopeIdx.value = -1;
 };
 
 /**
- * 把第 idx 个课时自己的终端灌进树。
+ * 切到第 idx 个课时：上面那排控件换成它自己的值，终端树换成它自己的清单。
  *
- * 还没入库的行没有 taskid，读不出东西来，就先显示方案级那一份 ——
+ * 旧版 modifybell.html 的 radio 就干这两件事 ——
+ * getonetaskterminal.php 一次把 prepower / 音量 / 起止日期 / 星期 / 任务级别
+ * 和终端清单一起返回，getonetaskterminal.js 逐个灌进控件。
+ *
+ * 还没入库的行没有 taskid，终端读不出东西来，就先保持方案级那一份 ——
  * 它本来也就是这一行点「添加」时会存进去的清单。
  */
-const showItemTerminals = async (idx: number) => {
+const showItemScope = async (idx: number) => {
   const row = dlg.items[idx];
   if (!row) return;
+  // 上面那排控件：库里读回来的值存在这一行上，不用再请求一次
+  if (row.startdate) applyAttrs(row);
+  termScopeIdx.value = idx;
   if (!row.taskid || !currentPlanName.value) {
-    showPlanTerminals();
-    termScopeIdx.value = idx;
+    selectedTerminalIds.value = [...planTerminalIds.value];
+    terminalAreas.value = { ...planTerminalAreas.value };
     return;
   }
   termLoading.value = true;
@@ -1094,7 +1170,6 @@ const showItemTerminals = async (idx: number) => {
     terminalAreas.value = Object.fromEntries(list.filter(t => !t.deleted && t.area).map(t => [t.terminalId, t.area]));
     selectedTerminalIds.value = list.filter(t => !t.deleted).map(t => t.terminalId);
     row.terminalCount = list.length;
-    termScopeIdx.value = idx;
   } catch {
     // 读不到就别把树清空 —— 那样一点「修改」就会把这节课的终端全删了
     ElMessage.warning(t("bell.termLoadFailed"));
@@ -1107,8 +1182,8 @@ const showItemTerminals = async (idx: number) => {
 // 新建方案是一条条往里录，还没有哪一课时可读。
 watch(activeItem, idx => {
   if (dlg.mode !== "edit") return;
-  if (idx < 0) showPlanTerminals();
-  else void showItemTerminals(idx);
+  if (idx < 0) showPlanScope();
+  else void showItemScope(idx);
 });
 
 /** 终端树上方那行字：现在显示的是谁的终端、点哪个按钮存到哪 */
@@ -1300,6 +1375,8 @@ const saveOneItem = async (idx: number) => {
     if (row.taskid && currentPlanName.value) {
       await updateBellItemApi(currentPlanName.value, row.taskid, itemPayload(row, true));
       row.terminalCount = selectedTerminalIds.value.length;
+      // 这一行缓存的属性要跟着更新：不然再点一次序号，控件又被灌回旧值
+      Object.assign(row, headerAttrs());
       ElMessage.success(t("bell.lessonSaved", { name: row.taskname.trim() }));
     } else if (!currentPlanName.value) {
       const res = await createBellPlanApi({
@@ -1318,6 +1395,7 @@ const saveOneItem = async (idx: number) => {
       const res = await addBellItemApi(currentPlanName.value, itemPayload(row, true));
       row.taskid = res.data.taskIds?.[0] ?? 0;
       row.terminalCount = selectedTerminalIds.value.length;
+      Object.assign(row, headerAttrs());
       ElMessage.success(t("bell.lessonStored", { name: row.taskname.trim() }));
       (res.data.warnings ?? []).forEach(w => ElMessage.warning(w));
     }
@@ -1510,7 +1588,7 @@ const openCreate = async () => {
   runMode.value = 1; // 默认「每天」，与旧版下拉的第一项一致
   selectedTerminalIds.value = [];
   terminalAreas.value = {};
-  snapshotPlanTerminals();
+  snapshotPlanScope();
   markHeaderClean();
   await resetPlanErrors();
   await Promise.all([searchTerminals(""), searchMedia("")]);
@@ -1551,7 +1629,15 @@ const openEdit = async (row: BellPlan, mode: "edit" | "batch" = "edit") => {
       // 记下原来有几个，界面上标出来，保存时会只剩第一个，不能闷声丢掉。
       mediaId: it.media[0]?.mediaId,
       legacyMediaCount: it.media.length,
-      terminalCount: it.terminalCount ?? 0
+      terminalCount: it.terminalCount ?? 0,
+      startdate: it.startdate,
+      enddate: it.enddate,
+      exemodel: it.exemodel,
+      prepower: it.prepower,
+      defaultvolume: it.defaultvolume,
+      priority: it.priority,
+      datasendmodel: it.datasendmodel,
+      israndomplay: it.israndomplay
     }))
   });
   // 老数据里挂了多个铃声的，开局就说清楚 —— 等人保存完才发现少了东西就晚了
@@ -1575,7 +1661,7 @@ const openEdit = async (row: BellPlan, mode: "edit" | "batch" = "edit") => {
   // 已删除的终端不回填，否则保存时会被存在性校验挡下
   selectedTerminalIds.value = data.terminals.filter(t => !t.deleted).map(t => t.terminalId);
   // 选中某个课时会把树换成那一课时自己的清单，取消选中要能换回来
-  snapshotPlanTerminals();
+  snapshotPlanScope();
   markHeaderClean();
   await resetPlanErrors();
   await searchTerminals("");

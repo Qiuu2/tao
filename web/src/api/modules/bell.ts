@@ -53,10 +53,19 @@ export interface BellItem {
   taskid: number;
   taskname: string;
   playtime: string;
-  /** 起止日期与星期掩码理论上是方案级的，但「智能排课」可以按条目改，所以逐条目也给一份 */
+  /*
+   * 下面这几项名义上是「方案级」，实际每一行 task 各存一份，可以不一致。
+   * 旧版 modifybell.html 的课时表 radio 一选中，就把**这一课时自己的**这几项
+   * 灌回上面那排控件（getonetaskterminal.js）—— 所以逐条目都得给一份。
+   */
   startdate: string;
   enddate: string;
   exemodel: string;
+  prepower: number;
+  defaultvolume: number;
+  priority: number;
+  datasendmodel: number;
+  israndomplay: number;
   timelengthtype: number;
   timelength: number;
   projectstate: number;
@@ -110,6 +119,24 @@ export interface BellItemForm {
   /** 这一条目自己的终端清单。只有 applyTerminals 为 true 时才生效 */
   terminals?: { terminalId: number; groupId: number; area: string }[];
   applyTerminals?: boolean;
+  /**
+   * 这一条目自己的「方案级」属性。不传表示这次不动它们。
+   *
+   * 旧版行内「修改」（modifyonebellplan.php）的 URL 里就带着这一整组 ——
+   * 上面那排控件当时的值，只写给这一条目。
+   */
+  attrs?: BellItemAttrs;
+}
+
+export interface BellItemAttrs {
+  startdate: string;
+  enddate: string;
+  exemodel: string;
+  prepower: number;
+  defaultvolume: number;
+  priority: number;
+  datasendmodel: number;
+  israndomplay: number;
 }
 
 /** 方案级 LED 字幕：正文 + 速度（0~5 级）。不挂字幕时传 null */

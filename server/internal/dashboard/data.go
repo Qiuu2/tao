@@ -348,22 +348,27 @@ type BrowseItem struct {
 	// ⚠ **原样回库里的值**，0000-00-00 也照回（旧版模板就是 `<{$info[loop].disableday}>`
 	// 直接打印）。一度把 0000-00-00 折成空串、界面画「—」，需求方要的是看见字段本身。
 	DisableDay string `json:"disableday"`
-	// RunStatus 是状态那一列：done（已执行）/ running（执行中）/ ready（准备执行）。
+	// RunStatus 是状态那一列，五个取值：
 	//
-	// 旧版这一列（Browse_active_task_form.html:110~155）是按 task.state 分支的，
-	// **只有 state = 0 才去比时间**：
+	//	done     已执行     state = 0 且执行时间已经过了
+	//	ready    准备执行   state = 0 且还没到点
+	//	running  正在执行   state = 1
+	//	paused   暂停       state = 2
+	//	playnow  立即执行   state = 3
 	//
-	//	state = 3 立即执行 → Run        state = 1 执行 → Ready_play●
-	//	state = 2 暂停     → Pause      state = 0 准备 → 拿 playtime 和此刻比
+	// 判据是需求方定的：**先看这一天排不排得上（列表本身已经筛过），
+	// 再看 state；只有 state = 0 才拿钟点去分「已执行 / 准备执行」**。
+	// 与旧版 Browse_active_task_form.html:110~155 的分支结构一致
+	// （它也是只在 state = 0 的分支里写 JS 比时间），只是旧版把
+	// 3 / 1 / 2 各画成一句不同的话，这里给了三个稳定的 key。
 	//
-	// 新版照这个结构，按需求方要求收敛成三个字面值：state 非 0 一律「执行中」
-	// （1 执行、2 暂停、3 立即执行都表示后台服务此刻手里攥着这条任务，
-	// 只有 0 是闲着的），state = 0 才由钟点决定「已执行」还是「准备执行」。
+	// ⚠ 一度把 1 / 2 / 3 合并成一个「执行中」，按需求方要求拆开 ——
+	// 暂停和立即执行是两回事，合起来现场分不清该去按哪个按钮。
 	//
 	// ⚠ 只有**看今天**时 state 才算数：星期选择器可以切到别的日子，
-	// 而 state 是此时此刻的值，拿它去说「上周二那条在执行中」是假的。
+	// 而 state 是此时此刻的值，拿它去说「上周二那条正在执行」是假的。
 	//
-	// 回传的是 key 不是文案 —— 界面要按它上色（执行中红、准备执行绿）。
+	// 回传的是 key 不是文案 —— 界面要按它上色。
 	RunStatus string `json:"runStatus"`
 }
 
@@ -637,22 +642,42 @@ func categoryText(ctx context.Context, module, group string) string {
 // moduleBell 是「所属分类」里唯一带括号的那个模块，categoryOf / categoryText 共用。
 const moduleBell = "作息方案"
 
-// runStatusOf 算看板状态列显示哪一个：done / running / ready。
+// 状态列的五个取值。回给前端的是这些 key，文案与颜色由界面定。
+const (
+	StatusDone    = "done"    // 已执行
+	StatusReady   = "ready"   // 准备执行
+	StatusRunning = "running" // 正在执行
+	StatusPaused  = "paused"  // 暂停
+	StatusPlayNow = "playnow" // 立即执行
+)
+
+// runStatusOf 算看板状态列显示哪一个。
 //
 // 判据与旧版 Browse_active_task_form.html 同构 —— **只有 state = 0 才比时间**：
-// 1 执行、2 暂停、3 立即执行都表示后台服务此刻手里攥着这条任务，
-// 按需求方要求一律显示「执行中」（界面上标红）。
+//
+//	state = 1 → 正在执行     state = 2 → 暂停     state = 3 → 立即执行
+//	state = 0 → 过了点「已执行」，没到点「准备执行」
 //
 // ⚠ state 是**此时此刻**的值，只有在看今天时才算数。星期选择器切到别的日子时，
-// 拿它去说「上周二那条在执行中」是假的 —— 那时一律回到按日期/钟点判。
+// 拿它去说「上周二那条正在执行」是假的 —— 那时一律回到按日期/钟点判。
+//
+// ⚠ 不认识的 state 当 0 处理：宁可显示成「已执行 / 准备执行」，
+// 也不要编一个界面上根本没有的状态出来。
 func runStatusOf(state int, viewDate, today, nowClock, playTime string) string {
-	if viewDate == today && state != 0 {
-		return "running"
+	if viewDate == today {
+		switch state {
+		case 1:
+			return StatusRunning
+		case 2:
+			return StatusPaused
+		case 3:
+			return StatusPlayNow
+		}
 	}
 	if executedOn(viewDate, today, nowClock, playTime) {
-		return "done"
+		return StatusDone
 	}
-	return "ready"
+	return StatusReady
 }
 
 func executedOn(viewDate, today, nowClock, playTime string) bool {

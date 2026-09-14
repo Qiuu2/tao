@@ -15,7 +15,13 @@
  * 把这一课时自己的终端灌进下面的树；行上的「修改」（modifyonebellplan.php）再把
  * 树里的选择只存给这一课时。整表提交（belltaskalonemodify）才是一份套全组。
  *
- * 我们以前只有「一个方案共用一份终端清单」，这里把按课时那条路补上，
+ * 终端只是其中一半。radio 选中时旧版还会把**这一课时自己的**提前开电源 /
+ * 音量 / 任务级别 / 起止日期 / 星期灌回上面那排控件
+ * （getonetaskterminal.php 一次全返回，getonetaskterminal.js 逐个填），
+ * 行上的「修改」再把控件当时的值只写给这一课时
+ * （modifyonebellplan.php 的 URL 里带着 getprepower / task_priority_text / …）。
+ *
+ * 我们以前只有「一个方案共用一份」，这里把按课时那条路补上，
  * 并且补了旧版漏的一件事：功放子任务的终端清单跟着一起重写。
  */
 const BASE = process.env.E2E_BASE || "http://127.0.0.1:5199";
@@ -206,7 +212,7 @@ const pickedIds = () =>
 {
   const n = await noteText();
   console.log("   刚打开时那行字:", n);
-  ok(n.includes("整个方案"), "一打开说的是「整个方案的终端清单」");
+  ok(n.includes("整个方案"), "一打开说的是「整个方案」");
 }
 {
   // 第 2 行的序号 radio
@@ -226,7 +232,7 @@ const pickedIds = () =>
   ok(!(await itemRows.nth(1).locator("button", { hasText: "修改" }).first().isDisabled()), "第 2 行的「修改」可以点");
 }
 {
-  await dlg.locator("button", { hasText: "看整个方案的终端" }).first().click();
+  await dlg.locator("button", { hasText: "看整个方案" }).first().click();
   await p.waitForTimeout(1500);
   const n = await noteText();
   console.log("   点了「看整个方案的终端」后:", n);
@@ -252,6 +258,92 @@ console.log("⑦ 选中第 2 个课时，在树上再勾一台，点这一行的
   ok(t2 === [T1, T2].sort((a, b) => a - b).join(","), "第二节现在挂着两台");
   ok(t1 === String(T1), "第一节还是只有一台 —— 行内「修改」没有波及别的课时");
   ok(termsOf(powerOf(id2)) === [T1, T2].sort((a, b) => a - b).join(","), "第二节的功放子任务也是两台");
+}
+
+// ── ⑧ 选中序号，上面那排控件要换成这一课时自己的值 ──
+console.log("⑧ 点序号，提前开电源 / 音量 / 任务级别 / 起止日期 也要跟着换");
+{
+  // 先把两个课时改成**不一样**的属性，不然换不换都一个样，验不出来
+  execSync(SQL(`UPDATE task SET priority=12, defaultvolume=66, prepower=15 WHERE taskid=${id1} OR sec_task_id=${id1}`), {
+    stdio: "pipe"
+  });
+  execSync(SQL(`UPDATE task SET priority=31, defaultvolume=44, prepower=20 WHERE taskid=${id2} OR sec_task_id=${id2}`), {
+    stdio: "pipe"
+  });
+  await p.reload({ waitUntil: "domcontentloaded" });
+  await p.waitForTimeout(4000);
+  await p.locator(".el-table__body .el-table__row", { hasText: PLAN }).first().locator("button", { hasText: "修改" }).first().click();
+  await p.waitForTimeout(4000);
+  const d2 = p.locator(".el-dialog:visible").first();
+  const rows2 = d2.locator(".el-table__body .el-table__row");
+
+  /*
+   * 任务级别那个下拉的当前值。
+   *
+   * ⚠ 两个坑，都踩过：
+   *   1. 不能读 input 的 value —— el-select 里那个 input 是空的（readonly，
+   *      只用来接键盘），选中项另画在别处，读它永远是空串；
+   *   2. 也不能取 `.el-select__selected-item` 的**第一个** —— 第一个是
+   *      `el-select__input-wrapper is-hidden`，同样是空的。
+   * 直接读整个 .el-select__wrapper 的可见文字最稳。
+   */
+  const priorityRow = () => d2.locator(".el-form-item", { hasText: "任务级别" }).first();
+  const selText = async loc => (await loc.locator(".el-select__wrapper").first().innerText()).trim();
+  const priorityNow = () => selText(priorityRow());
+  // 音量滑块右边那个数字输入框（el-input-number 的 input 是真的有 value 的）
+  const volumeNow = async () => (await d2.locator(".el-form-item", { hasText: "音量" }).locator("input").first().inputValue()).trim();
+
+  console.log(`   刚打开（方案级，取第一条）：任务级别 ${await priorityNow()}，音量 ${await volumeNow()}`);
+  await rows2.nth(0).locator(".idx-radio").first().click();
+  await p.waitForTimeout(2000);
+  const p1 = await priorityNow(),
+    v1 = await volumeNow();
+  console.log(`   选中第 1 个课时：任务级别 ${p1}，音量 ${v1}`);
+  ok(p1 === "12", "第 1 个课时的任务级别灌进了控件（12）");
+  ok(v1 === "66", "第 1 个课时的音量灌进了控件（66）");
+
+  await rows2.nth(1).locator(".idx-radio").first().click();
+  await p.waitForTimeout(2000);
+  const p2v = await priorityNow(),
+    v2 = await volumeNow();
+  console.log(`   选中第 2 个课时：任务级别 ${p2v}，音量 ${v2}`);
+  ok(p2v === "31", "换到第 2 个课时，任务级别跟着变成了 31 —— 这正是「没显示到控件里」那条");
+  ok(v2 === "44", "音量也跟着变成了 44");
+
+  // ── ⑨ 行内「修改」要把这排控件的值真的存进库 ──
+  console.log("⑨ 改任务级别再点这一行的「修改」，库里要真的变");
+  const sel = priorityRow().locator(".el-select").first();
+  await sel.click();
+  await p.waitForTimeout(800);
+  await p.locator(".el-select-dropdown:visible .el-select-dropdown__item", { hasText: /^10$/ }).first().click();
+  await p.waitForTimeout(600);
+  ok((await priorityNow()) === "10", "控件上已经是 10 了");
+  await rows2.nth(1).locator("button", { hasText: "修改" }).first().click();
+  await p.waitForTimeout(4000);
+
+  const gotPri = q1(`SELECT priority FROM task WHERE taskid=${id2}`);
+  const otherPri = q1(`SELECT priority FROM task WHERE taskid=${id1}`);
+  console.log(`   存完：第二节 priority=${gotPri}，第一节 priority=${otherPri}`);
+  ok(gotPri === "10", "第 2 个课时的任务级别真的存成了 10（原来点了「修改」整组属性被悄悄丢掉）");
+  ok(otherPri === "12", "第 1 个课时没被带着一起改");
+  ok(
+    q1(`SELECT GROUP_CONCAT(DISTINCT priority) FROM task WHERE sec_task_id=${id2}`) === "10",
+    "功放 / LED 子任务的任务级别也跟着改了"
+  );
+
+  // 重新打开再选一次，值要还是 10 —— 这才是需求方遇到的那个现象
+  await p.reload({ waitUntil: "domcontentloaded" });
+  await p.waitForTimeout(4000);
+  await p.locator(".el-table__body .el-table__row", { hasText: PLAN }).first().locator("button", { hasText: "修改" }).first().click();
+  await p.waitForTimeout(4000);
+  const d3 = p.locator(".el-dialog:visible").first();
+  await d3.locator(".el-table__body .el-table__row").nth(1).locator(".idx-radio").first().click();
+  await p.waitForTimeout(2000);
+  const again = (
+    await d3.locator(".el-form-item", { hasText: "任务级别" }).first().locator(".el-select__wrapper").first().innerText()
+  ).trim();
+  console.log("   重新打开再选第 2 个课时：任务级别", again);
+  ok(again === "10", "重新打开还是 10，不会跳回原来那个数");
 }
 
 console.log(fails ? `\n✗ ${fails} 条没过` : "\n全部通过");
