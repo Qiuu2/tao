@@ -111,16 +111,49 @@ const cnt = async () => {
  *   重新拉列表，正好撞上点击的话，那一下会被重渲染吃掉。
  *   真人遇到这种情况也是再点一次 —— 这里照做，而不是把等待时间调长了赌。
  */
-const tick = async (i, tries = 3) => {
+const tick = async (i, tries = 5) => {
   const rowCb = () => p.locator(".el-table__body .el-table__row").nth(i).locator(".el-checkbox");
+  const isOn = async () => ((await rowCb().getAttribute("class")) || "").includes("is-checked");
+  if (await isOn()) return true;
+
+  // ⚠ 成功的判据要**行上的勾和顶上的计数同时成立**。
+  //
+  // 原来只看行上那个 is-checked 类，结果这一条断断续续地红：三次全量里挂了两次，
+  // 每次都是「勾了 2 台（实际 1）」。原因是这一页开着无感刷新 —— 点下去到
+  // Vue 重渲染之间有个窗口，类名已经刷上了、而 selectedList 还没跟上（或者反过来，
+  // 那一下点击被重渲染整个吃掉）。只看一边就会「以为勾上了」然后在下一句断言里翻车。
+  //
+  // 两边都认，并且多试几次。真人遇到没勾上也是再点一次，不是把 sleep 调长了赌。
+  const before = await cnt();
+  let lastErr = "";
   for (let n = 0; n < tries; n++) {
-    if ((await rowCb().getAttribute("class"))?.includes("is-checked")) return true;
     await rowCb()
       .click({ timeout: 10000 })
-      .catch(() => undefined);
+      .catch(e => (lastErr = String(e).split("\n")[0]));
     await p.waitForTimeout(800);
+    if ((await isOn()) && (await cnt()) > before) return true;
   }
-  return (await rowCb().getAttribute("class"))?.includes("is-checked") ?? false;
+  // ⚠ 别无声地失败。原来这里 catch(() => undefined) 把点击异常整个吞了，
+  //   于是「被弹层挡住点不到」和「点了没生效」长得一模一样，
+  //   只能看见下一句断言报「勾了 2 台（实际 1）」，查不出为什么。
+  if (lastErr) console.log(`   [tick ${i}] 点不动：${lastErr.slice(0, 120)}`);
+  return false;
+};
+
+/**
+ * 把可能挡路的浮层清掉：下拉菜单、确认框、消息条。
+ *
+ * ⚠ 这是 ③ 断断续续变红的根因。② 那一步点了「批量操作」下拉、又弹了确认框，
+ * 它们的 popper 收起来需要时间；赶上 ③ 立刻去点复选框，那一下就落在浮层上，
+ * Element 的 popper 是全屏透明遮罩，点击静静地被吃掉。
+ */
+const dismissPoppers = async () => {
+  for (let i = 0; i < 3; i++) {
+    await p.keyboard.press("Escape").catch(() => undefined);
+    await p.waitForTimeout(400);
+    const blockers = (await p.locator(".el-overlay:visible").count()) + (await p.locator(".el-dropdown__popper:visible").count());
+    if (blockers === 0) return;
+  }
 };
 
 await openTerminals();
@@ -158,9 +191,11 @@ ok(sent.length === 1 && sent[0].includes(`"ids":[${pickedId}]`), `带的正是�
 
 // ── ③ 翻页仍然保住勾选 ──
 console.log("③ 翻页不能把勾选弄丢（reserve-selection 的正事不能被误伤）");
+await dismissPoppers(); // ② 那步留下的下拉/确认框收干净，否则下面的点击会落在浮层上
 await openTerminals(); // 重新进一次，拿个干净状态；上面那个下拉会挡住分页器
-await tick(0);
-await tick(1);
+await dismissPoppers();
+ok(await tick(0), "勾上了第 1 行");
+ok(await tick(1), "勾上了第 2 行");
 const n3 = await cnt();
 ok(n3 === 2, `勾了 2 台（实际 ${n3}）`);
 const next = p.locator(".el-pagination .btn-next");
