@@ -419,6 +419,7 @@ var exposedGroups = []exposedGroup{
 			{"GET /api/dashboard/overview", "首页总览数据", "登录即可", false},
 			{"GET /api/dashboard/perf", "服务器性能指标", "登录即可", false},
 			{"GET /api/dashboard/tasks", "首页任务浏览", "登录即可", false},
+			{"PUT /api/dashboard/tasks/disable-day", "把任务在某一天单独停掉 / 恢复", "taskpriv", true},
 			{"GET /api/logs", "操作日志", "超级管理员", false},
 			{"GET /api/logs/stats", "操作日志统计", "超级管理员", false},
 			{"DELETE /api/logs", "清理操作日志", "超级管理员", true},

@@ -168,18 +168,12 @@ func (a *app) handleDashBrowse(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query()
 	pager := store.NewPager(atoiDefault(q.Get("pageNum"), 1), atoiDefault(q.Get("pageSize"), 20))
 
-	// 默认「全部」而不是「当天启用」：进看板先看到这一天所有的任务，
-	// 想只看会响的再自己点过去。按需求方要求改的（原来默认 enabled，
-	// 一进来就少一半，容易以为任务丢了）。
-	scope := q.Get("scope")
-	if scope == "" {
-		scope = "all"
-	}
+	// ⚠ 这里一度还收一个 scope（当天启用/当天停用/全部）。那是误读 ——
+	// 旧版那两个不是筛选是**操作**，见 handleDashDisableDay。参数已经去掉。
 	res, err := a.dash.Browse(r.Context(), auth.From(r.Context()), dashboard.BrowseQuery{
 		FolderID: int64(atoiDefault(q.Get("folderId"), 0)),
 		Weekday:  atoiDefault(q.Get("weekday"), 0),
 		AutoMode: atoiDefault(q.Get("autoMode"), 0),
-		Scope:    scope,
 		Module:   q.Get("module"),
 		Pager:    pager,
 	})
@@ -191,7 +185,38 @@ func (a *app) handleDashBrowse(w http.ResponseWriter, r *http.Request) {
 		"list": res.Items, "total": res.Total,
 		"pageNum": pager.PageNum, "pageSize": pager.PageSize,
 		// viewDate 是这次看的是哪一天 —— 星期能选「周三」之后，
-		// 界面上得把这一天写出来，不然「当天启用」说不清是哪天
+		// 界面上得把这一天写出来，不然「当天停用」说不清停的是哪天
 		"viewDate": res.ViewDate,
 	})
+}
+
+type disableDayReq struct {
+	IDs     []int64 `json:"ids"`
+	Weekday int     `json:"weekday"`
+	// Disable 为 true 是「当天停用」，false 是「当天启用」。
+	Disable bool `json:"disable"`
+}
+
+// handleDashDisableDay 是看板上的「当天启用 / 当天停用」两个按钮。
+//
+// ⚠ 它们不是筛选，是**操作** —— 勾几行点下去，改的是 task.disableday。
+// 详见 dashboard.SetDisableDay 的注释。
+//
+// ⚠ 日期不收客户端传的，服务端按 weekday 当场算（与列表同一份算法）：
+// 旧版是 `&getdate=` 直接拼进 UPDATE，谁都能塞一个任意日期进去。
+func (a *app) handleDashDisableDay(w http.ResponseWriter, r *http.Request) {
+	var in disableDayReq
+	if !httpx.DecodeJSON(w, r, &in) {
+		return
+	}
+	res, err := a.dash.SetDisableDay(r.Context(), auth.From(r.Context()), dashboard.DisableDayInput{
+		IDs:     in.IDs,
+		Weekday: in.Weekday,
+		Disable: in.Disable,
+	})
+	if err != nil {
+		failDash(w, "设置单独停用日", err)
+		return
+	}
+	httpx.OK(w, res)
 }

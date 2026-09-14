@@ -170,6 +170,13 @@ export default {
     stop: "停止",
     onToday: "当天启用",
     offToday: "当天停用",
+    pickTasksFirst: "请先勾选任务",
+    dayActsOn: "作用在 {d} 这一天（跟着上面的星期走）",
+    offDayConfirm: "把勾中的 {n} 条任务在 {d} 这一天停掉？到了那天它们不会响，别的日子照常。",
+    onDayConfirm: "把勾中的 {n} 条任务的单独停用日清掉？清掉之后 {d} 那天照常响。",
+    offDayDone: "{n} 条任务已停到 {d}（另有 {s} 条子任务跟着改）",
+    onDayDone: "{n} 条任务的单独停用日已清掉（另有 {s} 条子任务跟着改）",
+    daySkipped: "有 {n} 条没改到：任务不在了，或者不是你建的",
     // ⚠ 这一条原来叫「任务管理：」，但它筛的是**任务分组**（filetaskfree 那棵树），
     //   名不副实。真正按「任务管理」下的模块筛的是下面的 filterModule。
     filterFolder: "任务分组：",
@@ -199,6 +206,8 @@ export default {
     today: "今天",
     taskName: "任务名称",
     folder: "所属分类",
+    owner: "所属用户",
+    ownerGone: "账号已删除",
     manualTask: "手动任务",
     autoTask: "自动任务",
     playTime: "执行时间",

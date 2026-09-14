@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"sort"
 
 	"htweb/internal/auth"
 	"htweb/internal/notify"
@@ -36,9 +37,53 @@ import (
 // 而列表查的是 tasktype IN(2,7) —— 类型 7 的任务在列表里看得见、却永远启动不了。
 // 新版启动的类型集合与列表保持一致，见 startableTypes。
 
-// startableTypes 是允许启停的任务类型。
-// 与列表口径（fileTypes）对齐，另外收下旧启动语句里的 15（作息内的文件播放）。
-var startableTypes = []int{TypeFile, TypeFileAlt, TypeSchedule}
+// startRule 是某一类任务启动前必须满足的前置条件。
+//
+// 启动本身对所有类型是一样的（`UPDATE task SET state = 3`），差别只在
+// 「没有它就不该启动」的那两样东西：功放和采播本来就没有媒体，
+// 要求它们有媒体等于永远启动不了。口径与各模块自己的页面一致
+// （见 typedtask 的 spec：NeedMedia / NeedTerminal）。
+type startRule struct {
+	needMedia    bool
+	needTerminal bool
+}
+
+// startRules 列出允许启停的任务类型，以及各自的前置条件。
+//
+// ⚠ 这张表就是「哪些任务能从看板上点执行/停止」的**唯一**判据，
+// 必须覆盖看板列得出来的全部类型（dashboard.browseAllModules）。
+//
+// 原来只有 {2, 7, 15} —— 那是旧版启动语句 `tasktype IN(2,15)` 的范围。
+// 后果是看板上点终端功放、采播、文字语音、led播放、作息条目的「执行」，
+// 一律弹「任务类型 N 不支持启停」。按需求方要求放开到全部。
+//
+// 旧版看板那两个动作（do.php:start_curr_tast_state / stop_curr_tast_state）
+// 本来就**一个类型都不挑** —— 直接 `update task set state=3 where taskid=X`。
+var startRules = map[int]startRule{
+	TypeBell:      {needMedia: true, needTerminal: true},  // 1  作息方案的一次打铃
+	TypeFile:      {needMedia: true, needTerminal: true},  // 2  文件广播
+	TypeCollect:   {needMedia: false, needTerminal: true}, // 3  采播管理（没有媒体）
+	TypeAmplifier: {needMedia: false, needTerminal: true}, // 5  终端功放（没有媒体）
+	TypeFileAlt:   {needMedia: true, needTerminal: true},  // 7  文件广播的另一种取值
+	TypeSchedule:  {needMedia: true, needTerminal: true},  // 15 作息内的文件播放 / 文字语音
+	TypeTTSAlt:    {needMedia: true, needTerminal: true},  // 17 文字语音
+	TypeTTSAlt2:   {needMedia: true, needTerminal: true},  // 19 文字语音
+	TypeLEDSubOld: {needMedia: false, needTerminal: true}, // 24 led播放（字幕没有媒体）
+	TypeLEDSub:    {needMedia: false, needTerminal: true}, // 30 led播放
+}
+
+// StartableTypes 是允许启停的 tasktype，排好序的只读副本。
+//
+// 看板那边要拿它核对「列得出来的类型」与「能启停的类型」是同一套 ——
+// 两边对不上就会出现「列表里有、点了说不支持」。
+func StartableTypes() []int {
+	out := make([]int, 0, len(startRules))
+	for t := range startRules {
+		out = append(out, t)
+	}
+	sort.Ints(out)
+	return out
+}
 
 // Action 是启停动作。
 type Action string
@@ -120,14 +165,12 @@ func (s *Service) Control(ctx context.Context, u *auth.User, n *notify.Notifier,
 		return nil, err
 	}
 
-	typeOK := map[int]bool{}
-	for _, t := range startableTypes {
-		typeOK[t] = true
-	}
-
 	var doable []int64
+	// refs 与 doable 一一对应：停止/暂停/恢复的报文要带任务真实的 tasktype
+	var refs []notify.TaskRef
 	for _, id := range ids {
 		r, exists := rows[id]
+		rule, typeOK := startRules[r.taskType]
 		switch {
 		case !exists:
 			out.Blocked = append(out.Blocked, Blocked{ID: id,
@@ -136,7 +179,7 @@ func (s *Service) Control(ctx context.Context, u *auth.User, n *notify.Notifier,
 			// BR-174，修 D-113
 			out.Blocked = append(out.Blocked, Blocked{ID: id, Name: r.name,
 				Reason: "NOT_OWNER", Detail: "只能操作自己创建的任务"})
-		case !typeOK[r.taskType]:
+		case !typeOK:
 			out.Blocked = append(out.Blocked, Blocked{ID: id, Name: r.name,
 				Reason: "BAD_TYPE", Detail: fmt.Sprintf("任务类型 %d 不支持启停", r.taskType)})
 		case r.channel != 0:
@@ -147,15 +190,16 @@ func (s *Service) Control(ctx context.Context, u *auth.User, n *notify.Notifier,
 			// BR-175，修 D-114
 			out.Blocked = append(out.Blocked, Blocked{ID: id, Name: r.name,
 				Reason: "DISABLED", Detail: "方案已停用，请先启用后再启动"})
-		case action == ActionStart && r.mediaCount == 0:
+		case action == ActionStart && rule.needMedia && r.mediaCount == 0:
 			// BR-176，修 D-115
 			out.Blocked = append(out.Blocked, Blocked{ID: id, Name: r.name,
 				Reason: "NO_MEDIA", Detail: "任务没有媒体，启动后后台会空转"})
-		case action == ActionStart && r.termCount == 0:
+		case action == ActionStart && rule.needTerminal && r.termCount == 0:
 			out.Blocked = append(out.Blocked, Blocked{ID: id, Name: r.name,
 				Reason: "NO_TERMINAL", Detail: "任务没有终端，启动后没有设备会播放"})
 		default:
 			doable = append(doable, id)
+			refs = append(refs, notify.TaskRef{ID: id, TaskType: r.taskType})
 		}
 	}
 	if len(doable) == 0 {
@@ -173,11 +217,12 @@ func (s *Service) Control(ctx context.Context, u *auth.User, n *notify.Notifier,
 	case ActionStart:
 		n.TaskStarted(ctx, doable)
 	case ActionStop:
-		n.TaskChanged(ctx, notify.TaskStop, doable)
+		// ⚠ 带任务真实的 tasktype，不是写死的 2 —— 见 notify.TaskChangedTyped。
+		n.TaskChangedTyped(ctx, notify.TaskStop, refs)
 	case ActionPause:
-		n.TaskChanged(ctx, notify.TaskPause, doable)
+		n.TaskChangedTyped(ctx, notify.TaskPause, refs)
 	case ActionResume:
-		n.TaskChanged(ctx, notify.TaskResume, doable)
+		n.TaskChangedTyped(ctx, notify.TaskResume, refs)
 	}
 	out.Notified = true
 	return out, nil

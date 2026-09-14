@@ -240,16 +240,37 @@
         </el-select>
       </div>
 
-      <!-- :80 这里是「当天启用 / 当天停用」两个按钮，不是页签；多留一个「全部」 -->
+      <!--
+        ⚠ 「当天启用 / 当天停用」是**操作**，不是筛选。
+
+        这里一度做成了一组单选（当天启用 / 当天停用 / 全部），是误读。
+        旧版 Browse_active_task.html:130 的 enordis_week_date_task() 干的是：
+        把勾中的 taskid 带着**当前看的那一天**发给 do.php，写 task.disableday
+        —— 停用写那一天的日期、启用写回 0000-00-00。
+
+        所以这里是两个按钮 + 表格左边一列复选框，按钮上带着勾了几条。
+      -->
       <div class="scope-bar">
-        <el-radio-group v-model="bq.scope" size="small" @change="loadTasks">
-          <el-radio-button value="enabled">{{ $t("dash.onToday") }}</el-radio-button>
-          <el-radio-button value="disabled">{{ $t("dash.offToday") }}</el-radio-button>
-          <el-radio-button value="all">{{ $t("common.all") }}</el-radio-button>
-        </el-radio-group>
+        <el-button size="small" type="danger" plain :disabled="!picked.length" :loading="dayBusy" @click="setDay(true)">
+          {{ $t("dash.offToday") }}{{ picked.length ? `（${picked.length}）` : "" }}
+        </el-button>
+        <el-button size="small" type="success" plain :disabled="!picked.length" :loading="dayBusy" @click="setDay(false)">
+          {{ $t("dash.onToday") }}{{ picked.length ? `（${picked.length}）` : "" }}
+        </el-button>
+        <!-- 说清楚这两个按钮作用在哪一天：它跟着上面的星期下拉走，不一定是今天 -->
+        <span v-if="viewDate" class="muted">{{ $t("dash.dayActsOn", { d: viewDate }) }}</span>
       </div>
 
-      <el-table :data="tasks" v-loading="tasksLoading" size="small" :empty-text="$t('common.noData')">
+      <el-table
+        ref="taskTableRef"
+        :data="tasks"
+        v-loading="tasksLoading"
+        size="small"
+        row-key="taskId"
+        :empty-text="$t('common.noData')"
+        @selection-change="onPick"
+      >
+        <el-table-column type="selection" width="42" reserve-selection />
         <el-table-column prop="index" :label="$t('common.index')" width="70" />
         <el-table-column prop="taskName" :label="$t('dash.taskName')" min-width="160" show-overflow-tooltip />
         <!--
@@ -259,6 +280,20 @@
           于是「早读预备铃」显示成「admin」，认不出属于哪个方案。见后端 categoryOf。
         -->
         <el-table-column prop="category" :label="$t('dash.folder')" min-width="150" show-overflow-tooltip />
+        <!--
+          所属用户 = task.task_user_id 指的那个账号。
+          旧版这一页也把它查出来了（Browse_active_task.php:544 "taskuserid"），
+          只是模板里没画。管理员看到的是全站任务，不写明归属就分不清这条是谁排的。
+
+          ⚠ 账号被删掉时后端回空串（LEFT JOIN），这里画「账号已删除」并带上 id，
+          不让整行消失 —— 内连接把行吞掉才是真的查不出问题。
+        -->
+        <el-table-column :label="$t('dash.owner')" width="110" show-overflow-tooltip>
+          <template #default="{ row }">
+            <span v-if="row.ownerName">{{ row.ownerName }}</span>
+            <span v-else class="muted">{{ row.ownerUserId ? `#${row.ownerUserId}（${$t("dash.ownerGone")}）` : "—" }}</span>
+          </template>
+        </el-table-column>
         <el-table-column prop="cycleText" :label="$t('dash.weekdays')" width="140" />
         <el-table-column prop="playtime" :label="$t('dash.playTime')" width="110" />
         <!--
@@ -354,12 +389,14 @@ import { useI18n } from "vue-i18n";
 import { computed, onMounted, onUnmounted, reactive, ref } from "vue";
 import { useRouter } from "vue-router";
 import { ElMessage, ElMessageBox } from "element-plus";
+import type { ElTable } from "element-plus";
 import { EditPen, Plus } from "@element-plus/icons-vue";
 import {
   getDashConfigApi,
   getDashOverviewApi,
   getDashPerfApi,
   getDashTasksApi,
+  setDisableDayApi,
   playEmergencyApi,
   saveQuickTasksApi,
   saveShortcutsApi,
@@ -499,12 +536,64 @@ const tasks = ref<BrowseItem[]>([]);
 const tasksTotal = ref(0);
 const tasksLoading = ref(false);
 const folders = ref<{ id: number; name: string }[]>([]);
-// ⚠ scope 默认 "all"（全部），不是 "enabled"（当天启用）——
-//   一进看板就只剩会响的那几条，容易让人以为任务丢了。按需求方要求改的。
-const bq = reactive({ folderId: 0, weekday: 0, autoMode: 0, scope: "all", module: "all", pageNum: 1, pageSize: 20 });
+// ⚠ 这里一度还有一个 scope（当天启用/当天停用/全部）。那是误读 ——
+//   旧版那两个不是筛选是操作，见模板里的说明与 setDay()。
+//   停用的任务现在由后端硬过滤掉（与旧版 task.projectstate=0 一致），
+//   列表里剩下的都是在用的，没有再筛一道的必要。
+const bq = reactive({ folderId: 0, weekday: 0, autoMode: 0, module: "all", pageNum: 1, pageSize: 20 });
 
 /** 所看那一天（后端按星期算出来的具体日期），标题和状态列的提示都用它 */
 const viewDate = ref("");
+
+/* ---------------- 当天启用 / 当天停用 ----------------
+
+   旧版 do.php:enordis_date_task 写的是 task.disableday：
+   停用 → 当前看的那一天的日期，启用 → 0000-00-00。
+   它与 projectstate 是两回事 —— projectstate 是整条任务的长期启停，
+   disableday 只挖掉某一天。
+
+   ⚠ 日期不从这里传。服务端按 weekday 当场算，与列表同一份算法 ——
+   界面上写着「看的是 9-16」，点下去停的就得是 9-16。 */
+
+/** 表格上勾中的行 */
+const picked = ref<BrowseItem[]>([]);
+const onPick = (rows: BrowseItem[]) => (picked.value = rows);
+const dayBusy = ref(false);
+/**
+ * ⚠ 表格开了 reserve-selection（翻页不丢勾选），所以操作完必须让**表格自己**
+ * 清一次，光把 picked 置空不算 —— 行上的勾还在，人再点一下是把它取消掉，
+ * 按钮反而还是灰的。这条是写 e2e 时撞出来的。
+ */
+const taskTableRef = ref<InstanceType<typeof ElTable>>();
+const clearPicked = () => {
+  picked.value = [];
+  taskTableRef.value?.clearSelection();
+};
+
+const setDay = async (disable: boolean) => {
+  const ids = picked.value.map(r => r.taskId);
+  if (!ids.length) return ElMessage.warning(t("dash.pickTasksFirst"));
+  // 停用是「那天不响」，问一句 —— 广播漏一天，当天才会有人发现
+  try {
+    await ElMessageBox.confirm(
+      t(disable ? "dash.offDayConfirm" : "dash.onDayConfirm", { n: ids.length, d: viewDate.value }),
+      t(disable ? "dash.offToday" : "dash.onToday"),
+      { type: "warning" }
+    );
+  } catch {
+    return;
+  }
+  dayBusy.value = true;
+  try {
+    const { data } = await setDisableDayApi(ids, bq.weekday, disable);
+    ElMessage.success(t(disable ? "dash.offDayDone" : "dash.onDayDone", { n: data.tasks, d: data.date, s: data.subs }));
+    if (data.skipped?.length) ElMessage.warning(t("dash.daySkipped", { n: data.skipped.length }));
+    clearPicked();
+    await loadTasks();
+  } finally {
+    dayBusy.value = false;
+  }
+};
 
 /**
  * 状态列：后端给的是 key（done / running / ready），界面负责文案与颜色。
@@ -1103,6 +1192,10 @@ onUnmounted(() => {
   color: var(--el-text-color-regular);
 }
 .scope-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
   margin-bottom: 10px;
 }
 .pager {

@@ -176,16 +176,17 @@ var auditLabels = map[string]string{
 	"PUT /api/alarm-areas/{id}":    "修改报警分区",
 	"DELETE /api/alarm-areas":      "删除报警分区",
 
-	"POST /api/bell-plans":               "新建作息方案",
-	"PUT /api/bell-plans":                "修改作息方案",
-	"DELETE /api/bell-plans":             "删除作息方案",
-	"PUT /api/bell-plans/state":          "启停作息方案",
-	"PUT /api/bell-plans/volume":         "调整作息方案音量",
-	"POST /api/bell-plans/copy":          "复制作息方案",
-	"POST /api/bell-plans/items":         "新增打铃条目",
-	"PUT /api/bell-plans/items/{id}":     "修改打铃条目",
-	"DELETE /api/bell-plans/items":       "删除打铃条目",
-	"PUT /api/bell-plans/items/schedule": "修改打铃条目排期",
+	"PUT /api/dashboard/tasks/disable-day": "设置任务的单独停用日",
+	"POST /api/bell-plans":                 "新建作息方案",
+	"PUT /api/bell-plans":                  "修改作息方案",
+	"DELETE /api/bell-plans":               "删除作息方案",
+	"PUT /api/bell-plans/state":            "启停作息方案",
+	"PUT /api/bell-plans/volume":           "调整作息方案音量",
+	"POST /api/bell-plans/copy":            "复制作息方案",
+	"POST /api/bell-plans/items":           "新增打铃条目",
+	"PUT /api/bell-plans/items/{id}":       "修改打铃条目",
+	"DELETE /api/bell-plans/items":         "删除打铃条目",
+	"PUT /api/bell-plans/items/schedule":   "修改打铃条目排期",
 
 	// 保留期是「日志少了一截」的直接原因，改了必须留痕。
 	// 这一下同时会立刻滚一次，那部分由 logs.RetentionService.Purge 在删之前

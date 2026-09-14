@@ -44,10 +44,15 @@ var (
 
 // 任务类型常量（修 D-106 的硬编码）。
 const (
-	TypeFile     = 2  // 文件广播
-	TypeFileAlt  = 7  // 文件广播的另一种取值，现网无数据但旧查询一直带着
-	TypeSchedule = 15 // 作息内的文件播放，旧启动语句把它和 2 一起处理
-	TypePowerAmp = 9  // 功放子任务
+	TypeBell      = 1  // 作息方案的一次打铃
+	TypeFile      = 2  // 文件广播
+	TypeCollect   = 3  // 采播管理
+	TypeAmplifier = 5  // 终端功放
+	TypeFileAlt   = 7  // 文件广播的另一种取值，现网无数据但旧查询一直带着
+	TypeSchedule  = 15 // 作息内的文件播放 / 文字语音（靠 info 分，见契约 C-38）
+	TypeTTSAlt    = 17 // 文字语音
+	TypeTTSAlt2   = 19 // 文字语音
+	TypePowerAmp  = 9  // 功放子任务
 	// ⚠ LED 子任务是 **30**，不是 24。
 	//
 	// 现网四条 LED 任务全是 tasktype = 30（70009 sec_task_id=70007「早读」、

@@ -327,10 +327,17 @@ type BrowseItem struct {
 	StartDate string `json:"startdate"`
 	EndDate   string `json:"enddate"`
 	Terminals int    `json:"terminals"`
-	// EnabledToday 表示**所看那一天**这条任务是否真的会执行。
-	// 名字沿用旧字段名不改，免得前端到处跟着换；语义见 Browse 的注释。
-	EnabledToday bool `json:"enabledToday"`
 	ProjectState int  `json:"projectstate"`
+	// OwnerUserID / OwnerName 是这条任务归谁（task.task_user_id → book_admin.username）。
+	//
+	// 旧版这一页也带着它（Browse_active_task.php:544 `"taskuserid"=>...`），
+	// 只是模板里没画出来。管理员看到的是全站任务，不写明归属就分不清
+	// 「这条是谁排的」—— 出了问题找不到人。
+	//
+	// ⚠ 用户被删掉时 username 查不到，回空串，界面画「—」：
+	// 内连接会让这一行整个消失，那才是真的查不出问题。
+	OwnerUserID int64  `json:"ownerUserId"`
+	OwnerName   string `json:"ownerName"`
 	// DisableDay 是这条任务被单独停掉的那一天（task.disableday）。
 	//
 	// 旧版看板上就有这一列（Browse_active_task_form.html:161，表头「当天停用」）：
@@ -366,8 +373,6 @@ type BrowseQuery struct {
 	Weekday int
 	// AutoOnly: 1=只看自动任务, 2=只看手动任务, 0=全部
 	AutoMode int
-	// Scope: enabled=当天启用, disabled=当天停用, all=全部（默认）
-	Scope string
 	// Module 按「任务管理」下的模块筛。空串或 "all" = 全部，取值见 browseModules。
 	Module string
 	Pager  store.Pager
@@ -426,22 +431,48 @@ type BrowseResult struct {
 //   - 所看那一天落在 startdate ~ enddate 之间
 //   - 星期掩码里那一天这一位是 1
 //
-// ⚠ **日期范围这一条跟着星期走，不跟着 Scope 走**：不管选「全部」还是
-// 「当天启用/停用」，列表里都只出现那一天有效期覆盖得到的任务。
-// Scope 只在这批里再分「会响 / 不会响」。
+// 三条都是**硬过滤**，与旧版那条查询逐项对齐
+// （Browse_active_task.php:241~267）：
+//
+//	WHERE task.projectstate = '0'
+//	  AND task.startdate <= <那一天> AND task.enddate >= <那一天>
+//	  AND SUBSTRING(task.exemodel, <那一天在掩码里的位>, 1)   ← '1' 真、'0' 假
+//
+// 所以这一页列的是「**你看的那一天真的会响**的任务」，名副其实。
+//
+// ⚠ 这里一度有一组「当天启用 / 当天停用 / 全部」的单选，让不响的那些也列出来，
+// 是**误读**：旧版那两个不是筛选，是**操作** —— 勾几行点下去，写的是
+// task.disableday（do.php:enordis_date_task）。现在它们是按钮，见 SetDisableDay。
+//
+// ⚠ **单独停用日（disableday）不参与过滤**：那天被单独停掉的任务照样列出来，
+// 「单独停用日」那一列会写出是哪天。旧版这条查询同样不带它 —— 不列出来的话，
+// 人就没地方把它点回「当天启用」了。
+// viewDateOf 把「星期下拉选的是第几天」换算成一个具体日期。
+//
+// weekday 取值 1~7（1 = 周日），其余值一律当「今天」。
+// 偏移可正可负 —— 选的日子可能是本周已经过去的那几天
+// （旧版 `DATE_ADD(CURDATE(), INTERVAL (选的星期 - 今天星期) DAY)`，
+// Browse_active_task.php:243/247）。
+//
+// 返回 (那一天的日期, 星期掩码里的下标 1~7)。
+//
+// ⚠ Browse 和 SetDisableDay 必须用同一份算法：界面上写着「看的是 9-16」，
+// 点「当天停用」就得停 9-16 那一天，两处各算各的迟早对不上。
+func viewDateOf(now time.Time, weekday int) (string, int) {
+	idx := int(now.Weekday())
+	if weekday >= 1 && weekday <= 7 {
+		idx = weekday - 1
+	}
+	offset := idx - int(now.Weekday())
+	// MySQL 的 SUBSTRING 下标从 1 开始
+	return now.AddDate(0, 0, offset).Format("2006-01-02"), idx + 1
+}
+
 func (s *Service) Browse(ctx context.Context, u *auth.User, q BrowseQuery) (*BrowseResult, error) {
 	now := time.Now()
 	// exemodel 是周日打头的掩码（旧站 SUBSTRING(exemodel, WEEKDAY()+2 ... ) 里
 	// 周日取第 1 位、周一第 2 位）；Go 的 Weekday 也是周日=0，直接对上。
-	idx := int(now.Weekday())
-	if q.Weekday >= 1 && q.Weekday <= 7 {
-		idx = q.Weekday - 1
-	}
-	// MySQL 的 SUBSTRING 下标从 1 开始
-	pos := idx + 1
-	// 所看那一天是本周的哪一天。偏移可正可负（选的日子可能已经过去了）。
-	offset := idx - int(now.Weekday())
-	viewDate := now.AddDate(0, 0, offset).Format("2006-01-02")
+	viewDate, pos := viewDateOf(now, q.Weekday)
 	today := now.Format("2006-01-02")
 	nowClock := now.Format("15:04:05")
 
@@ -466,19 +497,18 @@ func (s *Service) Browse(ctx context.Context, u *auth.User, q BrowseQuery) (*Bro
 	}
 	// 有效期必须圈住所看那一天 —— 与 Scope 无关，见上面的注释
 	cond.Add("t.startdate <= ? AND t.enddate >= ?", viewDate, viewDate)
+	// ⚠ **停用的任务一条都不出现**（`projectstate` 0 = 启用、1 = 停用，列注释是反的）。
+	//
+	// 旧版这一页的每条查询都带着 `task.projectstate = 0`
+	// （Browse_active_task.php:209/221/241/274/311/360/414/464），
+	// 新版一度把它交给那组「当天启用 / 当天停用」单选去筛 ——
+	// 于是选「全部」时停用的任务也列出来了，看板上一堆根本不会响的行。
+	// 按需求方要求改成硬过滤：停用与否在各自的模块页里管，看板只看在用的。
+	cond.Add("t.projectstate = ?", task.StateEnabled)
+	// 星期掩码里那一天这一位要是 1 —— 旧版是把 SUBSTRING 的结果直接当布尔用
+	// （MySQL 里字符串 '1' 为真、'0' 为假），这里写清楚等于 '1'。
+	cond.Add(fmt.Sprintf("SUBSTRING(COALESCE(t.exemodel,'0000000'), %d, 1) = '1'", pos))
 
-	// 「那天会不会响」这一串条件复用两次（筛选 + 每行的标记），拼成一个片段。
-	// 日期范围已经在 cond 里加过了，这里不重复。
-	active := fmt.Sprintf(
-		"(t.projectstate = %d AND SUBSTRING(COALESCE(t.exemodel,'0000000'), %d, 1) = '1')",
-		task.StateEnabled, pos)
-
-	switch q.Scope {
-	case "enabled":
-		cond.Add(active)
-	case "disabled":
-		cond.Add("NOT " + active)
-	}
 	where := cond.Where()
 
 	out := &BrowseResult{Items: []BrowseItem{}, ViewDate: viewDate}
@@ -500,11 +530,12 @@ func (s *Service) Browse(ctx context.Context, u *auth.User, q BrowseQuery) (*Bro
 		       COALESCE(DATE_FORMAT(t.startdate,'%Y-%m-%d'),''),
 		       COALESCE(DATE_FORMAT(t.enddate,'%Y-%m-%d'),''),
 		       (SELECT COUNT(*) FROM terminaloftask ot WHERE ot.taskid = t.taskid),
-		       `+active+`,
-		       COALESCE(CAST(t.disableday AS CHAR),'')
+		       COALESCE(CAST(t.disableday AS CHAR),''),
+		       COALESCE(t.task_user_id,0), COALESCE(b.username,'')
 		FROM task t
 		LEFT JOIN filetaskfree f ON f.id = t.parentid
-		LEFT JOIN ledtaskfree lf ON lf.id = t.parentid`+where+`
+		LEFT JOIN ledtaskfree lf ON lf.id = t.parentid
+		LEFT JOIN book_admin b ON b.id = t.task_user_id`+where+`
 		ORDER BY t.playtime ASC, t.taskid ASC
 		LIMIT ? OFFSET ?`, args...)
 	if err != nil {
@@ -521,7 +552,8 @@ func (s *Service) Browse(ctx context.Context, u *auth.User, q BrowseQuery) (*Bro
 		if err := rows.Scan(&it.TaskID, &it.TaskName, &taskType, &info, &fileFolder, &ledFolder,
 			&mask, &it.PlayTime,
 			&it.State, &it.ProjectState, &it.StartDate, &it.EndDate,
-			&it.Terminals, &it.EnabledToday, &it.DisableDay); err != nil {
+			&it.Terminals, &it.DisableDay,
+			&it.OwnerUserID, &it.OwnerName); err != nil {
 			return nil, err
 		}
 		it.Module, it.FolderName = categoryOf(taskType, info, fileFolder, ledFolder)

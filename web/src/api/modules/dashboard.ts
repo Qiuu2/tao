@@ -79,8 +79,6 @@ export interface BrowseItem {
   startdate: string;
   enddate: string;
   terminals: number;
-  /** 所看那一天这条任务会不会响（字段名沿用旧的，语义见后端 Browse 的注释） */
-  enabledToday: boolean;
   projectstate: number;
   /**
    * 这条任务被单独停掉的那一天（task.disableday），没停过是空串。
@@ -99,6 +97,10 @@ export interface BrowseItem {
    * 只有看今天时 state 才算数，切到别的星期一律按日期判。
    */
   runStatus: "done" | "running" | "ready";
+  /** 这条任务归谁（task.task_user_id）。0 表示库里就没写 */
+  ownerUserId: number;
+  /** 归属账号名。账号被删掉时回空串 —— 界面画「—」，不让整行消失 */
+  ownerName: string;
 }
 
 export const getDashOverviewApi = () => http.get<Overview>(PORT1 + `/api/dashboard/overview`, {}, { loading: false });
@@ -112,6 +114,21 @@ export const getDashTasksApi = (params: any) =>
     PORT1 + `/api/dashboard/tasks`,
     params,
     { loading: false }
+  );
+
+/**
+ * 看板上的「当天启用 / 当天停用」。
+ *
+ * ⚠ 这两个不是筛选是**操作**：勾几行点下去，改的是 task.disableday
+ * —— 停用写入所看那一天的日期，启用写回 0000-00-00。
+ *
+ * 日期不由前端传：服务端按 weekday 当场算，与列表用的是同一份算法，
+ * 免得界面写着「看的是 9-16」、点下去停的却是别的日子。
+ */
+export const setDisableDayApi = (ids: number[], weekday: number, disable: boolean) =>
+  http.put<{ date: string; viewDate: string; tasks: number; subs: number; skipped: number[] }>(
+    PORT1 + `/api/dashboard/tasks/disable-day`,
+    { ids, weekday, disable }
   );
 
 export const saveShortcutsApi = (shortcuts: Shortcut[]) =>

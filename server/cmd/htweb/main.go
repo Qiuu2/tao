@@ -526,6 +526,7 @@ func (a *app) routes() http.Handler {
 	mux.HandleFunc("GET /api/dashboard/tasks", req(a.handleDashBrowse))
 	mux.HandleFunc("PUT /api/dashboard/shortcuts", sup(a.handleDashShortcuts))
 	mux.HandleFunc("PUT /api/dashboard/quick-tasks", sup(a.handleDashQuickTasks))
+	mux.HandleFunc("PUT /api/dashboard/tasks/disable-day", tsk(a.handleDashDisableDay))
 	mux.HandleFunc("POST /api/dashboard/emergency", tsk(a.handleDashEmergencyPlay))
 
 	// rmt 是「遥控管理」那一档：serverpriv，但**受备机只读限制**。

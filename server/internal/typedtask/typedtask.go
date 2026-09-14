@@ -640,6 +640,8 @@ func (s *Service) Control(ctx context.Context, u *auth.User, n *notify.Notifier,
 	}
 
 	var doable []int64
+	// refs 与 doable 一一对应：停止/暂停/恢复的报文要带任务真实的 tasktype
+	var refs []notify.TaskRef
 	for _, id := range ids {
 		r, exists := rows[id]
 		switch {
@@ -663,6 +665,7 @@ func (s *Service) Control(ctx context.Context, u *auth.User, n *notify.Notifier,
 				Reason: "NO_TERMINAL", Detail: "任务没有终端，启动后没有设备会播放"})
 		default:
 			doable = append(doable, id)
+			refs = append(refs, notify.TaskRef{ID: id, TaskType: r.taskType})
 		}
 	}
 	if len(doable) == 0 {
@@ -693,11 +696,13 @@ func (s *Service) Control(ctx context.Context, u *auth.User, n *notify.Notifier,
 	case ActionStart:
 		n.TaskStarted(ctx, doable)
 	case ActionStop:
-		n.TaskChanged(ctx, notify.TaskStop, doable)
+		// ⚠ 带任务真实的 tasktype，不是写死的 2。文字语音（17）停止还要发
+		// state=13 而不是 2 —— 见 notify.TaskChangedTyped。
+		n.TaskChangedTyped(ctx, notify.TaskStop, refs)
 	case ActionPause:
-		n.TaskChanged(ctx, notify.TaskPause, doable)
+		n.TaskChangedTyped(ctx, notify.TaskPause, refs)
 	case ActionResume:
-		n.TaskChanged(ctx, notify.TaskResume, doable)
+		n.TaskChangedTyped(ctx, notify.TaskResume, refs)
 	}
 	out.Notified = true
 	return out, nil
@@ -736,10 +741,45 @@ func (s *Service) SetProjectState(ctx context.Context, u *auth.User, n *notify.N
 		return nil, fmt.Errorf("修改方案状态: %w", err)
 	}
 	out.Succeeded = ok
-	// 停用时顺带把正在跑的停掉，免得「已停用但还在播」
+	// 停用时顺带把正在跑的停掉，免得「已停用但还在播」。
+	// 这一批是同一个类别的，spec 里第一个 tasktype 就是它们的类型；
+	// 但 15/17/19 这种一个类别多个 tasktype 的，还是得按行取真值。
 	if !enable {
-		n.TaskChanged(ctx, notify.TaskStop, ok)
+		refs, err := s.taskRefs(ctx, ok)
+		if err != nil {
+			return nil, err
+		}
+		n.TaskChangedTyped(ctx, notify.TaskStop, refs)
 		out.Notified = true
+	}
+	return out, nil
+}
+
+// taskRefs 查这批任务各自的 tasktype，拼成通知报文要的 (id, type) 对。
+func (s *Service) taskRefs(ctx context.Context, ids []int64) ([]notify.TaskRef, error) {
+	ph, args := placeholders(ids)
+	rs, err := s.db.QueryContext(ctx,
+		`SELECT taskid, COALESCE(tasktype,0) FROM task WHERE taskid IN (`+ph+`)`, args...)
+	if err != nil {
+		return nil, fmt.Errorf("查询任务类型: %w", err)
+	}
+	defer rs.Close()
+	byID := map[int64]int{}
+	for rs.Next() {
+		var id int64
+		var tt int
+		if err := rs.Scan(&id, &tt); err != nil {
+			return nil, err
+		}
+		byID[id] = tt
+	}
+	if err := rs.Err(); err != nil {
+		return nil, err
+	}
+	// 按传进来的顺序回，报文顺序才与调用方看到的一致
+	out := make([]notify.TaskRef, 0, len(ids))
+	for _, id := range ids {
+		out = append(out, notify.TaskRef{ID: id, TaskType: byID[id]})
 	}
 	return out, nil
 }

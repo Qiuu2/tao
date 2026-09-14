@@ -148,11 +148,55 @@ func (n *Notifier) BellTasksDeleted(ctx context.Context, taskIDs []int64) {
 }
 
 // TaskChanged 发送 task?state=X&id=Y&type=2，逐个任务一条。
-// 停止 / 暂停 / 恢复 / 删除走这条。
+// 删除走这条（旧 taskdel_msg 也是写死的 2）。
+//
+// ⚠ 停止 / 暂停 / 恢复**不要用它**，用 TaskChangedTyped：
+// 那三个动作旧版带的是任务自己的 tasktype，写死 2 会让非文件广播的任务
+// 「库里状态变了、喇叭没反应」。
 func (n *Notifier) TaskChanged(ctx context.Context, state State, taskIDs []int64) {
 	for _, id := range taskIDs {
 		n.send(ctx, fmt.Sprintf("task?state=%d&id=%d&type=%d", state, id, taskTypeArg))
 	}
+}
+
+// TaskRef 是一个任务的 id 加它真实的 tasktype，报文里的 &type= 要用后者。
+type TaskRef struct {
+	ID       int64
+	TaskType int
+}
+
+// ttsStopState 是文字语音（tasktype = 17）停止时用的 state。
+//
+// 旧版三处停止路径都特判了它：
+//
+//	if($typeid == 17) send_socket_generate_general2("task", 13, $id, $typeid);
+//	else              send_socket_generate_general2("task",  2, $id, $typeid);
+//
+// （do.php:18966 / 21728 / 22108，最后一处正是看板那个「停止」）
+// 给 17 发 state=2 后台不认，界面上表现为「点了停止，还在念」。
+const ttsStopState State = 13
+
+// ttsType 是走 ttsStopState 那条特判的 tasktype。
+const ttsType = 17
+
+// TaskChangedTyped 发送 task?state=X&id=Y&type=<该任务真实的 tasktype>，逐个一条。
+// 停止 / 暂停 / 恢复走这条。
+//
+// 旧版 send_socket_generate_general2 的第四个参数就是从库里查出来的 tasktype
+// （`select tasktype from task where taskid=...`），不是常量。
+func (n *Notifier) TaskChangedTyped(ctx context.Context, state State, refs []TaskRef) {
+	for _, r := range refs {
+		n.send(ctx, typedPayload(state, r))
+	}
+}
+
+// typedPayload 拼一条 TaskChangedTyped 的报文。
+// 单拎出来是为了能直接测 —— send 走的是 UDP，测不到内容。
+func typedPayload(state State, r TaskRef) string {
+	if state == TaskStop && r.TaskType == ttsType {
+		state = ttsStopState
+	}
+	return fmt.Sprintf("task?state=%d&id=%d&type=%d", state, r.ID, r.TaskType)
 }
 
 // TaskStarted 发送 task?state=3&id=Y。

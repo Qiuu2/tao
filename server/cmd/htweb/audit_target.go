@@ -197,16 +197,17 @@ var auditTargets = map[string]auditTarget{
 	// ⚠ 作息这一组接口**按名字寻址**，body 里根本没有 id（planName 就是主键）。
 	// 所以一律不查库，直接把 planName 写进日志 —— 连打铃条目那几条也记方案名：
 	// 「删除打铃条目：作息方案「春季作息」」比「删除打铃条目：条目#37」有用得多。
-	"POST /api/bell-plans":               {Noun: "作息方案"},
-	"PUT /api/bell-plans":                {Noun: "作息方案"},
-	"DELETE /api/bell-plans":             {Noun: "作息方案"},
-	"PUT /api/bell-plans/state":          {Noun: "作息方案"},
-	"PUT /api/bell-plans/volume":         {Noun: "作息方案"},
-	"POST /api/bell-plans/copy":          {Noun: "作息方案"},
-	"POST /api/bell-plans/items":         {Noun: "作息方案"},
-	"PUT /api/bell-plans/items/{id}":     {Noun: "作息方案"},
-	"DELETE /api/bell-plans/items":       {Noun: "作息方案"},
-	"PUT /api/bell-plans/items/schedule": {Noun: "作息方案"},
+	"PUT /api/dashboard/tasks/disable-day": {Noun: "任务", Table: "task", IDCol: "taskid", NameCol: "taskname"},
+	"POST /api/bell-plans":                 {Noun: "作息方案"},
+	"PUT /api/bell-plans":                  {Noun: "作息方案"},
+	"DELETE /api/bell-plans":               {Noun: "作息方案"},
+	"PUT /api/bell-plans/state":            {Noun: "作息方案"},
+	"PUT /api/bell-plans/volume":           {Noun: "作息方案"},
+	"POST /api/bell-plans/copy":            {Noun: "作息方案"},
+	"POST /api/bell-plans/items":           {Noun: "作息方案"},
+	"PUT /api/bell-plans/items/{id}":       {Noun: "作息方案"},
+	"DELETE /api/bell-plans/items":         {Noun: "作息方案"},
+	"PUT /api/bell-plans/items/schedule":   {Noun: "作息方案"},
 
 	// —— 云广播 / 离线传输 ——
 	// 这几条都是「对一批东西做同一件事」，日志要答的是「对哪一批」。
