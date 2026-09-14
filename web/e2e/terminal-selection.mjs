@@ -84,18 +84,17 @@ await p.locator(".login-btn button").last().click();
 await p.waitForTimeout(3500);
 
 const openTerminals = async () => {
-  // ⚠ 先把可能还开着的下拉 / 弹框关掉。它们的遮罩会盖住表格，
-  //   后面点复选框就会「等 30 秒然后超时」，而原因跟被测的功能毫无关系。
   await p.keyboard.press("Escape").catch(() => undefined);
   await p.waitForTimeout(300);
   await p.goto(BASE + "/#/terminal", { waitUntil: "domcontentloaded" });
+  // ⚠ 必须**真的 reload**。`#/terminal` 是同文档的 hash 跳转，goto 到同一个 hash
+  //   什么都不做 —— 上一步开着的「批量操作」下拉会原封不动地留在那儿，
+  //   然后盖住表格第二行的复选框。这一条断断续续变红查了三回，直到把
+  //   「点不动时那个位置上压着谁」打出来，看见 LI.el-dropdown-menu__item 才定位到。
+  //   Escape 关不掉它（Element 的 dropdown 不吃 Escape），只有重建 DOM 最干净。
+  await p.reload({ waitUntil: "domcontentloaded" });
   await p.waitForSelector(".el-table__row", { timeout: 25000 });
-  // 等遮罩真的消失，再动手
-  await p
-    .waitForFunction(() => !document.querySelector(".el-overlay, .el-dropdown__popper:not([style*='display: none'])"), null, {
-      timeout: 8000
-    })
-    .catch(() => undefined);
+  await waitNoBlockers();
   await p.waitForTimeout(1500);
 };
 /** 「批量操作(N)」里的那个 N */
@@ -127,33 +126,76 @@ const tick = async (i, tries = 5) => {
   const before = await cnt();
   let lastErr = "";
   for (let n = 0; n < tries; n++) {
+    // ⚠ 每一轮都先等浮层散掉，不是只在进这个函数之前等一次。
+    //   上一轮点击本身就可能弹出消息条（「已启用 N 台」之类），
+    //   它盖在表格上时下一轮照样点不动 —— 只在循环外面清一次等于白清。
+    await waitNoBlockers();
     await rowCb()
       .click({ timeout: 10000 })
-      .catch(e => (lastErr = String(e).split("\n")[0]));
+      .catch(e => (lastErr = String(e).split("\n").slice(0, 4).join(" | ")));
     await p.waitForTimeout(800);
     if ((await isOn()) && (await cnt()) > before) return true;
   }
   // ⚠ 别无声地失败。原来这里 catch(() => undefined) 把点击异常整个吞了，
   //   于是「被弹层挡住点不到」和「点了没生效」长得一模一样，
   //   只能看见下一句断言报「勾了 2 台（实际 1）」，查不出为什么。
-  if (lastErr) console.log(`   [tick ${i}] 点不动：${lastErr.slice(0, 120)}`);
+  if (lastErr) console.log(`   [tick ${i}] 点不动：${lastErr.slice(0, 300)}`);
+  // 真点不动时，把「那个位置上压着的到底是谁」打出来 ——
+  // 光一句 Timeout 查不出是浮层挡着还是元素根本没渲染出来。
+  const on = await rowCb()
+    .first()
+    .evaluate(el => {
+      const r = el.getBoundingClientRect();
+      const top = document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2);
+      return top ? `${top.tagName}.${top.className}`.slice(0, 120) : "(那个位置上什么都没有)";
+    })
+    .catch(e => "(取不到：" + String(e).split("\n")[0].slice(0, 80) + ")");
+  console.log(`   [tick ${i}] 复选框中心点压着的是：${on}`);
   return false;
 };
 
 /**
- * 把可能挡路的浮层清掉：下拉菜单、确认框、消息条。
+ * 等到表格上面一个挡路的都没有：下拉菜单、确认框、消息条。
  *
  * ⚠ 这是 ③ 断断续续变红的根因。② 那一步点了「批量操作」下拉、又弹了确认框，
  * 它们的 popper 收起来需要时间；赶上 ③ 立刻去点复选框，那一下就落在浮层上，
  * Element 的 popper 是全屏透明遮罩，点击静静地被吃掉。
+ *
+ * ⚠ 消息条（`.el-message`）也得认，而且它**不吃 Escape** —— 自己 3 秒后才淡出，
+ * 就浮在表格上方，上一步「启用终端」弹的那句正好压着前几行的复选框。
+ * 单独跑这个脚本必绿（没有前面几步留下的浮层），所以必须显式等它散掉，
+ * 不能靠 sleep 赌，也不能只在循环外面清一次（点击本身还会再弹新的）。
+ *
+ * ⚠ 要认的是 **`.el-dropdown-menu`**，不是 `.el-dropdown__popper`。
+ * 「批量操作」那个下拉带自定义 popper-class（`batch-menu`），根本没有
+ * `el-dropdown__popper` 这个类 —— 原来那句判空永远成立，等于没等。
+ * 一直到把「点不动时那个位置上压着谁」打出来，才看见是
+ * `LI.el-dropdown-menu__item is-disabled`：菜单从 ② 一路开到了 ③。
+ * （`openTerminals()` 也救不了：`#/terminal` 是同文档的 hash 跳转，不重建 DOM。）
+ *
+ * ⚠ 这个下拉也不吃 Escape，得再点一次触发按钮把它收回去。
  */
-const dismissPoppers = async () => {
-  for (let i = 0; i < 3; i++) {
+const waitNoBlockers = async (ms = 8000) => {
+  const t0 = Date.now();
+  while (Date.now() - t0 < ms) {
     await p.keyboard.press("Escape").catch(() => undefined);
-    await p.waitForTimeout(400);
-    const blockers = (await p.locator(".el-overlay:visible").count()) + (await p.locator(".el-dropdown__popper:visible").count());
-    if (blockers === 0) return;
+    if (await p.locator(".el-dropdown-menu:visible").count()) {
+      // 再点一下触发按钮 = 收起（Element 的 dropdown 是 toggle）
+      await p
+        .locator(".header-left button")
+        .first()
+        .click({ timeout: 3000 })
+        .catch(() => undefined);
+      await p.waitForTimeout(400);
+    }
+    const n =
+      (await p.locator(".el-overlay:visible").count()) +
+      (await p.locator(".el-dropdown-menu:visible").count()) +
+      (await p.locator(".el-message:visible").count());
+    if (n === 0) return true;
+    await p.waitForTimeout(300);
   }
+  return false;
 };
 
 await openTerminals();
@@ -191,9 +233,9 @@ ok(sent.length === 1 && sent[0].includes(`"ids":[${pickedId}]`), `带的正是�
 
 // ── ③ 翻页仍然保住勾选 ──
 console.log("③ 翻页不能把勾选弄丢（reserve-selection 的正事不能被误伤）");
-await dismissPoppers(); // ② 那步留下的下拉/确认框收干净，否则下面的点击会落在浮层上
+await waitNoBlockers(); // ② 那步留下的下拉/确认框/消息条收干净，否则下面的点击会落在浮层上
 await openTerminals(); // 重新进一次，拿个干净状态；上面那个下拉会挡住分页器
-await dismissPoppers();
+await waitNoBlockers();
 ok(await tick(0), "勾上了第 1 行");
 ok(await tick(1), "勾上了第 2 行");
 const n3 = await cnt();

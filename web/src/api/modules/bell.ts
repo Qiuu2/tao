@@ -65,6 +65,8 @@ export interface BellItem {
   powerTaskId: number;
   powerPlayTime: string;
   duplicateTime: boolean;
+  /** 这一条目自己挂了几台终端（各条目可以不一样：行内「修改」是按条目写的） */
+  terminalCount: number;
 }
 
 export interface BellSchedule {
@@ -105,6 +107,9 @@ export interface BellItemForm {
   timelengthtype: number;
   timelength: number;
   media: { mediaId: number; sort: number }[];
+  /** 这一条目自己的终端清单。只有 applyTerminals 为 true 时才生效 */
+  terminals?: { terminalId: number; groupId: number; area: string }[];
+  applyTerminals?: boolean;
 }
 
 /** 方案级 LED 字幕：正文 + 速度（0~5 级）。不挂字幕时传 null */
@@ -202,6 +207,14 @@ export const deleteBellPlanApi = (planName: string) => {
 
 export const copyBellPlanApi = (planName: string, newPlanName: string) =>
   http.post<BellCopyResult>(PORT1 + `/api/bell-plans/copy`, { planName, newPlanName });
+
+/** 读某条打铃自己的终端清单（对应旧版 getonetaskterminal.php） */
+export const getBellItemTerminalsApi = (planName: string, taskId: number) =>
+  http.get<{ taskid: number; terminals: BellTerminal[] }>(
+    PORT1 + `/api/bell-plans/items/${taskId}/terminals`,
+    { plan: planName },
+    { loading: false }
+  );
 
 export const addBellItemApi = (planName: string, item: BellItemForm) =>
   http.post<BellSaveResult>(PORT1 + `/api/bell-plans/items`, { planName, item });

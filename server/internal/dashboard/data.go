@@ -303,17 +303,20 @@ type BrowseItem struct {
 	FolderName string `json:"folderName"`
 	// Module 是这条任务属于「任务管理」下的哪一个模块（作息方案 / 文件广播 / …）。
 	Module string `json:"module"`
-	// Category 是给人看的那一格：模块名 + 括号里的归属。
+	// Category 是给人看的那一格。
 	//
 	// 这一列原来直接显示 filetaskfree.name，对作息方案是错的 ——
 	// 作息方案的条目按 task.info（方案名）归组，parentid 指着的那个
 	// filetaskfree 行只是个默认值，于是「早读预备铃」的所属分类显示成「admin」，
-	// 看的人根本认不出它属于哪个方案。按需求方要求改成：
+	// 看的人根本认不出它属于哪个方案。现在是：
 	//
-	//	作息方案（春季作息）    ← 括号里是方案名，来自 task.info
-	//	文件广播（走廊与操场）  ← 括号里是任务分组名
-	//	led播放（一号楼大屏）
-	//	终端功放                ← 这几类没有分组，就只写模块名
+	//	作息方案（春季作息）   ← 只有作息方案带括号，里面是方案名（task.info）
+	//	文件广播               ← 其余都只写模块名
+	//	led播放
+	//	终端功放
+	//
+	// ⚠ 文件广播/led播放**不带**括号：它们那个括号里本来放的是任务分组名，
+	// 而这一列问的是「属于哪个功能模块」，分组名另有 folderName 一列管。
 	Category string `json:"category"`
 	// Weekdays 是播放周期，7 位掩码转成 [1..7]（1 = 周日）
 	Weekdays  []int  `json:"weekdays"`
@@ -338,13 +341,23 @@ type BrowseItem struct {
 	// ⚠ **原样回库里的值**，0000-00-00 也照回（旧版模板就是 `<{$info[loop].disableday}>`
 	// 直接打印）。一度把 0000-00-00 折成空串、界面画「—」，需求方要的是看见字段本身。
 	DisableDay string `json:"disableday"`
-	// Executed 是**所看那一天**这条任务到没到执行时间。
+	// RunStatus 是状态那一列：done（已执行）/ running（执行中）/ ready（准备执行）。
 	//
-	// 旧版这一列（Browse_active_task_form.html:110~155）判的就是这件事：
-	// state=0 时拿 playtime 和当前时刻比，没到点写「准备●」，过了点写「已执行」。
-	// 新版一度把这一列做成了「当天启用 / 当天停用」，是偏离，按需求方要求改回
-	// 「未执行 / 已执行」。
-	Executed bool `json:"executed"`
+	// 旧版这一列（Browse_active_task_form.html:110~155）是按 task.state 分支的，
+	// **只有 state = 0 才去比时间**：
+	//
+	//	state = 3 立即执行 → Run        state = 1 执行 → Ready_play●
+	//	state = 2 暂停     → Pause      state = 0 准备 → 拿 playtime 和此刻比
+	//
+	// 新版照这个结构，按需求方要求收敛成三个字面值：state 非 0 一律「执行中」
+	// （1 执行、2 暂停、3 立即执行都表示后台服务此刻手里攥着这条任务，
+	// 只有 0 是闲着的），state = 0 才由钟点决定「已执行」还是「准备执行」。
+	//
+	// ⚠ 只有**看今天**时 state 才算数：星期选择器可以切到别的日子，
+	// 而 state 是此时此刻的值，拿它去说「上周二那条在执行中」是假的。
+	//
+	// 回传的是 key 不是文案 —— 界面要按它上色（执行中红、准备执行绿）。
+	RunStatus string `json:"runStatus"`
 }
 
 type BrowseQuery struct {
@@ -513,7 +526,7 @@ func (s *Service) Browse(ctx context.Context, u *auth.User, q BrowseQuery) (*Bro
 		}
 		it.Module, it.FolderName = categoryOf(taskType, info, fileFolder, ledFolder)
 		it.Category = categoryText(ctx, it.Module, it.FolderName)
-		it.Executed = executedOn(viewDate, today, nowClock, it.PlayTime)
+		it.RunStatus = runStatusOf(it.State, viewDate, today, nowClock, it.PlayTime)
 		i++
 		it.Index = i
 		it.Weekdays = parseWeekdays(mask)
@@ -545,7 +558,7 @@ func categoryOf(taskType int, info, fileFolder, ledFolder string) (string, strin
 	switch {
 	case (taskType == 1 || taskType == 15) && info != "":
 		// 括号里放方案名 —— 这正是需求方要的「是哪个方案中的」
-		return "作息方案", info
+		return moduleBell, info
 	case taskType == 2 || taskType == 7:
 		return "文件广播", fileFolder
 	case taskType == 5:
@@ -562,12 +575,16 @@ func categoryOf(taskType int, info, fileFolder, ledFolder string) (string, strin
 	}
 }
 
-// categoryText 拼成给人看的那一格：模块名（归属名）。
+// categoryText 拼成给人看的那一格。
 //
-// 模块名要翻译（界面有中英文），括号里的方案名/分组名是用户自己起的，原样保留。
+// **只有作息方案带括号**：需求方要的是「是哪个方案中的」。文件广播、led播放
+// 只写模块名 —— 它们括号里本来放的是任务分组名，而这一列问的是功能模块，
+// 分组名另有 folderName 一列。
+//
+// 模块名要翻译（界面有中英文），括号里的方案名是用户自己起的，原样保留。
 func categoryText(ctx context.Context, module, group string) string {
 	m := i18n.TC(ctx, module)
-	if group == "" {
+	if module != moduleBell || group == "" {
 		return m
 	}
 	return m + "（" + group + "）"
@@ -585,6 +602,27 @@ func categoryText(ctx context.Context, module, group string) string {
 //
 // ⚠ 用**服务器时钟**，不是浏览器时钟。广播到点不到点由服务器说了算，
 // 客户端的表可能是歪的 —— 让界面跟着歪表走，看到的「已执行」就是假的。
+// moduleBell 是「所属分类」里唯一带括号的那个模块，categoryOf / categoryText 共用。
+const moduleBell = "作息方案"
+
+// runStatusOf 算看板状态列显示哪一个：done / running / ready。
+//
+// 判据与旧版 Browse_active_task_form.html 同构 —— **只有 state = 0 才比时间**：
+// 1 执行、2 暂停、3 立即执行都表示后台服务此刻手里攥着这条任务，
+// 按需求方要求一律显示「执行中」（界面上标红）。
+//
+// ⚠ state 是**此时此刻**的值，只有在看今天时才算数。星期选择器切到别的日子时，
+// 拿它去说「上周二那条在执行中」是假的 —— 那时一律回到按日期/钟点判。
+func runStatusOf(state int, viewDate, today, nowClock, playTime string) string {
+	if viewDate == today && state != 0 {
+		return "running"
+	}
+	if executedOn(viewDate, today, nowClock, playTime) {
+		return "done"
+	}
+	return "ready"
+}
+
 func executedOn(viewDate, today, nowClock, playTime string) bool {
 	switch {
 	case viewDate < today:

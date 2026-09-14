@@ -981,6 +981,7 @@ var codeDict = map[string]string{
 	"把一条任务的终端清单同步给其它任务":       "Copy one task's terminal list onto other tasks",
 	"把终端归到分区里，广播时按分区选。":       "Group terminals into zones so a broadcast can pick a zone.",
 	"方案详情（方案名放 query 里）":      "Schedule details (the schedule name goes in the query string)",
+	"某条打铃自己的终端清单":             "Terminal list of one individual bell",
 	"终端替换（换一台设备，绑定关系跟着走）":     "Replace a terminal (swap the device and carry its bindings across)",
 	"上传、查找、删除音频文件，以及媒体目录树。":   "Upload, find and delete audio files, plus the media folder tree.",
 	"噪声设备与声场分区：按环境噪声自动调音量。":   "Noise devices and sound-field zones: adjust the volume automatically to the ambient noise.",

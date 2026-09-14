@@ -619,7 +619,7 @@
           <!-- 旧版每行三个按钮：添加(已入库则是修改) / 复制 / 删除 -->
           <el-table-column :label="$t('common.operation')" width="152" align="center">
             <template #default="{ row, $index }">
-              <el-button link type="primary" :loading="row.busy" @click="saveOneItem($index)">
+              <el-button link type="primary" :loading="row.busy" :disabled="itemLocked($index)" @click="saveOneItem($index)">
                 {{ row.taskid ? $t("common.modify") : $t("common.add") }}
               </el-button>
               <el-button v-if="dlg.mode !== 'batch'" link type="primary" @click="copyItemRow($index)">{{
@@ -639,12 +639,19 @@
             $t("bell.unifiedTerminals")
           }}</el-checkbox>
         </el-divider>
+        <div v-if="termScopeNote" class="dlg-note mb6">
+          {{ termScopeNote }}
+          <!-- radio 点上了就取消不掉（旧版也一样），给条回方案级视图的路 -->
+          <el-button v-if="termScopeIdx >= 0" link type="primary" @click="activeItem = -1">
+            {{ $t("bell.backToPlanTerminals") }}
+          </el-button>
+        </div>
         <el-form-item label-width="0" prop="terminals">
           <TerminalTree
             v-model="selectedTerminalIds"
             v-model:areas="terminalAreas"
             :terminals="terminals"
-            :loading="terminalLoading"
+            :loading="terminalLoading || termLoading"
             height="260px"
             style="width: 100%"
             @search="searchTerminals"
@@ -696,7 +703,7 @@
 
 <script setup lang="ts" name="bellPlan">
 import { useI18n } from "vue-i18n";
-import { computed, nextTick, reactive, ref } from "vue";
+import { computed, nextTick, reactive, ref, watch } from "vue";
 import { ElMessage, ElMessageBox } from "element-plus";
 import type { ElTable, FormInstance, FormRules } from "element-plus";
 import { CirclePlus, Delete, EditPen, WarningFilled } from "@element-plus/icons-vue";
@@ -717,6 +724,7 @@ import {
   setBellItemScheduleApi,
   setBellPlanVolumeApi,
   updateBellItemApi,
+  getBellItemTerminalsApi,
   updateBellPlanApi,
   type BellDeleteImpact,
   type BellItem,
@@ -904,7 +912,9 @@ const emptyItemRow = () => ({
    */
   mediaId: undefined as number | undefined,
   /** 老数据原本挂了几个铃声。>1 时界面要说清楚保存会只留第一个 */
-  legacyMediaCount: 0
+  legacyMediaCount: 0,
+  /** 这一课时自己挂了几台终端。各课时可以不一样，见 termScopeNote */
+  terminalCount: 0
 });
 type ItemRow = ReturnType<typeof emptyItemRow>;
 
@@ -961,14 +971,21 @@ const copyItemRow = (idx: number) => {
  */
 const currentPlanName = computed(() => (dlg.isEdit ? dlg.originalName : dlg.savedPlanName));
 
-/** 一行 → 提交给后端的条目。时长模式下把 时:分:秒 换算成秒 */
-const itemPayload = (it: ItemRow) => ({
+/**
+ * 一行 → 提交给后端的条目。时长模式下把 时:分:秒 换算成秒。
+ *
+ * withTerminals = true 时把终端树当前的选择一起送出去，只存给这一条目 ——
+ * 行上的「添加 / 修改」走这条路（旧版 modifyonebellplan.php 就是这么写的）。
+ * 整体「确定」不用带：那条路径的终端是方案级的，由 terminals + applyTerminals 统一套。
+ */
+const itemPayload = (it: ItemRow, withTerminals = false) => ({
   taskname: it.taskname.trim(),
   playtime: it.playtime,
   timelengthtype: it.timelengthtype,
   timelength: it.timelengthtype === 1 ? hmsToSec(it.lengthhms) : it.timelength,
   // 一课时一铃声：没选就传空数组（后端据此把这条的 mediaoftask 清干净）
-  media: it.mediaId ? [{ mediaId: it.mediaId, sort: 0 }] : []
+  media: it.mediaId ? [{ mediaId: it.mediaId, sort: 0 }] : [],
+  ...(withTerminals ? { terminals: terminalsForm(), applyTerminals: true } : {})
 });
 
 /** 删掉库里的课时之后：刷新列表；如果连方案都没了，就把状态收拾干净 */
@@ -1022,6 +1039,92 @@ const activeItem = ref(-1);
  * 还没选任何一行时也不锁 —— 否则一打开修改，整张表都是灰的，像坏了。
  */
 const itemLocked = (idx: number) => dlg.mode === "edit" && activeItem.value >= 0 && activeItem.value !== idx;
+
+/* ---------------- 序号单选 ↔ 终端树 ----------------
+
+   terminaloftask 本来就是按 taskid 存的，一课时一份。旧版 modifybell.html 里
+   点中课时表第一格那个 radio，除了解锁这一行的输入框，还会
+   getonebelltaskterminal() → getonetaskterminal.php?taskid=，把**这一课时自己的**
+   终端清单灌进下面的终端树；行上的「修改」（modifyonebellplan.php）再把树里
+   当时的选择只存给这一课时。整表提交（belltaskalonemodify）才是一份套全组。
+
+   这里照做，并且补上旧版漏掉的一件事：功放与 LED 子任务的终端清单跟着一起重写
+   （见 bell.UpdateItem）。 */
+
+/** 方案级的那份终端清单（打开对话框时读到的）。取消选中课时就回到它 */
+const planTerminalIds = ref<number[]>([]);
+const planTerminalAreas = ref<Record<number, string>>({});
+/** 终端树现在显示的是谁的：-1 = 整个方案，>=0 = 第几个课时 */
+const termScopeIdx = ref(-1);
+const termLoading = ref(false);
+
+const snapshotPlanTerminals = () => {
+  planTerminalIds.value = [...selectedTerminalIds.value];
+  planTerminalAreas.value = { ...terminalAreas.value };
+  termScopeIdx.value = -1;
+};
+
+/** 把树切回方案级那一份 */
+const showPlanTerminals = () => {
+  selectedTerminalIds.value = [...planTerminalIds.value];
+  terminalAreas.value = { ...planTerminalAreas.value };
+  termScopeIdx.value = -1;
+};
+
+/**
+ * 把第 idx 个课时自己的终端灌进树。
+ *
+ * 还没入库的行没有 taskid，读不出东西来，就先显示方案级那一份 ——
+ * 它本来也就是这一行点「添加」时会存进去的清单。
+ */
+const showItemTerminals = async (idx: number) => {
+  const row = dlg.items[idx];
+  if (!row) return;
+  if (!row.taskid || !currentPlanName.value) {
+    showPlanTerminals();
+    termScopeIdx.value = idx;
+    return;
+  }
+  termLoading.value = true;
+  try {
+    const { data } = await getBellItemTerminalsApi(currentPlanName.value, row.taskid);
+    const list = data.terminals ?? [];
+    list.forEach(t => (terminalGroupOf[t.terminalId] = t.groupId));
+    // 已删除的终端不回填，否则保存时会被存在性校验挡下
+    terminalAreas.value = Object.fromEntries(list.filter(t => !t.deleted && t.area).map(t => [t.terminalId, t.area]));
+    selectedTerminalIds.value = list.filter(t => !t.deleted).map(t => t.terminalId);
+    row.terminalCount = list.length;
+    termScopeIdx.value = idx;
+  } catch {
+    // 读不到就别把树清空 —— 那样一点「修改」就会把这节课的终端全删了
+    ElMessage.warning(t("bell.termLoadFailed"));
+  } finally {
+    termLoading.value = false;
+  }
+};
+
+// 只在「修改方案」里联动：批量修改有自己的「统一终端列表」开关，
+// 新建方案是一条条往里录，还没有哪一课时可读。
+watch(activeItem, idx => {
+  if (dlg.mode !== "edit") return;
+  if (idx < 0) showPlanTerminals();
+  else void showItemTerminals(idx);
+});
+
+/** 终端树上方那行字：现在显示的是谁的终端、点哪个按钮存到哪 */
+const termScopeNote = computed(() => {
+  if (dlg.mode !== "edit") return "";
+  const idx = termScopeIdx.value;
+  if (idx < 0) return t("bell.termScopePlan");
+  const row = dlg.items[idx];
+  if (!row) return t("bell.termScopePlan");
+  if (!row.taskid) return t("bell.termScopeNewItem", { n: idx + 1 });
+  return t("bell.termScopeItem", {
+    n: idx + 1,
+    name: row.taskname?.trim() || row.taskname,
+    c: selectedTerminalIds.value.length
+  });
+});
 const onItemSelectionChange = (rows: ItemRow[]) => (selectedItems.value = rows);
 const itemCountNote = computed(() =>
   selectedItems.value.length
@@ -1195,7 +1298,8 @@ const saveOneItem = async (idx: number) => {
   row.busy = true;
   try {
     if (row.taskid && currentPlanName.value) {
-      await updateBellItemApi(currentPlanName.value, row.taskid, itemPayload(row));
+      await updateBellItemApi(currentPlanName.value, row.taskid, itemPayload(row, true));
+      row.terminalCount = selectedTerminalIds.value.length;
       ElMessage.success(t("bell.lessonSaved", { name: row.taskname.trim() }));
     } else if (!currentPlanName.value) {
       const res = await createBellPlanApi({
@@ -1211,8 +1315,9 @@ const saveOneItem = async (idx: number) => {
       ElMessage.success(t("bell.planCreatedWithLesson", { plan: res.data.planName, lesson: row.taskname.trim() }));
       (res.data.warnings ?? []).forEach(w => ElMessage.warning(w));
     } else {
-      const res = await addBellItemApi(currentPlanName.value, itemPayload(row));
+      const res = await addBellItemApi(currentPlanName.value, itemPayload(row, true));
       row.taskid = res.data.taskIds?.[0] ?? 0;
+      row.terminalCount = selectedTerminalIds.value.length;
       ElMessage.success(t("bell.lessonStored", { name: row.taskname.trim() }));
       (res.data.warnings ?? []).forEach(w => ElMessage.warning(w));
     }
@@ -1405,6 +1510,7 @@ const openCreate = async () => {
   runMode.value = 1; // 默认「每天」，与旧版下拉的第一项一致
   selectedTerminalIds.value = [];
   terminalAreas.value = {};
+  snapshotPlanTerminals();
   markHeaderClean();
   await resetPlanErrors();
   await Promise.all([searchTerminals(""), searchMedia("")]);
@@ -1444,7 +1550,8 @@ const openEdit = async (row: BellPlan, mode: "edit" | "batch" = "edit") => {
       // 一课时一铃声：只回填第一个。老数据可能挂了不止一个 ——
       // 记下原来有几个，界面上标出来，保存时会只剩第一个，不能闷声丢掉。
       mediaId: it.media[0]?.mediaId,
-      legacyMediaCount: it.media.length
+      legacyMediaCount: it.media.length,
+      terminalCount: it.terminalCount ?? 0
     }))
   });
   // 老数据里挂了多个铃声的，开局就说清楚 —— 等人保存完才发现少了东西就晚了
@@ -1467,6 +1574,8 @@ const openEdit = async (row: BellPlan, mode: "edit" | "batch" = "edit") => {
   terminalAreas.value = Object.fromEntries(data.terminals.filter(t => !t.deleted && t.area).map(t => [t.terminalId, t.area]));
   // 已删除的终端不回填，否则保存时会被存在性校验挡下
   selectedTerminalIds.value = data.terminals.filter(t => !t.deleted).map(t => t.terminalId);
+  // 选中某个课时会把树换成那一课时自己的清单，取消选中要能换回来
+  snapshotPlanTerminals();
   markHeaderClean();
   await resetPlanErrors();
   await searchTerminals("");
@@ -1567,7 +1676,7 @@ const saveAllPending = async () => {
         playback: dlg.form.playback,
         terminals: terminalsForm(),
         led: ledForm(),
-        items: dlg.items.map(itemPayload)
+        items: dlg.items.map(it => itemPayload(it))
       });
       dlg.items.forEach((it, i) => (it.taskid = res.data.taskIds?.[i] ?? 0));
       dlg.savedPlanName = res.data.planName;
@@ -1915,6 +2024,9 @@ const confirmDelete = async () => {
 }
 .mt6 {
   margin-top: 6px;
+}
+.mb6 {
+  margin-bottom: 6px;
 }
 .ml8 {
   margin-left: 8px;

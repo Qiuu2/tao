@@ -90,8 +90,15 @@ export interface BrowseItem {
    * 按钮写的就是这一列。
    */
   disableday: string;
-  /** 所看那一天，这条任务到没到执行时间（后端按服务器时钟算，见 executedOn） */
-  executed: boolean;
+  /**
+   * 状态那一列：已执行 / 执行中 / 准备执行。
+   *
+   * 后端按**服务器时钟**与 `task.state` 一起算（见 runStatusOf）：
+   * state 非 0（1 执行 / 2 暂停 / 3 立即执行）= running，
+   * state 为 0 时才拿执行时间和此刻比 —— 过了点 done，没到点 ready。
+   * 只有看今天时 state 才算数，切到别的星期一律按日期判。
+   */
+  runStatus: "done" | "running" | "ready";
 }
 
 export const getDashOverviewApi = () => http.get<Overview>(PORT1 + `/api/dashboard/overview`, {}, { loading: false });

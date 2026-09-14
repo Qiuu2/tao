@@ -56,6 +56,18 @@ type ItemInput struct {
 	TimeLengthTy int             `json:"timelengthtype"`
 	TimeLength   int             `json:"timelength"`
 	Media        []task.MediaRef `json:"media"`
+	// Terminals 是**这一条目自己**的终端清单。
+	//
+	// terminaloftask 本来就按 taskid 存，一条目一份 —— 旧版
+	// modifyonebellplan.php 的行内「添加 / 修改」写的就是这一份
+	// （DELETE ... WHERE taskid='$getonebelltaskid' 再逐条 INSERT），
+	// 课时表第一格那个 radio 配套的 getonetaskterminal.php 读的也是这一份。
+	// 只有整表提交（belltaskalonemodify）才把一份清单套到全组。
+	//
+	// ApplyTerminals 为 false 时这个字段不起作用：新增条目沿用方案现有清单，
+	// 修改条目则不动终端。
+	Terminals      []task.TerminalRef `json:"terminals"`
+	ApplyTerminals bool               `json:"applyTerminals"`
 }
 
 // LEDConf 是方案级的 LED 字幕设置。
@@ -103,6 +115,10 @@ type Item struct {
 	StartDate string `json:"startdate"`
 	EndDate   string `json:"enddate"`
 	ExeModel  string `json:"exemodel"`
+	// TerminalCount 是这一条目自己挂了几台终端。
+	// 各条目理论上一致（整表提交会统一套），但行内「修改」是按条目写的，
+	// 所以完全可能不一致 —— 界面据此提示这一节课单独配了几台。
+	TerminalCount int `json:"terminalCount"`
 }
 
 // Detail 是方案编辑页需要的全部数据。
@@ -230,6 +246,9 @@ func (s *Service) Get(ctx context.Context, u *auth.User, planName string) (*Deta
 		return nil, err
 	}
 	if err := s.fillItemPower(ctx, d.Items, ids); err != nil {
+		return nil, err
+	}
+	if err := s.fillItemTerminalCount(ctx, d.Items, ids); err != nil {
 		return nil, err
 	}
 	// 终端清单方案内每条任务各写一份，取代表条目的那一份即可
@@ -433,6 +452,42 @@ func resyncLED(ctx context.Context, tx *sql.Tx, in PlanInput, ownerID int64) err
 }
 
 func (s *Service) fillPlanTerminals(ctx context.Context, d *Detail, sampleTaskID int64) error {
+	list, err := s.terminalsOfTask(ctx, sampleTaskID)
+	if err != nil {
+		return err
+	}
+	d.Terminals = append(d.Terminals, list...)
+	return nil
+}
+
+// ItemTerminals 取**一个条目自己**的终端清单，对应旧版 getonetaskterminal.php
+// —— 课时表第一格那个 radio 一选中就去拉它，把下面的终端树刷成这一节课的。
+//
+// 会先确认这个 taskid 确实属于该方案：否则带个别的方案（甚至别人的任务）的
+// taskid 进来就能读到不该读的终端清单。
+func (s *Service) ItemTerminals(ctx context.Context, u *auth.User,
+	planName string, taskID int64) ([]task.TerminalItem, error) {
+
+	if _, err := s.assertPlan(ctx, u, planName); err != nil {
+		return nil, err
+	}
+	var n int
+	if err := s.db.QueryRowContext(ctx,
+		`SELECT COUNT(*) FROM task WHERE taskid = ? AND info = ? AND `+planScope(""),
+		taskID, planName).Scan(&n); err != nil {
+		return nil, fmt.Errorf("查询条目: %w", err)
+	}
+	if n == 0 {
+		return nil, ErrNotFound
+	}
+	return s.terminalsOfTask(ctx, taskID)
+}
+
+// terminalsOfTask 读某个 taskid 的终端清单。
+//
+// LEFT JOIN terminal：终端被删掉之后这一项要仍然列出来并标成「(终端已删除)」，
+// 内连接会让它凭空消失，用户查不出「为什么这节课少响了一台」。
+func (s *Service) terminalsOfTask(ctx context.Context, taskID int64) ([]task.TerminalItem, error) {
 	rows, err := s.db.QueryContext(ctx, `
 		SELECT ot.terminalid, COALESCE(ot.groupid,0), COALESCE(ot.area,''),
 		       tm.id IS NOT NULL, COALESCE(tm.terminalname,''), COALESCE(tt.name,''),
@@ -442,27 +497,59 @@ func (s *Service) fillPlanTerminals(ctx context.Context, d *Detail, sampleTaskID
 		LEFT JOIN terminal tm ON tm.id = ot.terminalid
 		LEFT JOIN terminaltype tt ON tt.id = tm.typeid
 		WHERE ot.taskid = ?
-		ORDER BY ot.id`, sampleTaskID)
+		ORDER BY ot.id`, taskID)
 	if err != nil {
-		return fmt.Errorf("查询方案终端清单: %w", err)
+		return nil, fmt.Errorf("查询终端清单: %w", err)
 	}
 	defer rows.Close()
 
+	out := []task.TerminalItem{}
 	for rows.Next() {
 		var t task.TerminalItem
 		var exists bool
 		if err := rows.Scan(&t.TerminalID, &t.GroupID, &t.Area, &exists,
 			&t.TerminalName, &t.TypeName, &t.NetState, &t.TaskState,
 			&t.IP, &t.Volume); err != nil {
-			return err
+			return nil, err
 		}
 		t.TypeName = i18n.TC(ctx, t.TypeName)
 		if !exists {
 			t.Deleted, t.TerminalName = true, "(终端已删除)"
 		}
-		d.Terminals = append(d.Terminals, t)
+		out = append(out, t)
 	}
-	return rows.Err()
+	return out, rows.Err()
+}
+
+// fillItemTerminalCount 一条 GROUP BY 查询取回每个条目各挂了几台终端。
+func (s *Service) fillItemTerminalCount(ctx context.Context, items []Item, ids []int64) error {
+	if len(ids) == 0 {
+		return nil
+	}
+	ph, args := placeholders(ids)
+	rows, err := s.db.QueryContext(ctx,
+		`SELECT taskid, COUNT(*) FROM terminaloftask WHERE taskid IN (`+ph+`) GROUP BY taskid`, args...)
+	if err != nil {
+		return fmt.Errorf("统计条目终端数: %w", err)
+	}
+	defer rows.Close()
+
+	n := map[int64]int{}
+	for rows.Next() {
+		var tid int64
+		var c int
+		if err := rows.Scan(&tid, &c); err != nil {
+			return err
+		}
+		n[tid] = c
+	}
+	if err := rows.Err(); err != nil {
+		return err
+	}
+	for i := range items {
+		items[i].TerminalCount = n[items[i].TaskID]
+	}
+	return nil
 }
 
 // priorityRange 计算某个用户能选的任务级别区间。
@@ -1256,15 +1343,22 @@ func (s *Service) AddItem(ctx context.Context, u *auth.User, planName string,
 		PlanName: planName, Schedule: d.Schedule, Playback: d.Playback,
 		Items: []ItemInput{it}, LED: d.LED,
 	}
-	// 终端沿用方案现有清单。跳过已被删除的终端 ——
-	// 它们只是列表里的一个「(终端已删除)」占位，再写回去会被存在性校验挡下，
-	// 结果就是「方案里有台终端被删了，从此这个方案加不了新条目」。
-	for _, t := range d.Terminals {
-		if t.Deleted {
-			continue
+	// 带了终端就按带的存 —— 旧版行内「添加」（modifyonebellplan.php 的 taskid=-1
+	// 分支）写的就是终端树当时的选择，不是方案里别的课时那一份。
+	//
+	// 没带才沿用方案现有清单，并跳过已被删除的终端：它们只是列表里的一个
+	// 「(终端已删除)」占位，再写回去会被存在性校验挡下，结果就是
+	// 「方案里有台终端被删了，从此这个方案加不了新条目」。
+	if it.ApplyTerminals && len(it.Terminals) > 0 {
+		in.Terminals = it.Terminals
+	} else {
+		for _, t := range d.Terminals {
+			if t.Deleted {
+				continue
+			}
+			in.Terminals = append(in.Terminals, task.TerminalRef{
+				TerminalID: t.TerminalID, GroupID: t.GroupID, Area: t.Area})
 		}
-		in.Terminals = append(in.Terminals, task.TerminalRef{
-			TerminalID: t.TerminalID, GroupID: t.GroupID, Area: t.Area})
 	}
 	// 这条路径是「往已有方案里加条目」，方案级参数是从库里读出来照抄的，
 	// 把原值一并传进去，免得历史数据里 priority < 10 的方案连加条目都被挡下。
@@ -1342,6 +1436,13 @@ func (s *Service) UpdateItem(ctx context.Context, u *auth.User, planName string,
 	if err := s.assertMediaExist(ctx, mediaIDs); err != nil {
 		return 0, err
 	}
+	// 终端要在开事务前校验：validateTerminals 自己还要查库（存在性、归属、分区号），
+	// 放进事务里等于在持锁期间多跑好几条查询。
+	if it.ApplyTerminals {
+		if err := s.validateTerminals(ctx, u, it.Terminals); err != nil {
+			return 0, err
+		}
+	}
 
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
@@ -1387,6 +1488,30 @@ func (s *Service) UpdateItem(ctx context.Context, u *auth.User, planName string,
 	}
 	if err := writeMedia(ctx, tx, taskID, it.Media); err != nil {
 		return 0, err
+	}
+	// 终端按条目重写。
+	//
+	// 子任务必须跟着一起重写：功放（9）和 LED 字幕（30/24）各有自己的
+	// terminaloftask 行，只改主条目会留下一份对不上的旧清单 —— 到点了主任务在
+	// 新终端上响，功放却还在给旧终端提前开电源。旧版就漏了这一步
+	// （modifyonebellplan.php 只 DELETE ... WHERE taskid='$getonebelltaskid'）。
+	if it.ApplyTerminals {
+		ids := []int64{taskID}
+		subs, err := collectSubTasks(ctx, tx, ids)
+		if err != nil {
+			return 0, err
+		}
+		ids = append(ids, subs...)
+		ph, args := placeholders(ids)
+		if _, err := tx.ExecContext(ctx,
+			`DELETE FROM terminaloftask WHERE taskid IN (`+ph+`)`, args...); err != nil {
+			return 0, fmt.Errorf("清理条目终端清单: %w", err)
+		}
+		for _, id := range ids {
+			if _, err := writeTerminals(ctx, tx, id, 0, it.Terminals); err != nil {
+				return 0, err
+			}
+		}
 	}
 	if err := tx.Commit(); err != nil {
 		return 0, fmt.Errorf("提交事务: %w", err)

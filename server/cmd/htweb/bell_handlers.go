@@ -181,6 +181,27 @@ type bellItemReq struct {
 	Item     bell.ItemInput `json:"item"`
 }
 
+// handleBellItemTerminals 读一个打铃条目自己的终端清单。
+//
+// 对应旧版 getonetaskterminal.php：课时表第一格那个 radio 一选中就去拉它，
+// 把下面的终端树刷成这一节课的选择。
+func (a *app) handleBellItemTerminals(w http.ResponseWriter, r *http.Request) {
+	name, ok := planParam(w, r)
+	if !ok {
+		return
+	}
+	id, ok := bellItemID(w, r)
+	if !ok {
+		return
+	}
+	list, err := a.bells.ItemTerminals(r.Context(), auth.From(r.Context()), name, id)
+	if err != nil {
+		failBell(w, "查询条目终端清单", err)
+		return
+	}
+	httpx.OK(w, map[string]interface{}{"taskid": id, "terminals": list})
+}
+
 func (a *app) handleBellItemAdd(w http.ResponseWriter, r *http.Request) {
 	var in bellItemReq
 	if !httpx.DecodeJSON(w, r, &in) {

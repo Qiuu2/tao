@@ -262,20 +262,21 @@
         <el-table-column prop="cycleText" :label="$t('dash.weekdays')" width="140" />
         <el-table-column prop="playtime" :label="$t('dash.playTime')" width="110" />
         <!--
-          状态 = 未执行 / 已执行，判的是**到没到执行时间**。
-          旧版这一列就是这么判的（Browse_active_task_form.html:110~155：
-          拿 playtime 和当前时刻比）。新版一度做成了「当天启用 / 当天停用」，
-          按需求方要求改回来 —— 启用与否已经有上面那组单选在筛了。
+          状态 = 已执行 / 执行中 / 准备执行。
+
+          后端按 task.state 与服务器时钟一起算（runStatusOf），旧版这一列
+          也是这个结构（Browse_active_task_form.html:110~155）：
+          state 非 0（1 执行 / 2 暂停 / 3 立即执行）= 执行中，
+          state 为 0 才拿 playtime 和此刻比 —— 过了点已执行，没到点准备执行。
+
+          ⚠ 颜色是需求方定的：执行中标红、准备执行标绿。
+          （旧版正好反过来，红的是「准备●」—— 不照抄。）
+          已执行不着色：它只是「这事过去了」，不需要抢眼。
         -->
         <el-table-column :label="$t('common.status')" width="110">
           <template #default="{ row }">
-            <el-tag
-              :type="row.executed ? 'success' : 'info'"
-              size="small"
-              effect="plain"
-              :title="$t(row.executed ? 'dash.doneTip' : 'dash.notYetTip', { d: viewDate, t: row.playtime })"
-            >
-              {{ row.executed ? $t("dash.done") : $t("dash.notYet") }}
+            <el-tag :type="STATUS_TAG[row.runStatus] || 'info'" size="small" effect="plain" :title="statusTip(row)">
+              {{ $t(STATUS_KEY[row.runStatus] || "dash.done") }}
             </el-tag>
           </template>
         </el-table-column>
@@ -504,6 +505,29 @@ const bq = reactive({ folderId: 0, weekday: 0, autoMode: 0, scope: "all", module
 
 /** 所看那一天（后端按星期算出来的具体日期），标题和状态列的提示都用它 */
 const viewDate = ref("");
+
+/**
+ * 状态列：后端给的是 key（done / running / ready），界面负责文案与颜色。
+ *
+ * ⚠ 颜色是需求方定的：执行中标红（danger）、准备执行标绿（success）。
+ * 旧版正好反过来 —— 它把「准备●」刷成红色、执行中刷绿色
+ * （Browse_active_task_form.html:129 / 111），不照抄。
+ */
+const STATUS_TAG: Record<string, "danger" | "success" | "info"> = {
+  running: "danger",
+  ready: "success",
+  done: "info"
+};
+const STATUS_KEY: Record<string, string> = {
+  running: "dash.running",
+  ready: "dash.readyRun",
+  done: "dash.done"
+};
+/** 鼠标悬停时说清楚这个状态是怎么判出来的 —— 光三个字看不出依据 */
+const statusTip = (row: BrowseItem) => {
+  if (row.runStatus === "running") return t("dash.runningTip", { s: row.state });
+  return t(row.runStatus === "done" ? "dash.doneTip" : "dash.readyRunTip", { d: viewDate.value, t: row.playtime });
+};
 
 /**
  * 「任务管理」下的模块。value 要与后端 browseModules 的键一一对应 ——

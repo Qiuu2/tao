@@ -7807,8 +7807,8 @@
           "netstate": 1,
           "taskstate": 1,
           "ip": "192.168.2.11",
-          "volume": 80,
-          "groupId": 1,
+          "volume": 6,
+          "groupId": 0,
           "area": "11111111",
           "deleted": false
         },
@@ -7820,7 +7820,7 @@
           "taskstate": 0,
           "ip": "192.168.2.12",
           "volume": 75,
-          "groupId": 1,
+          "groupId": 0,
           "area": "11111111",
           "deleted": false
         },
@@ -7832,7 +7832,7 @@
           "taskstate": 1,
           "ip": "192.168.2.21",
           "volume": 80,
-          "groupId": 1,
+          "groupId": 0,
           "area": "11111111",
           "deleted": false
         },
@@ -7844,7 +7844,7 @@
           "taskstate": 0,
           "ip": "192.168.2.22",
           "volume": 80,
-          "groupId": 1,
+          "groupId": 0,
           "area": "11111111",
           "deleted": false
         },
@@ -7868,7 +7868,7 @@
           "taskstate": 0,
           "ip": "192.168.2.13",
           "volume": 75,
-          "groupId": 1,
+          "groupId": 0,
           "area": "11111111",
           "deleted": false
         }
@@ -7896,7 +7896,8 @@
           "duplicateTime": false,
           "startdate": "2026-01-01",
           "enddate": "2026-12-31",
-          "exemodel": "0111110"
+          "exemodel": "0111110",
+          "terminalCount": 6
         },
         {
           "taskid": 1002,
@@ -7920,7 +7921,8 @@
           "duplicateTime": false,
           "startdate": "2026-01-01",
           "enddate": "2026-12-31",
-          "exemodel": "0111110"
+          "exemodel": "0111110",
+          "terminalCount": 6
         },
         {
           "taskid": 1003,
@@ -7944,7 +7946,8 @@
           "duplicateTime": false,
           "startdate": "2026-01-01",
           "enddate": "2026-12-31",
-          "exemodel": "0111110"
+          "exemodel": "0111110",
+          "terminalCount": 6
         },
         {
           "taskid": 1004,
@@ -7968,7 +7971,8 @@
           "duplicateTime": false,
           "startdate": "2026-01-01",
           "enddate": "2026-12-31",
-          "exemodel": "0111110"
+          "exemodel": "0111110",
+          "terminalCount": 6
         },
         {
           "taskid": 1005,
@@ -7992,7 +7996,8 @@
           "duplicateTime": false,
           "startdate": "2026-01-01",
           "enddate": "2026-12-31",
-          "exemodel": "0111110"
+          "exemodel": "0111110",
+          "terminalCount": 6
         },
         {
           "taskid": 1006,
@@ -8016,7 +8021,8 @@
           "duplicateTime": false,
           "startdate": "2026-01-01",
           "enddate": "2026-12-31",
-          "exemodel": "0111110"
+          "exemodel": "0111110",
+          "terminalCount": 6
         },
         {
           "taskid": 1007,
@@ -8040,7 +8046,8 @@
           "duplicateTime": false,
           "startdate": "2026-01-01",
           "enddate": "2026-12-31",
-          "exemodel": "0111110"
+          "exemodel": "0111110",
+          "terminalCount": 6
         }
       ],
       "ownerUserId": 1,
@@ -15296,7 +15303,7 @@
           "enabledToday": true,
           "projectstate": 0,
           "disableday": "0000-00-00",
-          "executed": true
+          "runStatus": "done"
         },
         {
           "index": 2,
@@ -15318,11 +15325,11 @@
           "stateText": "准备",
           "startdate": "2026-01-01",
           "enddate": "2026-12-31",
-          "terminals": 6,
+          "terminals": 5,
           "enabledToday": true,
           "projectstate": 0,
           "disableday": "0000-00-00",
-          "executed": true
+          "runStatus": "done"
         },
         {
           "index": 3,
@@ -15346,11 +15353,11 @@
           "stateText": "准备",
           "startdate": "2026-01-01",
           "enddate": "2026-12-31",
-          "terminals": 1,
+          "terminals": 0,
           "enabledToday": true,
           "projectstate": 0,
           "disableday": "0000-00-00",
-          "executed": false
+          "runStatus": "done"
         },
         {
           "index": 4,
@@ -15358,7 +15365,7 @@
           "taskName": "升旗仪式-国歌",
           "folderName": "admin",
           "module": "文件广播",
-          "category": "文件广播（admin）",
+          "category": "文件广播",
           "weekdays": [
             1
           ],
@@ -15372,7 +15379,7 @@
           "enabledToday": false,
           "projectstate": 0,
           "disableday": "0000-00-00",
-          "executed": false
+          "runStatus": "running"
         },
         {
           "index": 5,
@@ -15394,11 +15401,11 @@
           "stateText": "准备",
           "startdate": "2026-01-01",
           "enddate": "2026-12-31",
-          "terminals": 6,
+          "terminals": 5,
           "enabledToday": true,
           "projectstate": 0,
           "disableday": "0000-00-00",
-          "executed": false
+          "runStatus": "done"
         },
         {
           "index": 6,
@@ -15406,7 +15413,7 @@
           "taskName": "欢迎标语",
           "folderName": "1",
           "module": "led播放",
-          "category": "led播放（1）",
+          "category": "led播放",
           "weekdays": [
             1,
             2,
@@ -15422,11 +15429,11 @@
           "stateText": "准备",
           "startdate": "2026-01-01",
           "enddate": "2026-12-31",
-          "terminals": 3,
+          "terminals": 2,
           "enabledToday": true,
           "projectstate": 0,
           "disableday": "0000-00-00",
-          "executed": false
+          "runStatus": "done"
         },
         {
           "index": 7,
@@ -15434,7 +15441,7 @@
           "taskName": "运动会入场式",
           "folderName": "admin",
           "module": "文件广播",
-          "category": "文件广播（admin）",
+          "category": "文件广播",
           "weekdays": [],
           "cycleText": "手动",
           "playtime": "08:30:00",
@@ -15446,7 +15453,7 @@
           "enabledToday": false,
           "projectstate": 0,
           "disableday": "0000-00-00",
-          "executed": false
+          "runStatus": "done"
         },
         {
           "index": 8,
@@ -15454,7 +15461,7 @@
           "taskName": "考试须知",
           "folderName": "1",
           "module": "led播放",
-          "category": "led播放（1）",
+          "category": "led播放",
           "weekdays": [
             1,
             2,
@@ -15470,11 +15477,11 @@
           "stateText": "准备",
           "startdate": "2026-01-01",
           "enddate": "2026-12-31",
-          "terminals": 1,
+          "terminals": 0,
           "enabledToday": true,
           "projectstate": 0,
           "disableday": "0000-00-00",
-          "executed": false
+          "runStatus": "done"
         },
         {
           "index": 9,
@@ -15496,11 +15503,11 @@
           "stateText": "准备",
           "startdate": "2026-01-01",
           "enddate": "2026-12-31",
-          "terminals": 6,
+          "terminals": 5,
           "enabledToday": true,
           "projectstate": 0,
           "disableday": "0000-00-00",
-          "executed": false
+          "runStatus": "ready"
         },
         {
           "index": 10,
@@ -15522,11 +15529,11 @@
           "stateText": "准备",
           "startdate": "2026-01-01",
           "enddate": "2026-12-31",
-          "terminals": 6,
+          "terminals": 5,
           "enabledToday": true,
           "projectstate": 0,
           "disableday": "0000-00-00",
-          "executed": false
+          "runStatus": "ready"
         },
         {
           "index": 11,
@@ -15550,11 +15557,11 @@
           "stateText": "准备",
           "startdate": "2026-01-01",
           "enddate": "2026-12-31",
-          "terminals": 3,
+          "terminals": 2,
           "enabledToday": true,
           "projectstate": 0,
           "disableday": "0000-00-00",
-          "executed": false
+          "runStatus": "ready"
         },
         {
           "index": 12,
@@ -15562,7 +15569,7 @@
           "taskName": "课间轻音乐",
           "folderName": "admin",
           "module": "文件广播",
-          "category": "文件广播（admin）",
+          "category": "文件广播",
           "weekdays": [
             1,
             2,
@@ -15576,11 +15583,11 @@
           "stateText": "准备",
           "startdate": "2026-01-01",
           "enddate": "2026-12-31",
-          "terminals": 2,
+          "terminals": 1,
           "enabledToday": true,
           "projectstate": 0,
-          "disableday": "2026-09-14",
-          "executed": false
+          "disableday": "0000-00-00",
+          "runStatus": "ready"
         },
         {
           "index": 13,
@@ -15602,11 +15609,11 @@
           "stateText": "准备",
           "startdate": "2026-01-01",
           "enddate": "2026-12-31",
-          "terminals": 6,
+          "terminals": 5,
           "enabledToday": true,
           "projectstate": 0,
           "disableday": "0000-00-00",
-          "executed": false
+          "runStatus": "ready"
         },
         {
           "index": 14,
@@ -15614,7 +15621,7 @@
           "taskName": "午间食堂背景music",
           "folderName": "admin",
           "module": "文件广播",
-          "category": "文件广播（admin）",
+          "category": "文件广播",
           "weekdays": [
             1,
             2,
@@ -15632,7 +15639,7 @@
           "enabledToday": true,
           "projectstate": 0,
           "disableday": "0000-00-00",
-          "executed": false
+          "runStatus": "running"
         },
         {
           "index": 15,
@@ -15656,11 +15663,11 @@
           "stateText": "准备",
           "startdate": "2026-01-01",
           "enddate": "2026-12-31",
-          "terminals": 1,
+          "terminals": 0,
           "enabledToday": true,
           "projectstate": 0,
           "disableday": "0000-00-00",
-          "executed": false
+          "runStatus": "ready"
         },
         {
           "index": 16,
@@ -15682,11 +15689,11 @@
           "stateText": "准备",
           "startdate": "2026-01-01",
           "enddate": "2026-12-31",
-          "terminals": 6,
+          "terminals": 5,
           "enabledToday": true,
           "projectstate": 0,
           "disableday": "0000-00-00",
-          "executed": false
+          "runStatus": "ready"
         },
         {
           "index": 17,
@@ -15694,7 +15701,7 @@
           "taskName": "消防疏散演练",
           "folderName": "admin",
           "module": "文件广播",
-          "category": "文件广播（admin）",
+          "category": "文件广播",
           "weekdays": [],
           "cycleText": "手动",
           "playtime": "15:00:00",
@@ -15702,11 +15709,11 @@
           "stateText": "准备",
           "startdate": "2026-01-01",
           "enddate": "2026-12-31",
-          "terminals": 5,
+          "terminals": 4,
           "enabledToday": false,
           "projectstate": 0,
           "disableday": "0000-00-00",
-          "executed": false
+          "runStatus": "ready"
         },
         {
           "index": 18,
@@ -15730,11 +15737,11 @@
           "stateText": "准备",
           "startdate": "2026-01-01",
           "enddate": "2026-12-31",
-          "terminals": 3,
+          "terminals": 2,
           "enabledToday": true,
           "projectstate": 0,
           "disableday": "0000-00-00",
-          "executed": false
+          "runStatus": "ready"
         },
         {
           "index": 19,
@@ -15756,11 +15763,11 @@
           "stateText": "准备",
           "startdate": "2026-01-01",
           "enddate": "2026-12-31",
-          "terminals": 6,
+          "terminals": 5,
           "enabledToday": true,
           "projectstate": 0,
           "disableday": "0000-00-00",
-          "executed": false
+          "runStatus": "ready"
         },
         {
           "index": 20,
@@ -15768,7 +15775,7 @@
           "taskName": "晚自习预备",
           "folderName": "admin",
           "module": "文件广播",
-          "category": "文件广播（admin）",
+          "category": "文件广播",
           "weekdays": [
             1,
             2,
@@ -15782,17 +15789,584 @@
           "stateText": "执行中",
           "startdate": "2026-01-01",
           "enddate": "2026-12-31",
-          "terminals": 4,
+          "terminals": 3,
           "enabledToday": true,
           "projectstate": 0,
           "disableday": "0000-00-00",
-          "executed": false
+          "runStatus": "running"
         }
       ],
       "pageNum": 1,
       "pageSize": 20,
       "total": 21,
       "viewDate": "2026-09-14"
+    }
+  },
+  "GET /api/bell-plans/items/1001/terminals?plan=%E6%98%A5%E5%AD%A3%E4%BD%9C%E6%81%AF": {
+    "code": 200,
+    "msg": "ok",
+    "data": {
+      "taskid": 1001,
+      "terminals": [
+        {
+          "terminalId": 1,
+          "terminalname": "A101教室音箱",
+          "typeName": "一体化音箱",
+          "netstate": 1,
+          "taskstate": 1,
+          "ip": "192.168.2.11",
+          "volume": 6,
+          "groupId": 0,
+          "area": "11111111",
+          "deleted": false
+        },
+        {
+          "terminalId": 2,
+          "terminalname": "A102教室音箱",
+          "typeName": "一体化音箱",
+          "netstate": 1,
+          "taskstate": 0,
+          "ip": "192.168.2.12",
+          "volume": 75,
+          "groupId": 0,
+          "area": "11111111",
+          "deleted": false
+        },
+        {
+          "terminalId": 4,
+          "terminalname": "A201教室音箱",
+          "typeName": "一体化音箱",
+          "netstate": 1,
+          "taskstate": 1,
+          "ip": "192.168.2.21",
+          "volume": 80,
+          "groupId": 0,
+          "area": "11111111",
+          "deleted": false
+        },
+        {
+          "terminalId": 5,
+          "terminalname": "A202教室音箱",
+          "typeName": "一体化音箱",
+          "netstate": 1,
+          "taskstate": 0,
+          "ip": "192.168.2.22",
+          "volume": 80,
+          "groupId": 0,
+          "area": "11111111",
+          "deleted": false
+        },
+        {
+          "terminalId": 11,
+          "terminalname": "TTS主机",
+          "typeName": "TTS主机",
+          "netstate": 1,
+          "taskstate": 0,
+          "ip": "192.168.2.60",
+          "volume": 80,
+          "groupId": 2,
+          "area": "11111111",
+          "deleted": false
+        },
+        {
+          "terminalId": 3,
+          "terminalname": "A103教室音箱",
+          "typeName": "一体化音箱",
+          "netstate": 0,
+          "taskstate": 0,
+          "ip": "192.168.2.13",
+          "volume": 75,
+          "groupId": 0,
+          "area": "11111111",
+          "deleted": false
+        }
+      ]
+    }
+  },
+  "GET /api/bell-plans/items/1002/terminals?plan=%E6%98%A5%E5%AD%A3%E4%BD%9C%E6%81%AF": {
+    "code": 200,
+    "msg": "ok",
+    "data": {
+      "taskid": 1002,
+      "terminals": [
+        {
+          "terminalId": 1,
+          "terminalname": "A101教室音箱",
+          "typeName": "一体化音箱",
+          "netstate": 1,
+          "taskstate": 1,
+          "ip": "192.168.2.11",
+          "volume": 6,
+          "groupId": 0,
+          "area": "11111111",
+          "deleted": false
+        },
+        {
+          "terminalId": 2,
+          "terminalname": "A102教室音箱",
+          "typeName": "一体化音箱",
+          "netstate": 1,
+          "taskstate": 0,
+          "ip": "192.168.2.12",
+          "volume": 75,
+          "groupId": 0,
+          "area": "11111111",
+          "deleted": false
+        },
+        {
+          "terminalId": 4,
+          "terminalname": "A201教室音箱",
+          "typeName": "一体化音箱",
+          "netstate": 1,
+          "taskstate": 1,
+          "ip": "192.168.2.21",
+          "volume": 80,
+          "groupId": 0,
+          "area": "11111111",
+          "deleted": false
+        },
+        {
+          "terminalId": 5,
+          "terminalname": "A202教室音箱",
+          "typeName": "一体化音箱",
+          "netstate": 1,
+          "taskstate": 0,
+          "ip": "192.168.2.22",
+          "volume": 80,
+          "groupId": 0,
+          "area": "11111111",
+          "deleted": false
+        },
+        {
+          "terminalId": 11,
+          "terminalname": "TTS主机",
+          "typeName": "TTS主机",
+          "netstate": 1,
+          "taskstate": 0,
+          "ip": "192.168.2.60",
+          "volume": 80,
+          "groupId": 2,
+          "area": "11111111",
+          "deleted": false
+        },
+        {
+          "terminalId": 3,
+          "terminalname": "A103教室音箱",
+          "typeName": "一体化音箱",
+          "netstate": 0,
+          "taskstate": 0,
+          "ip": "192.168.2.13",
+          "volume": 75,
+          "groupId": 0,
+          "area": "11111111",
+          "deleted": false
+        }
+      ]
+    }
+  },
+  "GET /api/bell-plans/items/1003/terminals?plan=%E6%98%A5%E5%AD%A3%E4%BD%9C%E6%81%AF": {
+    "code": 200,
+    "msg": "ok",
+    "data": {
+      "taskid": 1003,
+      "terminals": [
+        {
+          "terminalId": 1,
+          "terminalname": "A101教室音箱",
+          "typeName": "一体化音箱",
+          "netstate": 1,
+          "taskstate": 1,
+          "ip": "192.168.2.11",
+          "volume": 6,
+          "groupId": 0,
+          "area": "11111111",
+          "deleted": false
+        },
+        {
+          "terminalId": 2,
+          "terminalname": "A102教室音箱",
+          "typeName": "一体化音箱",
+          "netstate": 1,
+          "taskstate": 0,
+          "ip": "192.168.2.12",
+          "volume": 75,
+          "groupId": 0,
+          "area": "11111111",
+          "deleted": false
+        },
+        {
+          "terminalId": 4,
+          "terminalname": "A201教室音箱",
+          "typeName": "一体化音箱",
+          "netstate": 1,
+          "taskstate": 1,
+          "ip": "192.168.2.21",
+          "volume": 80,
+          "groupId": 0,
+          "area": "11111111",
+          "deleted": false
+        },
+        {
+          "terminalId": 5,
+          "terminalname": "A202教室音箱",
+          "typeName": "一体化音箱",
+          "netstate": 1,
+          "taskstate": 0,
+          "ip": "192.168.2.22",
+          "volume": 80,
+          "groupId": 0,
+          "area": "11111111",
+          "deleted": false
+        },
+        {
+          "terminalId": 11,
+          "terminalname": "TTS主机",
+          "typeName": "TTS主机",
+          "netstate": 1,
+          "taskstate": 0,
+          "ip": "192.168.2.60",
+          "volume": 80,
+          "groupId": 2,
+          "area": "11111111",
+          "deleted": false
+        },
+        {
+          "terminalId": 3,
+          "terminalname": "A103教室音箱",
+          "typeName": "一体化音箱",
+          "netstate": 0,
+          "taskstate": 0,
+          "ip": "192.168.2.13",
+          "volume": 75,
+          "groupId": 0,
+          "area": "11111111",
+          "deleted": false
+        }
+      ]
+    }
+  },
+  "GET /api/bell-plans/items/1004/terminals?plan=%E6%98%A5%E5%AD%A3%E4%BD%9C%E6%81%AF": {
+    "code": 200,
+    "msg": "ok",
+    "data": {
+      "taskid": 1004,
+      "terminals": [
+        {
+          "terminalId": 1,
+          "terminalname": "A101教室音箱",
+          "typeName": "一体化音箱",
+          "netstate": 1,
+          "taskstate": 1,
+          "ip": "192.168.2.11",
+          "volume": 6,
+          "groupId": 0,
+          "area": "11111111",
+          "deleted": false
+        },
+        {
+          "terminalId": 2,
+          "terminalname": "A102教室音箱",
+          "typeName": "一体化音箱",
+          "netstate": 1,
+          "taskstate": 0,
+          "ip": "192.168.2.12",
+          "volume": 75,
+          "groupId": 0,
+          "area": "11111111",
+          "deleted": false
+        },
+        {
+          "terminalId": 4,
+          "terminalname": "A201教室音箱",
+          "typeName": "一体化音箱",
+          "netstate": 1,
+          "taskstate": 1,
+          "ip": "192.168.2.21",
+          "volume": 80,
+          "groupId": 0,
+          "area": "11111111",
+          "deleted": false
+        },
+        {
+          "terminalId": 5,
+          "terminalname": "A202教室音箱",
+          "typeName": "一体化音箱",
+          "netstate": 1,
+          "taskstate": 0,
+          "ip": "192.168.2.22",
+          "volume": 80,
+          "groupId": 0,
+          "area": "11111111",
+          "deleted": false
+        },
+        {
+          "terminalId": 11,
+          "terminalname": "TTS主机",
+          "typeName": "TTS主机",
+          "netstate": 1,
+          "taskstate": 0,
+          "ip": "192.168.2.60",
+          "volume": 80,
+          "groupId": 2,
+          "area": "11111111",
+          "deleted": false
+        },
+        {
+          "terminalId": 3,
+          "terminalname": "A103教室音箱",
+          "typeName": "一体化音箱",
+          "netstate": 0,
+          "taskstate": 0,
+          "ip": "192.168.2.13",
+          "volume": 75,
+          "groupId": 0,
+          "area": "11111111",
+          "deleted": false
+        }
+      ]
+    }
+  },
+  "GET /api/bell-plans/items/1005/terminals?plan=%E6%98%A5%E5%AD%A3%E4%BD%9C%E6%81%AF": {
+    "code": 200,
+    "msg": "ok",
+    "data": {
+      "taskid": 1005,
+      "terminals": [
+        {
+          "terminalId": 1,
+          "terminalname": "A101教室音箱",
+          "typeName": "一体化音箱",
+          "netstate": 1,
+          "taskstate": 1,
+          "ip": "192.168.2.11",
+          "volume": 6,
+          "groupId": 0,
+          "area": "11111111",
+          "deleted": false
+        },
+        {
+          "terminalId": 2,
+          "terminalname": "A102教室音箱",
+          "typeName": "一体化音箱",
+          "netstate": 1,
+          "taskstate": 0,
+          "ip": "192.168.2.12",
+          "volume": 75,
+          "groupId": 0,
+          "area": "11111111",
+          "deleted": false
+        },
+        {
+          "terminalId": 4,
+          "terminalname": "A201教室音箱",
+          "typeName": "一体化音箱",
+          "netstate": 1,
+          "taskstate": 1,
+          "ip": "192.168.2.21",
+          "volume": 80,
+          "groupId": 0,
+          "area": "11111111",
+          "deleted": false
+        },
+        {
+          "terminalId": 5,
+          "terminalname": "A202教室音箱",
+          "typeName": "一体化音箱",
+          "netstate": 1,
+          "taskstate": 0,
+          "ip": "192.168.2.22",
+          "volume": 80,
+          "groupId": 0,
+          "area": "11111111",
+          "deleted": false
+        },
+        {
+          "terminalId": 11,
+          "terminalname": "TTS主机",
+          "typeName": "TTS主机",
+          "netstate": 1,
+          "taskstate": 0,
+          "ip": "192.168.2.60",
+          "volume": 80,
+          "groupId": 2,
+          "area": "11111111",
+          "deleted": false
+        },
+        {
+          "terminalId": 3,
+          "terminalname": "A103教室音箱",
+          "typeName": "一体化音箱",
+          "netstate": 0,
+          "taskstate": 0,
+          "ip": "192.168.2.13",
+          "volume": 75,
+          "groupId": 0,
+          "area": "11111111",
+          "deleted": false
+        }
+      ]
+    }
+  },
+  "GET /api/bell-plans/items/1006/terminals?plan=%E6%98%A5%E5%AD%A3%E4%BD%9C%E6%81%AF": {
+    "code": 200,
+    "msg": "ok",
+    "data": {
+      "taskid": 1006,
+      "terminals": [
+        {
+          "terminalId": 1,
+          "terminalname": "A101教室音箱",
+          "typeName": "一体化音箱",
+          "netstate": 1,
+          "taskstate": 1,
+          "ip": "192.168.2.11",
+          "volume": 6,
+          "groupId": 0,
+          "area": "11111111",
+          "deleted": false
+        },
+        {
+          "terminalId": 2,
+          "terminalname": "A102教室音箱",
+          "typeName": "一体化音箱",
+          "netstate": 1,
+          "taskstate": 0,
+          "ip": "192.168.2.12",
+          "volume": 75,
+          "groupId": 0,
+          "area": "11111111",
+          "deleted": false
+        },
+        {
+          "terminalId": 4,
+          "terminalname": "A201教室音箱",
+          "typeName": "一体化音箱",
+          "netstate": 1,
+          "taskstate": 1,
+          "ip": "192.168.2.21",
+          "volume": 80,
+          "groupId": 0,
+          "area": "11111111",
+          "deleted": false
+        },
+        {
+          "terminalId": 5,
+          "terminalname": "A202教室音箱",
+          "typeName": "一体化音箱",
+          "netstate": 1,
+          "taskstate": 0,
+          "ip": "192.168.2.22",
+          "volume": 80,
+          "groupId": 0,
+          "area": "11111111",
+          "deleted": false
+        },
+        {
+          "terminalId": 11,
+          "terminalname": "TTS主机",
+          "typeName": "TTS主机",
+          "netstate": 1,
+          "taskstate": 0,
+          "ip": "192.168.2.60",
+          "volume": 80,
+          "groupId": 2,
+          "area": "11111111",
+          "deleted": false
+        },
+        {
+          "terminalId": 3,
+          "terminalname": "A103教室音箱",
+          "typeName": "一体化音箱",
+          "netstate": 0,
+          "taskstate": 0,
+          "ip": "192.168.2.13",
+          "volume": 75,
+          "groupId": 0,
+          "area": "11111111",
+          "deleted": false
+        }
+      ]
+    }
+  },
+  "GET /api/bell-plans/items/1007/terminals?plan=%E6%98%A5%E5%AD%A3%E4%BD%9C%E6%81%AF": {
+    "code": 200,
+    "msg": "ok",
+    "data": {
+      "taskid": 1007,
+      "terminals": [
+        {
+          "terminalId": 1,
+          "terminalname": "A101教室音箱",
+          "typeName": "一体化音箱",
+          "netstate": 1,
+          "taskstate": 1,
+          "ip": "192.168.2.11",
+          "volume": 6,
+          "groupId": 0,
+          "area": "11111111",
+          "deleted": false
+        },
+        {
+          "terminalId": 2,
+          "terminalname": "A102教室音箱",
+          "typeName": "一体化音箱",
+          "netstate": 1,
+          "taskstate": 0,
+          "ip": "192.168.2.12",
+          "volume": 75,
+          "groupId": 0,
+          "area": "11111111",
+          "deleted": false
+        },
+        {
+          "terminalId": 4,
+          "terminalname": "A201教室音箱",
+          "typeName": "一体化音箱",
+          "netstate": 1,
+          "taskstate": 1,
+          "ip": "192.168.2.21",
+          "volume": 80,
+          "groupId": 0,
+          "area": "11111111",
+          "deleted": false
+        },
+        {
+          "terminalId": 5,
+          "terminalname": "A202教室音箱",
+          "typeName": "一体化音箱",
+          "netstate": 1,
+          "taskstate": 0,
+          "ip": "192.168.2.22",
+          "volume": 80,
+          "groupId": 0,
+          "area": "11111111",
+          "deleted": false
+        },
+        {
+          "terminalId": 11,
+          "terminalname": "TTS主机",
+          "typeName": "TTS主机",
+          "netstate": 1,
+          "taskstate": 0,
+          "ip": "192.168.2.60",
+          "volume": 80,
+          "groupId": 2,
+          "area": "11111111",
+          "deleted": false
+        },
+        {
+          "terminalId": 3,
+          "terminalname": "A103教室音箱",
+          "typeName": "一体化音箱",
+          "netstate": 0,
+          "taskstate": 0,
+          "ip": "192.168.2.13",
+          "volume": 75,
+          "groupId": 0,
+          "area": "11111111",
+          "deleted": false
+        }
+      ]
     }
   }
 }

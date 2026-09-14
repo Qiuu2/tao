@@ -15,9 +15,9 @@
  *   ③ scope 默认「全部」
  *   ④ 「单独停用日」列显示 task.disableday
  *   ⑤ 换一个星期，「看的是哪一天」跟着变，启用/停用的判定也跟着那一天走
- *   ⑥ 状态列是「未执行 / 已执行」，判据是执行时间 vs **服务器**当前时刻
+ *   ⑥ 状态列是「已执行 / 执行中 / 准备执行」，按 task.state + **服务器**当前时刻判
  *   ⑦ 单独停用日**原样**显示库里那一列（0000-00-00 也照显）
- *   ⑧ 所属分类 = 模块名（归属名）—— 作息方案的括号里是**方案名**，
+ *   ⑧ 所属分类：只有作息方案带括号（里面是**方案名**），
  *     不是 parentid 指的那个默认目录
  */
 const BASE = process.env.E2E_BASE || "http://127.0.0.1:5199";
@@ -165,22 +165,55 @@ console.log("⑤ 星期改选「周日」，看的日期要跟着变");
   ok(!rows2.some(r => r.includes("升旗仪式-国歌")), "换成周一 + 当天启用：它就不在了 —— 启用判定跟着所看那一天走");
   await pickScope("全部");
 }
-// ⑥ 状态列是「未执行 / 已执行」，判据是执行时间 vs 服务器当前时刻
-console.log("⑥ 状态列是「未执行 / 已执行」，不是「当天启用/停用」");
+// ⑥ 状态列：已执行 / 执行中 / 准备执行
+console.log("⑥ 状态列是「已执行 / 执行中 / 准备执行」");
 {
   await p.reload({ waitUntil: "domcontentloaded" });
   await p.waitForTimeout(4000);
   const nowClock = q1("SELECT TIME_FORMAT(NOW(),'%H:%i:%s')");
-  const st = (await p.locator(".panel .el-table__body .el-table__row td:nth-child(6)").allInnerTexts()).map(v => v.trim());
-  const tm = (await p.locator(".panel .el-table__body .el-table__row td:nth-child(5)").allInnerTexts()).map(v => v.trim());
+  const cell = i => p.locator(`.panel .el-table__body .el-table__row td:nth-child(${i})`);
+  const st = (await cell(6).allInnerTexts()).map(v => v.trim());
+  const tm = (await cell(5).allInnerTexts()).map(v => v.trim());
+  const names = (await cell(2).allInnerTexts()).map(v => v.trim());
   console.log("   状态取值:", JSON.stringify([...new Set(st)]), " 服务器现在:", nowClock);
   ok(
-    st.every(v => v === "已执行" || v === "未执行"),
-    "只有「已执行 / 未执行」两种取值"
+    st.every(v => ["已执行", "执行中", "准备执行"].includes(v)),
+    "只有「已执行 / 执行中 / 准备执行」三种取值"
   );
-  // ⚠ 用**服务器**时钟比，不是浏览器的。广播到点不到点由服务器说了算。
-  const bad = st.filter((v, i) => v !== (tm[i] <= nowClock ? "已执行" : "未执行")).length;
-  ok(bad === 0, `每行都与「执行时间 vs 服务器当前时刻」对得上（${bad} 行对不上）`);
+  // 每一行该显示什么，直接拿库里的 state 和服务器时钟算一遍对答案：
+  // state 非 0（1 执行 / 2 暂停 / 3 立即执行）= 执行中，0 才比时间
+  const stateOf = n => Number(q1(`SELECT COALESCE(state,0) FROM task WHERE taskname='${n}' AND sec_task_id=0 LIMIT 1`));
+  const bad = st.filter((v, i) => {
+    const want = stateOf(names[i]) !== 0 ? "执行中" : tm[i] <= nowClock ? "已执行" : "准备执行";
+    if (v !== want) console.log(`   对不上：${names[i]} 显示「${v}」，按 state+时钟应该是「${want}」`);
+    return v !== want;
+  }).length;
+  ok(bad === 0, `每行都与「task.state + 服务器当前时刻」对得上（${bad} 行对不上）`);
+
+  // 颜色：执行中标红、准备执行标绿（需求方定的，旧版正好相反，不照抄）
+  const tagClass = async txt => {
+    const tag = p.locator(".panel .el-table__body .el-table__row .el-tag", { hasText: txt }).first();
+    return (await tag.count()) ? (await tag.getAttribute("class")) || "" : "";
+  };
+  const readyCls = await tagClass("准备执行");
+  console.log("   「准备执行」的 tag class:", readyCls || "(这一屏没有准备执行的行)");
+  if (readyCls) ok(readyCls.includes("el-tag--success"), "「准备执行」是绿的（el-tag--success）");
+  // 把一条任务临时置成执行中，看颜色对不对（跑完还原）
+  const victim = names[0];
+  const oldState = stateOf(victim);
+  execSync(SQL(`UPDATE task SET state=1 WHERE taskname='${victim}' AND sec_task_id=0`), { stdio: "pipe" });
+  await p.reload({ waitUntil: "domcontentloaded" });
+  await p.waitForTimeout(4000);
+  const nowSt = (await cell(6).allInnerTexts()).map(v => v.trim());
+  const nowNm = (await cell(2).allInnerTexts()).map(v => v.trim());
+  console.log(`   把「${victim}」的 state 改成 1 之后：${nowSt[nowNm.indexOf(victim)]}`);
+  ok(nowSt[nowNm.indexOf(victim)] === "执行中", "state=1 的那条显示成「执行中」");
+  const runCls = await tagClass("执行中");
+  console.log("   「执行中」的 tag class:", runCls);
+  ok(runCls.includes("el-tag--danger"), "「执行中」是红的（el-tag--danger）");
+  execSync(SQL(`UPDATE task SET state=${oldState} WHERE taskname='${victim}' AND sec_task_id=0`), { stdio: "pipe" });
+  await p.reload({ waitUntil: "domcontentloaded" });
+  await p.waitForTimeout(4000);
 }
 
 // ⑦ 单独停用日原样显示库里的值
@@ -198,8 +231,8 @@ console.log("⑦ 单独停用日原样显示库里那一列");
   );
 }
 
-// ⑧ 所属分类要认得出是哪个方案 / 哪个分组
-console.log("⑧ 所属分类 = 模块名（归属名）");
+// ⑧ 所属分类：只有作息方案带括号
+console.log("⑧ 所属分类 = 模块名，只有作息方案后面跟（方案名）");
 {
   const names = (await p.locator(".panel .el-table__body .el-table__row td:nth-child(2)").allInnerTexts()).map(v => v.trim());
   const cats = (await p.locator(".panel .el-table__body .el-table__row td:nth-child(3)").allInnerTexts()).map(v => v.trim());
@@ -214,14 +247,19 @@ console.log("⑧ 所属分类 = 模块名（归属名）");
   ok(of(lesson) === `作息方案（${planName}）`, `作息条目显示成「作息方案（${planName}）」`);
   ok(of(lesson) !== "admin", "不再是 parentid 指的那个默认目录名「admin」");
 
-  // 其余几类：模块名要对得上
-  const want = { 终端功放: 5, 采播管理: 3 };
+  // 其余几类：**只写模块名，不带括号**。
+  // 文件广播原来会显示成「文件广播（admin）」—— 括号里是 filetaskfree 的分组名，
+  // 而这一列问的是「属于哪个功能模块」，按需求方要求去掉。
+  const want = { 终端功放: 5, 采播管理: 3, 文件广播: 2 };
   for (const [mod, ty] of Object.entries(want)) {
     const nm = q1(`SELECT taskname FROM task WHERE tasktype=${ty} AND channel=0 AND sec_task_id=0 LIMIT 1`);
     if (!nm) continue;
     console.log(`   ${mod}「${nm}」→ ${of(nm)}`);
-    ok(of(nm) === mod, `${mod}这一类显示成「${mod}」（它本来就不分组，不带括号）`);
+    ok(of(nm) === mod, `${mod}这一类就写「${mod}」，不带括号`);
   }
+  // 除了作息方案，谁都不许带括号
+  const withParen = cats.filter(c => c.includes("（")).filter(c => !c.startsWith("作息方案"));
+  ok(withParen.length === 0, "只有作息方案带括号，其余都不带：" + JSON.stringify([...new Set(withParen)]));
   ok(
     cats.every(c => c && c !== "(未分组)"),
     "没有哪一行还是空的或「(未分组)」"

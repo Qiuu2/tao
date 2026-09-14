@@ -463,6 +463,7 @@ func (a *app) routes() http.Handler {
 	mux.HandleFunc("PUT /api/bell-plans/volume", bel(a.handleBellPlanVolume))
 	mux.HandleFunc("POST /api/bell-plans/copy", bel(a.handleBellPlanCopy))
 	mux.HandleFunc("POST /api/bell-plans/items", bel(a.handleBellItemAdd))
+	mux.HandleFunc("GET /api/bell-plans/items/{id}/terminals", req(a.handleBellItemTerminals))
 	mux.HandleFunc("PUT /api/bell-plans/items/{id}", bel(a.handleBellItemUpdate))
 	mux.HandleFunc("DELETE /api/bell-plans/items", bel(a.handleBellItemDelete))
 	mux.HandleFunc("PUT /api/bell-plans/items/schedule", bel(a.handleBellItemSchedule))

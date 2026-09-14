@@ -256,6 +256,7 @@ var exposedGroups = []exposedGroup{
 		APIs: []exposedAPI{
 			{"GET /api/bell-plans", "作息方案列表", "登录即可", false},
 			{"GET /api/bell-plans/detail", "方案详情（方案名放 query 里）", "登录即可", false},
+			{"GET /api/bell-plans/items/{id}/terminals", "某条打铃自己的终端清单", "登录即可", false},
 			{"POST /api/bell-plans", "新建方案", "bellpriv", true},
 			{"PUT /api/bell-plans", "修改方案（含改名）", "bellpriv", true},
 			{"POST /api/bell-plans/items", "给方案加一条打铃", "bellpriv", true},
