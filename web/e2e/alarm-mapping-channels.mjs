@@ -26,6 +26,17 @@
  *   ③ 第 3 路以上的映射不被误判成超范围
  *   ④ 前后两处（列表 / 编辑回填）说的是同一个数
  *
+ * 再加一条 ⑤：**这个数是哪来的，界面上要说得出来**。
+ *
+ * 现网报过一次「添加和修改里的通道只有通道一和通道二」。本地怎么点都是 16 路，
+ * 差别在库：那边 terminaltype 里报警主机那一行的 switchcount 没配（0），
+ * 于是只剩设备上报的 2。可界面上只有一个光秃秃的「2」，谁也看不出是哪一头缺值，
+ * 两边只能来回猜。
+ *
+ * 所以下拉底下现在把两个来源直接写出来。⑤ 把两种状态都跑一遍：
+ * 把 switchcount 改成 0 复现「只有 2 路」，确认提示指向 terminaltype 那一行；
+ * 改回 16 确认恢复，且不再报警。
+ *
  * # 怎么跑
  *
  *   node e2e/alarm-mapping-channels.mjs
@@ -39,6 +50,10 @@ const SEED =
   process.env.E2E_SEED_DB ||
   `mariadb -uroot audioserver -e "INSERT INTO alarmgroupmap (info, alarmterminalid, alarmchannel, firealarmgroupid, mediaid) SELECT 'E2E八路', m.alarmterminalid, 8, m.firealarmgroupid, m.mediaid FROM alarmgroupmap m ORDER BY m.id LIMIT 1"`;
 const UNSEED = process.env.E2E_UNSEED_DB || `mariadb -uroot audioserver -e "DELETE FROM alarmgroupmap WHERE info='E2E八路'"`;
+/** ⑤ 用：把报警主机型号的 switchcount 打成 0 / 改回 16，复现并修复「只有 2 路」 */
+const SQL = q => `mariadb -uroot audioserver -e "${q}"`;
+const BREAK_TYPE = process.env.E2E_BREAK_TYPE || SQL("UPDATE terminaltype SET switchcount=0 WHERE id=7");
+const FIX_TYPE = process.env.E2E_FIX_TYPE || SQL("UPDATE terminaltype SET switchcount=16 WHERE id=7");
 
 const { chromium } = await import(process.env.E2E_PLAYWRIGHT || "/opt/node22/lib/node_modules/playwright/index.mjs");
 const { execSync } = await import("node:child_process");
@@ -53,8 +68,10 @@ execSync(SEED, { stdio: "pipe" });
 const cleanup = () => {
   try {
     execSync(UNSEED, { stdio: "pipe" });
+    // ⑤ 会把 switchcount 打成 0，不管中途怎么退都要改回去
+    execSync(FIX_TYPE, { stdio: "pipe" });
   } catch {
-    console.log("  ! 清理造的数据失败，手工执行：" + UNSEED);
+    console.log("  ! 清理造的数据失败，手工执行：" + UNSEED + " 以及 " + FIX_TYPE);
   }
 };
 process.on("exit", cleanup);
@@ -166,6 +183,69 @@ await chanSel2.click();
 await p.waitForTimeout(1000);
 const chans2 = await p.locator(".el-select-dropdown:visible .el-select-dropdown__item").allInnerTexts();
 ok(chans2.length === declared, `编辑里下拉也是 ${chans2.length} 项`);
+
+// ── ⑤ 路数是哪来的，界面上说得出来 ──
+console.log("⑤ 通道路数的来源要写在界面上");
+const openAdd = async () => {
+  // ⚠ 先把还开着的弹窗用「取消」关掉，别指望 goto 能冲掉它：
+  //   路由是 hash 的，goto 到**当前同一个** hash 根本不发生导航，弹窗原样还在，
+  //   接着点「添加」就一直被 .el-overlay 挡住（干等 30 秒然后超时）。
+  await p.keyboard.press("Escape");
+  await p.waitForTimeout(400);
+  const open = p.locator(".el-dialog:visible .el-dialog__footer button", { hasText: "取消" });
+  if (await open.count()) {
+    await open.first().click();
+    await p.waitForSelector(".el-overlay", { state: "hidden", timeout: 10000 }).catch(() => undefined);
+    await p.waitForTimeout(800);
+  }
+  await p.locator(".table-header-ops button, .header-left button").first().click();
+  await p.waitForTimeout(1500);
+  const d = p.locator(".el-dialog:visible").first();
+  await d.locator(".el-select, .el-tree-select").first().click();
+  await p.waitForTimeout(1200);
+  await p.waitForSelector(HOST_OPT, { timeout: 10000 });
+  const lines = await p.locator(HOST_OPT).allInnerTexts();
+  const host = lines.find(x => /\d+\s*路/.test(x));
+  await p.locator(HOST_OPT, { hasText: host }).first().click();
+  await p.waitForTimeout(1200);
+  return { d, host, src: (await d.locator(".ch-src").innerText()).replace(/\s+/g, " ").trim() };
+};
+
+{
+  const good = await openAdd();
+  console.log("   健康：" + good.src);
+  ok(good.src.includes(`本机 ${declared} 路`), `写明了本机 ${declared} 路`);
+  ok(/型号声明 \d+ 路/.test(good.src) && /设备上报 \d+ 路/.test(good.src), "两个来源都写出来了");
+  ok((await good.d.locator(".ch-src.warn").count()) === 0, "型号声明正常时不报警");
+}
+
+// 把型号那一行打坏，复现现网那个「只有 2 路」
+execSync(BREAK_TYPE, { stdio: "pipe" });
+{
+  const bad = await openAdd();
+  console.log("   打坏后：" + bad.src);
+  ok(/\d+\s*路/.test(bad.host) && Number(bad.host.match(/(\d+)\s*路/)[1]) < declared, `主机项掉到了 ${bad.host}`);
+  ok(bad.src.includes("型号声明 0 路"), "说清楚是型号那一行没声明");
+  ok((await bad.d.locator(".ch-src.warn").count()) === 1, "这一行标黄了");
+  ok(bad.src.includes("switchcount"), "点名了要去看哪一列");
+  const chan = bad.d.locator(".el-form-item", { hasText: "通道" }).locator(".el-select").first();
+  await chan.click();
+  await p.waitForTimeout(900);
+  const n = await p.locator(".el-select-dropdown:visible .el-select-dropdown__item").count();
+  console.log(`   通道下拉 ${n} 项`);
+  ok(n < declared, `确实复现了「只有 ${n} 路」`);
+  await p.keyboard.press("Escape");
+  await p.waitForTimeout(400);
+}
+
+// 改回去，确认恢复
+execSync(FIX_TYPE, { stdio: "pipe" });
+{
+  const back = await openAdd();
+  console.log("   改回后：" + back.src);
+  ok(back.src.includes(`本机 ${declared} 路`), `改回 switchcount 之后又是 ${declared} 路`);
+  ok((await back.d.locator(".ch-src.warn").count()) === 0, "不再报警");
+}
 
 await b.close();
 console.log(fails ? `\n✗ ${fails} 条没过` : "\n✓ 全过");

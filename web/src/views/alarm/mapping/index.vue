@@ -96,10 +96,36 @@
           <el-input v-model="dlg.form.info" maxlength="15" show-word-limit :placeholder='$t("alarmMap.mapNameRequired")' />
         </el-form-item>
 
+        <!--
+          通道下拉的条数 = 服务端算出来的 effectiveChannels（见 alarm/picker.go）。
+
+          ⚠ 下面那行「来源」不是装饰。这个数有两个来源，**哪个都可能不准**：
+
+            terminaltype.switchcount  这个型号声明几路（参考库里类型 7 写的是 16）
+            terminal.channel          这台设备自己报几路（全表通用列，默认值 2，
+                                      「立体声两个声道」的意思，跟报警输入无关）
+
+          取大的那个。可要是型号那一行没声明（或者压根没有类型 7 这一行），
+          就只剩设备报的 2 —— 一台 16 路的机器在界面上只能配 2 路，
+          而用户完全看不出这 2 是哪来的。现网报过一次这个问题，排查时两头猜。
+
+          所以把两个来源直接摆在下拉底下：看见「型号声明 0 路」就知道该去修
+          terminaltype 那一行，不用再连库查。
+        -->
         <el-form-item :label='$t("alarmMap.channel")' required>
           <el-select v-model="dlg.form.alarmChannel" class="fill" :disabled="!channelCount">
             <el-option v-for="c in channelCount" :key="c" :label='$t("alarmMap.channelN", { n: c })' :value="c" />
           </el-select>
+          <div v-if="currentHost" class="ch-src" :class="{ warn: channelSuspect }">
+            {{
+              $t("alarmMap.channelSource", {
+                n: channelCount,
+                type: currentHost.typeSwitchCount,
+                device: currentHost.deviceChannels
+              })
+            }}
+            <span v-if="channelSuspect">{{ $t("alarmMap.channelSuspect") }}</span>
+          </div>
         </el-form-item>
 
         <el-form-item :label='$t("terminalCommon.alarmZone")' required>
@@ -260,6 +286,15 @@ const dlg = reactive({
 const currentHost = computed(() => hosts.value.find(h => h.id === dlg.form.alarmTerminalId));
 const channelCount = computed(() => currentHost.value?.channels ?? 0);
 
+/**
+ * 「这个路数看着不对」的判据：型号那一行一路都没声明，最后只能拿设备报的数。
+ *
+ * terminal.channel 是全表通用列、默认值 2，一台从没上报过真实路数的报警主机
+ * 就停在 2 上。所以「型号声明 0 路」基本等于「terminaltype 那一行没配好」，
+ * 而不是「这台机器真的只有 2 路」。提示一句，省得再去猜。
+ */
+const channelSuspect = computed(() => !!currentHost.value && currentHost.value.typeSwitchCount <= 0);
+
 // 换主机后原来的通道号可能超出新主机的范围，直接清掉让用户重选
 const onHostChange = () => {
   if (dlg.form.alarmChannel > channelCount.value) dlg.form.alarmChannel = 0;
@@ -366,6 +401,17 @@ onMounted(loadOptions);
   margin-left: 10px;
   font-size: 12px;
   color: var(--el-text-color-secondary);
+}
+/* 通道路数的两个来源 —— 数不对时一眼看得出是哪一头没配好 */
+.ch-src {
+  width: 100%;
+  margin-top: 4px;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--el-text-color-secondary);
+  &.warn {
+    color: var(--el-color-warning);
+  }
 }
 .form-tip {
   margin-left: 10px;

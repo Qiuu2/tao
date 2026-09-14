@@ -102,10 +102,16 @@ export interface AlarmHostOption {
   id: number;
   name: string;
   ip: string;
-  /** 通道数，界面据此生成 1..channels 的通道下拉 */
+  /**
+   * 可配的报警输入路数，界面据此生成 1..channels 的通道下拉。
+   * 服务端算的是 max(typeSwitchCount, deviceChannels)，见 alarm/picker.go
+   * 的 effectiveChannels —— 两个来源哪个都可能不准，取大的那个。
+   */
   channels: number;
-  /** 终端类型声明的开关路数，与 channels 常常对不上，仅供排查 */
+  /** 终端**型号**声明的开关路数（terminaltype.switchcount） */
   typeSwitchCount: number;
+  /** 这台**设备**自己报的路数（terminal.channel，全表默认 2） */
+  deviceChannels: number;
   netstate: number;
 }
 

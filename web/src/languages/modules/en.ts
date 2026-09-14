@@ -1341,6 +1341,9 @@ export default {
     clearedNSkipped: "{n} cleared; {skipped} were not permitted or no longer exist",
     pickMappingFirst: "Select at least one mapping first",
     hostOption: "{name} ({ip} · {n} channels)",
+    channelSource: "{n} channels (type declares {type} · device reports {device})",
+    channelSuspect:
+      "— the type declares none, so the device value is used; a 16-channel host would show only 2. Check switchcount on the alarm-host row in terminaltype.",
     abnormal: "Fault"
   },
   alarmArea: {
