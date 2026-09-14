@@ -15,6 +15,8 @@
  *   ③ scope 默认「全部」
  *   ④ 「单独停用日」列显示 task.disableday
  *   ⑤ 换一个星期，「看的是哪一天」跟着变，启用/停用的判定也跟着那一天走
+ *   ⑥ 状态列是「未执行 / 已执行」，判据是执行时间 vs **服务器**当前时刻
+ *   ⑦ 单独停用日**原样**显示库里那一列（0000-00-00 也照显）
  */
 const BASE = process.env.E2E_BASE || "http://127.0.0.1:5199";
 const CHROME = process.env.E2E_CHROME || "/opt/pw-browsers/chromium-1194/chrome-linux/chrome";
@@ -135,12 +137,65 @@ console.log("⑤ 星期改选「周日」，看的日期要跟着变");
   const shown = m && m[1];
   const expect = q1("SELECT DATE_ADD(CURDATE(), INTERVAL (1 - DAYOFWEEK(CURDATE())) DAY)");
   ok(shown === expect, `那一天是本周的周日 ${expect}（界面上写的是 ${shown}）`);
-  // 周日那天，「升旗仪式-国歌」（周日执行）应该变成「当天启用」
-  const rows2 = await allRows();
-  const flag = rows2.find(r => r.includes("升旗仪式-国歌")) || "";
-  console.log("   升旗仪式-国歌:", flag.slice(0, 120));
-  ok(flag.includes("当天启用"), "周日那天，只在周日执行的任务变成了「当天启用」");
+  // 「那天启不启用」的判定也要跟着那一天走。
+  //
+  // ⚠ 这一条原来是看状态列里那句「当天启用」—— 后来状态列改成了
+  //   「未执行 / 已执行」（⑥），那个字眼就不在了。启用与否现在由上面那组
+  //   单选来筛，所以改成用它做判据：切到「当天启用」，只在周日执行的
+  //   「升旗仪式-国歌」应该在；切回周一，它就该消失。
+  const pickScope = async label => {
+    await p.locator(".scope-bar .el-radio-button", { hasText: label }).first().click();
+    await p.waitForTimeout(2500);
+  };
+  await pickScope("当天启用");
+  let rows2 = await allRows();
+  ok(
+    rows2.some(r => r.includes("升旗仪式-国歌")),
+    "周日 + 当天启用：只在周日执行的任务在列表里"
+  );
+
+  const wsel2 = p.locator(".filter-bar .el-select").nth(2);
+  await wsel2.click();
+  await p.waitForTimeout(800);
+  await p.locator(".el-select-dropdown:visible .el-select-dropdown__item", { hasText: "周一" }).first().click();
+  await p.waitForTimeout(2500);
+  rows2 = await allRows();
+  ok(!rows2.some(r => r.includes("升旗仪式-国歌")), "换成周一 + 当天启用：它就不在了 —— 启用判定跟着所看那一天走");
+  await pickScope("全部");
 }
+// ⑥ 状态列是「未执行 / 已执行」，判据是执行时间 vs 服务器当前时刻
+console.log("⑥ 状态列是「未执行 / 已执行」，不是「当天启用/停用」");
+{
+  await p.reload({ waitUntil: "domcontentloaded" });
+  await p.waitForTimeout(4000);
+  const nowClock = q1("SELECT TIME_FORMAT(NOW(),'%H:%i:%s')");
+  const st = (await p.locator(".panel .el-table__body .el-table__row td:nth-child(6)").allInnerTexts()).map(v => v.trim());
+  const tm = (await p.locator(".panel .el-table__body .el-table__row td:nth-child(5)").allInnerTexts()).map(v => v.trim());
+  console.log("   状态取值:", JSON.stringify([...new Set(st)]), " 服务器现在:", nowClock);
+  ok(
+    st.every(v => v === "已执行" || v === "未执行"),
+    "只有「已执行 / 未执行」两种取值"
+  );
+  // ⚠ 用**服务器**时钟比，不是浏览器的。广播到点不到点由服务器说了算。
+  const bad = st.filter((v, i) => v !== (tm[i] <= nowClock ? "已执行" : "未执行")).length;
+  ok(bad === 0, `每行都与「执行时间 vs 服务器当前时刻」对得上（${bad} 行对不上）`);
+}
+
+// ⑦ 单独停用日原样显示库里的值
+console.log("⑦ 单独停用日原样显示库里那一列");
+{
+  const shown = (await p.locator(".panel .el-table__body .el-table__row td:nth-child(9)").allInnerTexts()).map(v => v.trim());
+  console.log("   这一列的取值:", JSON.stringify([...new Set(shown)]));
+  ok(!shown.includes("—"), "没有把 0000-00-00 折成「—」");
+  const dbVals = q1(
+    "SELECT GROUP_CONCAT(DISTINCT CAST(disableday AS CHAR)) FROM task WHERE tasktype IN (1,2,3,5,7,15,17,19,24,30) AND channel=0 AND sec_task_id=0"
+  ).split(",");
+  ok(
+    shown.every(v => dbVals.includes(v)),
+    "显示的每个值都来自库里那一列：" + JSON.stringify(dbVals)
+  );
+}
+
 await b.close();
 console.log(fails === 0 ? "\n全部通过" : `\n${fails} 条不通过`);
 process.exit(fails === 0 ? 0 : 1);

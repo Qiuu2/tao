@@ -319,8 +319,16 @@ type BrowseItem struct {
 	// 点「当天启用」再清回 0000-00-00。它与 projectstate 是两回事：
 	// projectstate 是整条任务的长期启停，disableday 只挖掉某一天。
 	//
-	// 0000-00-00 / 空 一律回空串，界面上显示成「—」，不要让人看见一个假日期。
+	// ⚠ **原样回库里的值**，0000-00-00 也照回（旧版模板就是 `<{$info[loop].disableday}>`
+	// 直接打印）。一度把 0000-00-00 折成空串、界面画「—」，需求方要的是看见字段本身。
 	DisableDay string `json:"disableday"`
+	// Executed 是**所看那一天**这条任务到没到执行时间。
+	//
+	// 旧版这一列（Browse_active_task_form.html:110~155）判的就是这件事：
+	// state=0 时拿 playtime 和当前时刻比，没到点写「准备●」，过了点写「已执行」。
+	// 新版一度把这一列做成了「当天启用 / 当天停用」，是偏离，按需求方要求改回
+	// 「未执行 / 已执行」。
+	Executed bool `json:"executed"`
 }
 
 type BrowseQuery struct {
@@ -405,6 +413,8 @@ func (s *Service) Browse(ctx context.Context, u *auth.User, q BrowseQuery) (*Bro
 	// 所看那一天是本周的哪一天。偏移可正可负（选的日子可能已经过去了）。
 	offset := idx - int(now.Weekday())
 	viewDate := now.AddDate(0, 0, offset).Format("2006-01-02")
+	today := now.Format("2006-01-02")
+	nowClock := now.Format("15:04:05")
 
 	cond := &store.Cond{}
 	if frag, ok := browseModules[q.Module]; ok {
@@ -460,7 +470,7 @@ func (s *Service) Browse(ctx context.Context, u *auth.User, q BrowseQuery) (*Bro
 		       COALESCE(DATE_FORMAT(t.enddate,'%Y-%m-%d'),''),
 		       (SELECT COUNT(*) FROM terminaloftask ot WHERE ot.taskid = t.taskid),
 		       `+active+`,
-		       COALESCE(DATE_FORMAT(t.disableday,'%Y-%m-%d'),'')
+		       COALESCE(CAST(t.disableday AS CHAR),'')
 		FROM task t
 		LEFT JOIN filetaskfree f ON f.id = t.parentid`+where+`
 		ORDER BY t.playtime ASC, t.taskid ASC
@@ -479,11 +489,7 @@ func (s *Service) Browse(ctx context.Context, u *auth.User, q BrowseQuery) (*Bro
 			&it.Terminals, &it.EnabledToday, &it.DisableDay); err != nil {
 			return nil, err
 		}
-		// 没被单独停过的任务这一列是 0000-00-00，DATE_FORMAT 会给出 "0000-00-00"
-		// 甚至空串（取决于 sql_mode）。两种都当成「没停过」，别让人看见一个假日期。
-		if it.DisableDay == "0000-00-00" {
-			it.DisableDay = ""
-		}
+		it.Executed = executedOn(viewDate, today, nowClock, it.PlayTime)
 		i++
 		it.Index = i
 		it.Weekdays = parseWeekdays(mask)
@@ -494,6 +500,30 @@ func (s *Service) Browse(ctx context.Context, u *auth.User, q BrowseQuery) (*Bro
 		out.Items = append(out.Items, it)
 	}
 	return out, rows.Err()
+}
+
+// executedOn 判断「所看那一天」这条任务到没到执行时间。
+//
+// 旧版 Browse_active_task_form.html:110~155 干的就是这件事：state=0 时把
+// playtime 和当前时刻比 —— 没到点写「准备●」，过了点写「已执行」。
+// 它只会看今天（加一个星期偏移），这里把同一条判据摊到任意一天上：
+//
+//	看的是过去的某天 → 那天早过完了，已执行
+//	看的是今天       → 拿 playtime 和此刻比
+//	看的是将来的某天 → 还没到，未执行
+//
+// ⚠ 用**服务器时钟**，不是浏览器时钟。广播到点不到点由服务器说了算，
+// 客户端的表可能是歪的 —— 让界面跟着歪表走，看到的「已执行」就是假的。
+func executedOn(viewDate, today, nowClock, playTime string) bool {
+	switch {
+	case viewDate < today:
+		return true
+	case viewDate > today:
+		return false
+	default:
+		// playtime 已经是 HH:MM:SS（查询里 TIME_FORMAT 过），字符串比就够
+		return playTime != "" && playTime <= nowClock
+	}
 }
 
 func parseWeekdays(mask string) []int {

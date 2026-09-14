@@ -255,15 +255,21 @@
         <el-table-column prop="folderName" :label="$t('dash.folder')" width="130" show-overflow-tooltip />
         <el-table-column prop="cycleText" :label="$t('dash.weekdays')" width="140" />
         <el-table-column prop="playtime" :label="$t('dash.playTime')" width="110" />
+        <!--
+          状态 = 未执行 / 已执行，判的是**到没到执行时间**。
+          旧版这一列就是这么判的（Browse_active_task_form.html:110~155：
+          拿 playtime 和当前时刻比）。新版一度做成了「当天启用 / 当天停用」，
+          按需求方要求改回来 —— 启用与否已经有上面那组单选在筛了。
+        -->
         <el-table-column :label="$t('common.status')" width="110">
           <template #default="{ row }">
             <el-tag
-              :type="row.enabledToday ? 'success' : 'info'"
+              :type="row.executed ? 'success' : 'info'"
               size="small"
               effect="plain"
-              :title="$t(row.enabledToday ? 'dash.onDateTip' : 'dash.offDateTip', { d: viewDate })"
+              :title="$t(row.executed ? 'dash.doneTip' : 'dash.notYetTip', { d: viewDate, t: row.playtime })"
             >
-              {{ row.enabledToday ? $t("dash.onToday") : $t("dash.offToday") }}
+              {{ row.executed ? $t("dash.done") : $t("dash.notYet") }}
             </el-tag>
           </template>
         </el-table-column>
@@ -271,15 +277,11 @@
         <el-table-column prop="enddate" :label="$t('common.endDate')" width="110" />
         <!--
           旧版看板上就有这一列（Browse_active_task_form.html:161，表头「当天停用」）：
-          值是 task.disableday —— 这条任务被单独挖掉的那一天。没挖过就是空，
-          显示成「—」，不要摆一个 0000-00-00 出来让人以为是真日期。
+          值是 task.disableday —— 这条任务被单独挖掉的那一天。
+          ⚠ **原样显示库里的值**，0000-00-00 也照显 —— 旧版模板就是
+          `<{$info[loop].disableday}>` 直接打印。一度折成「—」，需求方要的是字段本身。
         -->
-        <el-table-column :label="$t('dash.disableDay')" width="120">
-          <template #default="{ row }">
-            <el-tag v-if="row.disableday" type="warning" size="small" effect="plain">{{ row.disableday }}</el-tag>
-            <span v-else class="muted">—</span>
-          </template>
-        </el-table-column>
+        <el-table-column prop="disableday" :label="$t('dash.disableDay')" width="120" />
         <el-table-column prop="terminals" :label="$t('dash.terminalCount')" width="100" />
         <el-table-column :label="$t('dash.taskActions')" width="150" fixed="right">
           <template #default="{ row }">

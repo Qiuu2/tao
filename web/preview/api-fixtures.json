@@ -15293,7 +15293,8 @@
           "terminals": 3,
           "enabledToday": true,
           "projectstate": 0,
-          "disableday": ""
+          "disableday": "0000-00-00",
+          "executed": true
         },
         {
           "index": 2,
@@ -15316,7 +15317,8 @@
           "terminals": 6,
           "enabledToday": true,
           "projectstate": 0,
-          "disableday": ""
+          "disableday": "0000-00-00",
+          "executed": false
         },
         {
           "index": 3,
@@ -15341,7 +15343,8 @@
           "terminals": 1,
           "enabledToday": true,
           "projectstate": 0,
-          "disableday": ""
+          "disableday": "0000-00-00",
+          "executed": false
         },
         {
           "index": 4,
@@ -15360,7 +15363,8 @@
           "terminals": 1,
           "enabledToday": false,
           "projectstate": 0,
-          "disableday": ""
+          "disableday": "0000-00-00",
+          "executed": false
         },
         {
           "index": 5,
@@ -15383,7 +15387,8 @@
           "terminals": 6,
           "enabledToday": true,
           "projectstate": 0,
-          "disableday": ""
+          "disableday": "0000-00-00",
+          "executed": false
         },
         {
           "index": 6,
@@ -15408,7 +15413,8 @@
           "terminals": 3,
           "enabledToday": true,
           "projectstate": 0,
-          "disableday": ""
+          "disableday": "0000-00-00",
+          "executed": false
         },
         {
           "index": 7,
@@ -15425,7 +15431,8 @@
           "terminals": 2,
           "enabledToday": false,
           "projectstate": 0,
-          "disableday": ""
+          "disableday": "0000-00-00",
+          "executed": false
         },
         {
           "index": 8,
@@ -15450,7 +15457,8 @@
           "terminals": 1,
           "enabledToday": true,
           "projectstate": 0,
-          "disableday": ""
+          "disableday": "0000-00-00",
+          "executed": false
         },
         {
           "index": 9,
@@ -15473,7 +15481,8 @@
           "terminals": 6,
           "enabledToday": true,
           "projectstate": 0,
-          "disableday": ""
+          "disableday": "0000-00-00",
+          "executed": false
         },
         {
           "index": 10,
@@ -15496,7 +15505,8 @@
           "terminals": 6,
           "enabledToday": true,
           "projectstate": 0,
-          "disableday": ""
+          "disableday": "0000-00-00",
+          "executed": false
         },
         {
           "index": 11,
@@ -15521,7 +15531,8 @@
           "terminals": 3,
           "enabledToday": true,
           "projectstate": 0,
-          "disableday": ""
+          "disableday": "0000-00-00",
+          "executed": false
         },
         {
           "index": 12,
@@ -15544,7 +15555,8 @@
           "terminals": 2,
           "enabledToday": true,
           "projectstate": 0,
-          "disableday": "2026-09-14"
+          "disableday": "2026-09-14",
+          "executed": false
         },
         {
           "index": 13,
@@ -15567,7 +15579,8 @@
           "terminals": 6,
           "enabledToday": true,
           "projectstate": 0,
-          "disableday": ""
+          "disableday": "0000-00-00",
+          "executed": false
         },
         {
           "index": 14,
@@ -15590,7 +15603,8 @@
           "terminals": 1,
           "enabledToday": true,
           "projectstate": 0,
-          "disableday": ""
+          "disableday": "0000-00-00",
+          "executed": false
         },
         {
           "index": 15,
@@ -15615,7 +15629,8 @@
           "terminals": 1,
           "enabledToday": true,
           "projectstate": 0,
-          "disableday": ""
+          "disableday": "0000-00-00",
+          "executed": false
         },
         {
           "index": 16,
@@ -15638,7 +15653,8 @@
           "terminals": 6,
           "enabledToday": true,
           "projectstate": 0,
-          "disableday": ""
+          "disableday": "0000-00-00",
+          "executed": false
         },
         {
           "index": 17,
@@ -15655,7 +15671,8 @@
           "terminals": 5,
           "enabledToday": false,
           "projectstate": 0,
-          "disableday": ""
+          "disableday": "0000-00-00",
+          "executed": false
         },
         {
           "index": 18,
@@ -15680,7 +15697,8 @@
           "terminals": 3,
           "enabledToday": true,
           "projectstate": 0,
-          "disableday": ""
+          "disableday": "0000-00-00",
+          "executed": false
         },
         {
           "index": 19,
@@ -15703,7 +15721,8 @@
           "terminals": 6,
           "enabledToday": true,
           "projectstate": 0,
-          "disableday": ""
+          "disableday": "0000-00-00",
+          "executed": false
         },
         {
           "index": 20,
@@ -15726,7 +15745,8 @@
           "terminals": 4,
           "enabledToday": true,
           "projectstate": 0,
-          "disableday": ""
+          "disableday": "0000-00-00",
+          "executed": false
         }
       ],
       "pageNum": 1,

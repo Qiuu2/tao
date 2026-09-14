@@ -85,6 +85,8 @@ export interface BrowseItem {
    * 按钮写的就是这一列。
    */
   disableday: string;
+  /** 所看那一天，这条任务到没到执行时间（后端按服务器时钟算，见 executedOn） */
+  executed: boolean;
 }
 
 export const getDashOverviewApi = () => http.get<Overview>(PORT1 + `/api/dashboard/overview`, {}, { loading: false });
