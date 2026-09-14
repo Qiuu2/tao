@@ -31,8 +31,32 @@
         </slot>
       </div>
     </div>
-    <!-- 表格主体 -->
+    <!--
+      表体。
+
+      页面给了 body 插槽就由它接管（终端管理的「网格」视图就是这么来的），
+      没给还是原来那张 el-table —— 全站其余十几个页面一行都不用动。
+
+      ⚠ 两种表体是**互斥**的，不是叠着藏一个：el-table 即使 display:none 也会
+        照常算列宽、跑 reserve-selection，白费一遍渲染，还会在零宽度时算歪。
+        代价是勾选状态在 el-table 里，切换表体等于把它卸掉 —— 所以切换时勾选
+        会清空（见下面 selectRow / selectAll 的注释）。
+    -->
+    <slot
+      v-if="$slots.body"
+      name="body"
+      :data="processTableData"
+      :selected-list="selectedList"
+      :selected-list-ids="selectedListIds"
+      :is-selected="isSelected"
+      :is-row-selected="isRowSelected"
+      :select-row="selectRow"
+      :select-all="selectAll"
+      :page-all-selected="pageAllSelected"
+      :page-some-selected="pageSomeSelected"
+    />
     <el-table
+      v-else
       v-bind="$attrs"
       :id="uuid"
       ref="tableRef"
@@ -201,7 +225,12 @@ const {
 } = useTable(props.requestApi, props.initParam, props.pagination, props.dataCallback, props.requestError);
 
 // 清空选中数据列表
-const clearSelection = () => tableRef.value!.clearSelection();
+// ⚠ 原来是 tableRef.value!.clearSelection() —— body 插槽接管时 tableRef 是 null，
+//   那个 `!` 会让它在运行时炸掉。两条路都走通。
+const clearSelection = () => {
+  if (tableRef.value) tableRef.value.clearSelection();
+  else selectionChange([]);
+};
 
 /*
   ⚠ 把「已经不在了」的行从勾选里摘掉。
@@ -233,11 +262,19 @@ const dropVanishedSelections = () => {
   const key = JSON.stringify(totalParam.value ?? {});
   const visible = new Set((tableData.value ?? []).map((r: any) => String(r[props.rowKey])));
   if (key === lastFetchKey) {
-    for (const row of [...selectedList.value]) {
-      const k = String((row as any)[props.rowKey]);
-      // 之前看得见、现在看不见 → 没了，摘掉
-      // （toggleRowSelection 内部会 emit selection-change，selectedList 自己会跟着更新）
-      if (lastVisibleKeys.has(k) && !visible.has(k)) tableRef.value?.toggleRowSelection(row as any, false);
+    // 之前看得见、现在看不见 → 没了，摘掉
+    const gone = selectedList.value.filter(r => {
+      const k = String((r as any)[props.rowKey]);
+      return lastVisibleKeys.has(k) && !visible.has(k);
+    });
+    if (gone.length) {
+      if (tableRef.value) {
+        // toggleRowSelection 内部会 emit selection-change，selectedList 自己会跟着更新
+        for (const row of gone) tableRef.value.toggleRowSelection(row as any, false);
+      } else {
+        const goneKeys = new Set(gone.map(r => String((r as any)[props.rowKey])));
+        selectionChange(selectedList.value.filter(r => !goneKeys.has(String((r as any)[props.rowKey]))));
+      }
     }
   }
   lastFetchKey = key;
@@ -257,10 +294,59 @@ watch(tableData, dropVanishedSelections);
 const dropSelections = (keys: (string | number)[]) => {
   const drop = new Set(keys.map(String));
   if (!drop.size) return;
-  for (const row of [...selectedList.value]) {
-    if (drop.has(String((row as any)[props.rowKey]))) tableRef.value?.toggleRowSelection(row as any, false);
+  if (tableRef.value) {
+    for (const row of [...selectedList.value]) {
+      if (drop.has(String((row as any)[props.rowKey]))) tableRef.value.toggleRowSelection(row as any, false);
+    }
+    return;
   }
+  // body 插槽接管时没有 el-table，直接改这份清单
+  selectionChange(selectedList.value.filter(r => !drop.has(keyOf(r))));
 };
+
+/* ─────────────── body 插槽的勾选 ───────────────
+ *
+ * el-table 不在了，勾选就得自己管。好在 useSelection 那份 selectedList 才是
+ * 下游真正读的东西（selectedListIds / isSelected / 上面两层摘勾选全都读它），
+ * el-table 只是往里写的一条路 —— 这里再开一条，写的是同一份。
+ *
+ * ⚠ 所以**不要**两种表体同时存在：那样两条路会互相覆盖。
+ *   切换表体时 el-table 被卸掉，它内部那份勾选也就没了，这份清单要跟着清 ——
+ *   页面切换视图时自己调 clearSelection()，别指望这里替它记着。
+ */
+const keyOf = (row: any) => String(row?.[props.rowKey]);
+
+const isRowSelected = (row: any) => selectedList.value.some(r => keyOf(r) === keyOf(row));
+
+/** 勾 / 取消一行。不给 checked 就是反选 */
+const selectRow = (row: any, checked?: boolean) => {
+  const on = checked ?? !isRowSelected(row);
+  const rest = selectedList.value.filter(r => keyOf(r) !== keyOf(row));
+  selectionChange(on ? [...rest, row] : rest);
+};
+
+/**
+ * 全选 / 全不选**当前这一页**。
+ *
+ * ⚠ 只动当前页，别的页已经勾上的保留 —— 和 el-table 的表头复选框
+ *   （配 reserve-selection）是同一个语义，换个视图行为不该变。
+ */
+const selectAll = (checked?: boolean) => {
+  const page = processTableData.value ?? [];
+  const on = checked ?? !pageAllSelected.value;
+  const pageKeys = new Set(page.map(keyOf));
+  const others = selectedList.value.filter(r => !pageKeys.has(keyOf(r)));
+  selectionChange(on ? [...others, ...page] : others);
+};
+
+const pageAllSelected = computed(() => {
+  const page = processTableData.value ?? [];
+  return page.length > 0 && page.every(isRowSelected);
+});
+const pageSomeSelected = computed(() => {
+  const page = processTableData.value ?? [];
+  return page.some(isRowSelected) && !pageAllSelected.value;
+});
 
 // 初始化表格数据 && 拖拽排序
 onMounted(() => {
@@ -449,6 +535,9 @@ defineExpose({
   handleCurrentChange,
   clearSelection,
   dropSelections,
+  isRowSelected,
+  selectRow,
+  selectAll,
   enumMap
 });
 </script>

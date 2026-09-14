@@ -114,6 +114,110 @@
                 @input="onSearchInput"
               />
               <el-tag v-if="scopeNote" type="info" size="small" effect="plain">{{ scopeNote }}</el-tag>
+              <!--
+                列表 / 网格。选的是哪个记在 localStorage 里（见 VIEW_KEY），
+                下次进这一页还是上次那个。
+
+                ⚠ 切换会清空勾选。两种表体是互斥渲染的，el-table 一卸掉，
+                  它内部那份勾选也就没了 —— 与其留一份对不上的清单，
+                  不如明确清掉。见 ProTable 里 body 插槽那段注释。
+              -->
+              <el-radio-group v-model="viewMode" size="default" class="view-switch">
+                <el-radio-button value="list" :title="$t('term.viewList')">
+                  <el-icon><Tickets /></el-icon>
+                </el-radio-button>
+                <el-radio-button value="grid" :title="$t('term.viewGrid')">
+                  <el-icon><Grid /></el-icon>
+                </el-radio-button>
+              </el-radio-group>
+            </div>
+          </div>
+        </template>
+
+        <!--
+          网格视图。
+
+          列表一行 20 列，看的是「这一批终端的某个字段怎么样」；网格一张卡片一台，
+          看的是「这一台终端现在什么状况」—— 巡检、找某台机器时后者更省眼睛。
+          两种视图共用同一份数据、同一套分页和搜索，只是把同一行摆成了两种样子。
+
+          卡片上放的字段是需求方点的那几个：终端名称 / 终端类型 / 编号 / IP / 音量，
+          外加三种状态（任务：空闲·播放中；网络：在线·离线；设备：已启动·已停止）。
+          再多就成了把 20 列原样搬进卡片，那还不如看列表。
+        -->
+        <template v-if="viewMode === 'grid'" #body="b">
+          <div class="grid-wrap">
+            <div class="grid-bar">
+              <el-checkbox
+                :model-value="b.pageAllSelected"
+                :indeterminate="b.pageSomeSelected"
+                @change="(v: any) => b.selectAll(!!v)"
+              >
+                {{ $t("common.selectAll") }}
+              </el-checkbox>
+              <span class="muted">{{ $t("term.gridPicked", { n: b.selectedListIds.length, total: b.data.length }) }}</span>
+            </div>
+
+            <div v-if="b.data.length" class="term-grid">
+              <div
+                v-for="row in b.data"
+                :key="row.id"
+                class="term-card"
+                :class="{ picked: b.isRowSelected(row), off: row.netstate !== 1 }"
+                @click="b.selectRow(row)"
+              >
+                <!--
+                  ⚠ 整张卡片可点即勾选，但复选框自己那一下要 .stop ——
+                    否则点复选框会先被它自己处理一次、再冒泡到卡片上翻回去，
+                    看着就是「点了没反应」。
+                -->
+                <div class="tc-head">
+                  <el-checkbox :model-value="b.isRowSelected(row)" @click.stop @change="(v: any) => b.selectRow(row, !!v)" />
+                  <span class="tc-name" :title="row.terminalname">{{ row.terminalname || `#${row.id}` }}</span>
+                  <el-tag :type="row.netstate === 1 ? 'success' : 'info'" size="small">
+                    {{ row.netstate === 1 ? $t("common.online") : $t("common.offline") }}
+                  </el-tag>
+                </div>
+
+                <div class="tc-meta">
+                  <span class="tc-id">#{{ row.id }}</span>
+                  <span class="tc-dot">·</span>
+                  <span class="tc-type" :title="row.typeName">{{ row.typeName }}</span>
+                </div>
+
+                <div class="tc-ip" :title="row.ip">{{ row.ip || "—" }}</div>
+
+                <div class="tc-vol" :title="$t('common.volume')">
+                  <span class="tc-vol-label">{{ $t("common.volume") }}</span>
+                  <el-progress :percentage="Number(row.volume) || 0" :show-text="false" :stroke-width="6" class="tc-vol-bar" />
+                  <span class="tc-vol-num">{{ row.volume }}</span>
+                </div>
+
+                <div class="tc-foot">
+                  <el-tag :type="row.taskstate === 1 ? 'warning' : 'info'" size="small" effect="plain">
+                    {{ row.taskstate === 1 ? $t("terminalCommon.playing") : $t("terminalCommon.idle") }}
+                  </el-tag>
+                  <el-tag :type="row.devicestate === 1 ? 'success' : 'info'" size="small" effect="plain">
+                    {{ row.devicestate === 1 ? $t("common.started") : $t("common.stopped") }}
+                  </el-tag>
+                  <el-button
+                    class="tc-browse"
+                    type="primary"
+                    link
+                    :icon="Link"
+                    :disabled="!row.online"
+                    :title="row.online ? row.webUrl : $t('term.terminalDisconnectedWeb')"
+                    @click.stop="browse(row)"
+                  >
+                    {{ $t("term.browse") }}
+                  </el-button>
+                </div>
+              </div>
+            </div>
+
+            <div v-else class="table-empty">
+              <img src="@/assets/images/notData.png" alt="notData" />
+              <div>{{ $t("common.noData") }}</div>
             </div>
           </div>
         </template>
@@ -1097,7 +1201,7 @@
 
 <script setup lang="ts" name="terminalManage">
 import { useI18n } from "vue-i18n";
-import { ArrowDown, Folder, Link, Menu, Search } from "@element-plus/icons-vue";
+import { ArrowDown, Folder, Grid, Link, Menu, Search, Tickets } from "@element-plus/icons-vue";
 import { ElMessage, ElMessageBox } from "element-plus";
 import { computed, onMounted, onUnmounted, reactive, ref, watch } from "vue";
 
@@ -1301,6 +1405,35 @@ const dataCallback = (data: any) => {
 };
 
 const refresh = () => proTableRef.value?.getTableList();
+
+/* ─────────────── 列表 / 网格 ───────────────
+ *
+ * 同一份数据两种摆法：列表一行 20 列，看的是「这一批终端的某个字段怎么样」；
+ * 网格一张卡片一台，看的是「这一台终端现在什么状况」。分页、搜索、分区树、
+ * 批量操作全都共用，切的只是表体（ProTable 的 body 插槽）。
+ *
+ * 记住用户选的那个：每次进这一页都要重选一遍太烦。
+ * ⚠ localStorage 在隐私模式 / 禁用站点数据时读写都会抛，两头都包 try ——
+ *   存不下就是回到默认的列表视图，不该让整页打不开。
+ *   （同 utils/tablePrefs.ts 的处理）
+ */
+const VIEW_KEY = "htweb:terminal:view";
+const viewMode = ref<"list" | "grid">("list");
+try {
+  if (localStorage.getItem(VIEW_KEY) === "grid") viewMode.value = "grid";
+} catch {
+  /* 读不到就用默认值 */
+}
+watch(viewMode, v => {
+  try {
+    localStorage.setItem(VIEW_KEY, v);
+  } catch {
+    /* 存不下就算了，下次还是默认值 */
+  }
+  // 两种表体互斥渲染，el-table 一卸掉它内部的勾选就没了；
+  // 与其留一份对不上的清单，不如明确清掉。见 ProTable 里 body 插槽那段注释。
+  proTableRef.value?.clearSelection();
+});
 
 /*
   终端的在线/离线、音量、任务状态都是**后台 C 服务**直接写进 terminal 表的，
@@ -2652,6 +2785,125 @@ onMounted(async () => {
 .muted {
   color: var(--el-text-color-placeholder);
 }
+
+/* ─────────────── 网格视图 ─────────────── */
+
+.view-switch {
+  flex: none;
+}
+
+.grid-wrap {
+  padding: 4px 0 2px;
+}
+.grid-bar {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  padding: 0 2px 10px;
+  font-size: 13px;
+}
+
+/*
+  卡片自己决定要多宽：最窄 220px，剩下的空间均分。
+  分区树收起、窗口变窄、放到投影上 —— 都不用改断点，列数自己变。
+*/
+.term-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 10px;
+}
+
+.term-card {
+  padding: 10px 12px;
+  cursor: pointer;
+  background: var(--el-bg-color);
+  border: 1px solid var(--el-border-color-lighter);
+  border-radius: 6px;
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s;
+
+  &:hover {
+    border-color: var(--el-color-primary-light-5);
+    box-shadow: 0 2px 8px rgb(0 0 0 / 6%);
+  }
+  // 勾中的要一眼看得出来 —— 网格里没有列表那种整行变色
+  &.picked {
+    border-color: var(--el-color-primary);
+    box-shadow: 0 0 0 1px var(--el-color-primary) inset;
+  }
+  // 离线的整张压暗，但不是隐藏：巡检时「哪几台掉线了」正是要看的
+  &.off {
+    .tc-name,
+    .tc-ip {
+      color: var(--el-text-color-secondary);
+    }
+  }
+}
+
+.tc-head {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.tc-name {
+  flex: 1;
+  overflow: hidden;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.tc-meta {
+  display: flex;
+  gap: 5px;
+  margin-top: 6px;
+  overflow: hidden;
+  font-size: 12px;
+  color: var(--el-text-color-secondary);
+  white-space: nowrap;
+}
+.tc-type {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.tc-dot {
+  opacity: 0.6;
+}
+.tc-ip {
+  margin-top: 2px;
+  overflow: hidden;
+  font-family: var(--el-font-family-mono, monospace);
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.tc-vol {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--el-text-color-secondary);
+}
+.tc-vol-bar {
+  flex: 1;
+  min-width: 0;
+}
+.tc-vol-num {
+  min-width: 22px;
+  text-align: right;
+}
+.tc-foot {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  margin-top: 9px;
+}
+.tc-browse {
+  margin-left: auto;
+}
+
 .mr4 {
   margin-right: 4px;
 }
