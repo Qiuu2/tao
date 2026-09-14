@@ -54,6 +54,17 @@
         </template>
         <span v-else class="muted">{{ $t("remote.noTaskBound") }}</span>
       </template>
+
+      <!--
+        「修改」—— :80 这一页没有这个入口，改一条映射只能删掉重建。
+        需求方要求补上。后端的 PUT /api/remote-keys/{id} 与 updateRemoteApi
+        本来就在，之前只是没把入口放出来。
+      -->
+      <template #operation="scope">
+        <el-button type="primary" link :disabled="!canEdit" @click="openEdit(scope.row)">
+          {{ $t("common.modify") }}
+        </el-button>
+      </template>
     </ProTable>
 
     <!-- 新建 / 修改 -->
@@ -134,7 +145,7 @@ import { Search } from "@element-plus/icons-vue";
 import { ElMessage, ElMessageBox } from "element-plus";
 import { computed, nextTick, onMounted, reactive, ref } from "vue";
 
-import { createRemoteApi, deleteRemotesApi, getRemoteListApi, getRemoteTasksApi } from "@/api/modules/basecfg";
+import { createRemoteApi, deleteRemotesApi, getRemoteListApi, getRemoteTasksApi, updateRemoteApi } from "@/api/modules/basecfg";
 import type { RemoteKey, RemotePickTask } from "@/api/modules/basecfg";
 import ProTable from "@/components/ProTable/index.vue";
 import { useAuthStore } from "@/stores/modules/auth";
@@ -156,13 +167,12 @@ const toIds = (raw: (string | number)[]) => (raw ?? []).map(Number).filter(n => 
 
 const proTableRef = ref<ProTableInstance>();
 
-// 列清单严格照 :80：任务名称 | 按键映射 | 映射任务，就这三列，**没有「操作」列**。
+// 列名照旧版 task_mapping/task_mapping_form.html 的表头：映射名称 | 映射按键 | 映射任务。
 //
-// ⚠ 后果：这一页没有行内「修改」入口了，改一条映射只能删掉重建 —— :80 就是这样。
-// 修改接口（PUT /api/remote-keys/{id}）还在，要把入口加回来只需补一列。
+// ⚠ 「操作」列是**多出来的**：:80 这一页没有行内修改入口，改一条映射只能删掉重建。
+//   需求方要求补一个「修改」，所以加了这一列 —— 这是有意与 :80 不同的地方。
 const columns = reactive<ColumnProps<RemoteKey>[]>([
   { type: "selection", fixed: "left", width: 50 },
-  // 列名照旧版 task_mapping/task_mapping_form.html 的表头：映射名称 | 映射按键 | 映射任务
   {
     prop: "keyName",
     label: t("remote.mapName"),
@@ -170,7 +180,8 @@ const columns = reactive<ColumnProps<RemoteKey>[]>([
     search: { el: "input", key: "keyword", props: { placeholder: t("remote.searchByMapName") } }
   },
   { prop: "keyId", label: t("remote.mapKey"), width: 130 },
-  { prop: "tasks", label: t("remote.mapTask"), minWidth: 420 }
+  { prop: "tasks", label: t("remote.mapTask"), minWidth: 420 },
+  { prop: "operation", label: t("common.operation"), width: 100, fixed: "right" }
 ]);
 
 const refresh = () => proTableRef.value?.getTableList();
@@ -273,10 +284,33 @@ const openCreate = async () => {
   await loadTasks();
 };
 
-// 修改入口已随「操作」列一起去掉（:80 这一页就没有），
-// 所以这里不再有 openEdit —— dlg.isEdit 恒为 false，弹窗只用于新建。
-// 后端的 PUT /api/remote-keys/{id} 与 api 模块里的 updateRemoteApi 都还在，
-// 哪天要把修改加回来，补一列「操作」+ 一个 openEdit 即可。
+/**
+ * 修改一条映射。
+ *
+ * 用的是同一个弹窗，由 dlg.isEdit 区分 —— 字段完全一样，只差回填。
+ *
+ * ⚠ originalKeyId 要记住**打开时**的键号，两处用得上：
+ *   · 键号本身可以改，提交时要按原键号定位那条记录（PUT 的路径参数）；
+ *   · 树上「已被键 N 绑走」的黄标要跳过自己，否则改自己的映射时
+ *     会看到「这条任务已被键 3 绑走」——绑走它的就是正在改的这一条。
+ *
+ * 行数据里已经有 keyName / keyId / tasks，不再单独请求一次 GET
+ * （getRemoteApi 仍在 api 模块里，别处要用）。一个键只绑一条任务，取 tasks[0]。
+ */
+const openEdit = async (row: RemoteKey) => {
+  Object.assign(dlg, {
+    visible: true,
+    saving: false,
+    isEdit: true,
+    title: t("remote.editMapping", { name: row.keyName }),
+    originalKeyId: row.keyId,
+    form: { keyId: row.keyId, keyName: row.keyName }
+  });
+  pickedTaskId.value = row.tasks?.[0]?.taskId ?? 0;
+  pickKeyword.value = "";
+  // loadTasks 拉完会把 pickedTaskId 对应的节点勾回去（见它末尾的 setCheckedKeys）
+  await loadTasks();
+};
 
 const submit = async () => {
   if (!dlg.form.keyName.trim()) return ElMessage.warning(t("remote.nameRequired"));
@@ -289,7 +323,9 @@ const submit = async () => {
   };
   dlg.saving = true;
   try {
-    await createRemoteApi(payload);
+    // 改的时候按**打开时**的键号定位记录；payload 里的 keyId 是要改成的新键号
+    if (dlg.isEdit) await updateRemoteApi(dlg.originalKeyId, payload);
+    else await createRemoteApi(payload);
     ElMessage.success(t("common.saveSuccess"));
     dlg.visible = false;
     refresh();

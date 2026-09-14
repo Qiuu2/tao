@@ -65,7 +65,9 @@
       </template>
 
       <template #operation="scope">
-        <el-button type="primary" link :icon="EditPen" :disabled="!canEdit" @click="openEdit(scope.row)">{{ $t("common.modify") }}</el-button>
+        <el-button type="primary" link :icon="EditPen" :disabled="!canEdit" @click="openEdit(scope.row)">{{
+          $t("common.modify")
+        }}</el-button>
         <el-button type="danger" link :icon="Delete" :disabled="!canEdit" @click="confirmDelete([scope.row.id])">
           {{ $t("common.cancel") }}
         </el-button>
@@ -80,61 +82,50 @@
       <el-alert v-if="mediaNote" type="warning" :closable="false" show-icon class="mb12">{{ mediaNote }}</el-alert>
 
       <el-form :model="dlg.form" label-width="110px">
-        <el-form-item :label='$t("alarmMap.alarmHost")' required>
+        <el-form-item :label="$t('alarmMap.alarmHost')" required>
           <!-- 报警主机也是终端（typeid=7），一样按终端分区排成树 -->
           <TerminalTreeSelect
             v-model="dlg.form.alarmTerminalId"
             :terminals="hostNodes"
-            :placeholder='$t("alarmMap.pickAlarmHost")'
+            :placeholder="$t('alarmMap.pickAlarmHost')"
             :clearable="false"
             @update:model-value="onHostChange"
           />
         </el-form-item>
 
         <!-- 顺序照 :80 的「添加」弹窗：报警主机 / 映射名称 / 通道 / 报警分区 / 媒体文件 -->
-        <el-form-item :label='$t("alarmMap.mapName")'>
-          <el-input v-model="dlg.form.info" maxlength="15" show-word-limit :placeholder='$t("alarmMap.mapNameRequired")' />
+        <el-form-item :label="$t('alarmMap.mapName')">
+          <el-input v-model="dlg.form.info" maxlength="15" show-word-limit :placeholder="$t('alarmMap.mapNameRequired')" />
         </el-form-item>
 
         <!--
-          通道下拉的条数 = 服务端算出来的 effectiveChannels（见 alarm/picker.go）。
+          通道下拉的条数 = 这台主机自己上报的路数（terminal.channel），
+          与 ok112 一致。见 alarm/picker.go 的 effectiveChannels。
 
-          ⚠ 下面那行「来源」不是装饰。这个数有两个来源，**哪个都可能不准**：
+          ⚠ 中间有一版按 max(terminal.channel, terminaltype.switchcount) 算，
+            于是一台只有 2 路的主机因为型号那行写着 16，界面上摆出了 16 路。
+            需求方纠正过：**报警主机就按它自己报的路数算**。选得到第 16 路、
+            实际接不上，比只给 2 路更糟。
 
-            terminaltype.switchcount  这个型号声明几路（参考库里类型 7 写的是 16）
-            terminal.channel          这台设备自己报几路（全表通用列，默认值 2，
-                                      「立体声两个声道」的意思，跟报警输入无关）
-
-          取大的那个。可要是型号那一行没声明（或者压根没有类型 7 这一行），
-          就只剩设备报的 2 —— 一台 16 路的机器在界面上只能配 2 路，
-          而用户完全看不出这 2 是哪来的。现网报过一次这个问题，排查时两头猜。
-
-          所以把两个来源直接摆在下拉底下：看见「型号声明 0 路」就知道该去修
-          terminaltype 那一行，不用再连库查。
+          下面那行把这个数的出处写出来 —— 上一版就是因为界面上只有一个光秃秃的
+          数字，两边来回猜了一轮才定位到是取值规则的问题。
         -->
-        <el-form-item :label='$t("alarmMap.channel")' required>
+        <el-form-item :label="$t('alarmMap.channel')" required>
           <el-select v-model="dlg.form.alarmChannel" class="fill" :disabled="!channelCount">
-            <el-option v-for="c in channelCount" :key="c" :label='$t("alarmMap.channelN", { n: c })' :value="c" />
+            <el-option v-for="c in channelCount" :key="c" :label="$t('alarmMap.channelN', { n: c })" :value="c" />
           </el-select>
-          <div v-if="currentHost" class="ch-src" :class="{ warn: channelSuspect }">
-            {{
-              $t("alarmMap.channelSource", {
-                n: channelCount,
-                type: currentHost.typeSwitchCount,
-                device: currentHost.deviceChannels
-              })
-            }}
-            <span v-if="channelSuspect">{{ $t("alarmMap.channelSuspect") }}</span>
+          <div v-if="currentHost" class="ch-src" :class="{ warn: !channelCount }">
+            {{ channelCount ? $t("alarmMap.channelSource", { n: channelCount }) : $t("alarmMap.channelNone") }}
           </div>
         </el-form-item>
 
-        <el-form-item :label='$t("terminalCommon.alarmZone")' required>
+        <el-form-item :label="$t('terminalCommon.alarmZone')" required>
           <el-select v-model="dlg.form.alarmAreaId" class="fill">
             <el-option v-for="a in areas" :key="a.id" :label="a.name" :value="a.id" />
           </el-select>
         </el-form-item>
 
-        <el-form-item :label='$t("taskCommon.mediaFile")' required>
+        <el-form-item :label="$t('taskCommon.mediaFile')" required>
           <el-select v-model="dlg.form.mediaId" filterable class="fill">
             <el-option v-for="m in media" :key="m.id" :label="m.name" :value="m.id">
               <span>{{ m.name }}</span>
@@ -285,15 +276,6 @@ const dlg = reactive({
 
 const currentHost = computed(() => hosts.value.find(h => h.id === dlg.form.alarmTerminalId));
 const channelCount = computed(() => currentHost.value?.channels ?? 0);
-
-/**
- * 「这个路数看着不对」的判据：型号那一行一路都没声明，最后只能拿设备报的数。
- *
- * terminal.channel 是全表通用列、默认值 2，一台从没上报过真实路数的报警主机
- * 就停在 2 上。所以「型号声明 0 路」基本等于「terminaltype 那一行没配好」，
- * 而不是「这台机器真的只有 2 路」。提示一句，省得再去猜。
- */
-const channelSuspect = computed(() => !!currentHost.value && currentHost.value.typeSwitchCount <= 0);
 
 // 换主机后原来的通道号可能超出新主机的范围，直接清掉让用户重选
 const onHostChange = () => {

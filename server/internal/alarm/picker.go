@@ -66,7 +66,7 @@ func (s *Service) AlarmHosts(ctx context.Context, u *auth.User) ([]HostOption, e
 			&h.TypeSwitchCount, &h.NetState, &h.GroupID, &h.GroupName); err != nil {
 			return nil, err
 		}
-		h.Channels = effectiveChannels(h.DeviceChannels, h.TypeSwitchCount)
+		h.Channels = effectiveChannels(h.DeviceChannels)
 		out = append(out, h)
 	}
 	return out, rs.Err()
@@ -74,33 +74,31 @@ func (s *Service) AlarmHosts(ctx context.Context, u *auth.User) ([]HostOption, e
 
 // effectiveChannels 算一台报警主机到底有几路可配的报警输入。
 //
-// 两个来源，单看哪一个都会算错：
+// **以这台设备自己上报的路数为准**（terminal.channel），与 ok112 一致
+// （setalarmkeymap.php：`SELECT channel FROM terminal WHERE id=? AND typeid='7'`）。
 //
-//	terminaltype.switchcount  这个**型号**支持几路（类型 7 声明 16）
-//	terminal.channel          这台**设备**自己报的路数
+// # 为什么不看型号声明的 switchcount
 //
-// terminal.channel 的麻烦在于它是全表通用的一列，默认值 2 —— 演示库里
-// 十三台终端清一色是 2，那是「立体声两个声道」的意思，跟报警输入无关。
-// 一台从没报过真值的报警主机就停在 2 上，只照它算，16 路的机器只能配 2 路。
+// 中间有一版取过 max(terminal.channel, terminaltype.switchcount)，理由是
+// terminal.channel 是全表通用列、默认值 2，怕一台从没上报过真值的主机停在 2 上。
 //
-// 反过来只认 switchcount 也不行：注释里记着现网四台 7 型主机的 channel 是
-// 2/32/32/32，有三台**比类型声明的 16 还多**，按 16 算会少掉一半输入。
+// 那一版是错的，需求方明确纠正过：**报警主机就按它自己报的路数算**。
+// 一台 channel=2 的主机就是 2 路，不该因为型号那一行写着 16 就在界面上摆出 16 路 ——
+// 选得到第 16 路、实际接不上，比只给 2 路更糟。
 //
-// 所以取「型号支持的路数」打底，设备报得更多就以设备为准。
+// terminaltype.switchcount 仍然读出来放在 HostOption.TypeSwitchCount 里，
+// 但**只作展示与排查**，不参与算数。
 //
-// ⚠ 与 ok112 不同：setalarmkeymap.php 只读 terminal.channel
+// ⚠ 三处必须共用这一个函数：通道下拉（AlarmHosts）、保存校验（mapping.go 的
 //
-//	（`SELECT channel FROM terminal WHERE id=? AND typeid='7'`），
-//	于是那台 channel=2 的主机在旧界面上就只能配 2 路。这里不照搬这个缺陷。
-func effectiveChannels(deviceChannels, typeSwitchCount int) int {
-	n := typeSwitchCount
-	if deviceChannels > n {
-		n = deviceChannels
-	}
-	if n < 0 {
+//	Create/Update）、列表里「通道 N / M」的分母（mapping.go 的 List/GetMapping）。
+//	各算各的就会出现「下拉能选到第 16 路、提交却说超范围」或者「下拉 2、列表写 /16」
+//	这种自相矛盾 —— 两种都现网报过。
+func effectiveChannels(deviceChannels int) int {
+	if deviceChannels < 0 {
 		return 0
 	}
-	return n
+	return deviceChannels
 }
 
 // AreaOption 是报警分区下拉项。

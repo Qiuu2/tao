@@ -349,7 +349,7 @@ var codeDict = map[string]string{
 	"报警主机不存在":                                   "That alarm host does not exist",
 	"所选终端不是报警主机，不能配置报警映射":                       "The selected terminal is not an alarm host, so no alarm mapping can be configured for it",
 	"该报警主机的这个通道已经配置过映射了":                        "That channel on this alarm host is already mapped",
-	"该报警主机的通道数为 0：终端未上报路数，其型号也没有声明开关路数":         "This alarm host reports 0 channels — the terminal has not reported a channel count and its type does not declare one either",
+	"该报警主机的通道数为 0：终端没有上报路数（terminal.channel）":   "This alarm host reports 0 channels — the terminal has not reported a channel count (terminal.channel)",
 	"通道号必须在 1 ~ %d 之间":                          "The channel must be between 1 and %d",
 	"媒体不存在，或不在「报警媒体库」里 —— 报警音必须放在报警媒体库下":        "That media file does not exist, or is not in the Alarm library — alarm sounds must live under the Alarm library",
 	"报警媒体库不存在，请联系管理员检查媒体目录结构":                   "The Alarm library does not exist — ask an administrator to check the media folder structure",

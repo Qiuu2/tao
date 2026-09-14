@@ -3,57 +3,55 @@
  *
  * # 它盯的是什么
  *
- * 一台报警主机有几路可配的报警输入，有两个来源，单看哪一个都会算错：
+ * 一台报警主机有几路可配的报警输入，**以这台设备自己上报的 terminal.channel 为准**
+ * （与 ok112 一致）。算法在 alarm/picker.go 的 effectiveChannels。
  *
- *   terminaltype.switchcount   这个**型号**支持几路（类型 7 声明 16）
- *   terminal.channel           这台**设备**自己报的路数，默认值 2
+ * ⚠ 中间有一版取过 max(terminal.channel, terminaltype.switchcount)，想法是
+ *   「型号声明 16 路就该给 16 路」。需求方纠正过：**报警主机就按它自己报的路数算** ——
+ *   一台 channel=2 的主机就是 2 路，界面上摆出 16 路、选得到第 16 路却接不上，
+ *   比只给 2 路更糟。这个脚本把现在的语义钉住，免得哪天又「修」回去。
  *
- * 算法在 alarm/picker.go 的 effectiveChannels：型号打底，设备报得更多就以设备为准。
- * 通道下拉和保存时的校验都走这一套 —— 但**列表**没走，它直接取了 t.channel 的原值。
+ * 三处必须说同一个数：通道下拉、保存校验、列表「通道 N / M」的分母。各算各的就会
+ * 自相矛盾 —— 两种都现网报过：「下拉 16、列表写 /2 且第 3 路被误判成超范围」、
+ * 「下拉摆出 16 路，实际只有 2 路」。
  *
- * 于是同一台 16 路的主机：
- *
- *   · 下拉里有 16 项
- *   · 列表的「通道」列写着「通道 1 / 2」——「只有 2 路」
- *   · 第 3 路以上的映射被判成「超出该主机的 2 路范围」，红着标
- *     「报警触发时不会正常播放」，实际上完全正常
- *
- * 演示库直接能复现：类型 7 的 switchcount=16，那台主机的 terminal.channel=2。
- *
- * 四条：
+ * 五条：
  *   ① 通道下拉的项数 = 主机树里写的「N 路」
  *   ② 列表「通道」列的分母和下拉是同一个数
- *   ③ 第 3 路以上的映射不被误判成超范围
+ *   ③ 范围内的映射不被误判成超范围
  *   ④ 前后两处（列表 / 编辑回填）说的是同一个数
- *
- * 再加一条 ⑤：**这个数是哪来的，界面上要说得出来**。
- *
- * 现网报过一次「添加和修改里的通道只有通道一和通道二」。本地怎么点都是 16 路，
- * 差别在库：那边 terminaltype 里报警主机那一行的 switchcount 没配（0），
- * 于是只剩设备上报的 2。可界面上只有一个光秃秃的「2」，谁也看不出是哪一头缺值，
- * 两边只能来回猜。
- *
- * 所以下拉底下现在把两个来源直接写出来。⑤ 把两种状态都跑一遍：
- * 把 switchcount 改成 0 复现「只有 2 路」，确认提示指向 terminaltype 那一行；
- * 改回 16 确认恢复，且不再报警。
+ *   ⑤ 路数跟着 terminal.channel 走：压回 2，三处一起变成 2，而且**不受
+ *      terminaltype.switchcount 影响**（型号那行写着 16 也不给 16 路）；
+ *      那条超出范围的映射这时才该被标红。
  *
  * # 怎么跑
  *
  *   node e2e/alarm-mapping-channels.mjs
  *
- * ⚠ ③ 会临时往 alarmgroupmap 里插一条 8 路的映射，跑完删掉。
+ * ⚠ 会临时改库：把报警主机的 terminal.channel 改成 8、插一条 8 路的映射，
+ *   跑完（含中途退出）都会改回 2 并删掉那条映射。
  */
 const BASE = process.env.E2E_BASE || "http://127.0.0.1:5199";
 const CHROME = process.env.E2E_CHROME || "/opt/pw-browsers/chromium-1194/chrome-linux/chrome";
-/** ③ 用：造一条「通道 8」的映射，看它会不会被误判成超范围 */
+const SQL = q => `mariadb -uroot audioserver -e "${q}"`;
+/**
+ * 造数据：把报警主机的上报路数改成 8（基线是 2），再挂一条「通道 8」的映射。
+ * 这样 ①~④ 有 8 路可看；⑤ 把路数压回 2 时那条映射正好落到范围外，
+ * 顺带验证「超出范围」的红标是**该标的时候才标**。
+ */
 const SEED =
   process.env.E2E_SEED_DB ||
-  `mariadb -uroot audioserver -e "INSERT INTO alarmgroupmap (info, alarmterminalid, alarmchannel, firealarmgroupid, mediaid) SELECT 'E2E八路', m.alarmterminalid, 8, m.firealarmgroupid, m.mediaid FROM alarmgroupmap m ORDER BY m.id LIMIT 1"`;
-const UNSEED = process.env.E2E_UNSEED_DB || `mariadb -uroot audioserver -e "DELETE FROM alarmgroupmap WHERE info='E2E八路'"`;
-/** ⑤ 用：把报警主机型号的 switchcount 打成 0 / 改回 16，复现并修复「只有 2 路」 */
-const SQL = q => `mariadb -uroot audioserver -e "${q}"`;
-const BREAK_TYPE = process.env.E2E_BREAK_TYPE || SQL("UPDATE terminaltype SET switchcount=0 WHERE id=7");
-const FIX_TYPE = process.env.E2E_FIX_TYPE || SQL("UPDATE terminaltype SET switchcount=16 WHERE id=7");
+  SQL(
+    "UPDATE terminal SET channel=8 WHERE typeid=7; " +
+      "INSERT INTO alarmgroupmap (info, alarmterminalid, alarmchannel, firealarmgroupid, mediaid) " +
+      "SELECT 'E2E八路', m.alarmterminalid, 8, m.firealarmgroupid, m.mediaid FROM alarmgroupmap m ORDER BY m.id LIMIT 1"
+  );
+const UNSEED =
+  process.env.E2E_UNSEED_DB ||
+  SQL("DELETE FROM alarmgroupmap WHERE info='E2E八路'; UPDATE terminal SET channel=2 WHERE typeid=7");
+/** ⑤ 用：把上报路数压回 2 / 再改回 8 */
+const SET_CH2 = process.env.E2E_SET_CH2 || SQL("UPDATE terminal SET channel=2 WHERE typeid=7");
+const SET_CH8 = process.env.E2E_SET_CH8 || SQL("UPDATE terminal SET channel=8 WHERE typeid=7");
 
 const { chromium } = await import(process.env.E2E_PLAYWRIGHT || "/opt/node22/lib/node_modules/playwright/index.mjs");
 const { execSync } = await import("node:child_process");
@@ -67,11 +65,10 @@ const ok = (c, m) => {
 execSync(SEED, { stdio: "pipe" });
 const cleanup = () => {
   try {
+    // UNSEED 一条语句里同时删映射、把 channel 改回 2，中途怎么退都收得干净
     execSync(UNSEED, { stdio: "pipe" });
-    // ⑤ 会把 switchcount 打成 0，不管中途怎么退都要改回去
-    execSync(FIX_TYPE, { stdio: "pipe" });
   } catch {
-    console.log("  ! 清理造的数据失败，手工执行：" + UNSEED + " 以及 " + FIX_TYPE);
+    console.log("  ! 清理造的数据失败，手工执行：" + UNSEED);
   }
 };
 process.on("exit", cleanup);
@@ -184,8 +181,10 @@ await p.waitForTimeout(1000);
 const chans2 = await p.locator(".el-select-dropdown:visible .el-select-dropdown__item").allInnerTexts();
 ok(chans2.length === declared, `编辑里下拉也是 ${chans2.length} 项`);
 
-// ── ⑤ 路数是哪来的，界面上说得出来 ──
-console.log("⑤ 通道路数的来源要写在界面上");
+// ── ⑤ 路数跟着 terminal.channel 走 ──
+console.log("⑤ 路数以设备上报的 terminal.channel 为准，改它三处一起变");
+
+/** 打开「添加」弹窗、选中那台报警主机，返回弹窗、主机项文字、来源说明 */
 const openAdd = async () => {
   // ⚠ 先把还开着的弹窗用「取消」关掉，别指望 goto 能冲掉它：
   //   路由是 hash 的，goto 到**当前同一个** hash 根本不发生导航，弹窗原样还在，
@@ -198,6 +197,9 @@ const openAdd = async () => {
     await p.waitForSelector(".el-overlay", { state: "hidden", timeout: 10000 }).catch(() => undefined);
     await p.waitForTimeout(800);
   }
+  await p.reload({ waitUntil: "domcontentloaded" });
+  await p.waitForSelector(".el-table__row", { timeout: 25000 });
+  await p.waitForTimeout(1500);
   await p.locator(".table-header-ops button, .header-left button").first().click();
   await p.waitForTimeout(1500);
   const d = p.locator(".el-dialog:visible").first();
@@ -208,43 +210,73 @@ const openAdd = async () => {
   const host = lines.find(x => /\d+\s*路/.test(x));
   await p.locator(HOST_OPT, { hasText: host }).first().click();
   await p.waitForTimeout(1200);
-  return { d, host, src: (await d.locator(".ch-src").innerText()).replace(/\s+/g, " ").trim() };
-};
-
-{
-  const good = await openAdd();
-  console.log("   健康：" + good.src);
-  ok(good.src.includes(`本机 ${declared} 路`), `写明了本机 ${declared} 路`);
-  ok(/型号声明 \d+ 路/.test(good.src) && /设备上报 \d+ 路/.test(good.src), "两个来源都写出来了");
-  ok((await good.d.locator(".ch-src.warn").count()) === 0, "型号声明正常时不报警");
-}
-
-// 把型号那一行打坏，复现现网那个「只有 2 路」
-execSync(BREAK_TYPE, { stdio: "pipe" });
-{
-  const bad = await openAdd();
-  console.log("   打坏后：" + bad.src);
-  ok(/\d+\s*路/.test(bad.host) && Number(bad.host.match(/(\d+)\s*路/)[1]) < declared, `主机项掉到了 ${bad.host}`);
-  ok(bad.src.includes("型号声明 0 路"), "说清楚是型号那一行没声明");
-  ok((await bad.d.locator(".ch-src.warn").count()) === 1, "这一行标黄了");
-  ok(bad.src.includes("switchcount"), "点名了要去看哪一列");
-  const chan = bad.d.locator(".el-form-item", { hasText: "通道" }).locator(".el-select").first();
+  const chan = d.locator(".el-form-item", { hasText: "通道" }).locator(".el-select").first();
   await chan.click();
   await p.waitForTimeout(900);
   const n = await p.locator(".el-select-dropdown:visible .el-select-dropdown__item").count();
-  console.log(`   通道下拉 ${n} 项`);
-  ok(n < declared, `确实复现了「只有 ${n} 路」`);
   await p.keyboard.press("Escape");
   await p.waitForTimeout(400);
+  return { d, host, n, src: (await d.locator(".ch-src").innerText()).replace(/\s+/g, " ").trim() };
+};
+
+/** 列表里每行的「通道 N / M」和有没有红标 */
+const listChans = async () => {
+  await p.keyboard.press("Escape");
+  await p.waitForTimeout(400);
+  const cancel = p.locator(".el-dialog:visible .el-dialog__footer button", { hasText: "取消" });
+  if (await cancel.count()) {
+    await cancel.first().click();
+    await p.waitForSelector(".el-overlay", { state: "hidden", timeout: 10000 }).catch(() => undefined);
+  }
+  await p.reload({ waitUntil: "domcontentloaded" });
+  await p.waitForSelector(".el-table__row", { timeout: 25000 });
+  await p.waitForTimeout(1500);
+  const rs = p.locator(".el-table__body .el-table__row");
+  const out = [];
+  for (let i = 0; i < (await rs.count()); i++) {
+    const td = await rs.nth(i).locator("td").allInnerTexts();
+    out.push({
+      chan: (td[cChan] || "").replace(/\s+/g, " ").trim(),
+      danger: (await rs.nth(i).locator("td").nth(cChan).locator(".el-tag--danger").count()) > 0
+    });
+  }
+  return out;
+};
+
+{
+  const cur = await openAdd();
+  console.log(`   channel=8：主机项「${cur.host}」，下拉 ${cur.n} 项，来源「${cur.src}」`);
+  ok(cur.n === 8, `下拉 8 项（= terminal.channel）`);
+  ok(cur.src.includes("本机 8 路"), "来源那行写明本机 8 路");
+  ok(!/型号|switchcount/.test(cur.src), "不再提型号声明的 16 路 —— 那个数已经不参与了");
 }
 
-// 改回去，确认恢复
-execSync(FIX_TYPE, { stdio: "pipe" });
+// 把上报路数压回 2：三处都要跟着变，且型号那行仍写着 16 也不能把它顶上去
+execSync(SET_CH2, { stdio: "pipe" });
 {
-  const back = await openAdd();
-  console.log("   改回后：" + back.src);
-  ok(back.src.includes(`本机 ${declared} 路`), `改回 switchcount 之后又是 ${declared} 路`);
-  ok((await back.d.locator(".ch-src.warn").count()) === 0, "不再报警");
+  const cur = await openAdd();
+  console.log(`   channel=2：主机项「${cur.host}」，下拉 ${cur.n} 项，来源「${cur.src}」`);
+  ok(cur.n === 2, `下拉变成 2 项（实际 ${cur.n}）—— 这就是需求方要的「只有两个通道」`);
+  ok(/2\s*路/.test(cur.host), `主机项也写 2 路：${cur.host}`);
+  ok(cur.src.includes("本机 2 路"), "来源那行跟着变成 2 路");
+
+  const rows2 = await listChans();
+  console.log("   列表：" + JSON.stringify(rows2));
+  const den = rows2.map(r => Number(r.chan.match(/\/\s*(\d+)/)?.[1] ?? NaN)).filter(n => !Number.isNaN(n));
+  ok(den.length > 0 && den.every(d => d === 2), `列表分母也全是 2（实际 ${JSON.stringify([...new Set(den)])}）`);
+  const eight2 = rows2.find(r => /通道\s*8/.test(r.chan));
+  ok(!!eight2 && eight2.danger, "那条通道 8 的映射这时才被标红「超出范围」—— 该标的时候才标");
+}
+
+// 改回 8，确认复原
+execSync(SET_CH8, { stdio: "pipe" });
+{
+  const cur = await openAdd();
+  console.log(`   改回 channel=8：下拉 ${cur.n} 项`);
+  ok(cur.n === 8, "改回去就复原成 8 项");
+  const rows8 = await listChans();
+  const eight8 = rows8.find(r => /通道\s*8/.test(r.chan));
+  ok(!!eight8 && !eight8.danger, "通道 8 又回到范围内，红标消失");
 }
 
 await b.close();

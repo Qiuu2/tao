@@ -23,15 +23,11 @@ type Mapping struct {
 	AlarmTerminalID   int64  `json:"alarmTerminalId"`
 	AlarmTerminalName string `json:"alarmTerminalName"`
 	TerminalDeleted   bool   `json:"terminalDeleted"`
-	// TerminalChannels 是该主机可配的报警输入路数。
+	// TerminalChannels 是该主机可配的报警输入路数，取自 terminal.channel。
 	//
-	// ⚠ 不是 terminal.channel 的原值，是 effectiveChannels(terminal.channel,
-	//   terminaltype.switchcount) —— 必须和通道下拉（picker.go 的 AlarmHosts）
-	//   用同一套算法。原来这里直接取 t.channel，结果同一台 16 路的报警主机，
-	//   下拉里有 16 项，列表的「通道」列却写着「1 / 2」，而且第 3 路以上的映射
-	//   会被 decorateMapping 误判成「超出该主机的 2 路范围」，红着标
-	//   「报警触发时不会正常播放」—— 实际上完全正常。
-	//   演示库就能复现：类型 7 的 switchcount=16，那台主机的 terminal.channel=2。
+	// ⚠ 必须和通道下拉（picker.go 的 AlarmHosts）、保存校验走同一个
+	//   effectiveChannels —— 三处各算各的就会自相矛盾：现网先后报过
+	//   「下拉 16、列表写 /2 且第 3 路被误判成超范围」和「下拉摆出 16 路但实际只有 2 路」。
 	TerminalChannels int `json:"terminalChannels"`
 
 	AlarmChannel int `json:"alarmChannel"`
@@ -124,7 +120,6 @@ func (s *Service) ListMappings(ctx context.Context, u *auth.User, q MappingQuery
 	from := `
 		FROM alarmgroupmap m
 		LEFT JOIN terminal  t  ON t.id  = m.alarmterminalid
-		LEFT JOIN terminaltype tt ON tt.id = t.typeid
 		LEFT JOIN alarmarea a  ON a.id  = m.firealarmgroupid
 		LEFT JOIN media     md ON md.id = m.mediaid`
 
@@ -141,7 +136,7 @@ func (s *Service) ListMappings(ctx context.Context, u *auth.User, q MappingQuery
 	listSQL := `
 		SELECT m.id, COALESCE(m.info,''),
 		       m.alarmterminalid, t.id IS NOT NULL, COALESCE(t.terminalname,''),
-		       COALESCE(t.channel,0), COALESCE(tt.switchcount,0),
+		       COALESCE(t.channel,0),
 		       m.alarmchannel,
 		       m.firealarmgroupid, a.id IS NOT NULL, COALESCE(a.name,''),
 		       (SELECT COUNT(*) FROM terminalofalarmgroup g
@@ -160,15 +155,15 @@ func (s *Service) ListMappings(ctx context.Context, u *auth.User, q MappingQuery
 	for rs.Next() {
 		var it Mapping
 		var termOK, areaOK, mediaOK bool
-		var devCh, typeSw int
+		var devCh int
 		if err := rs.Scan(&it.ID, &it.Info,
-			&it.AlarmTerminalID, &termOK, &it.AlarmTerminalName, &devCh, &typeSw,
+			&it.AlarmTerminalID, &termOK, &it.AlarmTerminalName, &devCh,
 			&it.AlarmChannel,
 			&it.AlarmAreaID, &areaOK, &it.AlarmAreaName, &it.AreaTerminalCount,
 			&it.MediaID, &mediaOK, &it.MediaName); err != nil {
 			return nil, fmt.Errorf("扫描报警映射行: %w", err)
 		}
-		it.TerminalChannels = effectiveChannels(devCh, typeSw)
+		it.TerminalChannels = effectiveChannels(devCh)
 		it.TerminalDeleted, it.AreaDeleted, it.MediaDeleted = !termOK, !areaOK, !mediaOK
 		decorateMapping(ctx, &it)
 		items = append(items, it)
@@ -238,13 +233,12 @@ func (s *Service) validate(ctx context.Context, u *auth.User, in *MappingInput) 
 	// 报警主机：必须存在，且必须是报警主机类型
 	//
 	// ⚠ 路数必须和下拉用的是同一套算法（effectiveChannels），否则会出现
-	//   「下拉里能选到第 16 路，提交却说超范围」这种自相矛盾的情况。
-	var typeID, deviceChannels, typeSwitchCount int
+	//   「下拉里能选到第 N 路，提交却说超范围」这种自相矛盾的情况。
+	var typeID, deviceChannels int
 	err := s.db.QueryRowContext(ctx, `
-		SELECT t.typeid, COALESCE(t.channel,0), COALESCE(tt.switchcount,0)
-		FROM terminal t LEFT JOIN terminaltype tt ON tt.id = t.typeid
+		SELECT t.typeid, COALESCE(t.channel,0) FROM terminal t
 		WHERE t.id = ? LIMIT 1`,
-		in.AlarmTerminalID).Scan(&typeID, &deviceChannels, &typeSwitchCount)
+		in.AlarmTerminalID).Scan(&typeID, &deviceChannels)
 	if errors.Is(err, sql.ErrNoRows) {
 		return fmt.Errorf("报警主机不存在")
 	}
@@ -254,10 +248,10 @@ func (s *Service) validate(ctx context.Context, u *auth.User, in *MappingInput) 
 	if typeID != TypeAlarmHost {
 		return fmt.Errorf("所选终端不是报警主机，不能配置报警映射")
 	}
-	channels := effectiveChannels(deviceChannels, typeSwitchCount)
+	channels := effectiveChannels(deviceChannels)
 	// 通道从 1 开始编号 —— 旧界面的 JS 是 for(i=0;i<channelnum;i++){value = i+1}
 	if channels <= 0 {
-		return fmt.Errorf("该报警主机的通道数为 0：终端未上报路数，其型号也没有声明开关路数")
+		return fmt.Errorf("该报警主机的通道数为 0：终端没有上报路数（terminal.channel）")
 	}
 	if in.AlarmChannel < 1 || in.AlarmChannel > channels {
 		return fmt.Errorf(i18n.TC(ctx, "通道号必须在 1 ~ %d 之间"), channels)
@@ -404,22 +398,21 @@ func (s *Service) GetMapping(ctx context.Context, u *auth.User, id int64) (*Mapp
 	}
 	var it Mapping
 	var termOK, areaOK, mediaOK bool
-	var devCh, typeSw int
+	var devCh int
 	err := s.db.QueryRowContext(ctx, `
 		SELECT m.id, COALESCE(m.info,''),
 		       m.alarmterminalid, t.id IS NOT NULL, COALESCE(t.terminalname,''),
-		       COALESCE(t.channel,0), COALESCE(tt.switchcount,0),
+		       COALESCE(t.channel,0),
 		       m.alarmchannel,
 		       m.firealarmgroupid, a.id IS NOT NULL, COALESCE(a.name,''),
 		       m.mediaid, md.id IS NOT NULL, COALESCE(md.name,'')
 		FROM alarmgroupmap m
 		LEFT JOIN terminal  t  ON t.id  = m.alarmterminalid
-		LEFT JOIN terminaltype tt ON tt.id = t.typeid
 		LEFT JOIN alarmarea a  ON a.id  = m.firealarmgroupid
 		LEFT JOIN media     md ON md.id = m.mediaid
 		WHERE m.id = ? LIMIT 1`, id).
 		Scan(&it.ID, &it.Info,
-			&it.AlarmTerminalID, &termOK, &it.AlarmTerminalName, &devCh, &typeSw,
+			&it.AlarmTerminalID, &termOK, &it.AlarmTerminalName, &devCh,
 			&it.AlarmChannel,
 			&it.AlarmAreaID, &areaOK, &it.AlarmAreaName,
 			&it.MediaID, &mediaOK, &it.MediaName)
@@ -429,7 +422,7 @@ func (s *Service) GetMapping(ctx context.Context, u *auth.User, id int64) (*Mapp
 	if err != nil {
 		return nil, fmt.Errorf("查询报警映射: %w", err)
 	}
-	it.TerminalChannels = effectiveChannels(devCh, typeSw)
+	it.TerminalChannels = effectiveChannels(devCh)
 	it.TerminalDeleted, it.AreaDeleted, it.MediaDeleted = !termOK, !areaOK, !mediaOK
 	decorateMapping(ctx, &it)
 	return &it, nil

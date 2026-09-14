@@ -1341,9 +1341,8 @@ export default {
     clearedNSkipped: "{n} cleared; {skipped} were not permitted or no longer exist",
     pickMappingFirst: "Select at least one mapping first",
     hostOption: "{name} ({ip} · {n} channels)",
-    channelSource: "{n} channels (type declares {type} · device reports {device})",
-    channelSuspect:
-      "— the type declares none, so the device value is used; a 16-channel host would show only 2. Check switchcount on the alarm-host row in terminaltype.",
+    channelSource: "{n} channels (as reported by the terminal)",
+    channelNone: "This terminal has not reported a channel count, so no channel can be set.",
     abnormal: "Fault"
   },
   alarmArea: {
@@ -1455,6 +1454,7 @@ export default {
     boundToKey: "Already bound to key {n}",
     keyOncePerCode: "Each key code can be mapped only once",
     addMapping: "New mapping",
+    editMapping: "Edit mapping · {name}",
     deleteMapping: "Delete mapping",
     noTaskBound: "No task bound",
     keyN: "Key {n}",

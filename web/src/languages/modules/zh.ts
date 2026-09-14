@@ -1328,9 +1328,8 @@ export default {
     clearedNSkipped: "已取消 {n} 条，{skipped} 条无权操作或已不存在",
     pickMappingFirst: "请先勾选映射",
     hostOption: "{name}（{ip} · {n} 路）",
-    channelSource: "本机 {n} 路（型号声明 {type} 路 · 设备上报 {device} 路）",
-    channelSuspect:
-      "—— 型号没声明路数，这里用的是设备上报值；16 路的主机会只显示 2 路，请检查 terminaltype 里报警主机那一行的 switchcount。",
+    channelSource: "本机 {n} 路（终端上报的路数）",
+    channelNone: "该终端没有上报路数，无法配置通道。",
     abnormal: "异常"
   },
   alarmArea: {
@@ -1438,6 +1437,7 @@ export default {
     boundToKey: "已绑在 {n} 键",
     keyOncePerCode: "一个键号只能配一次",
     addMapping: "添加映射",
+    editMapping: "修改映射 · {name}",
     deleteMapping: "删除映射",
     noTaskBound: "未绑定任务",
     keyN: "{n} 键",
