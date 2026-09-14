@@ -511,6 +511,8 @@ func (a *app) handleTimeSetNTP(w http.ResponseWriter, r *http.Request) {
 		a.failTime(w, "保存 NTP 服务器地址", err)
 		return
 	}
+	// 这条接口没有「哪一个对象」，要追的是改成了哪个地址
+	noteAuditTarget(r.Context(), strings.TrimSpace(in.NTPServer))
 	httpx.OK(w, map[string]interface{}{
 		"updated": true,
 		"note":    "只写入了数据库，系统的时间同步配置不会被改动，由后台服务读取生效。",

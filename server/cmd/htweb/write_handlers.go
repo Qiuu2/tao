@@ -211,6 +211,18 @@ func (a *app) handleMediaUpload(w http.ResponseWriter, r *http.Request) {
 		a.notifier.MediaChanged(r.Context(), notify.StateAdded, folderID)
 	}
 
+	// 告诉审计中间件这一次传的是哪几个文件。
+	// 这条接口的 body 是 multipart，中间件按设计不去解（可能有几十 MB），
+	// 所以文件名只能由这里回填 —— 否则日志里就只剩一行光秃秃的「上传媒体」。
+	// 只报真正落库的：失败的那几个没改变任何东西，记进去反而误导。
+	okNames := make([]string, 0, len(results))
+	for _, res := range results {
+		if res.Status == "created" || res.Status == "overwritten" {
+			okNames = append(okNames, res.FileName)
+		}
+	}
+	noteAuditTarget(r.Context(), namesDetail("媒体", okNames))
+
 	httpx.OK(w, map[string]interface{}{
 		"results":  results,
 		"notified": created > 0,

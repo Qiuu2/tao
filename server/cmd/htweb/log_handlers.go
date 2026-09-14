@@ -156,6 +156,10 @@ func (a *app) handleLogRetentionSet(w http.ResponseWriter, r *http.Request) {
 		failLog(w, "保存日志保留期", err)
 		return
 	}
+	// 日志里写清楚改成了多久。这条接口没有「哪一个对象」，
+	// 真正要追的是**改成了什么值** —— 保留期变短是「日志少了一截」的直接原因。
+	noteAuditTarget(r.Context(), set.Label)
+
 	httpx.OK(w, map[string]interface{}{
 		"settings": set,
 		"purge":    purge,

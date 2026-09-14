@@ -875,7 +875,7 @@ func (x *auditMux) HandleFunc(pattern string, h http.HandlerFunc) {
 	// keyGate 在最外层：不在开放清单里的接口，用开发者密钥调一律拒绝。
 	// 放最外层是为了让它先于操作日志跑 —— 被拒的请求不该在日志里
 	// 留下一条「某某做了某某」。
-	x.m.HandleFunc(pattern, keyGate(pattern, x.a.withAudit(auditFor(pattern), h)))
+	x.m.HandleFunc(pattern, keyGate(pattern, x.a.withAudit(pattern, auditFor(pattern), h)))
 }
 
 // ---------- 认证 ----------
@@ -1124,9 +1124,6 @@ func (a *app) handleMenu(w http.ResponseWriter, r *http.Request) {
 		// 增删改由接口按 terminalgrouppriv 拦。
 		menu("/zone", "zone", "/zone/index", "Guide", "终端分区"),
 	}
-	// 地图与终端管理同源：列表回答「哪一台怎么样」，地图回答「它在哪」。
-	// 可见范围同样由 userterminal 收敛，所以和终端列表一样只要登录。
-	res = append(res, menu("/map", "map", "/map/index", "Location", "地图"))
 	if u.IsAdmin || u.Rights.MediaPriv == 1 || u.Rights.FolderPriv == 1 {
 		res = append(res, menu("/media", "media", "/media/index", "Files", "文件管理"))
 	}
@@ -1140,6 +1137,10 @@ func (a *app) handleMenu(w http.ResponseWriter, r *http.Request) {
 	if u.IsAdmin || u.Rights.ServerPriv == 1 {
 		res = append(res, menu("/remote", "remote", "/remote/index", "Pointer", "遥控任务"))
 	}
+	// 地图排在遥控任务后面（需求方指定的位置）。它与终端管理同源 ——
+	// 列表回答「哪一台怎么样」，地图回答「它在哪」；可见范围同样由
+	// userterminal 收敛，所以和终端列表一样只要登录。
+	res = append(res, menu("/map", "map", "/map/index", "Location", "地图"))
 	menus = append(menus, group("/resource", "resource", "Coin", "资源管理", res...))
 
 	// —— 任务管理 ——

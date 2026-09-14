@@ -271,17 +271,42 @@ func (s *sniffWriter) success() bool {
 }
 
 // withAudit 包一层操作日志。label 为空表示这个接口不记录。
-func (a *app) withAudit(label string, h http.HandlerFunc) http.HandlerFunc {
+//
+// pattern 是注册路由时的模式原文，用来查 auditTargets 决定日志里
+// 写哪个对象的名字（「删除终端」→「删除终端：终端「A101教室音箱」」）。
+//
+// ⚠ 对象名必须在调用 handler **之前**解析。删除类接口跑完之后
+// 那行记录就没了，事后再查名字只能查到空 —— 而「删的是哪一台」
+// 恰恰是删除日志里唯一有用的信息。
+func (a *app) withAudit(pattern, label string, h http.HandlerFunc) http.HandlerFunc {
 	if label == "" {
 		return h
 	}
 	return func(w http.ResponseWriter, r *http.Request) {
+		// 解析对象名。**查库**这一步要身份验证过才做 —— 里层的鉴权中间件
+		// 马上就会把没身份的请求挡掉，提前查一次纯属白费，还等于给外面
+		// 留了一条打库的路。只用路径参数和请求体的那部分没这个顾虑，照常跑，
+		// 开发者接口那几条按名字寻址的靠的就是它。
+		_, signedIn := a.authMgr.Resolve(r.Header.Get(auth.HeaderToken))
+		detail := a.auditDetail(pattern, r, signedIn || auth.WillUseAPIKey(r))
+
+		// 再留一条从 handler 往回传的通道：上传媒体这种 body 是 multipart 的接口，
+		// 文件名只有 handler 解开 multipart 之后才知道。
+		r, note := withAuditNote(r)
+
 		sw := &sniffWriter{ResponseWriter: w}
 		h(sw, r)
 		if !sw.success() {
 			return
 		}
-		a.auditor.Write(r.Context(), a.auditUser(r), label, audit.ClientIP(r))
+		if note.text != "" {
+			detail = note.text // handler 自己说的比这一层猜的准
+		}
+		op := label
+		if detail != "" {
+			op += "：" + detail
+		}
+		a.auditor.Write(r.Context(), a.auditUser(r), oneLine(op), audit.ClientIP(r))
 	}
 }
 
