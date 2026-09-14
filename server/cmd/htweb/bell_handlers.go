@@ -29,6 +29,8 @@ func failBell(w http.ResponseWriter, action string, err error) {
 		httpx.Fail(w, httpx.CodeNotFound, err.Error())
 	case errors.Is(err, bell.ErrNoPermission):
 		httpx.Fail(w, httpx.CodeForbidden, err.Error())
+	case errors.Is(err, bell.ErrTooManyItemMedia):
+		httpx.Fail(w, httpx.CodeBadRequest, err.Error())
 	default:
 		if isBellValidationErr(err) {
 			httpx.Fail(w, httpx.CodeBadRequest, err.Error())
@@ -45,7 +47,7 @@ func isBellValidationErr(err error) bool {
 	for _, kw := range []string{
 		"不能为空", "最多", "必须", "格式不正确", "不存在", "过长", "之间", "只能是",
 		"已存在", "不允许", "请选择", "请至少", "重复", "重名", "不支持", "重新选择",
-		"未绑定", "不能早于", "不能包含", "不能与",
+		"未绑定", "不能早于", "不能包含", "不能与", "只能有",
 	} {
 		if strings.Contains(msg, kw) {
 			return true

@@ -66,6 +66,14 @@ import (
 var (
 	ErrNotFound     = errors.New("作息方案不存在")
 	ErrNoPermission = errors.New("只能操作自己创建的作息方案")
+
+	// ErrTooManyItemMedia 一个打铃条目挂了不止一个铃声。
+	//
+	// 做成有类型的哨兵而不是靠文案关键词：handler 那边是按关键词表
+	// 把错误分成「用户输错了(400)」和「系统坏了(500)」的，而那张表里有
+	// 「只能是」没有「只能有」—— 我第一版的文案就正好卡在缝里，
+	// 界面上弹出来的是一句「服务器内部错误」。errors.Is 不看文案，不会再踩。
+	ErrTooManyItemMedia = errors.New("一个打铃条目只能有一个铃声")
 )
 
 // 方案条目的任务类型。

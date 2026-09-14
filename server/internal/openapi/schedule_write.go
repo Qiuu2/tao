@@ -67,7 +67,12 @@ type ScheduleInput struct {
 type ScheduleItemInput struct {
 	Name     string `json:"name"`
 	PlayTime string `json:"playTime"`
-	// Media 是这一条播的媒体，按数组顺序播。
+	// Media 是这一条播的铃声。
+	//
+	// ⚠ **一个打铃条目只能有一个铃声**（旧版三个页面的 select 都没有 multiple，
+	// 旧表 playbelloftask.bellid 也是单个 int 列）。这里之所以还是数组，
+	// 是为了跟其它任务类型的请求体保持同一个形状 —— 传多于一个会被
+	// bell.Service 挡下，不会闷声只存第一个。
 	Media []Ref `json:"media"`
 	// Seconds 与 LoopTimes 二选一。都不给按媒体自身时长算。
 	Seconds   int `json:"seconds"`

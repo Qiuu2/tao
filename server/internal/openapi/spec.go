@@ -501,7 +501,7 @@ func groupQuery() Group {
 					{Name: "items[].loopTimes", Type: "int", Desc: "把清单循环几遍。按次数循环的条目没有确定秒数，所以那时 seconds 给 0"},
 					{Name: "items[].weekdays", Type: "数组", Desc: "哪几天打，1=周一 … 7=周日"},
 					{Name: "items[].startDate / endDate", Type: "string", Desc: "这一条的生效区间。理论上组内一致，但「智能排课」能按条目改"},
-					{Name: "items[].media[]", Type: "数组", Desc: "这一条播什么。每项 {id, name}"},
+					{Name: "items[].media[]", Type: "数组", Desc: "这一条播什么。每项 {id, name}。**一个打铃条目只能有一个铃声**，传多于一个会被拒绝"},
 				},
 				Notes: []string{
 					"seconds 与 loopTimes 只有一个非零：按次数循环的条目没有确定的秒数，所以 seconds 给 0、次数放在 loopTimes 上。",
@@ -984,7 +984,7 @@ func groupSchedule() Group {
 					{Name: "name", Type: "string", Required: true, Desc: "方案名"},
 					{Name: "terminals", Type: "数组", Desc: "打到哪些终端。每项写**终端编号**（推荐，唯一）或终端名"},
 					{Name: "zones", Type: "数组", Desc: "打到哪些分区，会展开成终端。每项写**分区编号**或分区名。与 terminals 至少给一个"},
-					{Name: "items", Type: "数组", Required: true, Desc: "打铃条目，至少一条。每条：playTime 必填、media 必填、name/seconds/loopTimes 可选"},
+					{Name: "items", Type: "数组", Required: true, Desc: "打铃条目，至少一条。每条：playTime 必填、media 必填（**只能一个铃声**）、name/seconds/loopTimes 可选"},
 					{Name: "items[].media", Type: "数组", Desc: "这一条播什么。每项写**媒体编号**（推荐，唯一）或媒体名 —— ⚠ 媒体名可以重名"},
 					{Name: "weekdays", Type: "数组", Desc: "留空 = 周一到周五（注意与新建任务不同）"},
 					{Name: "startDate", Type: "string", Desc: "生效起始日，默认今天"},

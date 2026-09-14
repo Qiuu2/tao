@@ -524,23 +524,35 @@
               <span v-if="dlg.mode === 'batch'" :class="{ muted: !batchMediaName(row) }">{{
                 batchMediaName(row) || $t("sys.notSet")
               }}</span>
-              <el-select
-                v-else
-                v-model="row.mediaIds"
-                multiple
-                filterable
-                remote
-                reserve-keyword
-                collapse-tags
-                collapse-tags-tooltip
-                size="small"
-                :remote-method="searchMedia"
-                :loading="mediaLoading"
-                :placeholder="$t('common.searchMediaName')"
-                class="fill"
-              >
-                <el-option v-for="m in medias" :key="m.id" :label="m.name" :value="m.id" />
-              </el-select>
+              <!--
+                一课时一铃声（旧版三个页面都是单选，旧表 bellid 也是单个 int）。
+                老数据可能挂了不止一个，那种行在后面补一个角标说清楚。
+              -->
+              <div v-else class="tone-cell">
+                <el-select
+                  v-model="row.mediaId"
+                  filterable
+                  clearable
+                  remote
+                  reserve-keyword
+                  size="small"
+                  :remote-method="searchMedia"
+                  :loading="mediaLoading"
+                  :placeholder="$t('common.searchMediaName')"
+                  class="fill"
+                >
+                  <el-option v-for="m in medias" :key="m.id" :label="m.name" :value="m.id" />
+                </el-select>
+                <el-tag
+                  v-if="row.legacyMediaCount > 1"
+                  type="warning"
+                  size="small"
+                  effect="plain"
+                  :title="$t('bell.multiToneTip', { n: row.legacyMediaCount })"
+                >
+                  {{ $t("bell.multiToneTag", { n: row.legacyMediaCount }) }}
+                </el-tag>
+              </div>
             </template>
           </el-table-column>
           <!-- 旧版「播放时长」是个弹层：选时长就是 时/分/秒 三个下拉，选次数是 00~99 -->
@@ -845,7 +857,20 @@ const emptyItemRow = () => ({
   timelength: 1,
   lengthhms: "00:00:30",
   busy: false,
-  mediaIds: [] as number[]
+  /**
+   * 一个课时只挂**一个**铃声。
+   *
+   * 旧版三个页面（addbelltask.html / modifybell.html / modifybellall.html）
+   * 那个 `<select name="setbellname">` 都没有 multiple，旧表
+   * `playbelloftask.bellid` 也是单个 int —— 一课时一铃声是这套系统本来的模型。
+   * 新版一度做成了多选，是偏离，按需求方要求改回来。
+   *
+   * 底层 mediaoftask 仍然是能挂多行的（task 模型通用），所以老数据里可能有
+   * 多于一个的情况，打开时只回填第一个并明确提示，不闷声丢掉，见 openEdit。
+   */
+  mediaId: undefined as number | undefined,
+  /** 老数据原本挂了几个铃声。>1 时界面要说清楚保存会只留第一个 */
+  legacyMediaCount: 0
 });
 type ItemRow = ReturnType<typeof emptyItemRow>;
 
@@ -893,7 +918,7 @@ const copyItemRow = (idx: number) => {
   if (!src) return;
   // 复制出来的是**新的一行**（旧版 copyRow 插的行 belltaskid 是 -1）：
   // 不能带着原来的 taskid，否则「修改」会改到被复制的那条库记录上
-  dlg.items.splice(idx + 1, 0, { ...src, taskid: 0, busy: false, mediaIds: [...(src.mediaIds ?? [])] });
+  dlg.items.splice(idx + 1, 0, { ...src, taskid: 0, busy: false, legacyMediaCount: 0 });
   itemErrors.value.splice(idx + 1, 0, emptyItemError());
 };
 /**
@@ -908,7 +933,8 @@ const itemPayload = (it: ItemRow) => ({
   playtime: it.playtime,
   timelengthtype: it.timelengthtype,
   timelength: it.timelengthtype === 1 ? hmsToSec(it.lengthhms) : it.timelength,
-  media: it.mediaIds.map((id, i) => ({ mediaId: id, sort: i }))
+  // 一课时一铃声：没选就传空数组（后端据此把这条的 mediaoftask 清干净）
+  media: it.mediaId ? [{ mediaId: it.mediaId, sort: 0 }] : []
 });
 
 /** 删掉库里的课时之后：刷新列表；如果连方案都没了，就把状态收拾干净 */
@@ -1342,9 +1368,17 @@ const openEdit = async (row: BellPlan, mode: "edit" | "batch" = "edit") => {
       timelength: it.timelengthtype === 1 ? 1 : it.timelength,
       lengthhms: it.timelengthtype === 1 ? secToHms(it.timelength) : "00:00:30",
       busy: false,
-      mediaIds: it.media.map(m => m.mediaId)
+      // 一课时一铃声：只回填第一个。老数据可能挂了不止一个 ——
+      // 记下原来有几个，界面上标出来，保存时会只剩第一个，不能闷声丢掉。
+      mediaId: it.media[0]?.mediaId,
+      legacyMediaCount: it.media.length
     }))
   });
+  // 老数据里挂了多个铃声的，开局就说清楚 —— 等人保存完才发现少了东西就晚了
+  const multi = data.items.filter(it => it.media.length > 1).length;
+  if (multi > 0) {
+    ElMessage.warning(t("bell.multiToneWarn", { n: multi }));
+  }
   // 条目用到的媒体未必在搜索结果的前几十条里，补进下拉，免得只显示 ID
   data.items.forEach(it =>
     it.media.forEach(m => {
@@ -1536,9 +1570,10 @@ const batch = reactive({
 
 /** 批量修改时课时表里那两格是只读的：启用了统一设置就显示统一值，否则显示这一行原来的值 */
 const batchMediaName = (row: ItemRow) => {
-  const ids = batch.enableMedia ? (batch.mediaId ? [batch.mediaId] : []) : row.mediaIds;
   // 统一铃声勾了但还没选，就先显示成「未设置」
-  return ids.map(id => medias.value.find(m => m.id === id)?.name ?? `#${id}`).join("、");
+  const id = batch.enableMedia ? batch.mediaId : row.mediaId;
+  if (!id) return "";
+  return medias.value.find(m => m.id === id)?.name ?? `#${id}`;
 };
 const batchLenText = (row: ItemRow) => {
   if (batch.enableLen) return batch.lenType === 1 ? batch.lenHms : t("term.loopUnit", { n: batch.lenTimes });
@@ -1693,8 +1728,8 @@ const confirmDelete = async () => {
 }
 .warn-icon {
   margin-left: 4px;
-  color: var(--el-color-warning);
   vertical-align: middle;
+  color: var(--el-color-warning);
 }
 .mixed-tag {
   margin-left: 6px;
@@ -1722,6 +1757,13 @@ const confirmDelete = async () => {
 }
 .fill {
   width: 100%;
+}
+
+/* 铃声那一格：选择器 + 老数据的「原有 N 个」角标 */
+.tone-cell {
+  display: flex;
+  gap: 4px;
+  align-items: center;
 }
 .item-row {
   display: flex;
@@ -1761,6 +1803,7 @@ const confirmDelete = async () => {
   gap: 6px;
   align-items: center;
 }
+
 /* ---- 智能排课 ---- */
 .sched-head {
   padding: 12px 14px;
@@ -1813,14 +1856,14 @@ const confirmDelete = async () => {
   display: inline-block;
   width: 17px;
   margin-right: 1px;
-  white-space: nowrap;
   font-size: 12px;
   line-height: 17px;
   color: var(--el-text-color-placeholder);
   text-align: center;
+  white-space: nowrap;
   border-radius: 3px;
   &.on {
-    color: #fff;
+    color: #ffffff;
     background: var(--el-color-primary);
   }
 }

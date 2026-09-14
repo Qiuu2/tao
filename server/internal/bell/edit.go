@@ -501,6 +501,39 @@ func (s *Service) priorityRange(ctx context.Context, userID int64) (int, int, er
 
 // ---------- 校验 ----------
 
+// maxItemMedia 一个打铃条目能挂几个铃声。
+//
+// # 为什么是 1
+//
+// 旧版三个页面 —— 添加（addbelltask.html:447）、修改（modifybell.html:427）、
+// 批量修改（modifybellall.html:2072）—— 那个 `<select name="setbellname">`
+// 都**没有** multiple；旧表 `playbelloftask.bellid` 也是单个 int 列而不是关联表。
+// 「一课时一铃声」是这套系统本来的模型，不是界面偷懒。
+//
+// 新版一度在添加/修改里做成了多选（底层 mediaoftask 是能挂多行的），
+// 按需求方要求改回来。这里**在服务层拦**而不是只改界面：开发者接口
+// （POST /openapi/v1/schedules）走的也是这条路，只改界面的话，
+// 用密钥建出来的方案会带着界面表达不了的数据，下次有人在界面上一改就悄悄少一个。
+const maxItemMedia = 1
+
+// checkItemMedia 校验一个条目的铃声。idx 是给人看的序号（1 基）。
+func checkItemMedia(media []task.MediaRef, idx int) error {
+	if len(media) > maxItemMedia {
+		return fmt.Errorf("第 %d 个条目挂了 %d 个铃声：%w", idx, len(media), ErrTooManyItemMedia)
+	}
+	seen := map[int64]bool{}
+	for _, m := range media {
+		if m.MediaID <= 0 {
+			return fmt.Errorf("第 %d 个条目的铃声里有非法的媒体 ID", idx)
+		}
+		if seen[m.MediaID] {
+			return fmt.Errorf("第 %d 个条目的铃声有重复项", idx)
+		}
+		seen[m.MediaID] = true
+	}
+	return nil
+}
+
 func (s *Service) validate(ctx context.Context, u *auth.User, in *PlanInput, ownerID int64, oldPriority *int) error {
 	if !reDate.MatchString(in.Schedule.StartDate) || !reDate.MatchString(in.Schedule.EndDate) {
 		return fmt.Errorf("起止日期格式不正确，应为 YYYY-MM-DD")
@@ -561,15 +594,10 @@ func (s *Service) validate(ctx context.Context, u *auth.User, in *PlanInput, own
 		if it.TimeLength < 0 || it.TimeLength > 86400 {
 			return fmt.Errorf("时长/次数必须在 0 ~ 86400 之间")
 		}
-		seen := map[int64]bool{}
+		if err := checkItemMedia(it.Media, i+1); err != nil {
+			return err
+		}
 		for _, m := range it.Media {
-			if m.MediaID <= 0 {
-				return fmt.Errorf("第 %d 个条目的铃声里有非法的媒体 ID", i+1)
-			}
-			if seen[m.MediaID] {
-				return fmt.Errorf("第 %d 个条目的铃声有重复项", i+1)
-			}
-			seen[m.MediaID] = true
 			mediaIDs = append(mediaIDs, m.MediaID)
 		}
 	}
@@ -1303,16 +1331,12 @@ func (s *Service) UpdateItem(ctx context.Context, u *auth.User, planName string,
 			return 0, fmt.Errorf("方案内已存在同名条目：%q", it.TaskName)
 		}
 	}
-	mediaIDs := []int64{}
-	seen := map[int64]bool{}
+	// 一课时一铃声，与 Create / AddItem 同一条判据（见 maxItemMedia）
+	if err := checkItemMedia(it.Media, 1); err != nil {
+		return 0, err
+	}
+	mediaIDs := make([]int64, 0, len(it.Media))
 	for _, m := range it.Media {
-		if m.MediaID <= 0 {
-			return 0, fmt.Errorf("铃声里有非法的媒体 ID")
-		}
-		if seen[m.MediaID] {
-			return 0, fmt.Errorf("铃声有重复项")
-		}
-		seen[m.MediaID] = true
 		mediaIDs = append(mediaIDs, m.MediaID)
 	}
 	if err := s.assertMediaExist(ctx, mediaIDs); err != nil {
