@@ -168,15 +168,19 @@ func (a *app) handleDashBrowse(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query()
 	pager := store.NewPager(atoiDefault(q.Get("pageNum"), 1), atoiDefault(q.Get("pageSize"), 20))
 
+	// 默认「全部」而不是「当天启用」：进看板先看到这一天所有的任务，
+	// 想只看会响的再自己点过去。按需求方要求改的（原来默认 enabled，
+	// 一进来就少一半，容易以为任务丢了）。
 	scope := q.Get("scope")
 	if scope == "" {
-		scope = "enabled"
+		scope = "all"
 	}
 	res, err := a.dash.Browse(r.Context(), auth.From(r.Context()), dashboard.BrowseQuery{
 		FolderID: int64(atoiDefault(q.Get("folderId"), 0)),
 		Weekday:  atoiDefault(q.Get("weekday"), 0),
 		AutoMode: atoiDefault(q.Get("autoMode"), 0),
 		Scope:    scope,
+		Module:   q.Get("module"),
 		Pager:    pager,
 	})
 	if err != nil {
@@ -186,5 +190,8 @@ func (a *app) handleDashBrowse(w http.ResponseWriter, r *http.Request) {
 	httpx.OK(w, map[string]interface{}{
 		"list": res.Items, "total": res.Total,
 		"pageNum": pager.PageNum, "pageSize": pager.PageSize,
+		// viewDate 是这次看的是哪一天 —— 星期能选「周三」之后，
+		// 界面上得把这一天写出来，不然「当天启用」说不清是哪天
+		"viewDate": res.ViewDate,
 	})
 }

@@ -308,36 +308,90 @@ type BrowseItem struct {
 	StartDate string `json:"startdate"`
 	EndDate   string `json:"enddate"`
 	Terminals int    `json:"terminals"`
-	// EnabledToday 表示今天这条任务是否真的会执行。
+	// EnabledToday 表示**所看那一天**这条任务是否真的会执行。
+	// 名字沿用旧字段名不改，免得前端到处跟着换；语义见 Browse 的注释。
 	EnabledToday bool `json:"enabledToday"`
 	ProjectState int  `json:"projectstate"`
+	// DisableDay 是这条任务被单独停掉的那一天（task.disableday）。
+	//
+	// 旧版看板上就有这一列（Browse_active_task_form.html:161，表头「当天停用」）：
+	// 勾中若干任务点「当天停用」，写的就是这一列 —— 值是哪天，那天这条任务就不响，
+	// 点「当天启用」再清回 0000-00-00。它与 projectstate 是两回事：
+	// projectstate 是整条任务的长期启停，disableday 只挖掉某一天。
+	//
+	// 0000-00-00 / 空 一律回空串，界面上显示成「—」，不要让人看见一个假日期。
+	DisableDay string `json:"disableday"`
 }
 
 type BrowseQuery struct {
 	FolderID int64
-	// Weekday 1..7（周日=1，与掩码位次一致），0 表示不筛
+	// Weekday 1..7（周日=1，与掩码位次一致），0 表示「今天」
 	Weekday int
 	// AutoOnly: 1=只看自动任务, 2=只看手动任务, 0=全部
 	AutoMode int
-	// Scope: enabled=当天启用, disabled=当天停用, all=全部
+	// Scope: enabled=当天启用, disabled=当天停用, all=全部（默认）
 	Scope string
-	Pager store.Pager
+	// Module 按「任务管理」下的模块筛。空串或 "all" = 全部，取值见 browseModules。
+	Module string
+	Pager  store.Pager
 }
+
+// browseModules 把「任务管理」菜单下的各个模块映射成 task.tasktype 的取值集合。
+//
+// 口径逐条对齐各模块自己的列表条件（见 internal/task 与 internal/typedtask），
+// 不另起一套 —— 否则看板上数出来的任务数会和点进去之后看到的对不上。
+//
+// ⚠ tasktype = 15 同时属于「作息方案」和「文字语音」，靠 info 分：
+// 作息方案的 info 是方案名（非空），文字语音的 info 是空串（契约 C-38）。
+var browseModules = map[string]string{
+	"bell":      "(t.tasktype IN (1,15) AND COALESCE(t.info,'') <> '')",
+	"file":      "(t.tasktype IN (2,7))",
+	"amplifier": "(t.tasktype = 5 AND COALESCE(t.prepower,0) = 0)",
+	"collect":   "(t.tasktype = 3)",
+	"tts":       "(t.tasktype IN (15,17,19) AND COALESCE(t.info,'') = '')",
+	"led":       "(t.tasktype IN (24,30))",
+}
+
+// browseAllModules 是「全部」（空串或 "all"，以及任何不认识的值）时的类型范围：
+// 上面那几个模块的并集。
+//
+// ⚠ 不能写成「不加任何 tasktype 条件」—— task 表里还躺着功放子任务(9)、
+// LED 子任务、声场任务(25) 之类，全放出来看板会冒出一堆用户在界面上
+// 根本找不到的行。
+const browseAllModules = `(t.tasktype IN (1,2,3,5,7,15,17,19,24,30))`
 
 type BrowseResult struct {
 	Items []BrowseItem
 	Total int64
+	// ViewDate 是这一次「看的是哪一天」，YYYY-MM-DD。
+	//
+	// 星期下拉一旦能选「周三」，界面上再写「当天启用」就说不清是哪天了 ——
+	// 把这一天原样回给前端，标题里写出来，人一眼知道自己在看什么。
+	ViewDate string
 }
 
 // Browse 浏览任务：对应参考图下半部分那张表。
 //
-// 「当天启用」的判定三条同时成立：
-//   - projectstate = 0（启用；注意 0 才是启用，见 task 模块的说明）
-//   - 今天落在 startdate ~ enddate 之间
-//   - 星期掩码里今天这一位是 1
+// # 「看的是哪一天」
 //
-// 旧 Browse_active_task.php 就是这么筛的（`projectstate=0 AND startdate<=CURDATE() ...`），
-// 这里保持同一口径。
+// 星期下拉决定的不只是掩码上取哪一位，还是**一个具体日期**：选「周三」看的就是
+// 本周三那天，起止日期要把那天圈进去才算数。旧版就是这么干的 ——
+// `DATE_ADD(CURDATE(), INTERVAL (选的星期 - 今天星期) DAY)`
+// （Browse_active_task.php:243/247），偏移量可以是负数（本周已经过去的那几天）。
+//
+// 新版一度只把星期用在掩码那一位上，日期范围仍然拿 CURDATE() 比 ——
+// 结果选「今天」时，列表里会混进起止日期根本不覆盖今天的任务。按需求方要求改回来。
+//
+// # 「那天启用」的判定
+//
+// 三条同时成立：
+//   - projectstate = 0（启用；注意 0 才是启用，见 task 模块的说明）
+//   - 所看那一天落在 startdate ~ enddate 之间
+//   - 星期掩码里那一天这一位是 1
+//
+// ⚠ **日期范围这一条跟着星期走，不跟着 Scope 走**：不管选「全部」还是
+// 「当天启用/停用」，列表里都只出现那一天有效期覆盖得到的任务。
+// Scope 只在这批里再分「会响 / 不会响」。
 func (s *Service) Browse(ctx context.Context, u *auth.User, q BrowseQuery) (*BrowseResult, error) {
 	now := time.Now()
 	// exemodel 是周日打头的掩码（旧站 SUBSTRING(exemodel, WEEKDAY()+2 ... ) 里
@@ -348,9 +402,17 @@ func (s *Service) Browse(ctx context.Context, u *auth.User, q BrowseQuery) (*Bro
 	}
 	// MySQL 的 SUBSTRING 下标从 1 开始
 	pos := idx + 1
+	// 所看那一天是本周的哪一天。偏移可正可负（选的日子可能已经过去了）。
+	offset := idx - int(now.Weekday())
+	viewDate := now.AddDate(0, 0, offset).Format("2006-01-02")
 
 	cond := &store.Cond{}
-	cond.Add("t.tasktype IN (2,7,15) AND t.channel = 0 AND t.sec_task_id = 0")
+	if frag, ok := browseModules[q.Module]; ok {
+		cond.Add(frag)
+	} else {
+		cond.Add(browseAllModules)
+	}
+	cond.Add("t.channel = 0 AND t.sec_task_id = 0")
 	if !u.IsAdmin {
 		cond.Add("t.task_user_id = ?", u.ID)
 	}
@@ -363,11 +425,13 @@ func (s *Service) Browse(ctx context.Context, u *auth.User, q BrowseQuery) (*Bro
 	case 2:
 		cond.Add("COALESCE(t.exemodel,'0000000') = '0000000'")
 	}
+	// 有效期必须圈住所看那一天 —— 与 Scope 无关，见上面的注释
+	cond.Add("t.startdate <= ? AND t.enddate >= ?", viewDate, viewDate)
 
-	// 「今天会不会执行」这一串条件复用两次（筛选 + 每行的标记），拼成一个片段
+	// 「那天会不会响」这一串条件复用两次（筛选 + 每行的标记），拼成一个片段。
+	// 日期范围已经在 cond 里加过了，这里不重复。
 	active := fmt.Sprintf(
-		"(t.projectstate = %d AND t.startdate <= CURDATE() AND t.enddate >= CURDATE() "+
-			"AND SUBSTRING(COALESCE(t.exemodel,'0000000'), %d, 1) = '1')",
+		"(t.projectstate = %d AND SUBSTRING(COALESCE(t.exemodel,'0000000'), %d, 1) = '1')",
 		task.StateEnabled, pos)
 
 	switch q.Scope {
@@ -378,7 +442,7 @@ func (s *Service) Browse(ctx context.Context, u *auth.User, q BrowseQuery) (*Bro
 	}
 	where := cond.Where()
 
-	out := &BrowseResult{Items: []BrowseItem{}}
+	out := &BrowseResult{Items: []BrowseItem{}, ViewDate: viewDate}
 	if err := s.db.QueryRowContext(ctx,
 		"SELECT COUNT(*) FROM task t"+where, cond.Args()...).Scan(&out.Total); err != nil {
 		return nil, fmt.Errorf("统计浏览任务: %w", err)
@@ -395,7 +459,8 @@ func (s *Service) Browse(ctx context.Context, u *auth.User, q BrowseQuery) (*Bro
 		       COALESCE(DATE_FORMAT(t.startdate,'%Y-%m-%d'),''),
 		       COALESCE(DATE_FORMAT(t.enddate,'%Y-%m-%d'),''),
 		       (SELECT COUNT(*) FROM terminaloftask ot WHERE ot.taskid = t.taskid),
-		       `+active+`
+		       `+active+`,
+		       COALESCE(DATE_FORMAT(t.disableday,'%Y-%m-%d'),'')
 		FROM task t
 		LEFT JOIN filetaskfree f ON f.id = t.parentid`+where+`
 		ORDER BY t.playtime ASC, t.taskid ASC
@@ -411,8 +476,13 @@ func (s *Service) Browse(ctx context.Context, u *auth.User, q BrowseQuery) (*Bro
 		var mask string
 		if err := rows.Scan(&it.TaskID, &it.TaskName, &it.FolderName, &mask, &it.PlayTime,
 			&it.State, &it.ProjectState, &it.StartDate, &it.EndDate,
-			&it.Terminals, &it.EnabledToday); err != nil {
+			&it.Terminals, &it.EnabledToday, &it.DisableDay); err != nil {
 			return nil, err
+		}
+		// 没被单独停过的任务这一列是 0000-00-00，DATE_FORMAT 会给出 "0000-00-00"
+		// 甚至空串（取决于 sql_mode）。两种都当成「没停过」，别让人看见一个假日期。
+		if it.DisableDay == "0000-00-00" {
+			it.DisableDay = ""
 		}
 		i++
 		it.Index = i

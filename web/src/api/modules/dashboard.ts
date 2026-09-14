@@ -74,8 +74,17 @@ export interface BrowseItem {
   startdate: string;
   enddate: string;
   terminals: number;
+  /** 所看那一天这条任务会不会响（字段名沿用旧的，语义见后端 Browse 的注释） */
   enabledToday: boolean;
   projectstate: number;
+  /**
+   * 这条任务被单独停掉的那一天（task.disableday），没停过是空串。
+   *
+   * 与 projectstate 是两回事：projectstate 管整条任务的长期启停，
+   * disableday 只挖掉某一天 —— 旧版看板上那两个「当天启用 / 当天停用」
+   * 按钮写的就是这一列。
+   */
+  disableday: string;
 }
 
 export const getDashOverviewApi = () => http.get<Overview>(PORT1 + `/api/dashboard/overview`, {}, { loading: false });
@@ -85,9 +94,11 @@ export const getDashPerfApi = () => http.get<Perf>(PORT1 + `/api/dashboard/perf`
 export const getDashConfigApi = () => http.get<DashConfig>(PORT1 + `/api/dashboard/config`, {}, { loading: false });
 
 export const getDashTasksApi = (params: any) =>
-  http.get<{ list: BrowseItem[]; total: number; pageNum: number; pageSize: number }>(PORT1 + `/api/dashboard/tasks`, params, {
-    loading: false
-  });
+  http.get<{ list: BrowseItem[]; total: number; pageNum: number; pageSize: number; viewDate: string }>(
+    PORT1 + `/api/dashboard/tasks`,
+    params,
+    { loading: false }
+  );
 
 export const saveShortcutsApi = (shortcuts: Shortcut[]) =>
   http.put<{ count: number }>(PORT1 + `/api/dashboard/shortcuts`, { shortcuts });

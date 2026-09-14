@@ -210,6 +210,13 @@
     <!-- ===== 浏览任务 ===== -->
     <section class="panel">
       <div class="filter-bar">
+        <span class="fl">{{ $t("dash.filterModule") }}</span>
+        <el-select v-model="bq.module" size="small" style="width: 130px" @change="loadTasks">
+          <!-- ⚠ 用 "all" 而不是空串：Element Plus 把空串当成「没选中」，
+               下拉里会显示 placeholder「请选择」而不是「全部」 -->
+          <el-option :label="$t('common.all')" value="all" />
+          <el-option v-for="m in moduleOptions" :key="m.value" :label="m.label" :value="m.value" />
+        </el-select>
         <span class="fl">{{ $t("dash.filterFolder") }}</span>
         <el-select v-model="bq.folderId" size="small" style="width: 130px" @change="loadTasks">
           <el-option :label="$t('common.all')" :value="0" />
@@ -220,6 +227,11 @@
           <el-option :label="$t('dash.today')" :value="0" />
           <el-option v-for="(w, i) in weekLabels" :key="i" :label="w" :value="i + 1" />
         </el-select>
+        <!--
+          把「看的是哪一天」写出来。星期能选「周三」之后，光看「当天启用」
+          说不清是哪天 —— 这个日期就是后端拿去比起止日期的那一天。
+        -->
+        <el-tag v-if="viewDate" size="small" type="info" effect="plain">{{ $t("dash.viewingDate", { d: viewDate }) }}</el-tag>
         <span class="fl">{{ $t("dash.filterType") }}</span>
         <el-select v-model="bq.autoMode" size="small" style="width: 120px" @change="loadTasks">
           <el-option :label="$t('common.all')" :value="0" />
@@ -245,13 +257,29 @@
         <el-table-column prop="playtime" :label="$t('dash.playTime')" width="110" />
         <el-table-column :label="$t('common.status')" width="110">
           <template #default="{ row }">
-            <el-tag :type="row.enabledToday ? 'success' : 'info'" size="small" effect="plain">
+            <el-tag
+              :type="row.enabledToday ? 'success' : 'info'"
+              size="small"
+              effect="plain"
+              :title="$t(row.enabledToday ? 'dash.onDateTip' : 'dash.offDateTip', { d: viewDate })"
+            >
               {{ row.enabledToday ? $t("dash.onToday") : $t("dash.offToday") }}
             </el-tag>
           </template>
         </el-table-column>
         <el-table-column prop="startdate" :label="$t('common.startDate')" width="110" />
         <el-table-column prop="enddate" :label="$t('common.endDate')" width="110" />
+        <!--
+          旧版看板上就有这一列（Browse_active_task_form.html:161，表头「当天停用」）：
+          值是 task.disableday —— 这条任务被单独挖掉的那一天。没挖过就是空，
+          显示成「—」，不要摆一个 0000-00-00 出来让人以为是真日期。
+        -->
+        <el-table-column :label="$t('dash.disableDay')" width="120">
+          <template #default="{ row }">
+            <el-tag v-if="row.disableday" type="warning" size="small" effect="plain">{{ row.disableday }}</el-tag>
+            <span v-else class="muted">—</span>
+          </template>
+        </el-table-column>
         <el-table-column prop="terminals" :label="$t('dash.terminalCount')" width="100" />
         <el-table-column :label="$t('dash.taskActions')" width="150" fixed="right">
           <template #default="{ row }">
@@ -462,7 +490,25 @@ const tasks = ref<BrowseItem[]>([]);
 const tasksTotal = ref(0);
 const tasksLoading = ref(false);
 const folders = ref<{ id: number; name: string }[]>([]);
-const bq = reactive({ folderId: 0, weekday: 0, autoMode: 0, scope: "enabled", pageNum: 1, pageSize: 20 });
+// ⚠ scope 默认 "all"（全部），不是 "enabled"（当天启用）——
+//   一进看板就只剩会响的那几条，容易让人以为任务丢了。按需求方要求改的。
+const bq = reactive({ folderId: 0, weekday: 0, autoMode: 0, scope: "all", module: "all", pageNum: 1, pageSize: 20 });
+
+/** 所看那一天（后端按星期算出来的具体日期），标题和状态列的提示都用它 */
+const viewDate = ref("");
+
+/**
+ * 「任务管理」下的模块。value 要与后端 browseModules 的键一一对应 ——
+ * 对不上的值后端当「全部」处理，界面上表现为「选了没反应」。
+ */
+const moduleOptions = computed(() => [
+  { value: "bell", label: t("dash.modBell") },
+  { value: "file", label: t("dash.modFile") },
+  { value: "amplifier", label: t("dash.modAmplifier") },
+  { value: "collect", label: t("dash.modCollect") },
+  { value: "tts", label: t("dash.modTts") },
+  { value: "led", label: t("dash.modLed") }
+]);
 
 const loadTasks = async () => {
   tasksLoading.value = true;
@@ -470,6 +516,7 @@ const loadTasks = async () => {
     const { data } = await getDashTasksApi({ ...bq });
     tasks.value = data.list ?? [];
     tasksTotal.value = data.total;
+    viewDate.value = data.viewDate ?? "";
   } finally {
     tasksLoading.value = false;
   }
