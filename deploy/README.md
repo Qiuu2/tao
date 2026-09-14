@@ -75,6 +75,51 @@ mysql -uroot audioserver < db/map_tables.sql         # 地图，2 张 + 默认�
 > 「南昌理工学院」会被双重编码，界面上显示成一串乱码。其余两个脚本没有中文字面量，
 > 不受影响。
 
+**漏跑了怎么看出来**：`htweb` 启动时会自己查一遍，缺哪张就在日志里点名：
+
+```
+⚠ 地图 用不了：缺表 map_image、map_terminal。请用有 DDL 权限的账号执行一次 `mysql -uroot audioserver < db/map_tables.sql`
+⚠ 以上只影响对应功能，广播/任务/终端不受影响，服务照常启动。
+```
+
+```bash
+sudo grep "⚠" /opt/apps/a9000/htweb/logs/htweb.log | head
+```
+
+缺表**不会**拒绝启动 —— 广播、任务、终端一张新表都不依赖，为了一个附加功能
+把整套系统停掉是本末倒置。对应的页面上也会画一块说明，告诉你跑哪个脚本。
+
+---
+
+## ⚠ 「某个功能不显示」先按这三层查
+
+新功能上不去，基本都是这三层里漏了一层。**每一条都能在服务器上一行跑完**，
+不用登录、不用翻界面：
+
+```bash
+# ① 后端二进制换了没 —— 菜单是后端生成的，二进制是旧的就根本没有那个菜单项
+strings /opt/apps/a9000/htweb/htweb | grep -c map_image        # 0 = 二进制是旧的
+
+# ② 建表脚本跑了没
+mysql -uroot audioserver -e "SHOW TABLES LIKE 'map\_%'"        # 空 = 没跑
+
+# ③ 前端产物换了没
+grep -rl "在这里添加终端" /opt/apps/a9000/html/htweb/assets/ | head -1   # 空 = 前端是旧的
+```
+
+| 症状 | 是哪一层 |
+|---|---|
+| 侧边栏里**根本没有**「地图」这一项 | ① 后端二进制是旧的 |
+| 菜单里有，点进去**白屏** | ③ 前端产物是旧的（路由找不到组件） |
+| 菜单有、页面能开，但画面上说「两张表还没建」 | ② 建表脚本没跑 |
+
+第 ① 条最常踩：只把 `dist.tgz` 解到 `html/htweb/`、忘了换
+`/opt/apps/a9000/htweb/htweb` 那个二进制。菜单由后端的 `/api/menu/list`
+下发，前端路由也是照着它注册的 —— 二进制不换，前端换了也没用。
+
+⚠ 换完二进制记得 `sudo systemctl restart htweb`；只换前端的话，浏览器要**强刷**
+（Ctrl+F5），不然 `index.html` 可能还是缓存里的旧的。
+
 ## 3. 换了账号或路径？
 
 ```bash

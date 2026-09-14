@@ -201,6 +201,10 @@ func main() {
 		a.assist.StartHousekeeping(purgeCtx)
 	}
 
+	// 新表自检：缺了就在日志里点名说缺哪张、跑哪个脚本。
+	// 不拒绝启动 —— 广播/任务/终端一张新表都不依赖。见 newtables_check.go。
+	checkNewTables(context.Background(), st.DB())
+
 	go func() {
 		log.Printf("htweb 启动，监听 %s", cfg.Server.Listen)
 		log.Printf("静态目录 %s", cfg.Server.StaticDir)

@@ -40,7 +40,7 @@
     <div class="map-side">
       <div class="side-head">
         <span class="side-title">{{ $t("mapView.baseMaps") }}</span>
-        <el-button :icon="Plus" size="small" text :disabled="!canEdit" @click="onCreate">
+        <el-button :icon="Plus" size="small" text :disabled="!canEdit || tablesMissing" @click="onCreate">
           {{ $t("mapView.newMap") }}
         </el-button>
       </div>
@@ -147,6 +147,17 @@
               {{ $t(KIND_LABEL[k]) }}
             </span>
           </div>
+        </div>
+        <!--
+          建表脚本没跑。留一块**不会自己消失**的说明 —— 原来只弹一句红条，
+          几秒钟就没了，人根本抓不住，表现就成了「地图打不开」。
+        -->
+        <div v-else-if="tablesMissing" class="need-sql">
+          <el-icon class="need-sql-icon"><WarningFilled /></el-icon>
+          <p class="need-sql-title">{{ $t("mapView.needTables") }}</p>
+          <p class="need-sql-tip">{{ $t("mapView.needTablesTip") }}</p>
+          <code class="need-sql-cmd">mysql -uroot audioserver &lt; db/map_tables.sql</code>
+          <el-button class="need-sql-retry" :icon="Refresh" @click="reloadAll">{{ $t("mapView.retryAfterSql") }}</el-button>
         </div>
         <el-empty v-else-if="!loading" :description="$t('mapView.pickOrCreate')" />
       </div>
@@ -255,6 +266,15 @@ const canEdit = computed(() => !!(authStore.authButtonListGet as any)?.terminal?
 
 const loading = ref(false);
 const uploading = ref(false);
+/**
+ * 建表脚本还没跑。
+ *
+ * 这两张表 htweb 自己建不了（运行账号没有 DDL），要管理员单独跑一次
+ * db/map_tables.sql。现场每次上新服务器都可能漏，而漏了的表现就是
+ * 「地图打不开」—— 原来只弹一句几秒钟就消失的红条，人根本抓不住。
+ * 所以在页面上留一块说清楚：缺什么、跑哪个脚本。
+ */
+const tablesMissing = ref(false);
 const maps = ref<MapImage[]>([]);
 const currentId = ref(0);
 const placements = ref<MapPlacement[]>([]);
@@ -278,7 +298,21 @@ const withToken = (url: string) => `${url}${url.includes("?") ? "&" : "?"}token=
 const VIEW_KEY = "htweb:map:last";
 
 const loadMaps = async () => {
-  const { data } = await getMapsApi();
+  let data: MapImage[] | undefined;
+  try {
+    ({ data } = await getMapsApi());
+    tablesMissing.value = false;
+  } catch (e: any) {
+    // 后端对「表还没建」回的是 40001 + 一句说明（见 mapview.ErrTableMissing）。
+    // 认这一种，其余的错交给 axios 拦截器照常弹提示。
+    const msg = String(e?.msg ?? e?.message ?? e);
+    if (!msg.includes("map_tables.sql")) throw e;
+    tablesMissing.value = true;
+    maps.value = [];
+    currentId.value = 0;
+    placements.value = [];
+    return;
+  }
   maps.value = data ?? [];
   if (!maps.value.length) {
     currentId.value = 0;
@@ -976,6 +1010,45 @@ onMounted(reloadAll);
   .el-icon {
     font-size: 13px;
   }
+}
+
+/* 缺表时那块说明 */
+.need-sql {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 48px 16px;
+  text-align: center;
+}
+.need-sql-icon {
+  font-size: 40px;
+  color: var(--el-color-warning);
+}
+.need-sql-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+}
+.need-sql-tip {
+  max-width: 520px;
+  margin: 0;
+  font-size: 13px;
+  color: var(--el-text-color-secondary);
+}
+.need-sql-cmd {
+  padding: 6px 12px;
+  font-family: Menlo, Consolas, monospace;
+  font-size: 13px;
+  color: var(--el-text-color-primary);
+  word-break: break-all;
+  background: var(--el-fill-color-light);
+  border-radius: 4px;
+}
+.need-sql-retry {
+  margin-top: 4px;
 }
 
 /*
