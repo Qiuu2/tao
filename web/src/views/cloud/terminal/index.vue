@@ -22,20 +22,36 @@
       <template #tableHeader="scope">
         <div class="header-bar">
           <div class="header-left">
-            <el-button :disabled="!scope.isSelected" @click="bulk('idle', scope.selectedListIds)">{{ $t("taskCommon.idleTransfer") }}</el-button>
-            <el-button :disabled="!scope.isSelected" @click="bulk('immediate', scope.selectedListIds)"> {{ $t("taskCommon.nowTransfer") }} </el-button>
-            <el-button :disabled="!scope.isSelected" @click="bulk('deleteIdle', scope.selectedListIds)"> {{ $t("offline.idleDelete") }} </el-button>
-            <el-button :disabled="!scope.isSelected" @click="bulk('deleteNow', scope.selectedListIds)"> {{ $t("offline.nowDelete") }} </el-button>
-            <el-button :disabled="!scope.isSelected" @click="bulk('stop', scope.selectedListIds)">{{ $t("cloud.stopTransfer") }}</el-button>
-            <el-button :disabled="!scope.isSelected" @click="bulk('clearAll', scope.selectedListIds)"> {{ $t("cloud.clearAll") }} </el-button>
-            <el-button :disabled="!scope.isSelected" @click="syncTime(scope.selectedListIds)">{{ $t("term.syncTime") }}</el-button>
-            <el-button :disabled="!scope.isSelected" @click="bulk('clearTerminalMedia', scope.selectedListIds)">
+            <el-button :disabled="!scope.isSelected" @click="bulk('idle', scope.selectedListIds, scope.selectedList)">{{
+              $t("taskCommon.idleTransfer")
+            }}</el-button>
+            <el-button :disabled="!scope.isSelected" @click="bulk('immediate', scope.selectedListIds, scope.selectedList)">
+              {{ $t("taskCommon.nowTransfer") }}
+            </el-button>
+            <el-button :disabled="!scope.isSelected" @click="bulk('deleteIdle', scope.selectedListIds, scope.selectedList)">
+              {{ $t("offline.idleDelete") }}
+            </el-button>
+            <el-button :disabled="!scope.isSelected" @click="bulk('deleteNow', scope.selectedListIds, scope.selectedList)">
+              {{ $t("offline.nowDelete") }}
+            </el-button>
+            <el-button :disabled="!scope.isSelected" @click="bulk('stop', scope.selectedListIds, scope.selectedList)">{{
+              $t("cloud.stopTransfer")
+            }}</el-button>
+            <el-button :disabled="!scope.isSelected" @click="bulk('clearAll', scope.selectedListIds, scope.selectedList)">
+              {{ $t("cloud.clearAll") }}
+            </el-button>
+            <el-button :disabled="!scope.isSelected" @click="syncTime(scope.selectedListIds)">{{
+              $t("term.syncTime")
+            }}</el-button>
+            <el-button
+              :disabled="!scope.isSelected"
+              @click="bulk('clearTerminalMedia', scope.selectedListIds, scope.selectedList)"
+            >
               {{ $t("cloud.clearTerminalMedia") }}
             </el-button>
-            <el-button :disabled="!scope.isSelected" @click="bulk('clearIdleMedia', scope.selectedListIds)">
+            <el-button :disabled="!scope.isSelected" @click="bulk('clearIdleMedia', scope.selectedListIds, scope.selectedList)">
               {{ $t("cloud.clearIdleMedia") }}
             </el-button>
-            <el-button :icon="Download" @click="goOffline">{{ $t("cloud.goOffline") }}</el-button>
           </div>
           <div class="header-right">
             <el-tag v-if="scopeNote" type="info" size="small" effect="plain">{{ scopeNote }}</el-tag>
@@ -75,20 +91,20 @@
 
     <el-dialog v-model="inv.visible" :title="inv.title" width="820px" top="6vh">
       <el-tabs v-model="inv.tab">
-        <el-tab-pane :label='$t("cloud.mediaTab", { n: mediaItems.length })' name="media">
+        <el-tab-pane :label="$t('cloud.mediaTab', { n: mediaItems.length })" name="media">
           <el-table :data="mediaItems" size="small" max-height="420">
-            <el-table-column prop="id" :label='$t("cloud.mediaId")' width="90" />
-            <el-table-column prop="name" :label='$t("common.name")' min-width="220" show-overflow-tooltip />
-            <el-table-column :label='$t("common.size")' width="110">
+            <el-table-column prop="id" :label="$t('cloud.mediaId')" width="90" />
+            <el-table-column prop="name" :label="$t('common.name')" min-width="220" show-overflow-tooltip />
+            <el-table-column :label="$t('common.size')" width="110">
               <template #default="{ row }">{{ human(row.size) }}</template>
             </el-table-column>
-            <el-table-column :label='$t("cloud.belongsTo")' width="130">
+            <el-table-column :label="$t('cloud.belongsTo')" width="130">
               <template #default="{ row }">
                 <span v-if="row.taskId">{{ $t("cloud.taskNo", { id: row.taskId }) }}</span>
                 <span v-else class="muted">{{ $t("cloud.standalone") }}</span>
               </template>
             </el-table-column>
-            <el-table-column :label='$t("common.status")' width="130">
+            <el-table-column :label="$t('common.status')" width="130">
               <template #default="{ row }">
                 <el-tag :type="stateType(row.offlinestate)" size="small">{{ row.stateText }}</el-tag>
               </template>
@@ -96,11 +112,11 @@
           </el-table>
         </el-tab-pane>
 
-        <el-tab-pane :label='$t("cloud.taskTab", { n: taskItems.length })' name="task">
+        <el-tab-pane :label="$t('cloud.taskTab', { n: taskItems.length })" name="task">
           <el-table :data="taskItems" size="small" max-height="420">
-            <el-table-column prop="id" :label='$t("cloud.taskId")' width="90" />
-            <el-table-column prop="name" :label='$t("taskCommon.taskName")' min-width="260" show-overflow-tooltip />
-            <el-table-column :label='$t("common.status")' width="130">
+            <el-table-column prop="id" :label="$t('cloud.taskId')" width="90" />
+            <el-table-column prop="name" :label="$t('taskCommon.taskName')" min-width="260" show-overflow-tooltip />
+            <el-table-column :label="$t('common.status')" width="130">
               <template #default="{ row }">
                 <el-tag :type="stateType(row.offlinestate)" size="small">{{ row.stateText }}</el-tag>
               </template>
@@ -120,9 +136,8 @@
 
 <script setup lang="tsx" name="cloudTerminal">
 import { useI18n } from "vue-i18n";
-import { Download, View } from "@element-plus/icons-vue";
+import { View } from "@element-plus/icons-vue";
 import { computed, reactive, ref } from "vue";
-import { useRouter } from "vue-router";
 
 import { ElMessage, ElMessageBox } from "element-plus";
 
@@ -135,7 +150,6 @@ import type { ColumnProps, ProTableInstance } from "@/components/ProTable/interf
 // 脚本里拼的文案用 t()；模板里的 $t 不用引入
 const { t } = useI18n();
 
-const router = useRouter();
 const proTableRef = ref<ProTableInstance>();
 const scopeNote = ref("");
 
@@ -205,10 +219,25 @@ const ACTION_TEXT: Record<string, string> = {
 const DESTRUCTIVE = ["deleteIdle", "deleteNow", "clearAll", "clearTerminalMedia", "clearIdleMedia"];
 
 /** 清除类动作不可逆（终端上的文件会被删掉），先确认再发 */
-const bulk = async (action: string, raw: (string | number)[]) => {
+const bulk = async (action: string, raw: (string | number)[], rows?: Record<string, any>[]) => {
   const ids = toIds(raw);
   if (!ids.length) return ElMessage.warning(t("cloud.pickTerminalFirst"));
   const text = ACTION_TEXT[action] ?? action;
+  /*
+   * 选中的终端上一条离线内容都没有 —— 这不是出错，是没活可干。
+   *
+   * 不拦的话会去调接口，后端回 40001「没有任何离线内容，X 无事可做」，
+   * 界面上就是一条**红色报错**（现场报的「点按钮弹未知错误」就是从这儿来的，
+   * 那个「未知错误」已经在 utils/errorHandler.ts 里治了）。
+   * 用黄条说一句更贴切，也省一次注定失败的请求。
+   *
+   * ⚠ 这里的计数是列表里那一份，可能比库里旧一点。真旧了就照常发请求、
+   *   由后端那句话兜底 —— 所以只在「确定为 0」时才拦，不做别的推断。
+   */
+  const counted = (rows ?? []).filter(r => r && r.mediaCount !== undefined);
+  if (counted.length === ids.length && counted.every(r => !r.mediaCount && !r.taskCount)) {
+    return ElMessage.warning(t("cloud.nothingToDo", { action: text }));
+  }
   if (DESTRUCTIVE.includes(action)) {
     await ElMessageBox.confirm(t("cloud.bulkConfirm", { n: ids.length, action: text }), text, {
       type: "warning"
@@ -231,9 +260,7 @@ const syncTime = async (raw: (string | number)[]) => {
   if (!ids.length) return ElMessage.warning(t("cloud.pickTerminalFirst"));
   const { data } = await syncTerminalTimeApi(ids);
   const skipped = data.skipped?.length ?? 0;
-  ElMessage.success(
-    t("cloud.syncDone", { n: data.succeeded.length }) + (skipped ? t("cloud.syncSkipped", { n: skipped }) : "")
-  );
+  ElMessage.success(t("cloud.syncDone", { n: data.succeeded.length }) + (skipped ? t("cloud.syncSkipped", { n: skipped }) : ""));
 };
 
 const openInventory = async (row: CloudTerminal) => {
@@ -243,8 +270,6 @@ const openInventory = async (row: CloudTerminal) => {
   inv.tab = mediaItems.value.length || !taskItems.value.length ? "media" : "task";
   inv.visible = true;
 };
-
-const goOffline = () => router.push("/offline");
 </script>
 
 <style scoped lang="scss">

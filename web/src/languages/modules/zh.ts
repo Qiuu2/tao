@@ -1318,7 +1318,8 @@ export default {
     bulkDone: "{action}：媒体 {media} 条、任务 {task} 条已置为「{state}」，实际传输由后台广播服务完成",
     syncDone: "时间同步指令已下发 {n} 台",
     syncSkipped: "，跳过 {n} 台",
-    pickTerminalFirst: "请先勾选终端"
+    pickTerminalFirst: "请先勾选终端",
+    nothingToDo: "选中的终端上没有媒体也没有任务，{action} 没有可做的"
   },
   rights: {
     groupResource: "资源管理",

@@ -1329,7 +1329,8 @@ export default {
     bulkDone: "{action}: {media} media and {task} tasks set to “{state}”. The broadcast service performs the actual transfer.",
     syncDone: "Time-sync command sent to {n} terminals",
     syncSkipped: ", {n} skipped",
-    pickTerminalFirst: "Select at least one terminal first"
+    pickTerminalFirst: "Select at least one terminal first",
+    nothingToDo: "The chosen terminals hold no media and no tasks — nothing for {action} to do"
   },
   rights: {
     groupResource: "Resources",

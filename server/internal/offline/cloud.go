@@ -561,7 +561,10 @@ func (s *Service) ListTransferTasks(ctx context.Context, u *auth.User, q Transfe
 		         WHERE k.taskid = ot.taskid AND k.offlinestate = 3),
 		       (SELECT COUNT(*) FROM task t WHERE t.taskid = ot.taskid) = 0
 		FROM offlinetask ot`+where+`
-		ORDER BY ot.startdate DESC, ot.playtime DESC, ot.taskid DESC
+		-- 排序照旧版那一页：ORDER BY startdate, playtime（**升序**，
+		-- displayofflinetask.php 的原句）。人看这一页是按时间顺着往下找
+		-- 「今天几点该放什么」，倒序得从底下往上读。
+		ORDER BY ot.startdate, ot.playtime, ot.taskid
 		LIMIT ? OFFSET ?`, listArgs...)
 	if err != nil {
 		return nil, fmt.Errorf("查询离线任务副本: %w", err)

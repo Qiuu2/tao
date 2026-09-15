@@ -131,21 +131,40 @@ const { t } = useI18n();
 const router = useRouter();
 const proTableRef = ref<ProTableInstance>();
 
-// 列清单严格照 :80（页面规格.txt「任务传送」）：
-// 任务名称 | 播放周期 | 开始日期 | 结束日期 | 执行时间 | 播放时长 | 状态 | 离线状态 | 操作，无搜索区。
+/*
+ * 列清单照 ok112 **真正能用的那一页**：displayofflinetask.php +
+ * offlinetask/displayterminaltask_form.html，逐列同序 ——
+ *
+ *   序号 | 任务名称 | 所属类型 | 执行模式 | 任务状态 | 铃声音量 |
+ *   播放时间 | 开始日期 | 结束日期 | 时长 | 任务终端
+ *
+ * ⚠ 不照 offline_task.php（那才是旧版叫「任务传送」的那个单独页）——
+ *   它的主查询是 `SELECT … FROM task WHERE offlinetask = 1`，而 task 表里
+ *   **没有 offlinetask 这一列**（只有 offlinestate），所以那一页在旧系统里
+ *   从来没有列出过任何东西；而且它那两个动作链接指向的是**按键映射**：
+ *   「设置绑定」→ set_task_mapping.php，「删除离线」→ do.php?act=del_task_mapping_msg，
+ *   后者真正执行的是 `DELETE FROM terminalkeymap/terminalkey WHERE … IN (选中的任务 id)`。
+ *   照抄等于给这一页装一个会删掉按键映射的按钮。详见开发文档 7.5.3。
+ *
+ * 我们比旧版多两列，都是这一页的正事，不去掉：
+ *   · 终端状态：这条副本发到哪一步了（旧版这一页压根不显示传输状态）
+ *   · 操作：终端清单 / 媒体清单，对应旧版那一列「任务终端」的链接
+ */
 const columns = reactive<ColumnProps<TransferTask>[]>([
   { type: "selection", fixed: "left", width: 50 },
-  { prop: "taskName", label: t("taskCommon.taskName"), minWidth: 220 },
+  { type: "index", label: t("enable.options"), width: 60 },
+  { prop: "taskName", label: t("taskCommon.taskName"), minWidth: 200 },
   // 旧版 offlinetask_form.html 这一列叫「所属分类」，作息方案还带着方案名
-  { prop: "category", label: t("cloud.category"), width: 160 },
-  { prop: "cycleText", label: t("taskCommon.cycle"), width: 120 },
-  { prop: "startdate", label: t("common.startDate"), width: 120 },
-  { prop: "enddate", label: t("common.endDate"), width: 120 },
-  { prop: "playtime", label: t("taskCommon.runTime"), width: 110 },
-  { prop: "lengthText", label: t("taskCommon.playLength"), width: 120 },
-  { prop: "projectText", label: t("common.status"), width: 100 },
+  { prop: "category", label: t("cloud.category"), width: 150 },
+  { prop: "cycleText", label: t("taskCommon.cycle"), width: 110 },
+  { prop: "projectText", label: t("common.status"), width: 90 },
+  { prop: "defaultvolume", label: t("common.volume"), width: 90 },
+  { prop: "playtime", label: t("taskCommon.runTime"), width: 100 },
+  { prop: "startdate", label: t("common.startDate"), width: 110 },
+  { prop: "enddate", label: t("common.endDate"), width: 110 },
+  { prop: "lengthText", label: t("taskCommon.playLength"), width: 110 },
   // 旧版这一列的表头写的是「终端状态」，不是「离线状态」
-  { prop: "offlinestate", label: t("cloud.terminalState"), width: 140 },
+  { prop: "offlinestate", label: t("cloud.terminalState"), width: 130 },
   { prop: "operation", label: t("common.operation"), fixed: "right", width: 120 }
 ]);
 
