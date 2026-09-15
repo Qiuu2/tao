@@ -44,24 +44,28 @@
       </template>
 
       <template #operation="s">
-        <el-button type="primary" link :icon="EditPen" :disabled="!canEdit" @click="openEdit(s.row)">{{ $t("common.modify") }}</el-button>
-        <el-button type="danger" link :icon="Delete" :disabled="!canEdit" @click="doDelete([s.row.id])">{{ $t("common.delete") }}</el-button>
+        <el-button type="primary" link :icon="EditPen" :disabled="!canEdit" @click="openEdit(s.row)">{{
+          $t("common.modify")
+        }}</el-button>
+        <el-button type="danger" link :icon="Delete" :disabled="!canEdit" @click="doDelete([s.row.id])">{{
+          $t("common.delete")
+        }}</el-button>
       </template>
     </ProTable>
 
     <el-dialog v-model="dlg.visible" :title="dlg.title" width="560px">
       <!-- 表单项与占位符照 :80 的「添加设备」弹窗 -->
       <el-form :model="form" label-width="120px">
-        <el-form-item :label='$t("noise.deviceAddrName")' required>
-          <el-input v-model="form.name" maxlength="10" show-word-limit :placeholder='$t("noise.addrNamePlaceholder")' />
+        <el-form-item :label="$t('noise.deviceAddrName')" required>
+          <el-input v-model="form.name" maxlength="10" show-word-limit :placeholder="$t('noise.addrNamePlaceholder')" />
         </el-form-item>
-        <el-form-item :label='$t("noise.deviceIp")' required>
-          <el-input v-model="form.ip" :placeholder='$t("noise.ipPlaceholder")' />
+        <el-form-item :label="$t('noise.deviceIp')" required>
+          <el-input v-model="form.ip" :placeholder="$t('noise.ipPlaceholder')" />
         </el-form-item>
-        <el-form-item :label='$t("noise.deviceAddr")' required>
+        <el-form-item :label="$t('noise.deviceAddr')" required>
           <el-input-number v-model="form.devaddr" :min="0" :max="255" controls-position="right" />
         </el-form-item>
-        <el-form-item :label='$t("noise.sendChannel")'>
+        <el-form-item :label="$t('noise.sendChannel')">
           <el-input-number v-model="form.sendport" :min="0" :max="65535" controls-position="right" />
         </el-form-item>
       </el-form>
@@ -95,7 +99,7 @@ import type { ColumnProps, ProTableInstance } from "@/components/ProTable/interf
 const { t } = useI18n();
 
 const authStore = useAuthStore();
-const canEdit = computed(() => !!(authStore.authButtonListGet as any)?.zone?.edit);
+const canEdit = computed(() => !!(authStore.authButtonListGet as any)?.noisedevice?.edit);
 const toIds = (raw: (string | number)[]) => (raw ?? []).map(Number).filter(n => Number.isFinite(n) && n > 0);
 
 const proTableRef = ref<ProTableInstance>();
@@ -136,7 +140,13 @@ const openCreate = () => {
 const openEdit = async (row: SoundDevice) => {
   const { data } = await getSoundDeviceApi(row.id);
   Object.assign(form, { name: data.name, ip: data.ip, devaddr: data.devaddr, sendport: data.sendport });
-  Object.assign(dlg, { visible: true, saving: false, isEdit: true, title: t("noise.editDeviceTitle", { name: data.name }), id: data.id });
+  Object.assign(dlg, {
+    visible: true,
+    saving: false,
+    isEdit: true,
+    title: t("noise.editDeviceTitle", { name: data.name }),
+    id: data.id
+  });
 };
 
 /** 工具栏上的「修改设备」：旧版是「勾一条再点」，这里保留同一套语义 */
@@ -145,7 +155,13 @@ const openEditById = async (raw: (string | number)[]) => {
   if (ids.length !== 1) return ElMessage.warning(t("noise.pickOneDevice"));
   const { data } = await getSoundDeviceApi(ids[0]);
   Object.assign(form, { name: data.name, ip: data.ip, devaddr: data.devaddr, sendport: data.sendport });
-  Object.assign(dlg, { visible: true, saving: false, isEdit: true, title: t("noise.editDeviceTitle", { name: data.name }), id: data.id });
+  Object.assign(dlg, {
+    visible: true,
+    saving: false,
+    isEdit: true,
+    title: t("noise.editDeviceTitle", { name: data.name }),
+    id: data.id
+  });
 };
 
 const submit = async () => {

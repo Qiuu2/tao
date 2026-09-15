@@ -558,16 +558,20 @@ func (a *app) routes() http.Handler {
 
 	// —— 离线管理（业务域九，F-43 ~ F-47）——
 	//
-	// 读只要登录（可见范围按 userterminal 收敛）；
-	// 媒体下发（音乐传输）要 terminalpriv，任务下发（任务传送）要 serverpriv；
-	// 清空全部离线数据是 4 条无 WHERE 的 DELETE，收紧到超级管理员。
+	// 读只要登录（可见范围按 userterminal 收敛）；写按**音乐传输自己的**
+	// offlinepriv —— 2026-09-15 之前它借的是 terminalpriv / serverpriv，
+	// 于是「能改终端」就等于「能往终端上推离线内容」，两件事其实不是一回事。
+	// 清空全部离线数据是 4 条无 WHERE 的 DELETE，仍然只给超级管理员。
+	ofl := func(h http.HandlerFunc) http.HandlerFunc {
+		return a.authMgr.RequireRight(auth.PrivOffline, h)
+	}
 	mux.HandleFunc("GET /api/offline/states", req(a.handleOfflineStates))
 	mux.HandleFunc("GET /api/offline/summary", req(a.handleOfflineSummary))
 	mux.HandleFunc("GET /api/offline/media", req(a.handleOfflineMediaStatus))
 	mux.HandleFunc("GET /api/offline/tasks", req(a.handleOfflineTaskStatus))
-	mux.HandleFunc("POST /api/offline/media", trm(a.handleOfflineMediaDispatch))
-	mux.HandleFunc("POST /api/offline/tasks", rmt(a.handleOfflineTaskDispatch))
-	mux.HandleFunc("PUT /api/offline/stop", trm(a.handleOfflineStop))
+	mux.HandleFunc("POST /api/offline/media", ofl(a.handleOfflineMediaDispatch))
+	mux.HandleFunc("POST /api/offline/tasks", ofl(a.handleOfflineTaskDispatch))
+	mux.HandleFunc("PUT /api/offline/stop", ofl(a.handleOfflineStop))
 	mux.HandleFunc("POST /api/offline/purge-all", sup(a.handleOfflinePurge))
 
 	// —— 服务器参数（业务域十二，F-56 / F-57）——
@@ -664,16 +668,22 @@ func (a *app) routes() http.Handler {
 	// 读只要登录，与终端列表同口径：可见范围由 userterminal 在 SQL 里收敛，
 	// 没绑终端的人看到的是一张空图。写走 terminalpriv —— 把终端摆到图上
 	// 本质上是终端配置，与「终端管理」同一把钥匙，不另起一套。
+	// 地图从 2026-09-15 起有自己的权限位（原先借终端管理的 terminalpriv）。
+	// 读一律只要登录 —— 可见范围仍由 userterminal 收敛，看得到的终端与
+	// 终端管理那一页完全一致。
+	mp := func(h http.HandlerFunc) http.HandlerFunc {
+		return a.authMgr.RequireRight(auth.PrivMap, h)
+	}
 	mux.HandleFunc("GET /api/maps", req(a.handleMapList))
-	mux.HandleFunc("POST /api/maps", trm(a.handleMapCreate))
-	mux.HandleFunc("PUT /api/maps/{id}", trm(a.handleMapRename))
-	mux.HandleFunc("DELETE /api/maps/{id}", trm(a.handleMapDelete))
-	mux.HandleFunc("POST /api/maps/{id}/image", trm(a.handleMapImageUpload))
+	mux.HandleFunc("POST /api/maps", mp(a.handleMapCreate))
+	mux.HandleFunc("PUT /api/maps/{id}", mp(a.handleMapRename))
+	mux.HandleFunc("DELETE /api/maps/{id}", mp(a.handleMapDelete))
+	mux.HandleFunc("POST /api/maps/{id}/image", mp(a.handleMapImageUpload))
 	// <img src> 带不了自定义请求头，令牌只能放 query —— 与媒体试听同一条路子
 	mux.HandleFunc("GET /api/maps/{id}/image", a.authMgr.RequireAllowQueryToken(a.handleMapImage))
 	mux.HandleFunc("GET /api/maps/{id}/terminals", req(a.handleMapTerminals))
-	mux.HandleFunc("POST /api/maps/{id}/terminals", trm(a.handleMapPlace))
-	mux.HandleFunc("DELETE /api/maps/{id}/terminals", trm(a.handleMapRemove))
+	mux.HandleFunc("POST /api/maps/{id}/terminals", mp(a.handleMapPlace))
+	mux.HandleFunc("DELETE /api/maps/{id}/terminals", mp(a.handleMapRemove))
 
 	// —— 时间设置（旧版 set_server_time）——
 	//
@@ -708,6 +718,9 @@ func (a *app) routes() http.Handler {
 		"collect":   auth.PrivAdm,
 		"tts":       auth.PrivTts,
 		"led":       auth.PrivLed,
+		// 声场任务也走这张表（它与上面四类共用 typedtask）。
+		// 以前不在表里 → 落到 fallback 的 taskpriv，等于跟着文件广播走。
+		"sound": auth.PrivSoundTask,
 	}
 	typ := func(h http.HandlerFunc) http.HandlerFunc {
 		guards := make(map[string]http.HandlerFunc, len(typedPriv))
@@ -740,11 +753,16 @@ func (a *app) routes() http.Handler {
 	//
 	// ⚠ 这三条**不能**放在 /api/typed-tasks/{kind}/… 底下：那个 kind 段会把
 	//   "sound-tree" 之类的字面量也当成一个类别名收进去，与 {kind}/{id} 撞车。
-	//   另起一段路径，权限跟着 taskpriv —— 与旧版 have_rights("taskpriv") 一致。
+	//   另起一段路径。权限跟着**声场任务自己的** soundtaskpriv —— 2026-09-15 之前
+	//   它跟着 taskpriv（旧版 have_rights("taskpriv")），也就是「给了文件广播
+	//   就等于给了声场任务」。升级脚本按 taskpriv 回填，现网不变。
+	stk := func(h http.HandlerFunc) http.HandlerFunc {
+		return a.authMgr.RequireRight(auth.PrivSoundTask, h)
+	}
 	mux.HandleFunc("GET /api/sound-tasks/tree", req(a.handleSoundTree))
 	mux.HandleFunc("GET /api/sound-tasks/db-template", req(a.handleSoundDBTemplate))
-	mux.HandleFunc("PUT /api/sound-tasks/db-template", tsk(a.handleSoundSetDBTemplate))
-	mux.HandleFunc("PUT /api/sound-tasks/apply-db-template", tsk(a.handleSoundApplyDBTemplate))
+	mux.HandleFunc("PUT /api/sound-tasks/db-template", stk(a.handleSoundSetDBTemplate))
+	mux.HandleFunc("PUT /api/sound-tasks/apply-db-template", stk(a.handleSoundApplyDBTemplate))
 
 	// LED 专属：任务分组与 LED 屏设备。跟 led播放 同一把钥匙（PrivLed），
 	// 不再跟着 taskpriv —— 只给文件广播权限的人不该能改 LED 分组和 LED 屏。
@@ -761,56 +779,76 @@ func (a *app) routes() http.Handler {
 	mux.HandleFunc("PUT /api/led/devices/{id}", ledg(a.handleLEDDeviceUpdate))
 	mux.HandleFunc("DELETE /api/led/devices", ledg(a.handleLEDDeviceDelete))
 
-	ttsp := func(h http.HandlerFunc) http.HandlerFunc {
-		return a.authMgr.RequireRight(auth.PrivTts, h)
-	}
-
 	// —— 启用管理 ——
 	//
-	// 读只要登录，写按 ttspriv。旧版 displayenablemanager.php 用的就是
-	// have_rights("ttspriv") —— 那一列在旧版 usergroup 表单里叫「文字语音」，
-	// 同时管着文字语音与启用管理两页。
+	// 读只要登录，写按 **enablepriv**。
+	//
+	// ⚠ 2026-09-15 之前这一页借的是 ttspriv —— 旧版 displayenablemanager.php
+	//   用的就是 have_rights("ttspriv")，那一列在旧版表单里叫「文字语音」，
+	//   一把钥匙同时开文字语音和启用管理两扇门。现场要求一页一把钥匙，
+	//   所以这里改用自己的列；升级脚本把 enablepriv 按 ttspriv 回填，
+	//   现网已有的用户组能干什么不变。
+	enp := func(h http.HandlerFunc) http.HandlerFunc {
+		return a.authMgr.RequireRight(auth.PrivEnable, h)
+	}
 	mux.HandleFunc("GET /api/enable-plans", req(a.handleEnableList))
 	mux.HandleFunc("GET /api/enable-plans/tasks", req(a.handleEnableTasks))
 	mux.HandleFunc("GET /api/enable-plans/{id}", req(a.handleEnableGet))
-	mux.HandleFunc("POST /api/enable-plans", ttsp(a.handleEnableCreate))
-	mux.HandleFunc("PUT /api/enable-plans/{id}", ttsp(a.handleEnableUpdate))
-	mux.HandleFunc("DELETE /api/enable-plans", ttsp(a.handleEnableDelete))
+	mux.HandleFunc("POST /api/enable-plans", enp(a.handleEnableCreate))
+	mux.HandleFunc("PUT /api/enable-plans/{id}", enp(a.handleEnableUpdate))
+	mux.HandleFunc("DELETE /api/enable-plans", enp(a.handleEnableDelete))
 
 	// —— 噪声设备 / 声场分区 ——
 	//
-	// 声场分区会改动 terminal.soundsgroupid，与终端分区同级，按 terminalgrouppriv。
+	// 噪声设备与声场分区从 2026-09-15 起各有各的权限位（原先都借 terminalgrouppriv）。
+	// 声场分区会改动 terminal.soundsgroupid，影响面与终端分区同级，
+	// 所以这两把钥匙在升级脚本里都按 terminalgrouppriv 回填。
+	nsd := func(h http.HandlerFunc) http.HandlerFunc {
+		return a.authMgr.RequireRight(auth.PrivNoiseDev, h)
+	}
+	szn := func(h http.HandlerFunc) http.HandlerFunc {
+		return a.authMgr.RequireRight(auth.PrivSoundZone, h)
+	}
 	mux.HandleFunc("GET /api/sound/devices", req(a.handleSoundDeviceList))
 	mux.HandleFunc("GET /api/sound/devices/options", req(a.handleSoundDeviceOptions))
 	mux.HandleFunc("GET /api/sound/devices/{id}", req(a.handleSoundDeviceGet))
-	mux.HandleFunc("POST /api/sound/devices", tgp(a.handleSoundDeviceCreate))
-	mux.HandleFunc("PUT /api/sound/devices/{id}", tgp(a.handleSoundDeviceUpdate))
-	mux.HandleFunc("DELETE /api/sound/devices", tgp(a.handleSoundDeviceDelete))
+	mux.HandleFunc("POST /api/sound/devices", nsd(a.handleSoundDeviceCreate))
+	mux.HandleFunc("PUT /api/sound/devices/{id}", nsd(a.handleSoundDeviceUpdate))
+	mux.HandleFunc("DELETE /api/sound/devices", nsd(a.handleSoundDeviceDelete))
 
 	mux.HandleFunc("GET /api/sound/groups", req(a.handleSoundGroupList))
 	mux.HandleFunc("GET /api/sound/groups/options", req(a.handleSoundGroupOptions))
 	mux.HandleFunc("GET /api/sound/groups/terminals", req(a.handleSoundGroupTerminals))
 	mux.HandleFunc("GET /api/sound/groups/{id}", req(a.handleSoundGroupGet))
-	mux.HandleFunc("POST /api/sound/groups", tgp(a.handleSoundGroupCreate))
-	mux.HandleFunc("PUT /api/sound/groups/{id}", tgp(a.handleSoundGroupUpdate))
-	mux.HandleFunc("DELETE /api/sound/groups", tgp(a.handleSoundGroupDelete))
+	mux.HandleFunc("POST /api/sound/groups", szn(a.handleSoundGroupCreate))
+	mux.HandleFunc("PUT /api/sound/groups/{id}", szn(a.handleSoundGroupUpdate))
+	mux.HandleFunc("DELETE /api/sound/groups", szn(a.handleSoundGroupDelete))
 
 	// —— 云广播终端 / 任务传送 ——
 	//
 	// 两个都是只读视图，看的是 /offline 那套表的另外两个切面。
 	// 下发动作仍然走 /api/offline/*，这里不重复开写接口。
+	// ⚠ 这两组的写操作原来是 req —— **只要登录就能点**，包括云广播终端上的
+	//   「全部清除」和任务传送上的「删除离线音乐」，两个都会让终端删掉本地文件。
+	//   2026-09-15 各给一把钥匙补上这个口子。读仍然只要登录。
+	clt := func(h http.HandlerFunc) http.HandlerFunc {
+		return a.authMgr.RequireRight(auth.PrivCloudTerminal, h)
+	}
+	trf := func(h http.HandlerFunc) http.HandlerFunc {
+		return a.authMgr.RequireRight(auth.PrivTransfer, h)
+	}
 	mux.HandleFunc("GET /api/cloud/terminals", req(a.handleCloudTerminals))
 	mux.HandleFunc("GET /api/cloud/terminals/{id}/inventory", req(a.handleCloudInventory))
-	mux.HandleFunc("POST /api/cloud/bulk", req(a.handleCloudBulk))
+	mux.HandleFunc("POST /api/cloud/bulk", clt(a.handleCloudBulk))
 	// 任务传送左边那棵树的两个叶子：服务器任务 / 云广播任务（旧版 set_offline.php?id=1|2）
 	mux.HandleFunc("GET /api/transfer/server-tasks", req(a.handleServerTaskList))
 	mux.HandleFunc("GET /api/transfer/server-tasks/{id}", req(a.handleServerTaskTerminals))
 	mux.HandleFunc("GET /api/transfer/server-tasks/{id}/media", req(a.handleServerTaskMedia))
-	mux.HandleFunc("POST /api/transfer/server-bulk", req(a.handleServerTransfer))
+	mux.HandleFunc("POST /api/transfer/server-bulk", trf(a.handleServerTransfer))
 	mux.HandleFunc("GET /api/transfer/tasks", req(a.handleTransferList))
 	mux.HandleFunc("GET /api/transfer/tasks/{id}", req(a.handleTransferDetail))
 	mux.HandleFunc("GET /api/transfer/tasks/{id}/media", req(a.handleTransferMedia))
-	mux.HandleFunc("POST /api/transfer/bulk", req(a.handleTransferBulk))
+	mux.HandleFunc("POST /api/transfer/bulk", trf(a.handleTransferBulk))
 
 	// —— 开发者密钥管理（界面上发/停/删）——
 	//
@@ -1166,8 +1204,11 @@ func (a *app) handleMenu(w http.ResponseWriter, r *http.Request) {
 	}
 	// 地图排在遥控任务后面（需求方指定的位置）。它与终端管理同源 ——
 	// 列表回答「哪一台怎么样」，地图回答「它在哪」；可见范围同样由
-	// userterminal 收敛，所以和终端列表一样只要登录。
-	res = append(res, menu("/map", "map", "/map/index", "Location", "地图"))
+	// userterminal 收敛。2026-09-15 起它有自己的权限位（原先菜单人人可见、
+	// 写操作借 terminalpriv）。
+	if u.IsAdmin || u.Rights.MapPriv == 1 {
+		res = append(res, menu("/map", "map", "/map/index", "Location", "地图"))
+	}
 	menus = append(menus, group("/resource", "resource", "Coin", "资源管理", res...))
 
 	// —— 任务管理 ——
@@ -1181,7 +1222,8 @@ func (a *app) handleMenu(w http.ResponseWriter, r *http.Request) {
 	}
 	// 这五页的权限位各不相同（见路由处 typedPriv 的注释）：
 	//   终端功放 → powerplay   采播管理 → admpriv
-	//   文字语音 / 启用管理 → ttspriv   led播放 → telephonepriv（auth.PrivLed）
+	//   文字语音 → ttspriv   led播放 → telephonepriv（auth.PrivLed）
+	//   启用管理 → enablepriv（2026-09-15 起单独一把钥匙，原先跟着 ttspriv）
 	if u.IsAdmin || u.Rights.PowerPlay == 1 {
 		taskMenus = append(taskMenus, menu("/amplifier", "amplifier", "/typed/amplifier/index", "Headset", "终端功放"))
 	}
@@ -1194,27 +1236,48 @@ func (a *app) handleMenu(w http.ResponseWriter, r *http.Request) {
 	if u.IsAdmin || u.Rights.TelephonePriv == 1 {
 		taskMenus = append(taskMenus, menu("/led", "led", "/typed/led/index", "Monitor", "led播放"))
 	}
-	if u.IsAdmin || u.Rights.TtsPriv == 1 {
+	if u.IsAdmin || u.Rights.EnablePriv == 1 {
 		taskMenus = append(taskMenus, menu("/enable", "enable", "/enable/index", "Switch", "启用管理"))
 	}
 	menus = append(menus, group("/taskmgr", "taskmgr", "Menu", "任务管理", taskMenus...))
 
 	// —— 云广播管理 ——
-	// 参考图这一组里的「音乐传输」「任务传送」就是离线媒体下发与离线任务下发，
-	// 本项目做在同一个页面的两个页签里，所以这里只有一项。
-	menus = append(menus, group("/cloud", "cloud", "Cloudy", "云广播管理",
-		menu("/cloud/terminal", "cloudTerminal", "/cloud/terminal/index", "Monitor", "云广播终端"),
-		menu("/offline", "offline", "/offline/index", "Download", "音乐传输"),
-		menu("/transfer", "transfer", "/cloud/transfer/index", "Promotion", "任务传送"),
-	))
+	//
+	// 三页各有各的权限位（2026-09-15 起）。之前这一组整个对所有登录用户可见，
+	// 而且云广播终端和任务传送的写操作**一道门都没有** —— 谁登录进来都能点
+	// 「全部清除」「删除离线音乐」，那两个都会让终端删掉本地文件。
+	// 一个都没有的话整组不显示，免得菜单里挂一个点进去全是空的分组。
+	cloudMenus := []map[string]interface{}{}
+	if u.IsAdmin || u.Rights.CloudTerminalPriv == 1 {
+		cloudMenus = append(cloudMenus,
+			menu("/cloud/terminal", "cloudTerminal", "/cloud/terminal/index", "Monitor", "云广播终端"))
+	}
+	if u.IsAdmin || u.Rights.OfflinePriv == 1 {
+		cloudMenus = append(cloudMenus, menu("/offline", "offline", "/offline/index", "Download", "音乐传输"))
+	}
+	if u.IsAdmin || u.Rights.TransferPriv == 1 {
+		cloudMenus = append(cloudMenus, menu("/transfer", "transfer", "/cloud/transfer/index", "Promotion", "任务传送"))
+	}
+	if len(cloudMenus) > 0 {
+		menus = append(menus, group("/cloud", "cloud", "Cloudy", "云广播管理", cloudMenus...))
+	}
 
 	// —— 噪声检测 ——
-	// 参考图里是独立的一组，含噪声设备与声场分区。
-	menus = append(menus, group("/noise", "noise", "Odometer", "噪声检测",
-		menu("/noise/device", "noiseDevice", "/noise/device/index", "Cpu", "噪声设备"),
-		menu("/noise/zone", "noiseZone", "/noise/zone/index", "Grid", "声场分区"),
-		menu("/noise/task", "noiseTask", "/noise/task/index", "AlarmClock", "声场任务"),
-	))
+	// 同样三页三把钥匙。之前噪声设备与声场分区借 terminalgrouppriv、
+	// 声场任务借 taskpriv，而菜单是人人可见的。
+	noiseMenus := []map[string]interface{}{}
+	if u.IsAdmin || u.Rights.NoiseDevPriv == 1 {
+		noiseMenus = append(noiseMenus, menu("/noise/device", "noiseDevice", "/noise/device/index", "Cpu", "噪声设备"))
+	}
+	if u.IsAdmin || u.Rights.SoundZonePriv == 1 {
+		noiseMenus = append(noiseMenus, menu("/noise/zone", "noiseZone", "/noise/zone/index", "Grid", "声场分区"))
+	}
+	if u.IsAdmin || u.Rights.SoundTaskPriv == 1 {
+		noiseMenus = append(noiseMenus, menu("/noise/task", "noiseTask", "/noise/task/index", "AlarmClock", "声场任务"))
+	}
+	if len(noiseMenus) > 0 {
+		menus = append(menus, group("/noise", "noise", "Odometer", "噪声检测", noiseMenus...))
+	}
 
 	// —— 用户管理 ——
 	// 用户 / 用户组按 userpriv；注册服务按 serverpriv，两者不一定同时具备，
@@ -1251,18 +1314,23 @@ func (a *app) handleMenu(w http.ResponseWriter, r *http.Request) {
 	// 莫名其妙。这一组管的是「别的系统怎么调这台机器」，自成一件事。
 	//
 	// 两页的权限不一样，是有意的：
-	//   接口调用平台  只要登录 —— 它是说明书 + 试一试，本身改不了任何东西
-	//                （试一试用的是密钥，不是看这一页的人的登录身份）；
+	//   接口调用平台  按 apipriv（2026-09-15 起，原先只要登录）—— 它是说明书 +
+	//                试一试，本身改不了任何东西（试一试用的是密钥，不是看这一页
+	//                的人的登录身份），所以它和「开发者密钥」不共用一把钥匙：
 	//                对接常常是开发同事在做，他未必有用户管理权限。
 	//   开发者密钥    要 userpriv —— 发一把密钥等于把某个账号的权限借出去。
-	devMenus := []map[string]interface{}{
-		menu("/dev/console", "openapiConsole", "/openapi/console/index", "Connection", "接口调用平台"),
+	devMenus := []map[string]interface{}{}
+	if u.IsAdmin || u.Rights.APIPriv == 1 {
+		devMenus = append(devMenus,
+			menu("/dev/console", "openapiConsole", "/openapi/console/index", "Connection", "接口调用平台"))
 	}
 	if u.IsAdmin || u.Rights.UserPriv == 1 {
 		devMenus = append(devMenus,
 			menu("/dev/keys", "openapiKeys", "/openapi/keys/index", "Key", "开发者密钥"))
 	}
-	menus = append(menus, group("/dev", "dev", "Connection", "开发者接口", devMenus...))
+	if len(devMenus) > 0 {
+		menus = append(menus, group("/dev", "dev", "Connection", "开发者接口", devMenus...))
+	}
 
 	httpx.OK(w, menus)
 }
@@ -1281,7 +1349,7 @@ func (a *app) handleButtons(w http.ResponseWriter, r *http.Request) {
 	canTts := u.HasRight(auth.PrivTts)
 	// led播放 自己一把钥匙（列名 telephonepriv，见 auth.Rights 上的说明）
 	canLed := u.HasRight(auth.PrivLed)
-	// 遥控任务与任务传送在旧版归「遥控管理」，也就是 serverpriv
+	// 遥控任务在旧版归「遥控管理」，也就是 serverpriv
 	canRemote := u.HasRight(auth.PrivServer)
 	// 只有 admin 本人能管理别人的账号（BR-107），其他人即使有 userpriv 也只能改自己
 	isSuper := u.ID == 1
@@ -1341,6 +1409,18 @@ func (a *app) handleButtons(w http.ResponseWriter, r *http.Request) {
 			// 终端分区的增删改按 terminalgrouppriv
 			"edit": u.HasRight(auth.PrivTerminalGroup),
 		},
+		// —— 2026-09-15 各自独立出来的那几页 ——
+		//
+		// ⚠ 噪声设备与声场分区原来读的都是上面那个 "zone"（终端分区的键）。
+		//   共用一个键的后果是：这三页在界面上永远同时能改、同时不能改，
+		//   而它们现在是三把不同的钥匙，界面必须跟着分开，否则会出现
+		//   「按钮亮着、点下去接口回 403」。
+		"noisedevice":   {"edit": u.HasRight(auth.PrivNoiseDev)},
+		"soundzone":     {"edit": u.HasRight(auth.PrivSoundZone)},
+		"map":           {"edit": u.HasRight(auth.PrivMap)},
+		"offline":       {"edit": u.HasRight(auth.PrivOffline)},
+		"cloudterminal": {"edit": u.HasRight(auth.PrivCloudTerminal)},
+		"transfer":      {"edit": u.HasRight(auth.PrivTransfer)},
 		"holiday": {
 			// 节假日与作息方案是一件事的两面，共用 bellpriv
 			"edit": canBell,
@@ -1354,11 +1434,9 @@ func (a *app) handleButtons(w http.ResponseWriter, r *http.Request) {
 		"collect":   {"edit": canCollect},
 		"tts":       {"edit": canTts},
 		"led":       {"edit": canLed},
-		// 声场任务跟着 taskpriv —— 旧版 zhaoshentaskmanager.php 判的就是
-		// have_rights("taskpriv")，路由上那道门也是同一把。
-		"sound": {"edit": canTask},
-		// 启用管理与文字语音同一个权限位（旧版 displayenablemanager.php 用的是 ttspriv）
-		"enable": {"edit": canTts},
+		// 声场任务、启用管理也各自一把（原先分别跟着 taskpriv / ttspriv）
+		"sound":  {"edit": u.HasRight(auth.PrivSoundTask)},
+		"enable": {"edit": u.HasRight(auth.PrivEnable)},
 		"time": {
 			// 改 NTP / 校时终端是服务器级配置；下发校时是终端操作。
 			// 两者权限不同，界面上要分别置灰，所以给两个键。

@@ -107,10 +107,10 @@ func (s *Service) ListGroups(ctx context.Context, q GroupListQuery) ([]Group, in
 	// 排序下拉永远不生效（缺陷 D-40）。这里走白名单映射。
 	order := store.OrderBy(groupOrderWhitelist, q.OrderBy, q.Order, "usergroup.id DESC")
 
+	// 权限位的列清单只有 auth.RightColumns 一份，四处引它 —— 在这里再抄一遍，
+	// 下次加权限位漏改就是「勾了 A 生效的是 B」，而且只在真去用时才看得出来。
 	rows, err := s.db.QueryContext(ctx, `
-		SELECT id, name, COALESCE(info,''), taskpriv, terminalpriv, mediapriv, userpriv,
-		       serverpriv, folderpriv, terminalgrouppriv, alarmgrouppriv, bellpriv,
-		       admpriv, telephonepriv, powerplay, ttspriv, level
+		SELECT id, name, COALESCE(info,''), `+auth.RightColumns+`, level
 		FROM usergroup`+where+" ORDER BY "+order+" LIMIT ? OFFSET ?",
 		append(append([]interface{}{}, args...), q.Pager.PageSize, q.Pager.Offset())...)
 	if err != nil {
@@ -121,11 +121,8 @@ func (s *Service) ListGroups(ctx context.Context, q GroupListQuery) ([]Group, in
 	var out []Group
 	for rows.Next() {
 		var g Group
-		r := &g.Rights
-		if err := rows.Scan(&g.ID, &g.Name, &g.Info,
-			&r.TaskPriv, &r.TerminalPriv, &r.MediaPriv, &r.UserPriv, &r.ServerPriv,
-			&r.FolderPriv, &r.TerminalGroupPriv, &r.AlarmGroupPriv, &r.BellPriv,
-			&r.AdmPriv, &r.TelephonePriv, &r.PowerPlay, &r.TtsPriv, &g.Level); err != nil {
+		targets := append([]interface{}{&g.ID, &g.Name, &g.Info}, auth.RightTargets(&g.Rights)...)
+		if err := rows.Scan(append(targets, &g.Level)...); err != nil {
 			return nil, 0, err
 		}
 		g.GroupLevel, g.PriorityBase = SplitLevel(g.Level)
@@ -251,19 +248,14 @@ func (s *Service) CreateGroup(ctx context.Context, in GroupInput) (int64, error)
 		return 0, fmt.Errorf("重名校验: %w", err)
 	}
 
-	r := in.Rights
 	// ⚠ telephonepriv 这一列装的是 **led播放** 的权限位，不是电话广播 ——
-	// 新版没有电话广播这一页，列又不能删（表结构不动，R1 红线），
-	// 正好拿来放界面上新加的「led播放」勾选项。详见 auth.Rights 上的说明。
+	// 新版没有电话广播这一页，列又不能删，正好拿来放界面上的「led播放」勾选项。
+	// 详见 auth.Rights 上的说明。列清单与顺序一律走 auth.RightColumns。
+	args := append([]interface{}{name, in.Info}, auth.RightValues(in.Rights)...)
+	args = append(args, JoinLevel(in.GroupLevel, in.PriorityBase))
 	res, err := s.db.ExecContext(ctx, `
-		INSERT INTO usergroup (name, info, taskpriv, terminalpriv, mediapriv, userpriv,
-		                       serverpriv, folderpriv, terminalgrouppriv, alarmgrouppriv,
-		                       bellpriv, admpriv, telephonepriv, powerplay, level, ttspriv)
-		VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
-		name, in.Info, r.TaskPriv, r.TerminalPriv, r.MediaPriv, r.UserPriv,
-		r.ServerPriv, r.FolderPriv, r.TerminalGroupPriv, r.AlarmGroupPriv,
-		r.BellPriv, r.AdmPriv, r.TelephonePriv, r.PowerPlay,
-		JoinLevel(in.GroupLevel, in.PriorityBase), r.TtsPriv)
+		INSERT INTO usergroup (name, info, `+auth.RightColumns+`, level)
+		VALUES (?,?,`+rightPlaceholders()+`,?)`, args...)
 	if err != nil {
 		return 0, fmt.Errorf("新建用户组: %w", err)
 	}
@@ -356,17 +348,13 @@ func (s *Service) UpdateGroup(ctx context.Context, id int64, in GroupInput) (*Pr
 		}
 	}
 
-	r := in.Rights
 	// telephonepriv = led播放 的权限位（见 CreateGroup 与 auth.Rights 上的说明）。
-	// 界面上有对应的勾选项，所以这一列跟其它 12 列一样跟着表单走。
+	// 界面上有对应的勾选项，所以这一列跟其它 21 列一样跟着表单走。
+	uargs := append([]interface{}{name, in.Info}, auth.RightValues(in.Rights)...)
+	uargs = append(uargs, newLevel, id)
 	if _, err := tx.ExecContext(ctx, `
-		UPDATE usergroup SET name=?, info=?, taskpriv=?, terminalpriv=?, mediapriv=?,
-		       userpriv=?, serverpriv=?, folderpriv=?, terminalgrouppriv=?, alarmgrouppriv=?,
-		       bellpriv=?, admpriv=?, telephonepriv=?, powerplay=?, level=?, ttspriv=?
-		WHERE id = ?`,
-		name, in.Info, r.TaskPriv, r.TerminalPriv, r.MediaPriv, r.UserPriv,
-		r.ServerPriv, r.FolderPriv, r.TerminalGroupPriv, r.AlarmGroupPriv,
-		r.BellPriv, r.AdmPriv, r.TelephonePriv, r.PowerPlay, newLevel, r.TtsPriv, id); err != nil {
+		UPDATE usergroup SET name=?, info=?, `+rightAssignments()+`, level=?
+		WHERE id = ?`, uargs...); err != nil {
 		return nil, fmt.Errorf("更新用户组: %w", err)
 	}
 
@@ -468,4 +456,34 @@ func (s *Service) lock(ctx context.Context, name string) (func(), error) {
 	return func() {
 		_, _ = s.db.ExecContext(context.Background(), `SELECT RELEASE_LOCK(?)`, name)
 	}, nil
+}
+
+/*
+ * rightPlaceholders / rightAssignments 把 auth.RightColumns 那一串列名
+ * 翻成 SQL 的两种形态：INSERT 要 `?,?,…`，UPDATE 要 `a=?, b=?, …`。
+ *
+ * 自己数占位符个数是这类代码最经典的坑：加一个权限位、SQL 里加了列名
+ * 却忘了加问号，报出来的是 "number of variables doesn't match"，
+ * 而且要等到有人真去新建用户组才发现。这里从同一份列名算出来，数不会错。
+ */
+func rightColumnNames() []string {
+	out := make([]string, 0, auth.RightCount)
+	for _, c := range strings.Split(auth.RightColumns, ",") {
+		if c = strings.TrimSpace(c); c != "" {
+			out = append(out, c)
+		}
+	}
+	return out
+}
+
+func rightPlaceholders() string {
+	return strings.TrimSuffix(strings.Repeat("?,", len(rightColumnNames())), ",")
+}
+
+func rightAssignments() string {
+	cols := rightColumnNames()
+	for i, c := range cols {
+		cols[i] = c + "=?"
+	}
+	return strings.Join(cols, ", ")
 }

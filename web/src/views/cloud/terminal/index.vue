@@ -22,34 +22,49 @@
       <template #tableHeader="scope">
         <div class="header-bar">
           <div class="header-left">
-            <el-button :disabled="!scope.isSelected" @click="bulk('idle', scope.selectedListIds, scope.selectedList)">{{
-              $t("taskCommon.idleTransfer")
-            }}</el-button>
-            <el-button :disabled="!scope.isSelected" @click="bulk('immediate', scope.selectedListIds, scope.selectedList)">
+            <el-button :disabled="!canEdit || !scope.isSelected" @click="bulk('idle', scope.selectedListIds, scope.selectedList)">
+              {{ $t("taskCommon.idleTransfer") }}
+            </el-button>
+            <el-button
+              :disabled="!canEdit || !scope.isSelected"
+              @click="bulk('immediate', scope.selectedListIds, scope.selectedList)"
+            >
               {{ $t("taskCommon.nowTransfer") }}
             </el-button>
-            <el-button :disabled="!scope.isSelected" @click="bulk('deleteIdle', scope.selectedListIds, scope.selectedList)">
+            <el-button
+              :disabled="!canEdit || !scope.isSelected"
+              @click="bulk('deleteIdle', scope.selectedListIds, scope.selectedList)"
+            >
               {{ $t("offline.idleDelete") }}
             </el-button>
-            <el-button :disabled="!scope.isSelected" @click="bulk('deleteNow', scope.selectedListIds, scope.selectedList)">
+            <el-button
+              :disabled="!canEdit || !scope.isSelected"
+              @click="bulk('deleteNow', scope.selectedListIds, scope.selectedList)"
+            >
               {{ $t("offline.nowDelete") }}
             </el-button>
-            <el-button :disabled="!scope.isSelected" @click="bulk('stop', scope.selectedListIds, scope.selectedList)">{{
-              $t("cloud.stopTransfer")
-            }}</el-button>
-            <el-button :disabled="!scope.isSelected" @click="bulk('clearAll', scope.selectedListIds, scope.selectedList)">
+            <el-button :disabled="!canEdit || !scope.isSelected" @click="bulk('stop', scope.selectedListIds, scope.selectedList)">
+              {{ $t("cloud.stopTransfer") }}
+            </el-button>
+            <el-button
+              :disabled="!canEdit || !scope.isSelected"
+              @click="bulk('clearAll', scope.selectedListIds, scope.selectedList)"
+            >
               {{ $t("cloud.clearAll") }}
             </el-button>
-            <el-button :disabled="!scope.isSelected" @click="syncTime(scope.selectedListIds)">{{
+            <el-button :disabled="!canEdit || !scope.isSelected" @click="syncTime(scope.selectedListIds)">{{
               $t("term.syncTime")
             }}</el-button>
             <el-button
-              :disabled="!scope.isSelected"
+              :disabled="!canEdit || !scope.isSelected"
               @click="bulk('clearTerminalMedia', scope.selectedListIds, scope.selectedList)"
             >
               {{ $t("cloud.clearTerminalMedia") }}
             </el-button>
-            <el-button :disabled="!scope.isSelected" @click="bulk('clearIdleMedia', scope.selectedListIds, scope.selectedList)">
+            <el-button
+              :disabled="!canEdit || !scope.isSelected"
+              @click="bulk('clearIdleMedia', scope.selectedListIds, scope.selectedList)"
+            >
               {{ $t("cloud.clearIdleMedia") }}
             </el-button>
           </div>
@@ -145,6 +160,7 @@ import { cloudBulkApi, getCloudInventoryApi, getCloudTerminalsApi } from "@/api/
 import type { CloudItem, CloudTerminal } from "@/api/modules/ninemod";
 import { syncTerminalTimeApi } from "@/api/modules/terminal";
 import ProTable from "@/components/ProTable/index.vue";
+import { useAuthStore } from "@/stores/modules/auth";
 import type { ColumnProps, ProTableInstance } from "@/components/ProTable/interface";
 
 // 脚本里拼的文案用 t()；模板里的 $t 不用引入
@@ -152,6 +168,14 @@ const { t } = useI18n();
 
 const proTableRef = ref<ProTableInstance>();
 const scopeNote = ref("");
+
+/*
+ * 这一页那排按钮一直没有权限门 —— 2026-09-15 之前只要登录就能点「全部清除」，
+ * 而它会让终端把本地文件删掉。现在有自己的权限位（usergroup.cloudterminalpriv），
+ * 界面上跟着置灰；真正把门的是后端路由，这里只是别让人点了才吃 403。
+ */
+const authStore = useAuthStore();
+const canEdit = computed(() => !!(authStore.authButtonListGet as any)?.cloudterminal?.edit);
 
 const dataCallback = (data: any) => {
   scopeNote.value = data.scopeNote ?? "";

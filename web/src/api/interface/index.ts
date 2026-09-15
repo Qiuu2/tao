@@ -60,7 +60,7 @@ export namespace Login {
     /** PNG 的 data URI，可直接作为 img src。只有 image 模式才有 */
     image?: string;
   }
-  /** 用户组的 13 项功能权限位，取值 0/1 */
+  /** 用户组的 22 项功能权限位，取值 0/1 */
   export interface Rights {
     taskpriv: number;
     terminalpriv: number;

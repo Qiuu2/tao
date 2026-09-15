@@ -337,7 +337,7 @@
           multiple
           :auto-upload="false"
           :show-file-list="false"
-          accept=".mp3,.wav"
+          accept=".mp3,.wav,.flac,.m4a,.aac,.mp4"
           :on-change="onFileChange"
         >
           <el-button :icon="Plus" :disabled="uploading">{{ $t("media.addMedia") }}</el-button>
@@ -822,10 +822,17 @@ const rowText = (r: UpRow) => {
     case "failed":
       return r.message || t("media.failed");
     default:
-      // 转码前后的参数摆出来 —— 上传的码率五花八门，用户得看得见
-      // 「我这个 320k 单声道的文件，进来之后变成了 128k 立体声」。
+      /*
+       * 转码前后的参数摆出来 —— 上传的码率五花八门，用户得看得见
+       * 「我这个 320k 单声道的文件，进来之后变成了 128k 立体声」。
+       *
+       * ⚠ 兜底值原来写的是 "WAV"：那时候只收 mp3 / wav，非 mp3 就一定是 wav。
+       *   现在还收 flac / m4a / aac，服务端对这几种回的是容器名（"FLAC" 之类），
+       *   继续兜 "WAV" 会在极少数拿不到 sourceFormat 的情况下显示成一句假话。
+       *   拿不到就留空，别编。
+       */
       return `${r.status === "overwritten" ? t("media.overwrite") : t("common.create")} · ${
-        r.sourceFormat || "WAV"
+        r.sourceFormat || "—"
       } → ${r.targetFormat || ""}`;
   }
 };

@@ -1533,12 +1533,21 @@ CREATE TABLE `usergroup` (
   `powerplay` int(10) unsigned NOT NULL DEFAULT '0' COMMENT '电源权限1-有 0-无',
   `level` int(10) unsigned NOT NULL DEFAULT '3' COMMENT '用户组级别 最大值5',
   `ttspriv` int(10) unsigned NOT NULL DEFAULT '0' COMMENT '文字语音权限1-有 0-无',
+  `mappriv` int(10) unsigned NOT NULL DEFAULT '0' COMMENT '地图权限1-有 0-无',
+  `enablepriv` int(10) unsigned NOT NULL DEFAULT '0' COMMENT '启用管理权限1-有 0-无',
+  `cloudterminalpriv` int(10) unsigned NOT NULL DEFAULT '0' COMMENT '云广播终端权限1-有 0-无',
+  `offlinepriv` int(10) unsigned NOT NULL DEFAULT '0' COMMENT '音乐传输权限1-有 0-无',
+  `transferpriv` int(10) unsigned NOT NULL DEFAULT '0' COMMENT '任务传送权限1-有 0-无',
+  `noisedevpriv` int(10) unsigned NOT NULL DEFAULT '0' COMMENT '噪声设备权限1-有 0-无',
+  `soundzonepriv` int(10) unsigned NOT NULL DEFAULT '0' COMMENT '声场分区权限1-有 0-无',
+  `soundtaskpriv` int(10) unsigned NOT NULL DEFAULT '0' COMMENT '声场任务权限1-有 0-无',
+  `apipriv` int(10) unsigned NOT NULL DEFAULT '0' COMMENT '接口调用平台权限1-有 0-无',
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 CHECKSUM=1 DELAY_KEY_WRITE=1 ROW_FORMAT=DYNAMIC;
 
 /*Data for the table `usergroup` */
 
-insert  into `usergroup`(`id`,`name`,`info`,`welcome`,`taskpriv`,`terminalpriv`,`mediapriv`,`userpriv`,`serverpriv`,`folderpriv`,`terminalgrouppriv`,`alarmgrouppriv`,`bellpriv`,`admpriv`,`telephonepriv`,`powerplay`,`level`,`ttspriv`) values (1,'system group','','',1,1,1,1,1,1,1,1,1,1,1,1,10,1);
+insert  into `usergroup`(`id`,`name`,`info`,`welcome`,`taskpriv`,`terminalpriv`,`mediapriv`,`userpriv`,`serverpriv`,`folderpriv`,`terminalgrouppriv`,`alarmgrouppriv`,`bellpriv`,`admpriv`,`telephonepriv`,`powerplay`,`level`,`ttspriv`,`mappriv`,`enablepriv`,`cloudterminalpriv`,`offlinepriv`,`transferpriv`,`noisedevpriv`,`soundzonepriv`,`soundtaskpriv`,`apipriv`) values (1,'system group','','',1,1,1,1,1,1,1,1,1,1,1,1,10,1,1,1,1,1,1,1,1,1,1);
 
 
 /*Table structure for table `usersn` */

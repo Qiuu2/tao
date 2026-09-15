@@ -50,7 +50,11 @@ export const clearLogsApi = (data: { mode: LogClearMode; beforeDate?: string; ke
  * 保留期的四档。存到后端的就是这几个字符串，不是天数 ——
  * 「1 个月」按自然月算，2 月和 8 月不一样长。
  */
-export type RetentionOption = "1m" | "3m" | "6m" | "1y";
+/**
+ * 保留期的档位。"15d" 是半个月（2026-09-15 现场加的，也是新的默认档）——
+ * 唯一一个不是整月的，后端的日期减法对它走「减 N 天」而不是「减 N 个月」。
+ */
+export type RetentionOption = "15d" | "1m" | "3m" | "6m" | "1y";
 
 export interface RetentionChoice {
   value: RetentionOption;

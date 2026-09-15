@@ -1,7 +1,7 @@
 import http from "@/api";
 import { PORT1 } from "@/api/config/servicePort";
 
-/** 13 项功能权限位，字段名与 usergroup 表列名一一对应 */
+/** 22 项功能权限位，字段名与 usergroup 表列名一一对应 */
 export interface Rights {
   taskpriv: number;
   terminalpriv: number;
@@ -22,6 +22,22 @@ export interface Rights {
   telephonepriv: number;
   powerplay: number;
   ttspriv: number;
+
+  /*
+   * 下面 9 个是 2026-09-15 新加的列（db/usergroup_rights.sql）。
+   * 上面 13 个是从旧版 ok112 原样继承的，新 web 左侧菜单里多出来的那些页
+   * 当时要么借别的权限位、要么根本没有门 —— 云广播终端的「全部清除」和
+   * 任务传送的「删除离线音乐」原来只要登录就能点。现在一页一把钥匙。
+   */
+  mappriv: number;
+  enablepriv: number;
+  cloudterminalpriv: number;
+  offlinepriv: number;
+  transferpriv: number;
+  noisedevpriv: number;
+  soundzonepriv: number;
+  soundtaskpriv: number;
+  apipriv: number;
 }
 
 /*
@@ -39,8 +55,9 @@ export interface Rights {
   ⚠ group / label / tip 存的是 **i18n 键**，不是字面文字 —— 这张表是模块级常量，
   取不到 setup 里的 t()，所以把翻译推到用的地方（user/group 那一页）去做。
 
-  13 项对满 usergroup 的 13 列。最后补上的是 led播放：它借用旧版空出来的
-  telephonepriv 那一列（新版没有电话广播这一页），列不动、语义换。
+  22 项对满 usergroup 的 22 列，**与左侧菜单一一对上**。
+  前 13 项是旧版就有的（led播放 借用旧版空出来的 telephonepriv 那一列），
+  后 9 项是 2026-09-15 按现场要求补的：左侧列表里每一项功能都得有自己的钥匙。
 */
 export const RIGHT_ITEMS: { key: keyof Rights; group: string; label: string; tip: string }[] = [
   // —— 资源管理 ——
@@ -49,6 +66,7 @@ export const RIGHT_ITEMS: { key: keyof Rights; group: string; label: string; tip
   { key: "alarmgrouppriv", group: "rights.groupResource", label: "rights.alarm", tip: "rights.alarmTip" },
   { key: "mediapriv", group: "rights.groupResource", label: "rights.media", tip: "rights.mediaTip" },
   { key: "folderpriv", group: "rights.groupResource", label: "rights.folder", tip: "rights.folderTip" },
+  { key: "mappriv", group: "rights.groupResource", label: "rights.map", tip: "rights.mapTip" },
 
   // —— 任务管理 ——
   { key: "taskpriv", group: "rights.groupTask", label: "rights.task", tip: "rights.taskTip" },
@@ -57,14 +75,32 @@ export const RIGHT_ITEMS: { key: keyof Rights; group: string; label: string; tip
   { key: "admpriv", group: "rights.groupTask", label: "rights.collect", tip: "rights.collectTip" },
   { key: "ttspriv", group: "rights.groupTask", label: "rights.tts", tip: "rights.ttsTip" },
   { key: "telephonepriv", group: "rights.groupTask", label: "rights.led", tip: "rights.ledTip" },
+  { key: "enablepriv", group: "rights.groupTask", label: "rights.enable", tip: "rights.enableTip" },
+
+  // —— 云广播管理 ——
+  { key: "cloudterminalpriv", group: "rights.groupCloud", label: "rights.cloudTerminal", tip: "rights.cloudTerminalTip" },
+  { key: "offlinepriv", group: "rights.groupCloud", label: "rights.offline", tip: "rights.offlineTip" },
+  { key: "transferpriv", group: "rights.groupCloud", label: "rights.transfer", tip: "rights.transferTip" },
+
+  // —— 噪声检测 ——
+  { key: "noisedevpriv", group: "rights.groupNoise", label: "rights.noiseDevice", tip: "rights.noiseDeviceTip" },
+  { key: "soundzonepriv", group: "rights.groupNoise", label: "rights.soundZone", tip: "rights.soundZoneTip" },
+  { key: "soundtaskpriv", group: "rights.groupNoise", label: "rights.soundTask", tip: "rights.soundTaskTip" },
 
   // —— 系统 ——
   { key: "serverpriv", group: "rights.groupSystem", label: "rights.remote", tip: "rights.remoteTip" },
-  { key: "userpriv", group: "rights.groupSystem", label: "rights.user", tip: "rights.userTip" }
+  { key: "userpriv", group: "rights.groupSystem", label: "rights.user", tip: "rights.userTip" },
+  { key: "apipriv", group: "rights.groupSystem", label: "rights.api", tip: "rights.apiTip" }
 ];
 
 /** 界面上按这个顺序分组排列，与新 web 的菜单同序 */
-export const RIGHT_GROUPS = ["rights.groupResource", "rights.groupTask", "rights.groupSystem"] as const;
+export const RIGHT_GROUPS = [
+  "rights.groupResource",
+  "rights.groupTask",
+  "rights.groupCloud",
+  "rights.groupNoise",
+  "rights.groupSystem"
+] as const;
 
 export const emptyRights = (v = 0): Rights => RIGHT_ITEMS.reduce((acc, i) => ({ ...acc, [i.key]: v }), {} as Rights);
 

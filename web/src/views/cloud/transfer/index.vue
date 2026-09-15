@@ -64,39 +64,39 @@
           <div class="header-bar">
             <div class="header-left">
               <template v-if="source === 'server'">
-                <el-button :disabled="!scope.isSelected" @click="run('idle', scope.selectedListIds)">
+                <el-button :disabled="!canEdit || !scope.isSelected" @click="run('idle', scope.selectedListIds)">
                   {{ $t("offline.idleOffline") }}
                 </el-button>
-                <el-button :disabled="!scope.isSelected" @click="run('immediate', scope.selectedListIds)">
+                <el-button :disabled="!canEdit || !scope.isSelected" @click="run('immediate', scope.selectedListIds)">
                   {{ $t("offline.nowOffline") }}
                 </el-button>
               </template>
               <template v-else>
-                <el-button :disabled="!scope.isSelected" @click="run('idle', scope.selectedListIds)">
+                <el-button :disabled="!canEdit || !scope.isSelected" @click="run('idle', scope.selectedListIds)">
                   {{ $t("offline.idleOffline") }}
                 </el-button>
-                <el-button :disabled="!scope.isSelected" @click="run('immediate', scope.selectedListIds)">
+                <el-button :disabled="!canEdit || !scope.isSelected" @click="run('immediate', scope.selectedListIds)">
                   {{ $t("offline.nowOffline") }}
                 </el-button>
-                <el-button :disabled="!scope.isSelected" @click="run('deleteIdle', scope.selectedListIds)">
+                <el-button :disabled="!canEdit || !scope.isSelected" @click="run('deleteIdle', scope.selectedListIds)">
                   {{ $t("offline.idleDelete") }}
                 </el-button>
-                <el-button :disabled="!scope.isSelected" @click="run('deleteNow', scope.selectedListIds)">
+                <el-button :disabled="!canEdit || !scope.isSelected" @click="run('deleteNow', scope.selectedListIds)">
                   {{ $t("offline.nowDelete") }}
                 </el-button>
-                <el-button :disabled="!scope.isSelected" @click="run('stop', scope.selectedListIds)">
+                <el-button :disabled="!canEdit || !scope.isSelected" @click="run('stop', scope.selectedListIds)">
                   {{ $t("cloud.offlineStop") }}
                 </el-button>
-                <el-button :disabled="!scope.isSelected" @click="run('offlinePlay', scope.selectedListIds)">
+                <el-button :disabled="!canEdit || !scope.isSelected" @click="run('offlinePlay', scope.selectedListIds)">
                   {{ $t("cloud.offlinePlay") }}
                 </el-button>
-                <el-button :disabled="!scope.isSelected" @click="run('offlinePlayStop', scope.selectedListIds)">
+                <el-button :disabled="!canEdit || !scope.isSelected" @click="run('offlinePlayStop', scope.selectedListIds)">
                   {{ $t("cloud.offlinePlayStop") }}
                 </el-button>
                 <el-button
                   type="danger"
                   plain
-                  :disabled="!scope.isSelected"
+                  :disabled="!canEdit || !scope.isSelected"
                   @click="run('deleteOfflineMusic', scope.selectedListIds)"
                 >
                   {{ $t("cloud.delOfflineMusic") }}
@@ -230,12 +230,22 @@ import {
 } from "@/api/modules/ninemod";
 import type { TransferMediaItem, TransferTask, TransferTerminal } from "@/api/modules/ninemod";
 import ProTable from "@/components/ProTable/index.vue";
+import { useAuthStore } from "@/stores/modules/auth";
 import type { ColumnProps, ProTableInstance } from "@/components/ProTable/interface";
 
 // 脚本里拼的文案用 t()；模板里的 $t 不用引入
 const { t } = useI18n();
 
 const proTableRef = ref<ProTableInstance>();
+
+/*
+ * 这一页那排按钮一直没有权限门 —— 2026-09-15 之前只要登录就能点
+ * 「删除离线音乐」，而它会当场删掉三张离线表的行并让终端删本地文件。
+ * 现在有自己的权限位（usergroup.transferpriv）。真正把门的是后端路由，
+ * 这里只是别让人点了才吃 403。
+ */
+const authStore = useAuthStore();
+const canEdit = computed(() => !!(authStore.authButtonListGet as any)?.transfer?.edit);
 
 /** 左边那棵树。两个叶子，对应旧版 set_offline.php?id=1 和 ?id=2 */
 const source = ref<"server" | "cloud">("server");

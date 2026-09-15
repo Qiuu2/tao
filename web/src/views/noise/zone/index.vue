@@ -125,7 +125,7 @@ import type { ColumnProps, ProTableInstance } from "@/components/ProTable/interf
 const { t } = useI18n();
 
 const authStore = useAuthStore();
-const canEdit = computed(() => !!(authStore.authButtonListGet as any)?.zone?.edit);
+const canEdit = computed(() => !!(authStore.authButtonListGet as any)?.soundzone?.edit);
 const toIds = (raw: (string | number)[]) => (raw ?? []).map(Number).filter(n => Number.isFinite(n) && n > 0);
 
 const proTableRef = ref<ProTableInstance>();

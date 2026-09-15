@@ -36,7 +36,7 @@
               <el-button type="danger" :icon="Delete" @click="openClear">{{ $t("log.cleanLog") }}</el-button>
 
               <!--
-                保留期：默认 1 个月，可选 3 个月 / 半年 / 1 年。
+                保留期：默认**半个月**，另可选 1 个月 / 3 个月 / 半年 / 1 年。
 
                 ⚠ 没有「确定」按钮 —— 换一档就当场生效（现场 2026-09-15 要求）：
                 设置存下来、超期的立刻滚掉。默认那一档本来就是 1 个月，
@@ -223,7 +223,7 @@ const confirmClear = async () => {
 
 /* ---------------- 日志保留期 ----------------
 
-  默认 1 个月，可选 3 个月 / 半年 / 1 年。**换一档就当场生效**，没有确定按钮
+  默认半个月，另可选 1 个月 / 3 个月 / 半年 / 1 年。**换一档就当场生效**，没有确定按钮
   （现场 2026-09-15 要求）：设置存下来，超期的立刻滚掉。
 
   超期日志本来就会自己清 —— 服务里那个每天跑一次的定时滚动
@@ -234,16 +234,30 @@ const confirmClear = async () => {
   它显示当前这一档对应的边界日期，人换完档立刻看得到刚才滚掉的是哪一天之前的。
 */
 const keep = ref<RetentionSettings | null>(null);
-const keepOption = ref<RetentionOption>("1m");
+const keepOption = ref<RetentionOption>("15d");
 const keepSaving = ref(false);
 
 /** 下拉里当前选中那一档对应的保留边界。切换下拉就跟着变 */
 const pendingCutoff = computed(() => {
   if (!keep.value) return "";
   if (keepOption.value === keep.value.option) return keep.value.cutoffDate;
-  const months: Record<RetentionOption, number> = { "1m": 1, "3m": 3, "6m": 6, "1y": 12 };
+  /*
+   * ⚠ 半个月走**减 15 天**，不是减 0.5 个月。
+   *   写成 setMonth(m - 0.5) 会被 JS 悄悄取整成 0，边界就变成「今天」，
+   *   标签上会显示「自动清掉今天之前的」—— 一条不剩。
+   *   这里与后端 cutoffOf 同一套口径：整月走月、零散天数走天。
+   */
+  const back: Record<RetentionOption, { months: number; days: number }> = {
+    "15d": { months: 0, days: 15 },
+    "1m": { months: 1, days: 0 },
+    "3m": { months: 3, days: 0 },
+    "6m": { months: 6, days: 0 },
+    "1y": { months: 12, days: 0 }
+  };
+  const b = back[keepOption.value] ?? back["15d"];
   const d = new Date();
-  d.setMonth(d.getMonth() - (months[keepOption.value] ?? 1));
+  if (b.months) d.setMonth(d.getMonth() - b.months);
+  if (b.days) d.setDate(d.getDate() - b.days);
   const pad = (n: number) => String(n).padStart(2, "0");
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 });

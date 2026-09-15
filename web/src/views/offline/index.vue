@@ -209,7 +209,7 @@ const t2 = t;
 
 const authStore = useAuthStore();
 const btn = computed(() => (authStore.authButtonListGet as any) ?? {});
-const canMedia = computed(() => !!btn.value.terminal?.edit);
+const canMedia = computed(() => !!btn.value.offline?.edit);
 
 const tab = ref("dispatch");
 const loading = ref(false);

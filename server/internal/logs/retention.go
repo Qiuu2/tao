@@ -45,14 +45,22 @@ import (
 type RetentionOption string
 
 const (
+	// Retain15Days 是「半个月」。它是唯一一档**不是整月**的 ——
+	// 见 retentionSpec.Days 上的说明。
+	Retain15Days  RetentionOption = "15d"
 	Retain1Month  RetentionOption = "1m"
 	Retain3Months RetentionOption = "3m"
 	Retain6Months RetentionOption = "6m"
 	Retain1Year   RetentionOption = "1y"
 )
 
-// DefaultRetention 是没配过时的默认值：保留 1 个月。
-const DefaultRetention = Retain1Month
+// DefaultRetention 是没配过时的默认值：保留半个月（现场 2026-09-15 定的，
+// 在此之前是 1 个月）。
+//
+// ⚠ 改这个常量会影响**没有配置文件**的现场：它们下一次滚动清理就按新的默认值算，
+// 也就是会多删掉半个月的日志。已经在界面上选过档的现场不受影响 ——
+// 那一档存在 config.logs.settings_file 里，读得到就不看这个默认值。
+const DefaultRetention = Retain15Days
 
 // retentionSpec 是一档保留期的说明。
 type retentionSpec struct {
@@ -61,14 +69,21 @@ type retentionSpec struct {
 	// Months 用来做日期减法。用「减 N 个月」而不是「减 N×30 天」——
 	// 界面上写的是「1个月」，用户预期的就是自然月，2 月和 8 月不该一样长。
 	Months int
+	// Days 给「半个月」这种说不成整月的档用。
+	//
+	// ⚠ 不要把半个月写成 Months:0 再指望别处特判，也不要写成「减 1 个月再加 15 天」：
+	//   那样 3 月 31 日往前推会落到 2 月 31 日，Go 的 AddDate 会把它折算成 3 月 3 日，
+	//   比「半个月前」还晚。整月走 Months、零散天数走 Days，两条路各管各的。
+	Days int
 }
 
 // retentionSpecs 是全部可选项，顺序即界面上的顺序。
 var retentionSpecs = []retentionSpec{
-	{Retain1Month, "1 个月", 1},
-	{Retain3Months, "3 个月", 3},
-	{Retain6Months, "半年", 6},
-	{Retain1Year, "1 年", 12},
+	{Retain15Days, "半个月", 0, 15},
+	{Retain1Month, "1 个月", 1, 0},
+	{Retain3Months, "3 个月", 3, 0},
+	{Retain6Months, "半年", 6, 0},
+	{Retain1Year, "1 年", 12, 0},
 }
 
 func specOf(opt RetentionOption) retentionSpec {
@@ -241,10 +256,13 @@ func (r *RetentionService) Set(ctx context.Context, opt RetentionOption, user, i
 	return r.Get(ctx), res, nil
 }
 
-// cutoffOf 算保留边界：今天往前推 N 个自然月，取那一天的零点。
+// cutoffOf 算保留边界：今天往前推 N 个自然月 / N 天，取那一天的零点。
 // 早于这一天的（不含这一天）会被滚掉。
+//
+// 两个字段同一档里只会有一个非零（见 retentionSpecs），写成一起加是为了
+// 将来要「1 个月零 15 天」这种档时不用再改这里。
 func cutoffOf(sp retentionSpec, now time.Time) time.Time {
-	d := now.AddDate(0, -sp.Months, 0)
+	d := now.AddDate(0, -sp.Months, -sp.Days)
 	return time.Date(d.Year(), d.Month(), d.Day(), 0, 0, 0, 0, now.Location())
 }
 

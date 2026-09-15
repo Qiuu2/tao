@@ -30,7 +30,7 @@ import (
 	"time"
 )
 
-// Rights 是 usergroup 表上的 13 个功能权限位。字段名与列名一一对应。
+// Rights 是 usergroup 表上的 22 个功能权限位。字段名与列名一一对应。
 type Rights struct {
 	TaskPriv          int `json:"taskpriv"`
 	TerminalPriv      int `json:"terminalpriv"`
@@ -50,6 +50,26 @@ type Rights struct {
 	TelephonePriv int `json:"telephonepriv"`
 	PowerPlay     int `json:"powerplay"`
 	TtsPriv       int `json:"ttspriv"`
+
+	// ── 下面 9 个是 2026-09-15 新加的，一页一把钥匙 ──────────────────
+	//
+	// 上面那 13 个是从旧版 ok112 原样继承的（它的用户组表单里也正好是这 13 个）。
+	// 新 web 的左侧菜单比旧版多出好些页，这些页当时要么**借**别的权限位、
+	// 要么**根本没有门**。借的代价是「这个组能干什么」说不清：
+	// 给了文字语音就等于给了启用管理，想分开做不到。没门的代价更直接 ——
+	// 云广播终端的「全部清除」和任务传送的「删除离线音乐」原来只要登录就能点。
+	//
+	// 现场原话：「用户组的功能权限少了。仔细查看web页面左侧列表功能。」
+	// 于是左侧菜单里每一项各给一把钥匙，列名与页面一一对上。
+	MapPriv           int `json:"mappriv"`           // 地图
+	EnablePriv        int `json:"enablepriv"`        // 启用管理（原来借 ttspriv）
+	CloudTerminalPriv int `json:"cloudterminalpriv"` // 云广播终端（原来没有门）
+	OfflinePriv       int `json:"offlinepriv"`       // 音乐传输（原来借 terminalpriv）
+	TransferPriv      int `json:"transferpriv"`      // 任务传送（原来没有门）
+	NoiseDevPriv      int `json:"noisedevpriv"`      // 噪声设备（原来借 terminalgrouppriv）
+	SoundZonePriv     int `json:"soundzonepriv"`     // 声场分区（原来借 terminalgrouppriv）
+	SoundTaskPriv     int `json:"soundtaskpriv"`     // 声场任务（原来借 taskpriv）
+	APIPriv           int `json:"apipriv"`           // 接口调用平台（原来登录即可）
 }
 
 // 权限项名称常量，避免各处硬编码字符串。
@@ -68,6 +88,17 @@ const (
 	PrivLed       = "telephonepriv"
 	PrivPowerPlay = "powerplay"
 	PrivTts       = "ttspriv"
+
+	// 新加的 9 个。列名就是页面，不再有「列名与含义对不上」那种历史包袱。
+	PrivMap           = "mappriv"
+	PrivEnable        = "enablepriv"
+	PrivCloudTerminal = "cloudterminalpriv"
+	PrivOffline       = "offlinepriv"
+	PrivTransfer      = "transferpriv"
+	PrivNoiseDev      = "noisedevpriv"
+	PrivSoundZone     = "soundzonepriv"
+	PrivSoundTask     = "soundtaskpriv"
+	PrivAPI           = "apipriv"
 )
 
 func (r Rights) by(name string) int {
@@ -98,9 +129,68 @@ func (r Rights) by(name string) int {
 		return r.PowerPlay
 	case PrivTts:
 		return r.TtsPriv
+	case PrivMap:
+		return r.MapPriv
+	case PrivEnable:
+		return r.EnablePriv
+	case PrivCloudTerminal:
+		return r.CloudTerminalPriv
+	case PrivOffline:
+		return r.OfflinePriv
+	case PrivTransfer:
+		return r.TransferPriv
+	case PrivNoiseDev:
+		return r.NoiseDevPriv
+	case PrivSoundZone:
+		return r.SoundZonePriv
+	case PrivSoundTask:
+		return r.SoundTaskPriv
+	case PrivAPI:
+		return r.APIPriv
 	}
 	return 0
 }
+
+/*
+ * RightColumns / RightTargets 是「权限位的列清单」的**唯一一份**。
+ *
+ * 这 22 列在四个地方要按同一个顺序出现：登录时读、用户组列表读、
+ * 新建用户组写、修改用户组写。原来是四处各抄一遍，加一列要改四处，
+ * 漏一处的表现不是报错而是**错位**：SELECT 的列数和 Scan 的目标数一旦对不上，
+ * Go 会报错；对得上但顺序不同，就变成「勾了 A、生效的是 B」，
+ * 而且只在真的去用那个权限时才看得出来。
+ *
+ * 所以列在这里定义一次，四处都引它。
+ */
+const RightColumns = `taskpriv, terminalpriv, mediapriv, userpriv, serverpriv, folderpriv,
+	terminalgrouppriv, alarmgrouppriv, bellpriv, admpriv, telephonepriv, powerplay, ttspriv,
+	mappriv, enablepriv, cloudterminalpriv, offlinepriv, transferpriv,
+	noisedevpriv, soundzonepriv, soundtaskpriv, apipriv`
+
+// RightTargets 返回与 RightColumns **同序**的 Scan 目标。
+func RightTargets(r *Rights) []interface{} {
+	return []interface{}{
+		&r.TaskPriv, &r.TerminalPriv, &r.MediaPriv, &r.UserPriv, &r.ServerPriv, &r.FolderPriv,
+		&r.TerminalGroupPriv, &r.AlarmGroupPriv, &r.BellPriv, &r.AdmPriv, &r.TelephonePriv,
+		&r.PowerPlay, &r.TtsPriv,
+		&r.MapPriv, &r.EnablePriv, &r.CloudTerminalPriv, &r.OfflinePriv, &r.TransferPriv,
+		&r.NoiseDevPriv, &r.SoundZonePriv, &r.SoundTaskPriv, &r.APIPriv,
+	}
+}
+
+// RightValues 返回与 RightColumns **同序**的写入值，给 INSERT / UPDATE 用。
+func RightValues(r Rights) []interface{} {
+	return []interface{}{
+		r.TaskPriv, r.TerminalPriv, r.MediaPriv, r.UserPriv, r.ServerPriv, r.FolderPriv,
+		r.TerminalGroupPriv, r.AlarmGroupPriv, r.BellPriv, r.AdmPriv, r.TelephonePriv,
+		r.PowerPlay, r.TtsPriv,
+		r.MapPriv, r.EnablePriv, r.CloudTerminalPriv, r.OfflinePriv, r.TransferPriv,
+		r.NoiseDevPriv, r.SoundZonePriv, r.SoundTaskPriv, r.APIPriv,
+	}
+}
+
+// RightCount 是权限位的个数，拼 SQL 占位符时用。
+const RightCount = 22
 
 // User 是登录后的会话主体。
 type User struct {
@@ -346,20 +436,16 @@ func (m *Manager) UserByID(ctx context.Context, id int64) (*User, error) {
 	return u, nil
 }
 
-// loadRights 读取用户组的 13 个权限位与 level。
+// loadRights 读取用户组的 22 个权限位与 level。
+//
+// 列的顺序照 RightColumns 那一份，别在这里自己排一套：
+// 两边一旦分叉，Scan 会把值挪一位，表现是「勾了 A 生效的却是 B」。
 func (m *Manager) loadRights(ctx context.Context, u *User) error {
 	var name sql.NullString
 	err := m.db.QueryRowContext(ctx, `
-		SELECT name, taskpriv, terminalpriv, mediapriv, userpriv, serverpriv, folderpriv,
-		       terminalgrouppriv, alarmgrouppriv, bellpriv, admpriv, telephonepriv,
-		       powerplay, ttspriv, level
+		SELECT name, `+RightColumns+`, level
 		FROM usergroup WHERE id = ? LIMIT 1`, u.UsergroupID).
-		Scan(&name,
-			&u.Rights.TaskPriv, &u.Rights.TerminalPriv, &u.Rights.MediaPriv,
-			&u.Rights.UserPriv, &u.Rights.ServerPriv, &u.Rights.FolderPriv,
-			&u.Rights.TerminalGroupPriv, &u.Rights.AlarmGroupPriv, &u.Rights.BellPriv,
-			&u.Rights.AdmPriv, &u.Rights.TelephonePriv, &u.Rights.PowerPlay,
-			&u.Rights.TtsPriv, &u.Level)
+		Scan(append([]interface{}{&name}, append(RightTargets(&u.Rights), &u.Level)...)...)
 	if errors.Is(err, sql.ErrNoRows) {
 		// 用户组被删但用户还在 —— 旧系统级联删除有缺陷会造成这种情况（D-45）。
 		// 这里降级为「无任何权限」，而不是让登录失败。

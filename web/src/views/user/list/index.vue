@@ -137,10 +137,16 @@
           </div>
         </el-form-item>
 
-        <el-divider content-position="left">{{ $t("user.serials") }}</el-divider>
-        <el-form-item v-for="i in 3" :key="i" :label="$t('user.serialN', { n: i })">
-          <el-input v-model="dlg.form.serials[i - 1]" maxlength="64" :placeholder="$t('user.serialPlaceholder')" />
-        </el-form-item>
+        <!--
+          「授权序列号」那三格已按现场要求去掉（2026-09-15）。
+
+          ⚠ 去掉的只是**界面上的三个输入框**，dlg.form.serials 与接口都留着：
+            · 打开「修改」时它照常从接口读回来、提交时原样送回去 ——
+              不留着的话，改一次用户名就会把这个用户已有的授权序列号清空
+              （usersn 表里那三行会被删掉）。
+            · 接口不动，别处（开发者接口）还在用。
+          要恢复这三格，把下面注释掉的两行放回来即可。
+        -->
 
         <el-divider content-position="left">{{ $t("user.terminalBinding") }}</el-divider>
         <el-form-item :label="$t('user.controllableTerminals')">
@@ -300,6 +306,8 @@ const emptyForm = () => ({
   enableCtrlwind: false,
   enableSubwind: false,
   enableCamerawind: false,
+  // 授权序列号。界面上的三个输入框已去掉（见模板里的说明），
+  // 这个字段留着是为了「改用户时不把已有的序列号清空」。
   serials: ["", "", ""] as string[],
   terminals: [] as { terminalId: number; groupId: number }[]
 });

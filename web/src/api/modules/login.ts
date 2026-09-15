@@ -18,7 +18,7 @@ export const getCaptchaApi = () => {
   return http.get<Login.ResCaptcha>(PORT1 + `/api/captcha`, {}, { loading: false });
 };
 
-/** @description 获取菜单列表（由后端按用户组的 13 项权限位下发） */
+/** @description 获取菜单列表（由后端按用户组的 22 项权限位下发） */
 export const getAuthMenuListApi = () => {
   return http.get<Menu.MenuOptions[]>(PORT1 + `/api/menu/list`, {}, { loading: false });
 };

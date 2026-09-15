@@ -18,7 +18,7 @@ import (
 )
 
 var (
-	ErrBadType      = errors.New("只支持 mp3 / wav 格式")
+	ErrBadType      = errors.New("只支持 mp3 / wav / flac / m4a / aac 格式")
 	ErrTooLarge     = errors.New("文件超出大小限制")
 	ErrRecordLocked = errors.New("录音媒体库不允许上传")
 	ErrNotFound     = errors.New("媒体不存在")
@@ -94,7 +94,7 @@ func (u *Uploader) Upload(
 	res := UploadResult{FileName: origName, Status: "failed"}
 
 	ext := strings.ToLower(strings.TrimPrefix(filepath.Ext(origName), "."))
-	if ext != "mp3" && ext != "wav" {
+	if !uploadExts[ext] {
 		res.Message = ErrBadType.Error()
 		return res
 	}
@@ -127,28 +127,37 @@ func (u *Uploader) Upload(
 	defer os.Remove(tmpPath)
 	_ = written
 
-	// 2) 认文件头，确认它真是这个格式
+	// 2) 认文件头，确认它真是音频、并且是哪一种
 	//
 	// 只按扩展名判类型是不够的：一个改名成 .mp3 的文本文件会一路送进 ffmpeg，
 	// 用户看到的是「转码失败: exit status 1: [mp3 @ 0x…] Failed to read frame
 	// size: Could not seek to 1059…」——一句谁也看不懂的内部报错。
-	// 先认头就能直接说「不是有效的 MP3 文件」。
 	//
-	// 顺带把源文件的码率/采样率/声道读出来，好在界面上告诉用户转换前是什么。
-	if ext == "mp3" {
+	// ⚠ 以格式为准的是**文件头**，不是扩展名（见 sniff.go 顶上的说明）：
+	//   现场的录音常常是 .m4a 扩展名、里面其实是 ADTS AAC，反过来也有。
+	//   扩展名只做第一道粗筛，上面那一关已经过了。
+	format, err := SniffFormat(tmpPath)
+	if err != nil {
+		if errors.Is(err, ErrUnknownFormat) {
+			res.Message = badHeaderMessage(ext)
+		} else {
+			res.Message = "读取文件头失败: " + err.Error()
+		}
+		return res
+	}
+
+	// 源文件的码率/采样率/声道只有 MP3 能自己读出来（mp3.go 那个解析器）。
+	// 其余格式交给 ffmpeg 转，这里只报出容器名 —— 编一个假的参数
+	// 比留空更糟，界面上会显示一个没人量过的数字。
+	if format == FormatMP3 {
 		srcInfo, err := ReadMP3Info(tmpPath)
 		if err != nil {
-			if errors.Is(err, ErrNotMP3) {
-				res.Message = "不是有效的 MP3 文件（找不到音频帧，可能已损坏或并非 MP3）"
-			} else {
-				res.Message = "读取 MP3 文件头失败: " + err.Error()
-			}
+			res.Message = "读取 MP3 文件头失败: " + err.Error()
 			return res
 		}
 		res.SourceFormat = srcInfo.String()
-	} else if err := IsWAV(tmpPath); err != nil {
-		res.Message = "不是有效的 WAV 文件"
-		return res
+	} else {
+		res.SourceFormat = formatLabel(format)
 	}
 
 	// 3) 统一转码为 mp3
@@ -157,6 +166,9 @@ func (u *Uploader) Upload(
 	//   · 统一 mp3、128k、双声道
 	//   · 提示音目录 16000Hz，其余 44100Hz
 	//   · 尾部拼接 2 秒静音 —— 这是旧系统的播放防截断约定，改了播放行为会变
+	//
+	// 五种源格式走的是**同一条**转码路径：ffmpeg 按输入容器自己挑解码器，
+	// 输出参数由下面这几个 flag 定死，与源是什么无关。
 	sampleRate := "44100"
 	if folderID == tipFolderID {
 		sampleRate = "16000"

@@ -262,7 +262,7 @@ const globalStore = useGlobalStore();
 
 // 写操作跟着终端管理那把钥匙（terminalpriv）——
 // 把终端摆到图上本质上是终端配置，不另起一套权限。
-const canEdit = computed(() => !!(authStore.authButtonListGet as any)?.terminal?.edit);
+const canEdit = computed(() => !!(authStore.authButtonListGet as any)?.map?.edit);
 
 const loading = ref(false);
 const uploading = ref(false);
