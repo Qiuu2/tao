@@ -787,9 +787,6 @@ export default {
     unifiedMusic: "统一作息音乐",
     unifiedLength: "统一播放时长",
     unifiedTerminals: "统一终端列表",
-    termScopeItem:
-      "现在显示的是第 {n} 个课时「{name}」自己的设置（提前开电源、音量、任务级别、起止日期、星期，以及 {c} 台终端）。改完点这一行的「修改」，只存这一个课时。",
-    termScopeNewItem: "第 {n} 个课时还没入库，先显示整个方案的设置。点这一行的「添加」就按现在这些值存给它。",
     termOfLesson: "本课时 {c} 台",
     backToPlanTerminals: "看整个方案",
     termLoadFailed: "这个课时的终端清单没读到，先保持原来的选择",
@@ -1374,6 +1371,9 @@ export default {
     pickTaskFirst: "请至少勾选一条任务",
     droppedTasks: "这条计划里有 {n} 条任务已被删除，已自动移除",
     startDateRequired: "请选择开始日期",
+    endOptional: "可不填",
+    endBothOrNeither: "结束日期与结束时间要么都不填，要么一起填",
+    endAfterStart: "结束时间必须晚于开始时间",
     pickStartTime: "请选择开始时间",
     startDate2: "起始日期",
     requiredNotFilled: "带 * 的项还没填完"

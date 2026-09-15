@@ -512,6 +512,8 @@ CREATE TABLE `enabletask` (
   `id` int(4) unsigned zerofill NOT NULL AUTO_INCREMENT,
   `enstate` varchar(1024) DEFAULT '0',
   `startdate` date DEFAULT NULL,
+  `enddate` date DEFAULT NULL,
+  `endtime` time DEFAULT NULL,
   `starttime` time DEFAULT NULL,
   `taskid` varchar(2048) DEFAULT NULL,
   `flag` int(4) DEFAULT 0,

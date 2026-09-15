@@ -528,13 +528,19 @@ func (a *app) handleEnableTasks(w http.ResponseWriter, r *http.Request) {
 // enableReq 是表格式提交：同一时间点 + 一串任务，每条任务各自启用或停用。
 // 与旧版 tijiaoselects() 提交的 (allSel, get_radio) 两串并列值一一对应。
 type enableReq struct {
-	StartDate string              `json:"startdate"`
-	StartTime string              `json:"starttime"`
-	Tasks     []enable.TaskAction `json:"tasks"`
+	StartDate string `json:"startdate"`
+	StartTime string `json:"starttime"`
+	// 结束日期 / 时间可以不传（老数据就没有），要传就得成对
+	EndDate string              `json:"enddate"`
+	EndTime string              `json:"endtime"`
+	Tasks   []enable.TaskAction `json:"tasks"`
 }
 
 func (e enableReq) toInput() enable.Input {
-	return enable.Input{StartDate: e.StartDate, StartTime: e.StartTime, Tasks: e.Tasks}
+	return enable.Input{
+		StartDate: e.StartDate, StartTime: e.StartTime,
+		EndDate: e.EndDate, EndTime: e.EndTime, Tasks: e.Tasks,
+	}
 }
 
 func (a *app) handleEnableCreate(w http.ResponseWriter, r *http.Request) {

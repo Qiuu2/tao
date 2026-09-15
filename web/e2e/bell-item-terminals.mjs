@@ -204,28 +204,32 @@ await p.waitForTimeout(4000);
 const dlg = p.locator(".el-dialog:visible").first();
 // 课时表在对话框里是第二张表（第一张是外面那张列表），用对话框内的表定位
 const itemRows = dlg.locator(".el-table__body .el-table__row");
-// ⚠ 方案级视图下**没有**这行字了（需求方要求去掉），所以先看在不在，再读内容
-const noteCount = () => dlg.locator(".dlg-note.mb6").count();
-const noteText = async () =>
-  (await noteCount()) ? ((await dlg.locator(".dlg-note.mb6").first().innerText()) || "").replace(/\s+/g, "") : "";
+// ⚠ 解释「现在看的是谁的设置」那行字**整句去掉了**（需求方要求），
+//   剩下的只是一个「看整个方案」的按钮，且只在选中某个课时时才出现。
+//   所以这里既要验按钮在不在，也要验**一个字的说明都没有**。
+const backBtnCount = () => dlg.locator(".dlg-note.mb6 button").count();
+const noteWords = async () => {
+  const boxes = await dlg.locator(".dlg-note.mb6").allInnerTexts();
+  // 把按钮自己的文字去掉，剩下的就该是空的
+  return boxes.map(b => b.replace(/\s+/g, "").replace(/看整个方案/g, "")).join("");
+};
 const pickedIds = () =>
   dlg.locator(".tt-tree .el-tree-node__content").evaluateAll(ns =>
     ns.filter(n => n.querySelector(".el-checkbox.is-checked")).map(n => (n.querySelector(".tt-label") || {}).textContent || "")
   );
 {
-  // 刚打开是方案级视图：那行提示不该出现（原来写的是「现在显示的是整个方案的
-  // 设置（…）。点下面的「确定」会把它套到所有课时。」，「确定」都没了，这句更没必要）
-  const n = await noteText();
-  console.log("   刚打开时那行字:", n || "(没有，符合预期)");
-  ok((await noteCount()) === 0, "方案级视图下不显示那行提示");
+  // 刚打开是方案级视图：既没有说明文字，也没有「看整个方案」按钮（本来就在方案级）
+  console.log("   刚打开时那一行:", (await noteWords()) || "(空的，符合预期)");
+  ok((await noteWords()) === "", "方案级视图下一个字的提示都没有");
+  ok((await backBtnCount()) === 0, "方案级视图下也没有「看整个方案」按钮");
 }
 {
   // 第 2 行的序号 radio
   await itemRows.nth(1).locator(".idx-radio").first().click();
   await p.waitForTimeout(2500);
-  const n = await noteText();
-  console.log("   选中第 2 个课时后:", n);
-  ok(n.includes("第2个课时") && n.includes("第二节"), "那行字说清楚了现在看的是第 2 个课时「第二节」");
+  console.log("   选中第 2 个课时后那一行:", (await noteWords()) || "(只有按钮，没有说明文字)");
+  ok((await noteWords()) === "", "选中课时之后也不显示任何说明文字");
+  ok((await backBtnCount()) > 0, "只留下「看整个方案」这个退回去的按钮");
   const picked = (await pickedIds()).filter(Boolean);
   console.log("   树上勾中的:", JSON.stringify(picked));
   ok(picked.length === 1 && picked[0].includes(nameOf(T2)), `树换成了第二节自己的 T2（${nameOf(T2)}）`);
@@ -239,9 +243,8 @@ const pickedIds = () =>
 {
   await dlg.locator("button", { hasText: "看整个方案" }).first().click();
   await p.waitForTimeout(1500);
-  const n = await noteText();
-  console.log("   点了「看整个方案的终端」后:", n || "(那行字没了，符合预期)");
-  ok((await noteCount()) === 0, "退回方案级视图之后那行提示也跟着没了");
+  console.log("   点了「看整个方案的终端」后:", (await noteWords()) || "(空的)");
+  ok((await backBtnCount()) === 0, "退回方案级视图之后连按钮也收起来了");
   const picked = (await pickedIds()).filter(Boolean);
   ok(picked.length === 1 && picked[0].includes(nameOf(T1)), "树也换回了方案级那一份（T1）");
 }
@@ -569,6 +572,52 @@ console.log("⑩ 行内「修改」要把**整组**方案级属性都存进这�
     }
   });
   ok(dup.code === 200 && q1(`SELECT COUNT(*) FROM task WHERE info='${NEW}'`) === after, "newPlanName 传空白 = 不改名");
+}
+
+// ⑫ 批量修改里点序号，一样要把那一课时的属性灌进控件
+//
+// 原来这个联动只在「修改方案」里开着（watch 里 `dlg.mode !== "edit"` 直接 return），
+// 批量修改点了序号什么都不动。需求方要的是两个对话框一个样。
+{
+  console.log("⑫ 批量修改里点序号，控件也要跟着换");
+  const PLAN2 = PLAN + "改名"; // ⑪ 已经把方案改成这个名字了
+  // 两个课时得**不一样**，不然换不换都一个样，验不出来
+  execSync(SQL(`UPDATE task SET priority=17, defaultvolume=61 WHERE taskid=${id1} OR sec_task_id=${id1}`), { stdio: "pipe" });
+  execSync(SQL(`UPDATE task SET priority=29, defaultvolume=38 WHERE taskid=${id2} OR sec_task_id=${id2}`), { stdio: "pipe" });
+
+  await p.reload({ waitUntil: "domcontentloaded" });
+  await p.waitForTimeout(4000);
+  const planRow2 = p.locator(".el-table__body .el-table__row", { hasText: PLAN2 }).first();
+  await planRow2.locator(".el-checkbox").first().click();
+  await p.waitForTimeout(600);
+  await p.locator("button").filter({ hasText: "批量修改" }).first().click();
+  await p.waitForTimeout(4000);
+
+  const d3 = p.locator(".el-dialog:visible").first();
+  const rows3 = d3.locator(".el-table__body .el-table__row");
+  const planNameNow = async () => (await d3.locator("input").first().inputValue()).trim();
+  // 任务级别是 el-select：读 .el-select__wrapper 的可见文字（同 ⑧ 那两个坑）
+  const priNow = async () =>
+    (await d3.locator(".el-form-item", { hasText: "任务级别" }).first().locator(".el-select__wrapper").first().innerText()).trim();
+  const volNow = async () =>
+    (await d3.locator(".el-form-item", { hasText: "音量" }).first().locator("input").first().inputValue()).trim();
+
+  console.log("   方案名称:", await planNameNow());
+  ok((await planNameNow()) === PLAN2, "方案名称填着（整组共用，一直显示）");
+
+  await rows3.nth(0).locator(".idx-radio").first().click();
+  await p.waitForTimeout(2500);
+  const a = `${await priNow()}|${await volNow()}`;
+  console.log("   选中第 1 个课时：任务级别 / 音量 =", a);
+  ok(a.includes("17") && a.includes("61"), `第 1 个课时的属性灌进了控件（${a}）`);
+
+  await rows3.nth(1).locator(".idx-radio").first().click();
+  await p.waitForTimeout(2500);
+  const c = `${await priNow()}|${await volNow()}`;
+  console.log("   选中第 2 个课时：任务级别 / 音量 =", c);
+  ok(c.includes("29") && c.includes("38"), `换到第 2 个课时，控件跟着换了（${c}）`);
+  ok(a !== c, "两个课时在控件上确实不一样 —— 联动真的发生了");
+  ok((await d3.locator(".dlg-note.mb6 button").count()) > 0, "「看整个方案」这条回去的路也在");
 }
 
 console.log(fails ? `\n✗ ${fails} 条没过` : "\n全部通过");

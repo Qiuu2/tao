@@ -790,10 +790,6 @@ export default {
     unifiedMusic: "One bell tone for all",
     unifiedLength: "One play length for all",
     unifiedTerminals: "One terminal list for all",
-    termScopeItem:
-      "Showing lesson {n} “{name}”’s own settings (pre-power, volume, priority, date range, weekdays, plus {c} terminal(s)). Hit “Modify” on that row to save just this lesson.",
-    termScopeNewItem:
-      "Lesson {n} is not stored yet, so the whole plan’s settings are shown. “Add” on that row stores the current values for it.",
     termOfLesson: "{c} for this lesson",
     backToPlanTerminals: "Back to the whole plan",
     termLoadFailed: "Could not load this lesson’s terminal list — keeping the current selection",
@@ -1388,6 +1384,9 @@ export default {
     pickTaskFirst: "Tick at least one task",
     droppedTasks: "{n} tasks in this plan no longer exist and were dropped automatically",
     startDateRequired: "Pick a start date",
+    endOptional: "Optional",
+    endBothOrNeither: "Fill in both the end date and end time, or neither",
+    endAfterStart: "The end time must be later than the start time",
     pickStartTime: "Pick a start time",
     startDate2: "Start date",
     requiredNotFilled: "Some required fields (*) are still empty"

@@ -111,7 +111,11 @@ type Item struct {
 	ID        int64  `json:"id"`
 	StartDate string `json:"startdate"`
 	StartTime string `json:"starttime"`
-	Tasks     []Task `json:"tasks"`
+	// EndDate / EndTime 是后加的两列（现场自己在 enabletask 上补的）。
+	// 老数据里是 NULL，读出来就是空串 —— 界面上显示成「—」，不要当成 0000-00-00。
+	EndDate string `json:"enddate"`
+	EndTime string `json:"endtime"`
+	Tasks   []Task `json:"tasks"`
 	// EnableCount / DisableCount 是给列表上那一列做摘要用的
 	EnableCount  int `json:"enableCount"`
 	DisableCount int `json:"disableCount"`
@@ -153,6 +157,7 @@ func (s *Service) List(ctx context.Context, q Query) (*ListResult, error) {
 	rs, err := s.db.QueryContext(ctx, `
 		SELECT CAST(id AS UNSIGNED), COALESCE(enstate,'0'),
 		       COALESCE(CAST(startdate AS CHAR),''), COALESCE(CAST(starttime AS CHAR),''),
+		       COALESCE(CAST(enddate AS CHAR),''), COALESCE(CAST(endtime AS CHAR),''),
 		       COALESCE(taskid,'')
 		FROM enabletask`+where+` ORDER BY startdate DESC, starttime DESC, id DESC
 		LIMIT ? OFFSET ?`, listArgs...)
@@ -169,7 +174,8 @@ func (s *Service) List(ctx context.Context, q Query) (*ListResult, error) {
 	for rs.Next() {
 		var it Item
 		var enstate, taskids string
-		if err := rs.Scan(&it.ID, &enstate, &it.StartDate, &it.StartTime, &taskids); err != nil {
+		if err := rs.Scan(&it.ID, &enstate, &it.StartDate, &it.StartTime,
+			&it.EndDate, &it.EndTime, &taskids); err != nil {
 			return nil, fmt.Errorf("扫描启用计划行: %w", err)
 		}
 		pairs := parseRow(taskids, enstate)
@@ -317,9 +323,10 @@ func (s *Service) Get(ctx context.Context, id int64) (*Item, error) {
 	err := s.db.QueryRowContext(ctx, `
 		SELECT CAST(id AS UNSIGNED), COALESCE(enstate,'0'),
 		       COALESCE(CAST(startdate AS CHAR),''), COALESCE(CAST(starttime AS CHAR),''),
+		       COALESCE(CAST(enddate AS CHAR),''), COALESCE(CAST(endtime AS CHAR),''),
 		       COALESCE(taskid,'')
 		FROM enabletask WHERE id = ? LIMIT 1`, id).
-		Scan(&it.ID, &enstate, &it.StartDate, &it.StartTime, &taskids)
+		Scan(&it.ID, &enstate, &it.StartDate, &it.StartTime, &it.EndDate, &it.EndTime, &taskids)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, ErrNotFound
 	}
@@ -355,7 +362,11 @@ func (s *Service) Get(ctx context.Context, id int64) (*Item, error) {
 type Input struct {
 	StartDate string
 	StartTime string
-	Tasks     []TaskAction
+	// EndDate / EndTime 可以留空（老数据就是空的），填了就必须是合法日期 / 时间，
+	// 且不能早于开始。
+	EndDate string
+	EndTime string
+	Tasks   []TaskAction
 }
 
 type TaskAction struct {
@@ -371,6 +382,26 @@ func (s *Service) validate(ctx context.Context, in *Input) error {
 	}
 	if _, err := time.Parse("15:04:05", in.StartTime); err != nil {
 		return fmt.Errorf("开始时间格式不正确，必须是 HH:MM:SS")
+	}
+	// 结束日期 / 时间是后加的两列，允许留空（老数据全是 NULL）。
+	// 要填就两个一起填：只填一个，后台没法判断这条计划什么时候算结束。
+	in.EndDate = strings.TrimSpace(in.EndDate)
+	in.EndTime = strings.TrimSpace(in.EndTime)
+	if (in.EndDate == "") != (in.EndTime == "") {
+		return fmt.Errorf("结束日期与结束时间要么都不填，要么一起填")
+	}
+	if in.EndDate != "" {
+		if _, err := time.Parse("2006-01-02", in.EndDate); err != nil {
+			return fmt.Errorf("结束日期格式不正确，必须是 YYYY-MM-DD")
+		}
+		if _, err := time.Parse("15:04:05", in.EndTime); err != nil {
+			return fmt.Errorf("结束时间格式不正确，必须是 HH:MM:SS")
+		}
+		st, _ := time.ParseInLocation("2006-01-02 15:04:05", in.StartDate+" "+in.StartTime, time.Local)
+		et, _ := time.ParseInLocation("2006-01-02 15:04:05", in.EndDate+" "+in.EndTime, time.Local)
+		if !et.After(st) {
+			return fmt.Errorf("结束时间必须晚于开始时间")
+		}
 	}
 	if len(in.Tasks) == 0 {
 		return fmt.Errorf("请至少选择一条任务")
@@ -417,6 +448,18 @@ func (s *Service) validate(ctx context.Context, in *Input) error {
 	return nil
 }
 
+// nullIfEmpty 让空串落库成 NULL 而不是 '0000-00-00' / '00:00:00'。
+//
+// enddate / endtime 是允许不填的（老数据全是 NULL）。写空串进 date 列，
+// 严格模式下直接报错，宽松模式下变成 0000-00-00 —— 读出来就成了一个
+// 看着像日期、其实谁也解析不了的值。
+func nullIfEmpty(v string) interface{} {
+	if strings.TrimSpace(v) == "" {
+		return nil
+	}
+	return v
+}
+
 // serialize 把逐条的 (任务, 动作) 拼成 taskid / enstate 两串并列值，
 // 顺序一一对应 —— 这正是旧版 allSel / get_radio 的写法。
 func serialize(list []TaskAction) (string, string) {
@@ -435,8 +478,9 @@ func (s *Service) Create(ctx context.Context, in Input) (int64, error) {
 	}
 	taskCol, stateCol := serialize(in.Tasks)
 	res, err := s.db.ExecContext(ctx,
-		`INSERT INTO enabletask (enstate, startdate, starttime, taskid, flag) VALUES (?,?,?,?,?)`,
-		stateCol, in.StartDate, in.StartTime, taskCol, 0)
+		`INSERT INTO enabletask (enstate, startdate, starttime, enddate, endtime, taskid, flag)
+		 VALUES (?,?,?,?,?,?,?)`,
+		stateCol, in.StartDate, in.StartTime, nullIfEmpty(in.EndDate), nullIfEmpty(in.EndTime), taskCol, 0)
 	if err != nil {
 		return 0, fmt.Errorf("新建启用计划: %w", err)
 	}
@@ -453,8 +497,10 @@ func (s *Service) Update(ctx context.Context, id int64, in Input) error {
 	taskCol, stateCol := serialize(in.Tasks)
 	// flag 不在 UPDATE 里：旧版新增时恒写 0，之后从不修改，这里保持不动。
 	if _, err := s.db.ExecContext(ctx,
-		`UPDATE enabletask SET enstate = ?, startdate = ?, starttime = ?, taskid = ? WHERE id = ?`,
-		stateCol, in.StartDate, in.StartTime, taskCol, id); err != nil {
+		`UPDATE enabletask SET enstate = ?, startdate = ?, starttime = ?,
+		                      enddate = ?, endtime = ?, taskid = ? WHERE id = ?`,
+		stateCol, in.StartDate, in.StartTime,
+		nullIfEmpty(in.EndDate), nullIfEmpty(in.EndTime), taskCol, id); err != nil {
 		return fmt.Errorf("修改启用计划: %w", err)
 	}
 	return nil

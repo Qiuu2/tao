@@ -295,12 +295,14 @@
         <!--
           ⚠ 提前开电源 / 音量 / 任务级别 / 起止日期 / 星期这几项名义上是「方案级」，
           实际每一行 task 各存一份，可以不一致。选中下面某个课时之后，这排控件
-          显示的就是**那一课时自己的**值（旧版 getonetaskterminal.js 同样如此），
-          所以这行字必须摆在这儿 —— 混淆就发生在这排控件上。
+          显示的就是**那一课时自己的**值（旧版 getonetaskterminal.js 同样如此）。
+
+          这里原来有一行字解释这件事（「现在显示的是第 N 个课时「…」自己的设置…」），
+          按需求方要求**整句去掉了**，只留「看整个方案」这个退回去的按钮 ——
+          序号那个 radio 点上了取消不掉（旧版也一样），没有它就回不到方案级视图。
         -->
-        <div v-if="termScopeNote" class="dlg-note mb6">
-          {{ termScopeNote }}
-          <el-button v-if="termScopeIdx >= 0" link type="primary" @click="activeItem = -1">
+        <div v-if="termScopeIdx >= 0" class="dlg-note mb6">
+          <el-button link type="primary" @click="activeItem = -1">
             {{ $t("bell.backToPlanTerminals") }}
           </el-button>
         </div>
@@ -651,10 +653,9 @@
             $t("bell.unifiedTerminals")
           }}</el-checkbox>
         </el-divider>
-        <div v-if="termScopeNote" class="dlg-note mb6">
-          {{ termScopeNote }}
-          <!-- radio 点上了就取消不掉（旧版也一样），给条回方案级视图的路 -->
-          <el-button v-if="termScopeIdx >= 0" link type="primary" @click="activeItem = -1">
+        <!-- 同上：解释的那行字去掉了，只留回方案级视图的路 -->
+        <div v-if="termScopeIdx >= 0" class="dlg-note mb6">
+          <el-button link type="primary" @click="activeItem = -1">
             {{ $t("bell.backToPlanTerminals") }}
           </el-button>
         </div>
@@ -935,7 +936,7 @@ const emptyItemRow = () => ({
   mediaId: undefined as number | undefined,
   /** 老数据原本挂了几个铃声。>1 时界面要说清楚保存会只留第一个 */
   legacyMediaCount: 0,
-  /** 这一课时自己挂了几台终端。各课时可以不一样，见 termScopeNote */
+  /** 这一课时自己挂了几台终端。各课时可以不一样：行内「修改」是按课时写的 */
   terminalCount: 0,
   /*
    * 这一课时自己的「方案级」属性。
@@ -1210,36 +1211,17 @@ const showItemScope = async (idx: number) => {
   }
 };
 
-// 只在「修改方案」里联动：批量修改有自己的「统一终端列表」开关，
-// 新建方案是一条条往里录，还没有哪一课时可读。
+// 「修改方案」与「批量修改」都联动：点了序号，上面那排控件（提前开电源、音量、
+// 任务级别、起止日期、星期、发送模式、播放模式、字幕）连同终端树一起换成
+// **那一课时自己的**值。方案名是整组共用的，本来就一直显示着。
+//
+// ⚠ 只有「添加方案」不联动：那会儿是一条条往里录，还没有哪一课时可读。
 watch(activeItem, idx => {
-  if (dlg.mode !== "edit") return;
+  if (dlg.mode === "create") return;
   if (idx < 0) showPlanScope();
   else void showItemScope(idx);
 });
 
-/**
- * 终端树上方那行字：现在显示的是**哪一个课时**的设置。
- *
- * ⚠ 方案级（没选中任何序号）时**不显示**任何提示 —— 按需求方要求去掉了。
- *   原来那句是「现在显示的是整个方案的设置（…）。点下面的「确定」会把它套到
- *   所有课时。」，「确定」都已经没有了，这句话更没必要占一行。
- *   选中某个课时时那行还留着：它说的是「现在看的是第几个课时」，
- *   而且「看整个方案」这个退回去的按钮就挂在它上面（序号 radio 选了取消不掉）。
- */
-const termScopeNote = computed(() => {
-  if (dlg.mode !== "edit") return "";
-  const idx = termScopeIdx.value;
-  if (idx < 0) return "";
-  const row = dlg.items[idx];
-  if (!row) return "";
-  if (!row.taskid) return t("bell.termScopeNewItem", { n: idx + 1 });
-  return t("bell.termScopeItem", {
-    n: idx + 1,
-    name: row.taskname?.trim() || row.taskname,
-    c: selectedTerminalIds.value.length
-  });
-});
 const onItemSelectionChange = (rows: ItemRow[]) => (selectedItems.value = rows);
 const itemCountNote = computed(() =>
   selectedItems.value.length

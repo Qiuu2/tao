@@ -342,6 +342,9 @@ export interface EnablePlan {
   id: number;
   startdate: string;
   starttime: string;
+  /** 结束日期 / 时间是后加的两列，老数据里是 NULL，读出来就是空串 */
+  enddate: string;
+  endtime: string;
   tasks: EnableTaskRef[];
   enableCount: number;
   disableCount: number;
@@ -363,6 +366,9 @@ export interface EnablePickTask {
 export interface EnableSaveForm {
   startdate: string;
   starttime: string;
+  /** 可以留空（老数据就是空的）。要填就得**两个一起填**，后端会拦 */
+  enddate: string;
+  endtime: string;
   tasks: { taskId: number; action: number }[];
 }
 

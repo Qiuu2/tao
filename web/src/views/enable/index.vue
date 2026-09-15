@@ -88,6 +88,36 @@
               />
             </el-form-item>
           </el-col>
+          <!--
+            结束日期 / 结束时间：enabletask 上后加的两列。
+            ⚠ 不是必填 —— 老数据里这两列是 NULL，硬要求填会让人连改都改不了。
+              但要填就得两个一起填（只填一个后台没法判断什么时候结束），后端也拦这一条。
+              所以这两个都带 clearable，清掉一个的时候顺手把另一个也清掉。
+          -->
+          <el-col :span="12">
+            <el-form-item :label="$t('common.endDate')">
+              <el-date-picker
+                v-model="form.enddate"
+                type="date"
+                value-format="YYYY-MM-DD"
+                :placeholder="$t('enable.endOptional')"
+                class="fill"
+                @change="onEndChange"
+              />
+              <div v-if="err.enddate" class="err">{{ err.enddate }}</div>
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item :label="$t('common.endTime')">
+              <el-time-picker
+                v-model="form.endtime"
+                value-format="HH:mm:ss"
+                :placeholder="$t('enable.endOptional')"
+                class="fill"
+                @change="onEndChange"
+              />
+            </el-form-item>
+          </el-col>
         </el-row>
 
         <!-- ⚠ 表格必须包一层 width:100% 的块，否则会被 el-form-item 的 flex 压扁 -->
@@ -173,8 +203,11 @@ const proTableRef = ref<ProTableInstance>();
 const columns = reactive<ColumnProps<EnablePlan>[]>([
   { type: "selection", fixed: "left", width: 50 },
   { prop: "tasks", label: t("taskCommon.taskName"), minWidth: 380 },
-  { prop: "startdate", label: t("enable.startDate2"), width: 150 },
-  { prop: "starttime", label: t("typed.playTime"), width: 150 },
+  // 表头与表单里的叫法要一致：表单上写的是「开始日期」，列表原来写「起始日期」
+  { prop: "startdate", label: t("common.startDate"), width: 120 },
+  { prop: "starttime", label: t("common.startTime"), width: 110 },
+  { prop: "enddate", label: t("common.endDate"), width: 120 },
+  { prop: "endtime", label: t("common.endTime"), width: 110 },
   { prop: "operation", label: t("common.operation"), fixed: "right", width: 140 }
 ]);
 
@@ -195,9 +228,9 @@ interface Row {
 const rows = ref<Row[]>([]);
 const taskLoading = ref(false);
 const pickKeyword = ref("");
-const form = reactive({ startdate: "", starttime: "08:00:00" });
+const form = reactive({ startdate: "", starttime: "08:00:00", enddate: "", endtime: "" });
 const dlg = reactive({ visible: false, saving: false, isEdit: false, title: "", id: 0 });
-const err = reactive({ startdate: "", tasks: "" });
+const err = reactive({ startdate: "", enddate: "", tasks: "" });
 const clearErr = () => Object.keys(err).forEach(k => ((err as any)[k] = ""));
 
 /**
@@ -229,7 +262,13 @@ const setAll = (v: number) =>
 
 const openCreate = async () => {
   clearErr();
-  Object.assign(form, { startdate: new Date().toISOString().slice(0, 10), starttime: "08:00:00" });
+  Object.assign(form, {
+    startdate: new Date().toISOString().slice(0, 10),
+    starttime: "08:00:00",
+    // 结束这一对默认不填 —— 与老数据一致，人要用再填
+    enddate: "",
+    endtime: ""
+  });
   pickKeyword.value = "";
   Object.assign(dlg, { visible: true, saving: false, isEdit: false, title: t("enable.addPlan"), id: 0 });
   await loadTasks();
@@ -238,7 +277,12 @@ const openCreate = async () => {
 const openEdit = async (row: EnablePlan) => {
   clearErr();
   const { data } = await getEnableApi(row.id);
-  Object.assign(form, { startdate: data.startdate, starttime: data.starttime });
+  Object.assign(form, {
+    startdate: data.startdate,
+    starttime: data.starttime,
+    enddate: data.enddate || "",
+    endtime: data.endtime || ""
+  });
   pickKeyword.value = "";
   // 已删除的任务不回填，否则保存时会被服务端的存在性校验挡下来
   const chosen = new Map<number, number>();
@@ -249,11 +293,32 @@ const openEdit = async (row: EnablePlan) => {
   if (dropped) ElMessage.warning(t("enable.droppedTasks", { n: dropped }));
 };
 
+/**
+ * 结束这一对要么都不填、要么一起填。
+ *
+ * 清掉其中一个就顺手把另一个也清掉 —— 不然人只清了日期，时间还留着，
+ * 提交时被后端拦下来，还得回头猜是哪一栏的事。
+ */
+const onEndChange = () => {
+  if (!form.enddate) form.endtime = "";
+  else if (!form.endtime) form.endtime = "23:59:59";
+};
+
 const submit = async () => {
   clearErr();
   let bad = false;
   if (!form.startdate) {
     err.startdate = t("enable.startDateRequired");
+    bad = true;
+  }
+  // 与后端同一条判据：填了结束就必须晚于开始
+  if (form.enddate && form.endtime) {
+    if (`${form.enddate} ${form.endtime}` <= `${form.startdate} ${form.starttime}`) {
+      err.enddate = t("enable.endAfterStart");
+      bad = true;
+    }
+  } else if (form.enddate || form.endtime) {
+    err.enddate = t("enable.endBothOrNeither");
     bad = true;
   }
   const picked = rows.value.filter(r => r.picked);
@@ -266,6 +331,8 @@ const submit = async () => {
   const body = {
     startdate: form.startdate,
     starttime: form.starttime,
+    enddate: form.enddate,
+    endtime: form.endtime,
     tasks: picked.map(r => ({ taskId: r.taskId, action: r.action }))
   };
   dlg.saving = true;

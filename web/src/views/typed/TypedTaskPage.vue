@@ -26,19 +26,16 @@
 <template>
   <div class="table-box">
     <!--
-      ⚠ 这里原来有一整排「任务目录」（分组单选 + 创建/修改/删除/复制目录），
-        按需求方要求去掉了 —— 现场只有一个分组，所有 LED 任务都在它下面，
-        这一层等于摆设。列表因此不再按目录过滤，一次列全部。
+      ⚠ 这一页原来在列表上方有一整排东西，按需求方要求都去掉了：
+        · 「任务目录」（分组单选 + 创建/修改/删除/复制目录）—— 现场只有一个分组，
+          所有 LED 任务都在它下面，这一层等于摆设。列表因此不再按目录过滤，一次列全部。
+        · 「LED 设备」登记弹窗 —— 也不要了。
 
-        库里的 `task.parentid` / `ledtaskfree` **没有动**：编辑任务时原样带回原来的
-        parentid，新建时由服务端挑现有分组（见 typedtask 的 defaultLEDFolder）。
-        旧系统还按这个分组读数据，把它写成 0 会让旧服务端那边对不上。
+        库里那两层**都没有动**：`task.parentid` / `ledtaskfree` 照旧，编辑任务时
+        原样带回原来的 parentid，新建时由服务端挑现有分组（typedtask 的
+        defaultLEDFolder）；`leddevice` / `ledoftask` 也原样留着，提交里不带
+        devices，服务端见缺省就保留原有绑定。旧系统还按这两层读数据。
     -->
-    <div v-if="kind === 'led'" class="folder-bar">
-      <div class="grow"></div>
-      <el-button size="small" :icon="Setting" @click="devDlg.visible = true">{{ $t("typed.ledDevice") }}</el-button>
-    </div>
-
     <ProTable
       ref="proTableRef"
       :columns="columns"
@@ -247,6 +244,19 @@
                 <el-slider v-model="form.ttsSpeed" :min="0" :max="100" show-input size="small" />
               </el-form-item>
             </el-col>
+            <!--
+              播放模式在左、tts终端在右（需求方定的位置）。
+              这一栏的格子顺序：声音模式 | 播放速率 / 播放模式 | tts终端 / 提示音。
+              上面那格共用的播放模式对 tts 是关掉的，就是为了让它落在这儿。
+            -->
+            <el-col :span="12">
+              <el-form-item :label="$t('task.playMode')">
+                <el-select v-model="form.intervalMode" class="fill" @change="onIntervalModeChange">
+                  <el-option :label="$t('task.normalMode')" :value="0" />
+                  <el-option :label="$t('task.intervalTime')" :value="1" />
+                </el-select>
+              </el-form-item>
+            </el-col>
             <el-col :span="12">
               <el-form-item :label="$t('typed.ttsTerminal')">
                 <el-select
@@ -260,22 +270,9 @@
                 </el-select>
               </el-form-item>
             </el-col>
-            <!--
-              播放模式按需求方要求排在「播放速率」**正下方** —— 播放速率在右列，
-              所以这一格也得落在右列，排在 tts终端 后面（上面那格对 tts 是关掉的）。
-              这一栏的格子顺序：声音模式 | 播放速率 / tts终端 | 播放模式 / 提示音。
-            -->
-            <el-col :span="12">
-              <el-form-item :label="$t('task.playMode')">
-                <el-select v-model="form.intervalMode" class="fill" @change="onIntervalModeChange">
-                  <el-option :label="$t('task.normalMode')" :value="0" />
-                  <el-option :label="$t('task.intervalTime')" :value="1" />
-                </el-select>
-              </el-form-item>
-            </el-col>
             <!-- 旧版只有在 tts终端 选到服务器本机（typeid = 0）时才出现提示音。
-                 tts终端 现在在左列，提示音不带 offset 就正好跟在它下面 -->
-            <el-col v-if="sourceIsServer" :span="12">
+                 tts终端 在右列，offset 让提示音正好跟在它下面 -->
+            <el-col v-if="sourceIsServer" :span="12" :offset="12">
               <el-form-item :label="$t('typed.promptTone')">
                 <el-select v-model="form.promptId" class="fill" :placeholder="$t('typed.pickPromptTone')">
                   <el-option :label="$t('typed.pickPromptTone')" :value="0" />
@@ -638,111 +635,20 @@
         </el-button>
       </template>
     </el-dialog>
-
-    <!-- ============ LED 目录：创建 / 修改 / 复制 ============ -->
-
-    <!-- ============ LED 设备管理 ============ -->
-    <el-dialog v-model="devDlg.visible" :title="$t('typed.ledDevice')" width="900px" top="6vh">
-      <div class="dev-bar">
-        <el-button type="primary" :icon="CirclePlus" size="small" @click="openDev()">{{ $t("typed.newLedDevice") }}</el-button>
-        <el-button type="danger" :icon="Delete" size="small" :disabled="!devSel.length" @click="deleteDevices">
-          删除({{ devSel.length }})
-        </el-button>
-      </div>
-      <el-table
-        :data="ledDevices"
-        size="small"
-        max-height="360"
-        row-key="id"
-        @selection-change="r => (devSel = r.map((x: any) => x.id))"
-      >
-        <el-table-column type="selection" width="46" />
-        <el-table-column prop="id" :label="$t('common.id')" width="70" />
-        <el-table-column prop="name" :label="$t('common.name')" min-width="130" />
-        <el-table-column prop="ip" :label="$t('common.ipAddress')" width="140" />
-        <el-table-column :label="$t('typed.screenSize')" width="110">
-          <template #default="{ row }">{{ row.width }} × {{ row.height }}</template>
-        </el-table-column>
-        <el-table-column prop="terminalname" :label="$t('typed.ownerTerminal')" min-width="140" show-overflow-tooltip />
-        <el-table-column prop="sendport" :label="$t('typed.port')" width="80" />
-        <el-table-column :label="$t('common.operation')" width="90">
-          <template #default="{ row }">
-            <el-button link type="primary" @click="openDev(row)">{{ $t("common.modify") }}</el-button>
-          </template>
-        </el-table-column>
-      </el-table>
-
-      <el-dialog
-        v-model="devForm.visible"
-        :title="devForm.id ? $t('typed.editLedDevice') : $t('typed.newLedDevice')"
-        width="560px"
-        append-to-body
-      >
-        <el-form :model="devForm" label-width="110px">
-          <el-form-item :label="$t('common.name')" required>
-            <el-input v-model="devForm.name" maxlength="21" show-word-limit />
-          </el-form-item>
-          <el-form-item :label="$t('common.ipAddress')" required>
-            <el-input v-model="devForm.ip" :placeholder="$t('typed.egIp')" />
-          </el-form-item>
-          <el-form-item :label="$t('typed.ownerTerminal')" required>
-            <TerminalTreeSelect v-model="devForm.terminalId" :terminals="terminals" />
-          </el-form-item>
-          <el-row :gutter="14">
-            <el-col :span="12">
-              <el-form-item :label="$t('typed.screenWidth')">
-                <el-input-number v-model="devForm.width" :min="1" :max="4096" controls-position="right" />
-              </el-form-item>
-            </el-col>
-            <el-col :span="12">
-              <el-form-item :label="$t('typed.screenHeight')">
-                <el-input-number v-model="devForm.height" :min="1" :max="4096" controls-position="right" />
-              </el-form-item>
-            </el-col>
-          </el-row>
-          <el-row :gutter="14">
-            <el-col :span="12">
-              <el-form-item :label="$t('typed.deviceNo')">
-                <el-input-number v-model="devForm.devid" :min="0" controls-position="right" />
-              </el-form-item>
-            </el-col>
-            <el-col :span="12">
-              <el-form-item :label="$t('typed.sendPort')">
-                <el-input-number v-model="devForm.sendport" :min="0" :max="65535" controls-position="right" />
-              </el-form-item>
-            </el-col>
-          </el-row>
-          <el-form-item :label="$t('typed.defaultShow')">
-            <el-input v-model="devForm.defaulttext" type="textarea" :rows="2" :placeholder="$t('common.optional')" />
-          </el-form-item>
-        </el-form>
-        <template #footer>
-          <el-button @click="devForm.visible = false">{{ $t("common.cancel") }}</el-button>
-          <el-button type="primary" :loading="devForm.saving" @click="submitDev">{{ $t("common.confirm") }}</el-button>
-        </template>
-      </el-dialog>
-
-      <template #footer>
-        <el-button @click="devDlg.visible = false">{{ $t("common.close") }}</el-button>
-      </template>
-    </el-dialog>
   </div>
 </template>
 
 <script setup lang="tsx">
 import { useI18n } from "vue-i18n";
-import { CirclePlus, Delete, EditPen, Search, Setting } from "@element-plus/icons-vue";
+import { Delete, EditPen, Search } from "@element-plus/icons-vue";
 import { ElMessage, ElMessageBox, ElNotification } from "element-plus";
 import { computed, nextTick, onMounted, reactive, ref, watch } from "vue";
 
 import {
   applySoundDBTemplateApi,
   controlTypedApi,
-  createLedDeviceApi,
   createTypedApi,
-  deleteLedDevicesApi,
   deleteTypedApi,
-  getLedDevicesApi,
   getPromptMediaApi,
   getSoundDBTemplateApi,
   getSoundTreeApi,
@@ -754,11 +660,9 @@ import {
   setSoundDBTemplateApi,
   setTypedStateApi,
   SOUND_VOLUME_STEPS,
-  updateLedDeviceApi,
   updateTypedApi
 } from "@/api/modules/ninemod";
 import type {
-  LedDevice,
   PromptMedia,
   SoundDeviceRef,
   SoundTreeGroup,
@@ -773,7 +677,6 @@ import HmsInput from "@/components/HmsInput/index.vue";
 import MediaTree from "@/components/MediaTree/index.vue";
 import ProTable from "@/components/ProTable/index.vue";
 import TerminalTree from "@/components/TerminalTree/index.vue";
-import TerminalTreeSelect from "@/components/TerminalTree/Select.vue";
 import { useAuthStore } from "@/stores/modules/auth";
 import type { ColumnProps, ProTableInstance } from "@/components/ProTable/interface";
 
@@ -926,7 +829,6 @@ watch(
     initParam.folderId = 0;
     scopeNote.value = "";
     await loadSources();
-    await loadLED();
     refresh();
   }
 );
@@ -940,7 +842,6 @@ const selectedTerminals = ref<number[]>([]);
 const terminalAreas = ref<Record<number, string>>({});
 const sourceTerminals = ref<TypedTerminalOption[]>([]);
 const promptList = ref<PromptMedia[]>([]);
-const ledDevices = ref<LedDevice[]>([]);
 
 const searchTerminals = async (kw: string) => {
   terminalLoading.value = true;
@@ -964,13 +865,6 @@ const loadSources = async () => {
     const res = await getPromptMediaApi();
     promptList.value = res.data ?? [];
   }
-};
-
-const loadLED = async () => {
-  if (props.kind !== "led") return;
-  // 目录那一层去掉之后只剩设备要读
-  const { data } = await getLedDevicesApi();
-  ledDevices.value = data ?? [];
 };
 
 /* ---------------- 声场任务：分区树、噪声设备、默认噪声值 ---------------- */
@@ -1294,7 +1188,6 @@ const openCreate = async () => {
   form.priority = priorityRange.min;
   await loadSources();
   if (props.kind === "led") {
-    await loadLED();
     // 目录那一栏已经去掉了，新建时留 0 —— 服务端会挑一个现有分组落库
     form.folderId = 0;
   }
@@ -1351,7 +1244,6 @@ const openEdit = async (row: TypedTask) => {
     form.promptId = data.promptId ?? 0;
   }
   if (props.kind === "led") {
-    await loadLED();
     form.led = { text: data.led?.text ?? "", speed: data.led?.speed ?? 0, ledmode: data.led?.ledmode ?? 0 };
   }
   // 文字语音的 LED 字幕子任务：有就把开关打开并回填
@@ -1523,7 +1415,6 @@ const submit = async () => {
     else await createTypedApi(props.kind, body);
     ElMessage.success(t("common.saveSuccess"));
     dlg.visible = false;
-    if (props.kind === "led") await loadLED();
     refresh();
   } finally {
     dlg.saving = false;
@@ -1601,7 +1492,6 @@ const doDelete = async (raw: (string | number)[]) => {
   });
   const { data } = await deleteTypedApi(props.kind, ids);
   reportBlocked(data.blocked, data.deleted.length, t("common.delete"));
-  if (props.kind === "led") await loadLED();
   refresh();
 };
 
@@ -1616,81 +1506,9 @@ const openTerminals = async (row: TypedTask) => {
   termDlg.visible = true;
 };
 
-/* ---------------- LED 设备 ---------------- */
-
-const devDlg = reactive({ visible: false });
-const devSel = ref<number[]>([]);
-const devForm = reactive({
-  visible: false,
-  saving: false,
-  id: 0,
-  name: "",
-  ip: "",
-  terminalId: 0,
-  devid: 0,
-  width: 64,
-  height: 32,
-  sendport: 0,
-  mac: "",
-  defaulttext: ""
-});
-
-const openDev = (row?: LedDevice) => {
-  Object.assign(devForm, {
-    visible: true,
-    saving: false,
-    id: row?.id ?? 0,
-    name: row?.name ?? "",
-    ip: row?.ip ?? "",
-    terminalId: row?.terminalId ?? 0,
-    devid: row?.devid ?? 0,
-    width: row?.width ?? 64,
-    height: row?.height ?? 32,
-    sendport: row?.sendport ?? 0,
-    mac: row?.mac ?? "",
-    defaulttext: row?.defaulttext ?? ""
-  });
-};
-
-const submitDev = async () => {
-  devForm.saving = true;
-  try {
-    const body = {
-      name: devForm.name.trim(),
-      ip: devForm.ip.trim(),
-      terminalId: devForm.terminalId,
-      devid: devForm.devid,
-      width: devForm.width,
-      height: devForm.height,
-      sendport: devForm.sendport,
-      mac: devForm.mac.trim(),
-      defaulttext: devForm.defaulttext.trim()
-    };
-    if (devForm.id) await updateLedDeviceApi(devForm.id, body);
-    else await createLedDeviceApi(body);
-    ElMessage.success(t("common.saveSuccess"));
-    devForm.visible = false;
-    await loadLED();
-  } finally {
-    devForm.saving = false;
-  }
-};
-
-const deleteDevices = async () => {
-  await ElMessageBox.confirm(t("typed.confirmDeleteScreens", { n: devSel.value.length }), t("typed.deleteLedDevice"), {
-    type: "warning",
-    confirmButtonText: t("common.confirmDelete")
-  });
-  const { data } = await deleteLedDevicesApi(devSel.value);
-  ElMessage.success(t("typed.deletedScreens", { n: data.deleted }));
-  devSel.value = [];
-  await loadLED();
-};
-
 onMounted(async () => {
   await searchTerminals("");
   await loadSources();
-  await loadLED();
 });
 </script>
 
