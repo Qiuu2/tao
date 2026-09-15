@@ -75,6 +75,15 @@ type ItemInput struct {
 	// task_default_volume / task_priority_text / sendmode ——
 	// 也就是上面那排控件当时的值，只写给这一条目。
 	Attrs *ItemAttrs `json:"attrs"`
+	// NewPlanName：上面那排控件里的方案名改了，就一并存下来。
+	//
+	// ⚠ 它与 Attrs 里那些不是一回事，**必须落到整组**：方案名就是
+	// task.info，也就是「这些行属于同一个方案」的唯一依据。只改这一行的话，
+	// 这一行立刻变成另一个方案，界面上一个方案会裂成两个（旧版
+	// modifyonebellplan.php 正是逐行写 info，D-169 那条就是这么来的）。
+	//
+	// 空串 = 这次不改名。
+	NewPlanName string `json:"newPlanName"`
 }
 
 // ItemAttrs 是一个打铃条目自己的「方案级」属性。
@@ -1451,13 +1460,15 @@ func (s *Service) AddItem(ctx context.Context, u *auth.User, planName string,
 
 // UpdateItem 改一个条目（对应旧 belltaskalonemodify）。
 //
-// 返回该条目的 defaultvolume，调用方发通知时要原样带上 &volume=。
+// 返回该条目的 defaultvolume（调用方发通知时要原样带上 &volume=）
+// 与这次之后方案叫什么名字 —— 行内「修改」也负责存方案改名，
+// 名字变了前端得知道，不然它手里还攥着旧名，下一次请求就 404。
 func (s *Service) UpdateItem(ctx context.Context, u *auth.User, planName string,
-	taskID int64, it ItemInput) (int, error) {
+	taskID int64, it ItemInput) (int, string, error) {
 
 	owner, err := s.assertPlan(ctx, u, planName)
 	if err != nil {
-		return 0, err
+		return 0, "", err
 	}
 	var curName string
 	var volume, curPriority int
@@ -1466,52 +1477,52 @@ func (s *Service) UpdateItem(ctx context.Context, u *auth.User, planName string,
 		 FROM task WHERE taskid = ? AND info = ? AND `+planScope(""),
 		taskID, planName).Scan(&curName, &volume, &curPriority)
 	if errors.Is(err, sql.ErrNoRows) {
-		return 0, ErrNotFound
+		return 0, "", ErrNotFound
 	}
 	if err != nil {
-		return 0, fmt.Errorf("查询条目: %w", err)
+		return 0, "", fmt.Errorf("查询条目: %w", err)
 	}
 
 	it.TaskName = strings.TrimSpace(it.TaskName)
 	if it.TaskName == "" {
-		return 0, fmt.Errorf("条目名称不能为空")
+		return 0, "", fmt.Errorf("条目名称不能为空")
 	}
 	if !reTime.MatchString(it.PlayTime) {
-		return 0, fmt.Errorf("打铃时间格式不正确，应为 HH:MM:SS")
+		return 0, "", fmt.Errorf("打铃时间格式不正确，应为 HH:MM:SS")
 	}
 	if it.TimeLengthTy != 1 && it.TimeLengthTy != 2 {
-		return 0, fmt.Errorf("时长类型只能是 1（按秒数）或 2（按循环次数）")
+		return 0, "", fmt.Errorf("时长类型只能是 1（按秒数）或 2（按循环次数）")
 	}
 	if it.TimeLength < 0 || it.TimeLength > 86400 {
-		return 0, fmt.Errorf("时长/次数必须在 0 ~ 86400 之间")
+		return 0, "", fmt.Errorf("时长/次数必须在 0 ~ 86400 之间")
 	}
 	if it.TaskName != curName {
 		var dup int
 		if err := s.db.QueryRowContext(ctx,
 			`SELECT COUNT(*) FROM task WHERE info = ? AND taskname = ? AND taskid <> ? AND `+planScope(""),
 			planName, it.TaskName, taskID).Scan(&dup); err != nil {
-			return 0, fmt.Errorf("条目重名校验: %w", err)
+			return 0, "", fmt.Errorf("条目重名校验: %w", err)
 		}
 		if dup > 0 {
-			return 0, fmt.Errorf("方案内已存在同名条目：%q", it.TaskName)
+			return 0, "", fmt.Errorf("方案内已存在同名条目：%q", it.TaskName)
 		}
 	}
 	// 一课时一铃声，与 Create / AddItem 同一条判据（见 maxItemMedia）
 	if err := checkItemMedia(it.Media, 1); err != nil {
-		return 0, err
+		return 0, "", err
 	}
 	mediaIDs := make([]int64, 0, len(it.Media))
 	for _, m := range it.Media {
 		mediaIDs = append(mediaIDs, m.MediaID)
 	}
 	if err := s.assertMediaExist(ctx, mediaIDs); err != nil {
-		return 0, err
+		return 0, "", err
 	}
 	// 终端要在开事务前校验：validateTerminals 自己还要查库（存在性、归属、分区号），
 	// 放进事务里等于在持锁期间多跑好几条查询。
 	if it.ApplyTerminals {
 		if err := s.validateTerminals(ctx, u, it.Terminals); err != nil {
-			return 0, err
+			return 0, "", err
 		}
 	}
 	// 方案级那一组（起止日期 / 星期 / 提前开电源 / 音量 / 任务级别 / 发送模式）。
@@ -1520,39 +1531,74 @@ func (s *Service) UpdateItem(ctx context.Context, u *auth.User, planName string,
 		// 任务级别沿用这一条现有的值当「旧值」：历史数据里 priority < 10 的条目
 		// 不该连改个名字都被区间校验挡下（与 Update 的 oldPri 同一条理由）。
 		if err := s.checkItemAttrs(ctx, it.Attrs, owner, &curPriority); err != nil {
-			return 0, err
+			return 0, "", err
 		}
 		volume = it.Attrs.Volume
 	}
 
+	// 改名：上面那排控件里的方案名变了就一并存下来。
+	//
+	// 对话框底下没有「确定」（那是需求方要的，见前端注释），保存全靠行内的
+	// 「添加 / 修改」—— 改名没有别的入口，就挂在这里。
+	// 校验放在开事务前：checkPlanName 只看字符串，planNameFree 要查库。
+	newName := planName
+	if want := strings.TrimSpace(it.NewPlanName); want != "" && want != planName {
+		if newName, err = checkPlanName(want); err != nil {
+			return 0, "", err
+		}
+	}
+	renaming := newName != planName
+	if renaming {
+		// 与 Update 一样先上方案锁：重名检查和改名之间不能插进别人的新建
+		unlock, err := store.Lock(ctx, s.db, planLock)
+		if err != nil {
+			return 0, "", err
+		}
+		defer unlock()
+		if err := s.planNameFree(ctx, newName); err != nil {
+			return 0, "", err
+		}
+	}
+
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
-		return 0, fmt.Errorf("开启事务: %w", err)
+		return 0, "", fmt.Errorf("开启事务: %w", err)
 	}
 	defer func() { _ = tx.Rollback() }()
+
+	// ⚠ 改名要覆盖**整组**（连同功放 / LED 子任务），而且要排在后面那些
+	//   按新名字写子任务的步骤前面 —— 只改这一行的话，这一行当场就变成
+	//   另一个方案，一个方案会裂成两个。
+	if renaming {
+		if _, err := tx.ExecContext(ctx,
+			`UPDATE task SET info = ? WHERE info = ? AND `+planScopeWithSubs(""),
+			newName, planName); err != nil {
+			return 0, "", fmt.Errorf("修改方案名: %w", err)
+		}
+	}
 
 	if _, err := tx.ExecContext(ctx,
 		`UPDATE task SET taskname = ?, playtime = ?, timelengthtype = ?, timelength = ?
 		 WHERE taskid = ?`,
 		it.TaskName, it.PlayTime, it.TimeLengthTy, it.TimeLength, taskID); err != nil {
-		return 0, fmt.Errorf("修改条目: %w", err)
+		return 0, "", fmt.Errorf("修改条目: %w", err)
 	}
 	// 功放子任务的名字与时间跟着主条目走
 	var prepower int
 	if err := tx.QueryRowContext(ctx,
 		`SELECT COALESCE(prepower,0) FROM task WHERE taskid = ?`, taskID).Scan(&prepower); err != nil {
-		return 0, fmt.Errorf("查询提前量: %w", err)
+		return 0, "", fmt.Errorf("查询提前量: %w", err)
 	}
 	if prepower > 0 {
 		powerTime, err := task.ShiftTime(it.PlayTime, -prepower)
 		if err != nil {
-			return 0, err
+			return 0, "", err
 		}
 		if _, err := tx.ExecContext(ctx,
 			`UPDATE task SET taskname = ?, playtime = ?, timelengthtype = ?, timelength = ?
 			 WHERE sec_task_id = ? AND tasktype = ?`,
 			it.TaskName, powerTime, it.TimeLengthTy, it.TimeLength, taskID, PowerType); err != nil {
-			return 0, fmt.Errorf("修改功放子任务: %w", err)
+			return 0, "", fmt.Errorf("修改功放子任务: %w", err)
 		}
 	}
 	// LED 子任务的名字与时间也跟着主条目走（字幕正文由方案级设置统一管）
@@ -1561,14 +1607,14 @@ func (s *Service) UpdateItem(ctx context.Context, u *auth.User, planName string,
 		`UPDATE task SET taskname = ?, playtime = ?, timelengthtype = ?, timelength = ?
 		 WHERE sec_task_id = ? AND tasktype IN (`+ledPH+`)`,
 		append([]interface{}{it.TaskName, it.PlayTime, it.TimeLengthTy, it.TimeLength, taskID}, ledArgs...)...); err != nil {
-		return 0, fmt.Errorf("修改 LED 子任务: %w", err)
+		return 0, "", fmt.Errorf("修改 LED 子任务: %w", err)
 	}
 	if _, err := tx.ExecContext(ctx,
 		`DELETE FROM mediaoftask WHERE taskid = ?`, taskID); err != nil {
-		return 0, fmt.Errorf("清理条目铃声: %w", err)
+		return 0, "", fmt.Errorf("清理条目铃声: %w", err)
 	}
 	if err := writeMedia(ctx, tx, taskID, it.Media); err != nil {
-		return 0, err
+		return 0, "", err
 	}
 	// 方案级那一组：只写这一条目（含它的功放 / LED 子任务）。
 	//
@@ -1578,15 +1624,17 @@ func (s *Service) UpdateItem(ctx context.Context, u *auth.User, planName string,
 	// 整组 —— 表现为「任务级别改成 10、点了修改，重新打开还是原来那个数」。
 	if it.Attrs != nil {
 		if err := writeItemAttrs(ctx, tx, taskID, it.Attrs); err != nil {
-			return 0, err
+			return 0, "", err
 		}
-		// prepower 变了，功放子任务要跟着建 / 删 / 改时间
-		if err := resyncItemPower(ctx, tx, planName, owner, taskID, &it, it.Attrs); err != nil {
-			return 0, err
+		// prepower 变了，功放子任务要跟着建 / 删 / 改时间。
+		// ⚠ 用 newName：这两个函数新建子任务时要往 info 里写方案名，
+		//   同一次请求里改了名还用旧名的话，新建的子任务会挂到一个不存在的方案上。
+		if err := resyncItemPower(ctx, tx, newName, owner, taskID, &it, it.Attrs); err != nil {
+			return 0, "", err
 		}
 		// 字幕也是按条目挂的，同样要跟着建 / 删
-		if err := resyncItemLED(ctx, tx, planName, owner, taskID, &it, it.Attrs); err != nil {
-			return 0, err
+		if err := resyncItemLED(ctx, tx, newName, owner, taskID, &it, it.Attrs); err != nil {
+			return 0, "", err
 		}
 	}
 	// 终端按条目重写。
@@ -1599,24 +1647,24 @@ func (s *Service) UpdateItem(ctx context.Context, u *auth.User, planName string,
 		ids := []int64{taskID}
 		subs, err := collectSubTasks(ctx, tx, ids)
 		if err != nil {
-			return 0, err
+			return 0, "", err
 		}
 		ids = append(ids, subs...)
 		ph, args := placeholders(ids)
 		if _, err := tx.ExecContext(ctx,
 			`DELETE FROM terminaloftask WHERE taskid IN (`+ph+`)`, args...); err != nil {
-			return 0, fmt.Errorf("清理条目终端清单: %w", err)
+			return 0, "", fmt.Errorf("清理条目终端清单: %w", err)
 		}
 		for _, id := range ids {
 			if _, err := writeTerminals(ctx, tx, id, 0, it.Terminals); err != nil {
-				return 0, err
+				return 0, "", err
 			}
 		}
 	}
 	if err := tx.Commit(); err != nil {
-		return 0, fmt.Errorf("提交事务: %w", err)
+		return 0, "", fmt.Errorf("提交事务: %w", err)
 	}
-	return volume, nil
+	return volume, newName, nil
 }
 
 // SetItemSchedule 把选中的条目挪到新的日期时间段，并改它们的执行星期。

@@ -128,6 +128,13 @@ export interface BellItemForm {
    * 上面那排控件当时的值，只写给这一条目。
    */
   attrs?: BellItemAttrs;
+  /**
+   * 改后的方案名。与当前方案名相同（或不传）= 这次不改名。
+   *
+   * ⚠ 它和 attrs 里那些不是一回事：方案名就是 task.info，改名**落到整组**，
+   * 不是只落这一条目 —— 只改一行的话，那一行当场就变成另一个方案。
+   */
+  newPlanName?: string;
 }
 
 export interface BellItemAttrs {
@@ -251,7 +258,10 @@ export const addBellItemApi = (planName: string, item: BellItemForm) =>
   http.post<BellSaveResult>(PORT1 + `/api/bell-plans/items`, { planName, item });
 
 export const updateBellItemApi = (planName: string, taskId: number, item: BellItemForm) =>
-  http.put<{ taskid: number }>(PORT1 + `/api/bell-plans/items/${taskId}`, { planName, item });
+  http.put<{ taskid: number; planName: string; renamed: boolean }>(PORT1 + `/api/bell-plans/items/${taskId}`, {
+    planName,
+    item
+  });
 
 /** 智能排课：把勾中的条目挪到新的日期时间段，并改它们的执行星期 */
 export const setBellItemScheduleApi = (planName: string, ids: number[], schedule: BellSchedule) => {

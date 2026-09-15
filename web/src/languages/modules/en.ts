@@ -790,8 +790,6 @@ export default {
     unifiedMusic: "One bell tone for all",
     unifiedLength: "One play length for all",
     unifiedTerminals: "One terminal list for all",
-    termScopePlan:
-      "Showing the whole plan’s settings (pre-power, volume, priority, date range, weekdays, terminals). Hit “Add”/“Modify” on each row to store them.",
     termScopeItem:
       "Showing lesson {n} “{name}”’s own settings (pre-power, volume, priority, date range, weekdays, plus {c} terminal(s)). Hit “Modify” on that row to save just this lesson.",
     termScopeNewItem:
@@ -845,6 +843,7 @@ export default {
     pendingRows: "{n} lessons have not been added",
     planSaved: "Plan saved",
     planRenamed: "Plan renamed",
+    planRenamedTo: "Plan renamed to “{name}”",
     lastLessonGone: "That was the plan’s last lesson, so the plan is gone too",
     deleteOneAtATime: "Only one plan can be deleted at a time. Deal with “{name}” first, then come back for the rest.",
     dupWithRow: "Same name as row {n}",

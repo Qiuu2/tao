@@ -787,8 +787,6 @@ export default {
     unifiedMusic: "统一作息音乐",
     unifiedLength: "统一播放时长",
     unifiedTerminals: "统一终端列表",
-    termScopePlan:
-      "现在显示的是整个方案的设置（提前开电源、音量、任务级别、起止日期、星期、终端清单）。改完要逐行点「添加 / 修改」才会存进去。",
     termScopeItem:
       "现在显示的是第 {n} 个课时「{name}」自己的设置（提前开电源、音量、任务级别、起止日期、星期，以及 {c} 台终端）。改完点这一行的「修改」，只存这一个课时。",
     termScopeNewItem: "第 {n} 个课时还没入库，先显示整个方案的设置。点这一行的「添加」就按现在这些值存给它。",
@@ -841,6 +839,7 @@ export default {
     pendingRows: "{n} 行课时还没添加",
     planSaved: "方案已保存",
     planRenamed: "方案已改名",
+    planRenamedTo: "方案已改名为「{name}」",
     lastLessonGone: "方案的最后一个课时已删除，方案随之不存在了",
     deleteOneAtATime: "一次只能删一个方案。先处理「{name}」，其余的删完再来。",
     dupWithRow: "与第 {n} 行重名",

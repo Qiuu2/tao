@@ -204,15 +204,20 @@ await p.waitForTimeout(4000);
 const dlg = p.locator(".el-dialog:visible").first();
 // 课时表在对话框里是第二张表（第一张是外面那张列表），用对话框内的表定位
 const itemRows = dlg.locator(".el-table__body .el-table__row");
-const noteText = async () => ((await dlg.locator(".dlg-note.mb6").first().innerText()) || "").replace(/\s+/g, "");
+// ⚠ 方案级视图下**没有**这行字了（需求方要求去掉），所以先看在不在，再读内容
+const noteCount = () => dlg.locator(".dlg-note.mb6").count();
+const noteText = async () =>
+  (await noteCount()) ? ((await dlg.locator(".dlg-note.mb6").first().innerText()) || "").replace(/\s+/g, "") : "";
 const pickedIds = () =>
   dlg.locator(".tt-tree .el-tree-node__content").evaluateAll(ns =>
     ns.filter(n => n.querySelector(".el-checkbox.is-checked")).map(n => (n.querySelector(".tt-label") || {}).textContent || "")
   );
 {
+  // 刚打开是方案级视图：那行提示不该出现（原来写的是「现在显示的是整个方案的
+  // 设置（…）。点下面的「确定」会把它套到所有课时。」，「确定」都没了，这句更没必要）
   const n = await noteText();
-  console.log("   刚打开时那行字:", n);
-  ok(n.includes("整个方案"), "一打开说的是「整个方案」");
+  console.log("   刚打开时那行字:", n || "(没有，符合预期)");
+  ok((await noteCount()) === 0, "方案级视图下不显示那行提示");
 }
 {
   // 第 2 行的序号 radio
@@ -235,8 +240,8 @@ const pickedIds = () =>
   await dlg.locator("button", { hasText: "看整个方案" }).first().click();
   await p.waitForTimeout(1500);
   const n = await noteText();
-  console.log("   点了「看整个方案的终端」后:", n);
-  ok(n.includes("整个方案"), "能退回方案级视图");
+  console.log("   点了「看整个方案的终端」后:", n || "(那行字没了，符合预期)");
+  ok((await noteCount()) === 0, "退回方案级视图之后那行提示也跟着没了");
   const picked = (await pickedIds()).filter(Boolean);
   ok(picked.length === 1 && picked[0].includes(nameOf(T1)), "树也换回了方案级那一份（T1）");
 }
@@ -491,6 +496,79 @@ console.log("⑩ 行内「修改」要把**整组**方案级属性都存进这�
     q1(`SELECT COUNT(*) FROM task WHERE sec_task_id=${id1} AND tasktype IN (24,30)`) === "0",
     "把字幕关掉之后，这一课时的 LED 子任务被删干净了"
   );
+}
+
+// ⑪ 行内「修改」也要把**方案改名**存下来（改名落整组，属性仍只落这一课时）
+//
+// 对话框底下的「确定」按需求方要求去掉了，改名没有别的入口，就挂在行内「修改」上。
+// 这里盯三件事：
+//   1. 整组（连功放 / LED 子任务）的 info 都换成新名字 —— 只改一行的话方案会裂成两个；
+//   2. 属性还是只写这一课时，改名不会顺手把别的课时也改了；
+//   3. 接口把新名字回给前端（renamed / planName），不然前端攥着旧名下一次就 404。
+{
+  console.log("⑪ 改了方案名再点行内「修改」，整组都要改过来");
+  const NEW = PLAN + "改名";
+  const before = q1(`SELECT COUNT(*) FROM task WHERE info='${PLAN}'`);
+  const otherBefore = q1(`SELECT CONCAT(priority,'|',defaultvolume) FROM task WHERE taskid=${id2}`);
+  console.log(`   改名前叫「${PLAN}」的行数（含子任务）: ${before}`);
+
+  const r = await call("PUT", `/api/bell-plans/items/${id1}`, {
+    planName: PLAN,
+    item: {
+      taskname: "第一节",
+      playtime: "08:00:00",
+      timelengthtype: 2,
+      timelength: 1,
+      media: [{ mediaId: mid, sort: 0 }],
+      terminals: [{ terminalId: T1, groupId: 0, area: "11111111" }],
+      applyTerminals: true,
+      attrs: {
+        startdate: "2026-03-01",
+        enddate: "2026-06-30",
+        exemodel: "0101010",
+        // ⚠ prepower 保持 25（⑩ 存进去的那个值）：改成 0 会把功放子任务删掉，
+        //   行数就对不上了 —— 那是 prepower 的效果，不是改名的，别混在一条断言里
+        prepower: 25,
+        defaultvolume: 55,
+        priority: 33,
+        datasendmodel: 0,
+        israndomplay: 0,
+        led: null
+      },
+      newPlanName: NEW
+    }
+  });
+  ok(r.code === 200, "带 newPlanName 的行内修改成功了：" + JSON.stringify(r.msg ?? ""));
+  ok(r.data?.renamed === true && r.data?.planName === NEW, `接口把新名字回来了（renamed=${r.data?.renamed}，planName=${r.data?.planName}）`);
+
+  const after = q1(`SELECT COUNT(*) FROM task WHERE info='${NEW}'`);
+  const left = q1(`SELECT COUNT(*) FROM task WHERE info='${PLAN}'`);
+  console.log(`   改名后：叫「${NEW}」的 ${after} 行，还叫旧名的 ${left} 行`);
+  ok(after === before, "整组（含功放 / LED 子任务）都换成了新名字");
+  ok(left === "0", "一行旧名字都没剩下 —— 方案没被劈成两个");
+
+  const other = q1(`SELECT CONCAT(priority,'|',defaultvolume) FROM task WHERE taskid=${id2}`);
+  console.log(`   第二节：改名前 ${otherBefore}，改名后 ${other}`);
+  ok(other === otherBefore, "改名没有顺手把别的课时的属性也改了");
+  ok(q1(`SELECT priority FROM task WHERE taskid=${id1}`) === "33", "这一课时的属性照旧只写给它自己");
+
+  // 详情按新名字读得出来
+  const d = await call("GET", `/api/bell-plans/detail?plan=${encodeURIComponent(NEW)}`);
+  ok(d.code === 200 && (d.data.items ?? []).length === 2, `按新名字能读到这个方案（${(d.data?.items ?? []).length} 个课时）`);
+
+  // 重名要拦住：把第二个方案名占住再试
+  const dup = await call("PUT", `/api/bell-plans/items/${id1}`, {
+    planName: NEW,
+    item: {
+      taskname: "第一节",
+      playtime: "08:00:00",
+      timelengthtype: 2,
+      timelength: 1,
+      media: [{ mediaId: mid, sort: 0 }],
+      newPlanName: "   "
+    }
+  });
+  ok(dup.code === 200 && q1(`SELECT COUNT(*) FROM task WHERE info='${NEW}'`) === after, "newPlanName 传空白 = 不改名");
 }
 
 console.log(fails ? `\n✗ ${fails} 条没过` : "\n全部通过");

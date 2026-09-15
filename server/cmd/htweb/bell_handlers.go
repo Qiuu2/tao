@@ -229,13 +229,17 @@ func (a *app) handleBellItemUpdate(w http.ResponseWriter, r *http.Request) {
 	if !httpx.DecodeJSON(w, r, &in) {
 		return
 	}
-	volume, err := a.bells.UpdateItem(r.Context(), auth.From(r.Context()), in.PlanName, id, in.Item)
+	volume, planName, err := a.bells.UpdateItem(r.Context(), auth.From(r.Context()), in.PlanName, id, in.Item)
 	if err != nil {
 		failBell(w, "修改打铃条目", err)
 		return
 	}
 	a.notifier.TaskSaved(r.Context(), notify.TaskUpdated, id, volume)
-	httpx.OK(w, map[string]interface{}{"taskid": id})
+	// planName 回给前端：行内「修改」也负责存方案改名，改过之后前端手里那个
+	// 旧名字已经不作数了，下一次请求会 404。
+	httpx.OK(w, map[string]interface{}{
+		"taskid": id, "planName": planName, "renamed": planName != in.PlanName,
+	})
 }
 
 type bellItemDeleteReq struct {

@@ -1031,7 +1031,17 @@ const itemPayload = (it: ItemRow, withScope = false) => ({
   timelength: it.timelengthtype === 2 ? it.timelength : hmsToSec(it.lengthhms),
   // 一课时一铃声：没选就传空数组（后端据此把这条的 mediaoftask 清干净）
   media: it.mediaId ? [{ mediaId: it.mediaId, sort: 0 }] : [],
-  ...(withScope ? { terminals: terminalsForm(), applyTerminals: true, attrs: headerAttrs() } : {})
+  ...(withScope
+    ? {
+        terminals: terminalsForm(),
+        applyTerminals: true,
+        attrs: headerAttrs(),
+        // 方案名也一并带上：对话框底下没有「确定」，改名没有别的入口，
+        // 就挂在行内「修改」上。后端只在它与当前方案名不同时才改，
+        // 且**改的是整组** —— 方案名就是 task.info，只改这一行的话方案会裂成两个。
+        newPlanName: dlg.form.planName.trim()
+      }
+    : {})
 });
 
 /** 删掉库里的课时之后：刷新列表；如果连方案都没了，就把状态收拾干净 */
@@ -1208,13 +1218,21 @@ watch(activeItem, idx => {
   else void showItemScope(idx);
 });
 
-/** 终端树上方那行字：现在显示的是谁的终端、点哪个按钮存到哪 */
+/**
+ * 终端树上方那行字：现在显示的是**哪一个课时**的设置。
+ *
+ * ⚠ 方案级（没选中任何序号）时**不显示**任何提示 —— 按需求方要求去掉了。
+ *   原来那句是「现在显示的是整个方案的设置（…）。点下面的「确定」会把它套到
+ *   所有课时。」，「确定」都已经没有了，这句话更没必要占一行。
+ *   选中某个课时时那行还留着：它说的是「现在看的是第几个课时」，
+ *   而且「看整个方案」这个退回去的按钮就挂在它上面（序号 radio 选了取消不掉）。
+ */
 const termScopeNote = computed(() => {
   if (dlg.mode !== "edit") return "";
   const idx = termScopeIdx.value;
-  if (idx < 0) return t("bell.termScopePlan");
+  if (idx < 0) return "";
   const row = dlg.items[idx];
-  if (!row) return t("bell.termScopePlan");
+  if (!row) return "";
   if (!row.taskid) return t("bell.termScopeNewItem", { n: idx + 1 });
   return t("bell.termScopeItem", {
     n: idx + 1,
@@ -1380,10 +1398,18 @@ const saveOneItem = async (idx: number) => {
   row.busy = true;
   try {
     if (row.taskid && currentPlanName.value) {
-      await updateBellItemApi(currentPlanName.value, row.taskid, itemPayload(row, true));
+      const res = await updateBellItemApi(currentPlanName.value, row.taskid, itemPayload(row, true));
       row.terminalCount = selectedTerminalIds.value.length;
       // 这一行缓存的属性要跟着更新：不然再点一次序号，控件又被灌回旧值
       Object.assign(row, headerAttrs());
+      // 改名是整组生效的，改完之后手里的旧名字就不作数了 ——
+      // 不认下新名字，下一行的「修改」会拿着旧名去请求，直接 404
+      if (res.data.renamed) {
+        if (dlg.isEdit) dlg.originalName = res.data.planName;
+        else dlg.savedPlanName = res.data.planName;
+        markHeaderClean();
+        ElMessage.success(t("bell.planRenamedTo", { name: res.data.planName }));
+      }
       ElMessage.success(t("bell.lessonSaved", { name: row.taskname.trim() }));
     } else if (!currentPlanName.value) {
       const res = await createBellPlanApi({
