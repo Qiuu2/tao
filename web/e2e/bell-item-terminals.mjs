@@ -344,6 +344,153 @@ console.log("⑧ 点序号，提前开电源 / 音量 / 任务级别 / 起止日
   ).trim();
   console.log("   重新打开再选第 2 个课时：任务级别", again);
   ok(again === "10", "重新打开还是 10，不会跳回原来那个数");
+
+  // 字幕走一遍同样的路：勾上「开启 LED 字幕」、敲一段正文、点这一行的「修改」。
+  // 这一步验的是**界面**有没有把字幕带进 attrs（接口层由 ⑩ 单独钉）。
+  console.log("   顺带：在界面上给第 2 个课时加一段字幕");
+  await d3.locator(".el-form-item", { hasText: "led播放" }).first().locator(".el-checkbox").first().click();
+  await p.waitForTimeout(800);
+  const ledBox = d3.locator(".el-form-item", { hasText: "led字幕" }).first().locator("textarea").first();
+  await ledBox.fill("E2E界面字幕");
+  await p.waitForTimeout(400);
+  await d3.locator(".el-table__body .el-table__row").nth(1).locator("button", { hasText: "修改" }).first().click();
+  await p.waitForTimeout(4000);
+  const uiLed = q1(
+    `SELECT COALESCE(ls.text,'') FROM task t JOIN mediaoftask mt ON mt.taskid=t.taskid ` +
+      `JOIN ledsentence ls ON ls.mediaid=mt.mediaid WHERE t.sec_task_id=${id2} AND t.tasktype IN (24,30) LIMIT 1`
+  );
+  console.log("   库里第二节的字幕:", uiLed || "(没有)");
+  ok(uiLed === "E2E界面字幕", "界面上加的字幕真的存进了这一课时");
+  ok(
+    q1(`SELECT COUNT(*) FROM task WHERE sec_task_id=${id1} AND tasktype IN (24,30)`) === "0",
+    "第一节没被连带挂上字幕"
+  );
+}
+
+// ── ⑩ 那一整组属性一个都不能漏：接口层逐个字段过一遍 ──
+console.log("⑩ 行内「修改」要把**整组**方案级属性都存进这一课时，一个都不能漏");
+{
+  // 先把两个课时的属性拉开距离，免得「没改」和「改对了」看着一样
+  const before = await call("GET", `/api/bell-plans/detail?plan=${encodeURIComponent(PLAN)}`);
+  const it1 = (before.data.items ?? []).find(x => x.taskid === id1);
+  console.log(`   改之前第一节：${JSON.stringify({
+    startdate: it1.startdate,
+    exemodel: it1.exemodel,
+    prepower: it1.prepower,
+    defaultvolume: it1.defaultvolume,
+    priority: it1.priority,
+    datasendmodel: it1.datasendmodel,
+    led: it1.led
+  })}`);
+
+  // ⚠ 第二节的「原样」要在动手**之前**抓一次。
+  //   上面 ⑧/⑨ 已经把它的 priority / 音量 / prepower 改过了，
+  //   在这里写死一组期望值（10|80|15）就是拿建方案时的初值去对，必红。
+  const otherBefore = q1(`SELECT CONCAT(priority,'|',defaultvolume,'|',prepower) FROM task WHERE taskid=${id2}`);
+  // ⑨ 已经在界面上给第二节挂了一段自己的字幕，这里同样要先抓一次原样：
+  // 「第二节没有字幕」是句过期的话，该验的是「第二节的字幕还是它自己那一段」。
+  const otherLedBefore = q1(
+    `SELECT CONCAT(COALESCE(ls.text,''),'|',COALESCE(ls.speed,0)) FROM task t ` +
+      `JOIN mediaoftask mt ON mt.taskid=t.taskid JOIN ledsentence ls ON ls.mediaid=mt.mediaid ` +
+      `WHERE t.sec_task_id=${id2} AND t.tasktype IN (24,30) LIMIT 1`
+  );
+
+  const attrs = {
+    startdate: "2026-03-01",
+    enddate: "2026-06-30",
+    exemodel: "0101010",
+    prepower: 25,
+    defaultvolume: 37,
+    priority: 41,
+    datasendmodel: 1,
+    israndomplay: 1,
+    led: { text: "E2E课终字幕", speed: 3 }
+  };
+  const r = await call("PUT", `/api/bell-plans/items/${id1}`, {
+    planName: PLAN,
+    item: {
+      taskname: "第一节",
+      playtime: "08:00:00",
+      timelengthtype: 2,
+      timelength: 1,
+      media: [{ mediaId: mid, sort: 0 }],
+      attrs
+    }
+  });
+  ok(r.code === 200, "带整组属性的修改成功了：" + JSON.stringify(r.msg ?? ""));
+
+  // 库里逐列对答案
+  const got = q1(
+    `SELECT CONCAT(DATE_FORMAT(startdate,'%Y-%m-%d'),'|',DATE_FORMAT(enddate,'%Y-%m-%d'),'|',exemodel,'|',prepower,'|',defaultvolume,'|',priority,'|',datasendmodel,'|',israndomplay) FROM task WHERE taskid=${id1}`
+  ).split("|");
+  const want = [
+    attrs.startdate,
+    attrs.enddate,
+    attrs.exemodel,
+    String(attrs.prepower),
+    String(attrs.defaultvolume),
+    String(attrs.priority),
+    String(attrs.datasendmodel),
+    String(attrs.israndomplay)
+  ];
+  const names = ["起始日期", "结束日期", "星期掩码", "提前开电源", "音量", "任务级别", "发送模式", "播放模式"];
+  console.log("   库里:", JSON.stringify(got));
+  names.forEach((n, i) => ok(got[i] === want[i], `${n} 存进去了（${want[i]}，库里 ${got[i]}）`));
+
+  // 字幕：要真的挂上一条 LED 子任务，正文与速度对得上
+  const led = q1(
+    `SELECT CONCAT(COALESCE(ls.text,''),'|',COALESCE(ls.speed,0)) FROM task t ` +
+      `JOIN mediaoftask mt ON mt.taskid=t.taskid JOIN ledsentence ls ON ls.mediaid=mt.mediaid ` +
+      `WHERE t.sec_task_id=${id1} AND t.tasktype IN (24,30) LIMIT 1`
+  );
+  console.log("   这一课时的字幕:", led || "(没有)");
+  ok(led === `${attrs.led.text}|${attrs.led.speed}`, `字幕也存进去了（${attrs.led.text}，速度 ${attrs.led.speed}）`);
+  const otherLed = q1(
+    `SELECT CONCAT(COALESCE(ls.text,''),'|',COALESCE(ls.speed,0)) FROM task t ` +
+      `JOIN mediaoftask mt ON mt.taskid=t.taskid JOIN ledsentence ls ON ls.mediaid=mt.mediaid ` +
+      `WHERE t.sec_task_id=${id2} AND t.tasktype IN (24,30) LIMIT 1`
+  );
+  console.log(`   第二节的字幕：改之前 ${otherLedBefore || "(没有)"}，改之后 ${otherLed || "(没有)"}`);
+  ok(otherLed === otherLedBefore, "第二节的字幕还是它自己那一段，没被第一节的盖掉 —— 字幕也是按课时各存各的");
+  ok(otherLed !== led, "两个课时的字幕确实是各存各的（不是同一段）");
+
+  // prepower 从 15 改成 25，功放子任务的时间要跟着重算（08:00:00 - 25s）
+  const pw = q1(`SELECT TIME_FORMAT(playtime,'%H:%i:%s') FROM task WHERE sec_task_id=${id1} AND tasktype=9 LIMIT 1`);
+  console.log("   功放子任务的播放时间:", pw);
+  ok(pw === "07:59:35", "功放子任务按新的 prepower 重算了时间（08:00:00 − 25 秒）");
+
+  // 第二节一个字都不该动
+  const other = q1(`SELECT CONCAT(priority,'|',defaultvolume,'|',prepower) FROM task WHERE taskid=${id2}`);
+  console.log(`   第二节：改之前 ${otherBefore}，改之后 ${other}`);
+  ok(other === otherBefore, "第二节的属性一个都没被带着改");
+
+  // 详情里读回来的也得是这一课时自己的
+  const after = await call("GET", `/api/bell-plans/detail?plan=${encodeURIComponent(PLAN)}`);
+  const a1 = (after.data.items ?? []).find(x => x.taskid === id1);
+  const a2 = (after.data.items ?? []).find(x => x.taskid === id2);
+  ok(a1.priority === attrs.priority && a1.prepower === attrs.prepower, "详情里第一节读回来是新值");
+  ok(a1.led && a1.led.text === attrs.led.text && a1.led.speed === attrs.led.speed, "详情里第一节带着它自己的字幕");
+  ok(
+    a2.led && `${a2.led.text}|${a2.led.speed}` === otherLedBefore,
+    "详情里第二节带回来的是它自己那段字幕 —— 不是拿第一条的那份糊给所有课时"
+  );
+
+  // 再把字幕关掉，子任务要被删干净
+  await call("PUT", `/api/bell-plans/items/${id1}`, {
+    planName: PLAN,
+    item: {
+      taskname: "第一节",
+      playtime: "08:00:00",
+      timelengthtype: 2,
+      timelength: 1,
+      media: [{ mediaId: mid, sort: 0 }],
+      attrs: { ...attrs, led: null }
+    }
+  });
+  ok(
+    q1(`SELECT COUNT(*) FROM task WHERE sec_task_id=${id1} AND tasktype IN (24,30)`) === "0",
+    "把字幕关掉之后，这一课时的 LED 子任务被删干净了"
+  );
 }
 
 console.log(fails ? `\n✗ ${fails} 条没过` : "\n全部通过");

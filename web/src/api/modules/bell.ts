@@ -66,6 +66,8 @@ export interface BellItem {
   priority: number;
   datasendmodel: number;
   israndomplay: number;
+  /** 这一条目自己挂的字幕，没挂就是 null —— 字幕也是每个条目各挂一条子任务 */
+  led: BellLED | null;
   timelengthtype: number;
   timelength: number;
   projectstate: number;
@@ -137,6 +139,8 @@ export interface BellItemAttrs {
   priority: number;
   datasendmodel: number;
   israndomplay: number;
+  /** 字幕。null 或正文为空 = 这一条目不要字幕，保存时会把它已有的删掉 */
+  led: BellLED | null;
 }
 
 /** 方案级 LED 字幕：正文 + 速度（0~5 级）。不挂字幕时传 null */

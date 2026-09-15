@@ -953,7 +953,9 @@ const emptyItemRow = () => ({
   defaultvolume: 80,
   priority: 10,
   datasendmodel: 0,
-  israndomplay: 0
+  israndomplay: 0,
+  /** 这一课时自己挂的字幕。字幕同样是每个课时各挂一条 tasktype=30 的子任务 */
+  led: null as { text: string; speed: number } | null
 });
 type ItemRow = ReturnType<typeof emptyItemRow>;
 
@@ -1114,7 +1116,9 @@ const headerAttrs = () => ({
   defaultvolume: dlg.form.playback.defaultvolume,
   priority: dlg.form.playback.priority,
   datasendmodel: dlg.form.playback.datasendmodel,
-  israndomplay: dlg.form.playback.israndomplay
+  israndomplay: dlg.form.playback.israndomplay,
+  // 字幕也在这一组里 —— 漏掉它就是「改了字幕点修改，重新打开还是原来那句」
+  led: ledForm()
 });
 
 /** 把一组属性灌进上面那排控件 */
@@ -1127,6 +1131,7 @@ const applyAttrs = (a: {
   priority: number;
   datasendmodel: number;
   israndomplay: number;
+  led: { text: string; speed: number } | null;
 }) => {
   if (a.startdate && a.enddate) dateRange.value = [a.startdate, a.enddate];
   if (a.exemodel) applyMask(a.exemodel);
@@ -1135,6 +1140,13 @@ const applyAttrs = (a: {
   dlg.form.playback.priority = a.priority;
   dlg.form.playback.datasendmodel = a.datasendmodel;
   dlg.form.playback.israndomplay = a.israndomplay;
+  // 字幕：没挂就把开关关掉，但**保留正文**——
+  // 人刚在别的课时里敲了一段字幕，切过来一看被清空了，会以为自己白打了
+  dlg.form.ledOn = !!a.led?.text;
+  if (a.led?.text) {
+    dlg.form.ledText = a.led.text;
+    dlg.form.ledSpeed = a.led.speed;
+  }
 };
 
 const snapshotPlanScope = () => {
@@ -1660,7 +1672,8 @@ const openEdit = async (row: BellPlan, mode: "edit" | "batch" = "edit") => {
       defaultvolume: it.defaultvolume,
       priority: it.priority,
       datasendmodel: it.datasendmodel,
-      israndomplay: it.israndomplay
+      israndomplay: it.israndomplay,
+      led: it.led ? { text: it.led.text, speed: it.led.speed } : null
     }))
   });
   // 老数据里挂了多个铃声的，开局就说清楚 —— 等人保存完才发现少了东西就晚了

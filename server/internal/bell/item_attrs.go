@@ -53,6 +53,10 @@ func (s *Service) checkItemAttrs(ctx context.Context, a *ItemAttrs, ownerID int6
 	if a.DataSendMode != 0 && a.DataSendMode != 1 {
 		return fmt.Errorf("发送模式只能是 0（单播）或 1（组播）")
 	}
+	// 字幕的长度与速度也要校验 —— 与 validatePlanLevel 末尾那句 checkLED 同一条
+	if err := checkLED(a.LED); err != nil {
+		return err
+	}
 	return s.checkPriority(ctx, ownerID, a.Priority, oldPriority)
 }
 
@@ -144,6 +148,98 @@ func resyncItemPower(ctx context.Context, tx *sql.Tx, planName string, ownerID, 
 		SELECT ?, terminalid, workstate, groupid, area FROM terminaloftask WHERE taskid = ?`,
 		powerID, taskID); err != nil {
 		return fmt.Errorf("写入功放子任务终端: %w", err)
+	}
+	return nil
+}
+
+// fillItemLED 一条查询取回所有条目各自挂的字幕。
+//
+// ⚠ 不能只读方案里第一条的那份（原来的 loadPlanLED 就是这么做的）——
+// 字幕是**每个条目各挂一条 tasktype = 30 的子任务**，各存各的正文与速度，
+// 完全可以不一致。只读第一条的后果是：选中第 3 个课时，上面那排控件显示的
+// 却是第 1 个课时的字幕；点了「修改」，第 3 个课时的字幕就被第 1 个的覆盖了。
+func (s *Service) fillItemLED(ctx context.Context, items []Item, ids []int64) error {
+	if len(ids) == 0 {
+		return nil
+	}
+	ph, args := placeholders(ids)
+	lph, largs := ledTypeArgs()
+	rows, err := s.db.QueryContext(ctx, `
+		SELECT t.sec_task_id, COALESCE(ls.text,''), COALESCE(ls.speed,0)
+		FROM task t
+		JOIN mediaoftask mt ON mt.taskid = t.taskid
+		JOIN ledsentence ls ON ls.mediaid = mt.mediaid
+		WHERE t.sec_task_id IN (`+ph+`) AND t.tasktype IN (`+lph+`)
+		ORDER BY t.sec_task_id, ls.mediaseq, ls.id`,
+		append(append([]interface{}{}, args...), largs...)...)
+	if err != nil {
+		return fmt.Errorf("查询条目字幕: %w", err)
+	}
+	defer rows.Close()
+
+	byTask := map[int64]*LEDConf{}
+	for rows.Next() {
+		var mainID int64
+		var c LEDConf
+		if err := rows.Scan(&mainID, &c.Text, &c.Speed); err != nil {
+			return err
+		}
+		// 一个条目理论上只挂一条；真挂了多条就取第一条（ORDER BY 已经定好了序）
+		if _, ok := byTask[mainID]; !ok {
+			byTask[mainID] = &c
+		}
+	}
+	if err := rows.Err(); err != nil {
+		return err
+	}
+	for i := range items {
+		items[i].LED = byTask[items[i].TaskID]
+	}
+	return nil
+}
+
+// resyncItemLED 让**这一个条目**的 LED 子任务与新设置一致：先删掉它已有的，
+// 需要字幕时再建一条。
+//
+// ⚠ 与方案级的 resyncLED 是两回事：那个按 info 把整组的 LED 子任务全删了重建，
+// 用在「整表提交」那条路上；这个只动 sec_task_id = 这一条目的那几行。
+// 拿方案级那个来做行内「修改」，会把别的课时的字幕一起冲掉。
+func resyncItemLED(ctx context.Context, tx *sql.Tx, planName string, ownerID, taskID int64,
+	it *ItemInput, a *ItemAttrs) error {
+
+	lph, largs := ledTypeArgs()
+	old, err := collectIDs(ctx, tx,
+		`SELECT taskid FROM task WHERE sec_task_id = ? AND tasktype IN (`+lph+`)`,
+		append([]interface{}{taskID}, largs...)...)
+	if err != nil {
+		return err
+	}
+	// purgeTaskRows 会把子任务的 mediaoftask / ledsentence / terminaloftask 一并清掉，
+	// 不然留一堆没人认领的字幕行
+	if err := purgeTaskRows(ctx, tx, old); err != nil {
+		return err
+	}
+	if !a.LED.wanted() {
+		return nil
+	}
+
+	in := a.planInput(planName)
+	ledID, err := insertLEDSub(ctx, tx, in, it, taskID, ownerID)
+	if err != nil {
+		return err
+	}
+	if ledID == 0 {
+		return nil
+	}
+	// 终端清单照抄主条目 —— 没有终端的字幕子任务到点了哪块屏都不会亮。
+	//
+	// ⚠ 这次如果同时在改终端（ApplyTerminals），后面那一步会按
+	// 「主条目 + 全部子任务」再重写一遍，这里抄的会被覆盖掉，不冲突。
+	if _, err := tx.ExecContext(ctx, `
+		INSERT INTO terminaloftask (taskid, terminalid, workstate, groupid, area)
+		SELECT ?, terminalid, workstate, groupid, area FROM terminaloftask WHERE taskid = ?`,
+		ledID, taskID); err != nil {
+		return fmt.Errorf("写入字幕子任务终端: %w", err)
 	}
 	return nil
 }

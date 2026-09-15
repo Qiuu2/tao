@@ -7758,7 +7758,7 @@
           "taskid": 1001,
           "taskname": "早读预备铃",
           "playtime": "07:20:00",
-          "timelengthtype": 0,
+          "timelengthtype": 1,
           "timelength": 30,
           "projectstate": 0,
           "projectStateText": "启用",
@@ -7782,13 +7782,14 @@
           "priority": 10,
           "datasendmodel": 0,
           "israndomplay": 0,
+          "led": null,
           "terminalCount": 5
         },
         {
           "taskid": 1002,
           "taskname": "上午第一节上课",
           "playtime": "08:00:00",
-          "timelengthtype": 0,
+          "timelengthtype": 1,
           "timelength": 30,
           "projectstate": 0,
           "projectStateText": "启用",
@@ -7812,13 +7813,14 @@
           "priority": 10,
           "datasendmodel": 0,
           "israndomplay": 0,
+          "led": null,
           "terminalCount": 5
         },
         {
           "taskid": 1003,
           "taskname": "第一节下课",
           "playtime": "08:45:00",
-          "timelengthtype": 0,
+          "timelengthtype": 1,
           "timelength": 30,
           "projectstate": 0,
           "projectStateText": "启用",
@@ -7842,13 +7844,14 @@
           "priority": 10,
           "datasendmodel": 0,
           "israndomplay": 0,
+          "led": null,
           "terminalCount": 5
         },
         {
           "taskid": 1004,
           "taskname": "课间眼保健操",
           "playtime": "09:40:00",
-          "timelengthtype": 0,
+          "timelengthtype": 1,
           "timelength": 210,
           "projectstate": 0,
           "projectStateText": "启用",
@@ -7872,13 +7875,14 @@
           "priority": 10,
           "datasendmodel": 0,
           "israndomplay": 0,
+          "led": null,
           "terminalCount": 5
         },
         {
           "taskid": 1005,
           "taskname": "大课间活动",
           "playtime": "10:00:00",
-          "timelengthtype": 0,
+          "timelengthtype": 1,
           "timelength": 1500,
           "projectstate": 0,
           "projectStateText": "启用",
@@ -7902,13 +7906,14 @@
           "priority": 10,
           "datasendmodel": 0,
           "israndomplay": 0,
+          "led": null,
           "terminalCount": 5
         },
         {
           "taskid": 1006,
           "taskname": "午休提示",
           "playtime": "12:30:00",
-          "timelengthtype": 0,
+          "timelengthtype": 1,
           "timelength": 40,
           "projectstate": 0,
           "projectStateText": "启用",
@@ -7932,13 +7937,14 @@
           "priority": 10,
           "datasendmodel": 0,
           "israndomplay": 0,
+          "led": null,
           "terminalCount": 5
         },
         {
           "taskid": 1007,
           "taskname": "放学铃",
           "playtime": "17:30:00",
-          "timelengthtype": 0,
+          "timelengthtype": 1,
           "timelength": 45,
           "projectstate": 0,
           "projectStateText": "启用",
@@ -7962,6 +7968,7 @@
           "priority": 10,
           "datasendmodel": 0,
           "israndomplay": 0,
+          "led": null,
           "terminalCount": 5
         }
       ],

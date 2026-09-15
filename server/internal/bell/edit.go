@@ -89,6 +89,21 @@ type ItemAttrs struct {
 	Priority     int    `json:"priority"`
 	DataSendMode int    `json:"datasendmodel"`
 	IsRandomPlay int    `json:"israndomplay"`
+	// LED 是这一条目的字幕设置。nil 或正文为空 = 这一条目不要字幕，
+	// 保存时会把它已有的 LED 子任务删掉。
+	LED *LEDConf `json:"led"`
+}
+
+// planInput 把一组条目属性摊成 PlanInput —— 只为复用 insertLEDSub 那几个
+// 按 PlanInput 取值的写入函数，不代表这一组属性是个「方案」。
+func (a *ItemAttrs) planInput(planName string) PlanInput {
+	return PlanInput{
+		PlanName: planName,
+		Schedule: Schedule{StartDate: a.StartDate, EndDate: a.EndDate, ExeModel: a.ExeModel},
+		Playback: Playback{Volume: a.Volume, Priority: a.Priority, PrePower: a.PrePower,
+			DataSendMode: a.DataSendMode, IsRandomPlay: a.IsRandomPlay},
+		LED: a.LED,
+	}
 }
 
 // LEDConf 是方案级的 LED 字幕设置。
@@ -147,6 +162,13 @@ type Item struct {
 	Priority     int    `json:"priority"`
 	DataSendMode int    `json:"datasendmodel"`
 	IsRandomPlay int    `json:"israndomplay"`
+	// LED 是**这一条目自己**挂的字幕，没挂时为 nil。
+	//
+	// 与上面几项同理：名义上方案级、实际每个条目各挂一条 tasktype = 30 的
+	// 子任务，完全可以不一致。选中某个课时时那排控件要显示它自己的字幕，
+	// 行内「修改」也只改它自己的 —— 漏掉这一项就是
+	// 「改了字幕点修改，重新打开还是原来那句」。
+	LED *LEDConf `json:"led"`
 	// TerminalCount 是这一条目自己挂了几台终端。
 	// 各条目理论上一致（整表提交会统一套），但行内「修改」是按条目写的，
 	// 所以完全可能不一致 —— 界面据此提示这一节课单独配了几台。
@@ -287,6 +309,9 @@ func (s *Service) Get(ctx context.Context, u *auth.User, planName string) (*Deta
 		return nil, err
 	}
 	if err := s.fillItemTerminalCount(ctx, d.Items, ids); err != nil {
+		return nil, err
+	}
+	if err := s.fillItemLED(ctx, d.Items, ids); err != nil {
 		return nil, err
 	}
 	// 终端清单方案内每条任务各写一份，取代表条目的那一份即可
@@ -1385,9 +1410,8 @@ func (s *Service) AddItem(ctx context.Context, u *auth.User, planName string,
 	// taskid=-1 分支）写的就是上面那排控件当时的值，不是方案里别的课时那一份。
 	// 没带才沿用方案级那一份。
 	if a := it.Attrs; a != nil {
-		in.Schedule = Schedule{StartDate: a.StartDate, EndDate: a.EndDate, ExeModel: a.ExeModel}
-		in.Playback = Playback{Volume: a.Volume, Priority: a.Priority, PrePower: a.PrePower,
-			DataSendMode: a.DataSendMode, IsRandomPlay: a.IsRandomPlay}
+		pi := a.planInput(planName)
+		in.Schedule, in.Playback, in.LED = pi.Schedule, pi.Playback, pi.LED
 	}
 	// 带了终端就按带的存 —— 旧版行内「添加」（modifyonebellplan.php 的 taskid=-1
 	// 分支）写的就是终端树当时的选择，不是方案里别的课时那一份。
@@ -1558,6 +1582,10 @@ func (s *Service) UpdateItem(ctx context.Context, u *auth.User, planName string,
 		}
 		// prepower 变了，功放子任务要跟着建 / 删 / 改时间
 		if err := resyncItemPower(ctx, tx, planName, owner, taskID, &it, it.Attrs); err != nil {
+			return 0, err
+		}
+		// 字幕也是按条目挂的，同样要跟着建 / 删
+		if err := resyncItemLED(ctx, tx, planName, owner, taskID, &it, it.Attrs); err != nil {
 			return 0, err
 		}
 	}
