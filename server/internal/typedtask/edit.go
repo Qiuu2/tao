@@ -474,8 +474,17 @@ func (s *Service) validate(ctx context.Context, u *auth.User, k Kind, in *Input,
 		if err := validateLED(in.LED); err != nil {
 			return err
 		}
+		// 界面上已经没有「任务目录」这一栏了（现场只有一个分组，这一层是摆设），
+		// 新建时前端传 0 —— 这里替它挑一个现有分组。
+		//
+		// ⚠ 不能就这么写 0 进 task.parentid：旧系统的 LED 页面是按
+		//   ledtaskfree 分组读任务的，挂在 0 上的任务在那边一条都看不见。
 		if in.FolderID <= 0 {
-			return fmt.Errorf("请选择 LED 任务分组")
+			id, err := s.defaultLEDFolder(ctx)
+			if err != nil {
+				return err
+			}
+			in.FolderID = id
 		}
 		var n int
 		if err := s.db.QueryRowContext(ctx,
@@ -567,6 +576,22 @@ func (s *Service) checkNameFree(ctx context.Context, sp spec, name string, exclu
 }
 
 const nameLock = "htweb_typedtask_name"
+
+// defaultLEDFolder 挑一个现有的 LED 任务分组（取最小的 id）。
+//
+// 界面上不再让人选分组了，但库里这一列必须是个真分组 —— 见 validate 里 KindLED
+// 那一段的说明。一个分组都没有时如实报错，而不是悄悄写个 0 进去。
+func (s *Service) defaultLEDFolder(ctx context.Context) (int64, error) {
+	var id int64
+	err := s.db.QueryRowContext(ctx, `SELECT MIN(id) FROM ledtaskfree`).Scan(&id)
+	if errors.Is(err, sql.ErrNoRows) || (err == nil && id == 0) {
+		return 0, fmt.Errorf("还没有 LED 任务分组，请先在旧系统里建一个")
+	}
+	if err != nil {
+		return 0, fmt.Errorf("取 LED 分组: %w", err)
+	}
+	return id, nil
+}
 
 // endTimeOf 算结束时间。
 //

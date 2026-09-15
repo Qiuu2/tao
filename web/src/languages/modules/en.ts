@@ -682,7 +682,9 @@ export default {
     ledPlay: "LED display",
     ledSpeed: "LED speed",
     ledContent: "Enter the LED subtitle text",
-    infiniteLoop: "0 means loop forever; 10 max",
+    infiniteLoop: "1-10 times; 0 is not allowed",
+    durationNotZero: "Play length cannot be 0",
+    loopTimesNotZero: "Loop count cannot be 0",
     highestLevel: "10 is the highest",
     levels0to5: "Levels 0–5",
     levelN: "Level {n}",
@@ -789,9 +791,9 @@ export default {
     unifiedLength: "One play length for all",
     unifiedTerminals: "One terminal list for all",
     termScopePlan:
-      "Showing the whole plan’s settings (pre-power, volume, priority, date range, weekdays, terminals). “OK” below applies them to every lesson.",
+      "Showing the whole plan’s settings (pre-power, volume, priority, date range, weekdays, terminals). Hit “Add”/“Modify” on each row to store them.",
     termScopeItem:
-      "Showing lesson {n} “{name}”’s own settings (pre-power, volume, priority, date range, weekdays, plus {c} terminal(s)). Hit “Modify” on that row to save just this lesson; “OK” below applies them to every lesson.",
+      "Showing lesson {n} “{name}”’s own settings (pre-power, volume, priority, date range, weekdays, plus {c} terminal(s)). Hit “Modify” on that row to save just this lesson.",
     termScopeNewItem:
       "Lesson {n} is not stored yet, so the whole plan’s settings are shown. “Add” on that row stores the current values for it.",
     termOfLesson: "{c} for this lesson",

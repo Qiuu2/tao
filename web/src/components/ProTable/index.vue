@@ -361,9 +361,16 @@ const pageSomeSelected = computed(() => {
 
 // 初始化表格数据 && 拖拽排序
 onMounted(() => {
-  dragSort();
+  // ⚠ 取数放在最前面：拖拽排序是锦上添花的东西，
+  //   它出了问题不该连累整张表一条数据都没有。
   if (props.requestAuto) {
     getTableList();
+  }
+  // 再稳一道：这里抛出去同样会打断 onMounted，而它只是个排序增强
+  try {
+    dragSort();
+  } catch (e) {
+    console.warn("[ProTable] 拖拽排序初始化失败，不影响表格数据", e);
   }
 
   if (props.data) {
@@ -514,7 +521,13 @@ const _reset = () => {
 
 // 表格拖拽排序
 const dragSort = () => {
-  const tbody = document.querySelector(`#${uuid.value} tbody`) as HTMLElement;
+  // ⚠ 用了 #body 插槽的页面（终端管理的网格视图）根本不渲染 el-table，
+  //   这里 querySelector 拿到的是 null。Sortable.create(null) 会直接抛 ——
+  //   而这一句是在 onMounted 里、排在首次取数**前面**的，一抛，
+  //   后面的 getTableList() 就永远执行不到，请求一次都发不出去，
+  //   界面上看到的就是「全部终端有 19 个，但右边网格里显示暂无数据」。
+  const tbody = document.querySelector(`#${uuid.value} tbody`) as HTMLElement | null;
+  if (!tbody) return;
   Sortable.create(tbody, {
     handle: ".move",
     animation: 300,

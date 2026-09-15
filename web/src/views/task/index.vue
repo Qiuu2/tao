@@ -402,7 +402,7 @@
               <el-input-number
                 :key="`cyc-${dlg.form.playback.timelengthtype}`"
                 v-model="cycleTimes"
-                :min="0"
+                :min="1"
                 :max="10"
                 :disabled="dlg.form.playback.timelengthtype !== 2"
                 :controls="false"
@@ -693,12 +693,13 @@ const columns = reactive<ColumnProps<TaskRow>[]>([
   { type: "expand", width: 40 },
   // 列清单严格照 :80（页面规格.txt「文件广播」12 列）：
   // 广播任务名称 | 执行模式 | 开始日期 | 结束日期 | 执行时间 | 播放时长 |
-  // 状态 | 播放模式 | 音量 | 任务级别 | 播放状态 | 操作
+  // 状态 | 正在播放 | 播放模式 | 音量 | 任务级别 | 所属用户 | 操作
   //
   // 原来的「起止日期」合成列拆成开始/结束两列；「清单」「创建者」两列去掉 ——
   // 清单内容在展开行里能看全，创建者在编辑弹窗里。
   // 列名逐个照 ok112 的 FileAd/FileTaskManager_from.html + language/chinese.php：
-  // 文件广播任务|播放周期|开始日期|结束日期|执行时间|播放时长|状态|播放模式|音量|任务级别|所属用户|正在播放|终端属性
+  // 文件广播任务|播放周期|开始日期|结束日期|执行时间|播放时长|状态|正在播放|播放模式|音量|任务级别|所属用户|终端属性
+  // （「正在播放」按现场要求挪到「状态」右边，其余照旧）
   // 「终端属性」在旧版是一个「浏览」链接，这里已经做成操作列里的「终端(N)」，不再单列一列。
   { prop: "taskname", label: t("task.fileTask"), minWidth: 160, sortable: "custom", search: { el: "input", key: "keyword" } },
   { prop: "weekdays", label: t("taskCommon.cycle"), minWidth: 130 },
@@ -707,11 +708,13 @@ const columns = reactive<ColumnProps<TaskRow>[]>([
   { prop: "playtime", label: t("taskCommon.runTime"), width: 100, sortable: "custom" },
   { prop: "timelengthText", label: t("taskCommon.playLength"), width: 110 },
   { prop: "projectstate", label: t("common.status"), width: 80, sortable: "custom" },
+  // 「正在播放」紧挨着「状态」：状态说的是这条任务现在是不是在响，
+  // 正在播放说的是响的是哪一首 —— 一眼要一起看，隔着五列就得来回找。
+  { prop: "playingName", label: t("task.playing"), minWidth: 150, showOverflowTooltip: true },
   { prop: "playModeText", label: t("task.playMode"), width: 95 },
   { prop: "defaultvolume", label: t("common.volume"), width: 70 },
   { prop: "priority", label: t("taskCommon.priority"), width: 90, sortable: "custom" },
   { prop: "ownerUserName", label: t("taskCommon.owner"), width: 110 },
-  { prop: "playingName", label: t("task.playing"), minWidth: 150, showOverflowTooltip: true },
   // 去掉「复制」之后剩三个链接，给 220 让它们排一行，不折成两行
   { prop: "operation", label: t("common.operation"), fixed: "right", width: 220 }
 ]);
@@ -1121,6 +1124,18 @@ const submit = async () => {
   if (!f.taskname.trim()) return ElMessage.warning(t("task.taskNameRequired"));
   if (!f.folderId) return ElMessage.warning(t("task.pickBelongFolder"));
   if (ledOn.value && !f.led.text.trim()) return ElMessage.warning(t("task.ledContent"));
+  // 普通模式下「时长」与「循环次数」都不能是 0 —— 旧版两处都报「不能为零」
+  // （AddFileTask_form.html:235 拦 circleTime <= 0、:374 拦 timelength == 0）。
+  // 间隔模式那一对旧版没拦，这里也不拦，免得把旧数据挡在门外。
+  // ⚠ 排在「选媒体」前面：这排控件在表单上就在媒体上面，
+  //   先报底下的问题，人会以为上面那几栏已经填对了。
+  if (playMode.value === 0) {
+    if (f.playback.timelengthtype === 2) {
+      if (!(cycleTimes.value > 0)) return ElMessage.warning(t("task.loopTimesNotZero"));
+    } else if (!(durationSec.value > 0)) {
+      return ElMessage.warning(t("task.durationNotZero"));
+    }
+  }
   if (!selectedMediaIds.value.length) return ElMessage.warning(t("task.pickMediaInList"));
   if (!selectedTerminalIds.value.length) return ElMessage.warning(t("task.pickTerminalInList"));
 

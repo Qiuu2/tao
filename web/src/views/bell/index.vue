@@ -678,17 +678,15 @@
           <el-button @click="clearItemSelection">{{ $t("common.cancel") }}</el-button>
         </template>
         <!--
-          ⚠ 这个「确定」是补上来的。
+          ⚠ 这里**没有**「确定」，是需求方明确要的，也跟旧版一致：
+            modifybell.html / addbell.html 的提交按钮那段 HTML 就是注释掉的，
+            保存全靠每一行的「添加 / 修改」（addonebellplan.php /
+            modifyonebellplan.php 当场写库）。
 
-          旧版这两个页面没有提交按钮（那段 HTML 是注释掉的），保存全靠每一行的
-          「添加 / 修改」。新版一度把「一次性把没入库的行和改过的方案头全存了」
-          这件事挂在**关闭时的二次确认**上（弹「保存并返回 / 直接返回」）。
-          需求方要求关闭直接关，那个确认框去掉了 —— 于是这件事必须有自己的按钮，
-          否则整体保存就没有入口，改了方案头不点任何一行就再也存不进去。
+            代价写在这里免得以后有人「顺手补回来」：上面那排控件改完之后，
+            必须点某一行的「添加 / 修改」才会落库 —— 一行都不点就关掉，
+            那些改动就没了。想套到所有课时，就逐行点「修改」。
         -->
-        <el-button v-if="dlg.mode !== 'batch'" type="primary" :loading="dlg.saving" @click="submitAll">
-          {{ $t("common.confirm") }}
-        </el-button>
         <el-button @click="closeDialog">{{ $t("bell.goBack") }}</el-button>
       </template>
     </el-dialog>
@@ -1366,21 +1364,6 @@ const validateItemAt = (idx: number) => {
   return !err.taskname && !err.playtime;
 };
 
-/** 点「确定」时校验课时表：只管还没入库的行，已入库的行由行上的「修改」单独负责 */
-const validateItems = () => {
-  itemsError.value = "";
-  itemErrors.value = dlg.items.map(() => emptyItemError());
-  if (!dlg.items.length && !currentPlanName.value) {
-    itemsError.value = t("bell.atLeastOneLesson");
-    return false;
-  }
-  let ok = true;
-  dlg.items.forEach((it, i) => {
-    if (!it.taskid && !validateItemAt(i)) ok = false;
-  });
-  return ok;
-};
-
 /**
  * 行上的「添加 / 修改」—— 旧版 addbelltask.html 的行内「添加」就是**真写库**
  * （addonebellplan.php），存过的行按钮变「修改」，再点走 modifyonebellplan.php。
@@ -1770,64 +1753,15 @@ const flushHeader = async () => {
   return res.data;
 };
 
-/** 把还没入库的课时一次性补进去（原来的「确定」按钮做的事） */
-const saveAllPending = async () => {
-  const formOk = await validateHeader();
-  const itemsOk = validateItems();
-  if (!formOk || !itemsOk) return false;
-  const pending = dlg.items.filter(it => !it.taskid);
-
-  dlg.saving = true;
-  try {
-    if (currentPlanName.value) {
-      for (const it of pending) {
-        const res = await addBellItemApi(currentPlanName.value, itemPayload(it));
-        it.taskid = res.data.taskIds?.[0] ?? 0;
-        (res.data.warnings ?? []).forEach(w => ElMessage.warning(w));
-      }
-      const upd = await flushHeader();
-      const parts: string[] = [];
-      if (pending.length) parts.push(t("bell.pendingLessons", { n: pending.length }));
-      if (upd?.affectedRows) parts.push(t("bell.updatedRows", { n: upd.affectedRows }));
-      if (upd?.renamed) parts.push(t("bell.planRenamed"));
-      ElMessage.success(parts.length ? `${parts.join("，")}` : t("bell.planSaved"));
-    } else {
-      const res = await createBellPlanApi({
-        planName: dlg.form.planName.trim(),
-        schedule: scheduleForm(),
-        playback: dlg.form.playback,
-        terminals: terminalsForm(),
-        led: ledForm(),
-        items: dlg.items.map(it => itemPayload(it))
-      });
-      dlg.items.forEach((it, i) => (it.taskid = res.data.taskIds?.[i] ?? 0));
-      dlg.savedPlanName = res.data.planName;
-      markHeaderClean();
-      ElMessage.success(t("bell.createdItems", { n: res.data.createdItems }));
-      (res.data.warnings ?? []).forEach(w => ElMessage.warning(w));
-    }
-    refresh();
-    return true;
-  } finally {
-    dlg.saving = false;
-  }
-};
-
-/** 「确定」：把没入库的行和改过的方案头一次性落库，成功就关掉 */
-const submitAll = async () => {
-  if (await saveAllPending()) dlg.visible = false;
-};
-
 /**
  * 「返回」—— 直接关，不再问第二遍。
  *
  * 这里原来会先数一下「方案头改过没有 / 有几行还没入库」，再弹一个
  * 「保存并返回 / 直接返回」的确认框。按需求方要求去掉：这一页的保存本来就是
  * **行内即时生效**的（每一行的「添加 / 修改」当场写库，与旧版
- * addonebellplan.php / modifyonebellplan.php 一样），底下还补了一个「确定」整体落一次，
- * 想存的人有两处能存，关窗口再拦一道纯属添堵。
+ * addonebellplan.php / modifyonebellplan.php 一样），关窗口再拦一道纯属添堵。
  *
- * ⚠ 代价说清楚：没点过「添加 / 修改」也没点「确定」的改动，关掉就没了。
+ * ⚠ 代价说清楚：没点过任何一行「添加 / 修改」的改动，关掉就没了。
  * 这与旧版一致 —— 旧版那两个页面压根没有提交按钮，离开就是离开。
  */
 const closeDialog = () => {

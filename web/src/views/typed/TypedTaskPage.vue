@@ -25,26 +25,17 @@
 -->
 <template>
   <div class="table-box">
-    <!-- led播放 多一层任务目录，工具栏上还有创建/修改/删除/复制目录 -->
+    <!--
+      ⚠ 这里原来有一整排「任务目录」（分组单选 + 创建/修改/删除/复制目录），
+        按需求方要求去掉了 —— 现场只有一个分组，所有 LED 任务都在它下面，
+        这一层等于摆设。列表因此不再按目录过滤，一次列全部。
+
+        库里的 `task.parentid` / `ledtaskfree` **没有动**：编辑任务时原样带回原来的
+        parentid，新建时由服务端挑现有分组（见 typedtask 的 defaultLEDFolder）。
+        旧系统还按这个分组读数据，把它写成 0 会让旧服务端那边对不上。
+    -->
     <div v-if="kind === 'led'" class="folder-bar">
-      <span class="folder-label">{{ $t("typed.taskFolder") }}</span>
-      <el-radio-group v-model="initParam.folderId" size="small" @change="refresh">
-        <el-radio-button :label="0">{{ $t("common.all") }}</el-radio-button>
-        <el-radio-button v-for="f in ledFolders" :key="f.id" :label="f.id"> {{ f.name }}（{{ f.taskCount }}） </el-radio-button>
-      </el-radio-group>
       <div class="grow"></div>
-      <el-button size="small" :icon="FolderAdd" :disabled="!canEdit" @click="openFolderCreate">{{
-        $t("typed.createFolder")
-      }}</el-button>
-      <el-button size="small" :icon="EditPen" :disabled="!canEdit || !initParam.folderId" @click="openFolderRename">
-        {{ $t("typed.editFolder") }}
-      </el-button>
-      <el-button size="small" :icon="Delete" :disabled="!canEdit || !initParam.folderId" @click="doFolderDelete">
-        {{ $t("typed.deleteFolder") }}
-      </el-button>
-      <el-button size="small" :icon="CopyDocument" :disabled="!canEdit || ledFolders.length < 2" @click="openFolderCopy">
-        {{ $t("typed.copyFolder") }}
-      </el-button>
       <el-button size="small" :icon="Setting" @click="devDlg.visible = true">{{ $t("typed.ledDevice") }}</el-button>
     </div>
 
@@ -188,7 +179,7 @@
         <el-row :gutter="16">
           <el-col :span="12">
             <el-form-item :label="$t('taskCommon.taskName')" required>
-              <el-input v-model="form.taskName" maxlength="60" show-word-limit :placeholder="$t('task.taskNameRequired')" />
+              <el-input v-model="form.taskName" :maxlength="nameMax" show-word-limit :placeholder="$t('task.taskNameRequired')" />
               <div v-if="err.taskName" class="err">{{ err.taskName }}</div>
             </el-form-item>
           </el-col>
@@ -230,7 +221,7 @@
             文字语音这一栏排成左右两列：**左边播放模式、播放速率，右边声音模式、tts终端**
             （提示音跟在 tts终端 下面，同在右列）。
           -->
-          <el-col v-if="hasIntervalMode" :span="12">
+          <el-col v-if="hasIntervalMode && kind !== 'tts'" :span="12">
             <el-form-item :label="$t('task.playMode')">
               <el-select v-model="form.intervalMode" class="fill" @change="onIntervalModeChange">
                 <el-option :label="$t('task.normalMode')" :value="0" />
@@ -269,9 +260,22 @@
                 </el-select>
               </el-form-item>
             </el-col>
+            <!--
+              播放模式按需求方要求排在「播放速率」**正下方** —— 播放速率在右列，
+              所以这一格也得落在右列，排在 tts终端 后面（上面那格对 tts 是关掉的）。
+              这一栏的格子顺序：声音模式 | 播放速率 / tts终端 | 播放模式 / 提示音。
+            -->
+            <el-col :span="12">
+              <el-form-item :label="$t('task.playMode')">
+                <el-select v-model="form.intervalMode" class="fill" @change="onIntervalModeChange">
+                  <el-option :label="$t('task.normalMode')" :value="0" />
+                  <el-option :label="$t('task.intervalTime')" :value="1" />
+                </el-select>
+              </el-form-item>
+            </el-col>
             <!-- 旧版只有在 tts终端 选到服务器本机（typeid = 0）时才出现提示音。
-                 offset 让它落在右列，跟在 tts终端 下面 -->
-            <el-col v-if="sourceIsServer" :span="12" :offset="12">
+                 tts终端 现在在左列，提示音不带 offset 就正好跟在它下面 -->
+            <el-col v-if="sourceIsServer" :span="12">
               <el-form-item :label="$t('typed.promptTone')">
                 <el-select v-model="form.promptId" class="fill" :placeholder="$t('typed.pickPromptTone')">
                   <el-option :label="$t('typed.pickPromptTone')" :value="0" />
@@ -285,11 +289,20 @@
         <!-- 普通模式：循环次数 + 播放时长；间隔模式：间隔时长 + 间隔时长/每次循环次数 -->
         <template v-if="!hasIntervalMode || form.intervalMode === 0">
           <el-form-item v-if="hasCycleTimes" :label="$t('taskCommon.loopTimes')">
-            <el-input-number v-model="form.timelength" :min="0" :max="10" controls-position="right" />
+            <el-input-number v-model="form.timelength" :min="1" :max="10" controls-position="right" />
             <span class="tip">{{ $t("task.infiniteLoop") }}</span>
+            <div v-if="err.loopTimes" class="err">{{ err.loopTimes }}</div>
           </el-form-item>
-          <el-form-item :label="$t('taskCommon.playLength')">
+          <!--
+            ⚠ 文字语音没有「播放时长」这一栏（需求方要求删掉），只按循环次数放。
+              这跟后端本来的口径是一致的：endTimeOf 的注释里写着「四个页面里只有
+              终端功放有持续时长，其余三类根本没有结束时间的概念」，现网
+              tasktype 15 的行 endtime 全是 00:00:00。所以这里连带把
+              durationSec 传 0，落库就是 00:00:00，跟旧数据对得上。
+          -->
+          <el-form-item v-if="kind !== 'tts'" :label="$t('taskCommon.playLength')">
             <HmsInput v-model="form.durationSec" />
+            <div v-if="err.duration" class="err">{{ err.duration }}</div>
           </el-form-item>
         </template>
         <template v-else>
@@ -627,37 +640,6 @@
     </el-dialog>
 
     <!-- ============ LED 目录：创建 / 修改 / 复制 ============ -->
-    <el-dialog v-model="folderDlg.visible" :title="folderDlg.title" width="420px">
-      <el-form label-width="90px">
-        <el-form-item :label="$t('typed.folderName')" required>
-          <el-input v-model="folderDlg.name" maxlength="60" show-word-limit :placeholder="$t('typed.folderNameRequired')" />
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <el-button @click="folderDlg.visible = false">{{ $t("common.cancel") }}</el-button>
-        <el-button type="primary" :loading="folderDlg.saving" @click="submitFolder">{{ $t("common.confirm") }}</el-button>
-      </template>
-    </el-dialog>
-
-    <el-dialog v-model="copyDlg.visible" :title="$t('typed.copyFolder')" width="460px">
-      <el-form label-width="90px">
-        <el-form-item :label="$t('typed.sourceFolder')" required>
-          <el-select v-model="copyDlg.fromId" class="fill">
-            <el-option v-for="f in ledFolders" :key="f.id" :label="`${f.name}（${f.taskCount}）`" :value="f.id" />
-          </el-select>
-        </el-form-item>
-        <el-form-item :label="$t('typed.targetFolder')" required>
-          <el-select v-model="copyDlg.toId" class="fill">
-            <el-option v-for="f in ledFolders" :key="f.id" :label="`${f.name}（${f.taskCount}）`" :value="f.id" />
-          </el-select>
-        </el-form-item>
-      </el-form>
-      <div class="dlg-note">{{ $t("typed.copyFolderNote") }}</div>
-      <template #footer>
-        <el-button @click="copyDlg.visible = false">{{ $t("common.cancel") }}</el-button>
-        <el-button type="primary" :loading="copyDlg.saving" @click="submitCopy">{{ $t("common.confirm") }}</el-button>
-      </template>
-    </el-dialog>
 
     <!-- ============ LED 设备管理 ============ -->
     <el-dialog v-model="devDlg.visible" :title="$t('typed.ledDevice')" width="900px" top="6vh">
@@ -749,22 +731,18 @@
 
 <script setup lang="tsx">
 import { useI18n } from "vue-i18n";
-import { CirclePlus, CopyDocument, Delete, EditPen, FolderAdd, Search, Setting } from "@element-plus/icons-vue";
+import { CirclePlus, Delete, EditPen, Search, Setting } from "@element-plus/icons-vue";
 import { ElMessage, ElMessageBox, ElNotification } from "element-plus";
 import { computed, nextTick, onMounted, reactive, ref, watch } from "vue";
 
 import {
   applySoundDBTemplateApi,
   controlTypedApi,
-  copyLedFolderApi,
   createLedDeviceApi,
-  createLedFolderApi,
   createTypedApi,
   deleteLedDevicesApi,
-  deleteLedFolderApi,
   deleteTypedApi,
   getLedDevicesApi,
-  getLedFoldersApi,
   getPromptMediaApi,
   getSoundDBTemplateApi,
   getSoundTreeApi,
@@ -773,7 +751,6 @@ import {
   getTypedSourcesApi,
   getTypedTerminalsApi,
   KIND_TITLE,
-  renameLedFolderApi,
   setSoundDBTemplateApi,
   setTypedStateApi,
   SOUND_VOLUME_STEPS,
@@ -782,7 +759,6 @@ import {
 } from "@/api/modules/ninemod";
 import type {
   LedDevice,
-  LedFolder,
   PromptMedia,
   SoundDeviceRef,
   SoundTreeGroup,
@@ -964,7 +940,6 @@ const selectedTerminals = ref<number[]>([]);
 const terminalAreas = ref<Record<number, string>>({});
 const sourceTerminals = ref<TypedTerminalOption[]>([]);
 const promptList = ref<PromptMedia[]>([]);
-const ledFolders = ref<LedFolder[]>([]);
 const ledDevices = ref<LedDevice[]>([]);
 
 const searchTerminals = async (kw: string) => {
@@ -993,9 +968,9 @@ const loadSources = async () => {
 
 const loadLED = async () => {
   if (props.kind !== "led") return;
-  const [f, d] = await Promise.all([getLedFoldersApi(), getLedDevicesApi()]);
-  ledFolders.value = f.data ?? [];
-  ledDevices.value = d.data ?? [];
+  // 目录那一层去掉之后只剩设备要读
+  const { data } = await getLedDevicesApi();
+  ledDevices.value = data ?? [];
 };
 
 /* ---------------- 声场任务：分区树、噪声设备、默认噪声值 ---------------- */
@@ -1191,6 +1166,14 @@ const blankForm = () => ({
 });
 
 const form = reactive(blankForm());
+/**
+ * 任务名称的上限。
+ *
+ * 终端功放 / 采播管理 / 文字语音按需求方要求收到 12 个字
+ * （旧版这几张表单是 maxlength="8"）。led播放没提，维持原样。
+ */
+const nameMax = computed(() => (props.kind === "amplifier" || props.kind === "collect" || props.kind === "tts" ? 12 : 60));
+
 const err = reactive({
   taskName: "",
   startdate: "",
@@ -1200,7 +1183,9 @@ const err = reactive({
   ledText: "",
   terminals: "",
   media: "",
-  soundDevices: ""
+  soundDevices: "",
+  duration: "",
+  loopTimes: ""
 });
 
 /** 声场任务选中的媒体。MediaTree 收的是数组，这里按单选用（只保留一个） */
@@ -1297,9 +1282,6 @@ const openCreate = async () => {
   // led播放 的任务必须落在某个目录里（后端也这么校验）。页头停在「全部」上时
   // 没有「当前目录」可用 —— 与其替人挑一个（多半不是他想要的那个），
   // 不如说清楚要先选一个。表单上已经没有这一栏了，选目录只在页头。
-  if (props.kind === "led" && !initParam.folderId) {
-    return ElMessage.warning(t("typed.pickFolderFirst"));
-  }
   resetForm();
   clearErr();
   const today = new Date().toISOString().slice(0, 10);
@@ -1313,7 +1295,8 @@ const openCreate = async () => {
   await loadSources();
   if (props.kind === "led") {
     await loadLED();
-    form.folderId = initParam.folderId;
+    // 目录那一栏已经去掉了，新建时留 0 —— 服务端会挑一个现有分组落库
+    form.folderId = 0;
   }
   if (props.kind !== "amplifier") form.prepower = 120;
   selectedTerminals.value = [];
@@ -1431,7 +1414,9 @@ const buildBody = () => {
     enddate: form.range[1],
     // 手动（exemodel 全 0）时旧版把播放时间也归零
     playtime: form.runMode === 3 ? "00:00:00" : form.playtime,
-    durationSec: form.durationSec,
+    // 文字语音没有「播放时长」这一栏，固定传 0 —— endTimeOf 见 0 就写 00:00:00，
+    // 与现网 tasktype 15 的既有数据一致
+    durationSec: props.kind === "tts" ? 0 : form.durationSec,
     // 这四类任务的 timelengthtype 旧版一律写 1（按时间）；
     // 文字语音的「循环次数」落在 timelength 上，播放时长落在 endtime 上。
     timelengthtype: 1,
@@ -1491,8 +1476,20 @@ const submit = async () => {
     err.enddate = t("bell.pickEndDate");
     bad = true;
   }
+  // 播放时长不能为 0 —— 与旧版一致（采播那张表单的 collect_task_add['not_zero']）。
+  // 功放的时长是拿来算 endtime 的，填 0 等于一条到点就结束、什么也不做的任务。
+  if ((props.kind === "amplifier" || props.kind === "collect") && !(form.durationSec > 0)) {
+    err.duration = t("task.durationNotZero");
+    bad = true;
+  }
   if (props.kind === "collect" && !form.sourceTerminalId) {
     err.source = t("typed.pickCaptureTerminal");
+    bad = true;
+  }
+  // 文字语音只按循环次数放，次数不能是 0 —— 旧版 TtsAddFileTask_form.html:232
+  // 也是 `circleTime <= 0` 就报「不能为零」。
+  if (props.kind === "tts" && form.intervalMode === 0 && !(form.timelength > 0)) {
+    err.loopTimes = t("task.loopTimesNotZero");
     bad = true;
   }
   if (props.kind === "tts" && !form.text.trim()) {
@@ -1617,73 +1614,6 @@ const openTerminals = async (row: TypedTask) => {
   termDlg.title = t("typed.terminalsOf", { name: row.taskName });
   termDlg.list = data.terminals ?? [];
   termDlg.visible = true;
-};
-
-/* ---------------- LED 任务目录 ---------------- */
-
-const folderDlg = reactive({ visible: false, saving: false, title: "", name: "", id: 0 });
-
-const openFolderCreate = () => {
-  Object.assign(folderDlg, { visible: true, saving: false, title: t("typed.createFolder"), name: "", id: 0 });
-};
-
-const openFolderRename = () => {
-  const f = ledFolders.value.find(x => x.id === initParam.folderId);
-  if (!f) return ElMessage.warning(t("typed.pickFolderAbove"));
-  Object.assign(folderDlg, { visible: true, saving: false, title: t("typed.editFolder"), name: f.name, id: f.id });
-};
-
-const submitFolder = async () => {
-  if (!folderDlg.name.trim()) return ElMessage.warning(t("typed.folderNameRequired"));
-  folderDlg.saving = true;
-  try {
-    if (folderDlg.id) await renameLedFolderApi(folderDlg.id, folderDlg.name.trim());
-    else await createLedFolderApi(folderDlg.name.trim());
-    ElMessage.success(t("common.saveSuccess"));
-    folderDlg.visible = false;
-    await loadLED();
-    refresh();
-  } finally {
-    folderDlg.saving = false;
-  }
-};
-
-const doFolderDelete = async () => {
-  const f = ledFolders.value.find(x => x.id === initParam.folderId);
-  if (!f) return ElMessage.warning(t("typed.pickFolderAbove"));
-  await ElMessageBox.confirm(t("typed.confirmDeleteFolder", { name: f.name, n: f.taskCount }), t("typed.deleteFolder"), {
-    type: "warning",
-    confirmButtonText: t("common.confirmDelete")
-  });
-  await deleteLedFolderApi(f.id);
-  ElMessage.success(t("common.deleted"));
-  initParam.folderId = 0;
-  await loadLED();
-  refresh();
-};
-
-const copyDlg = reactive({ visible: false, saving: false, fromId: 0, toId: 0 });
-
-const openFolderCopy = () => {
-  copyDlg.fromId = initParam.folderId || ledFolders.value[0]?.id || 0;
-  copyDlg.toId = ledFolders.value.find(f => f.id !== copyDlg.fromId)?.id ?? 0;
-  copyDlg.saving = false;
-  copyDlg.visible = true;
-};
-
-const submitCopy = async () => {
-  if (!copyDlg.fromId || !copyDlg.toId) return ElMessage.warning(t("typed.pickBothFolders"));
-  if (copyDlg.fromId === copyDlg.toId) return ElMessage.warning(t("typed.sameFolder"));
-  copyDlg.saving = true;
-  try {
-    const { data } = await copyLedFolderApi(copyDlg.fromId, copyDlg.toId);
-    ElMessage.success(t("typed.copiedTasks", { n: data.copied }));
-    copyDlg.visible = false;
-    await loadLED();
-    refresh();
-  } finally {
-    copyDlg.saving = false;
-  }
 };
 
 /* ---------------- LED 设备 ---------------- */

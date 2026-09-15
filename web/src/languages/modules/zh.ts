@@ -681,7 +681,9 @@ export default {
     ledPlay: "led播放",
     ledSpeed: "Led速度",
     ledContent: "请输入 led 字幕内容",
-    infiniteLoop: "0 是无限循环，最大 10 次",
+    infiniteLoop: "1 ~ 10 次，不能为 0",
+    durationNotZero: "播放时长不能为 0",
+    loopTimesNotZero: "循环次数不能为 0",
     highestLevel: "10 为最高级别",
     levels0to5: "0 ~ 5 级",
     levelN: "{n} 级",
@@ -786,9 +788,9 @@ export default {
     unifiedLength: "统一播放时长",
     unifiedTerminals: "统一终端列表",
     termScopePlan:
-      "现在显示的是整个方案的设置（提前开电源、音量、任务级别、起止日期、星期、终端清单）。点下面的「确定」会把它套到所有课时。",
+      "现在显示的是整个方案的设置（提前开电源、音量、任务级别、起止日期、星期、终端清单）。改完要逐行点「添加 / 修改」才会存进去。",
     termScopeItem:
-      "现在显示的是第 {n} 个课时「{name}」自己的设置（提前开电源、音量、任务级别、起止日期、星期，以及 {c} 台终端）。改完点这一行的「修改」，只存这一个课时；点下面的「确定」则会把它套到所有课时。",
+      "现在显示的是第 {n} 个课时「{name}」自己的设置（提前开电源、音量、任务级别、起止日期、星期，以及 {c} 台终端）。改完点这一行的「修改」，只存这一个课时。",
     termScopeNewItem: "第 {n} 个课时还没入库，先显示整个方案的设置。点这一行的「添加」就按现在这些值存给它。",
     termOfLesson: "本课时 {c} 台",
     backToPlanTerminals: "看整个方案",

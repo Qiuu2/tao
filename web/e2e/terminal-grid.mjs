@@ -18,6 +18,7 @@
  *   ⑤ 分页 / 搜索 在网格下照常work
  *   ⑥ 切回列表：el-table 回来，勾选被清空（互斥渲染的代价，是有意的）
  *   ⑦ 刷新页面后还是上次选的那个视图（记在 localStorage）
+ *   ⑧ 记着网格再重新进这一页，列表接口要真的发出去（现场那句「网格中显示暂无数据」）
  *
  * # 怎么跑
  *
@@ -67,6 +68,11 @@ await p.waitForTimeout(3500);
 const openTerminals = async () => {
   await p.keyboard.press("Escape").catch(() => undefined);
   await p.goto(BASE + "/#/terminal", { waitUntil: "domcontentloaded" });
+  // ⚠ 已经在这个 hash 上时 goto 什么都不做 —— 页面不会重新挂载。
+  //   ⑦、⑧ 要的恰恰是「重新进这一页」，所以必须真的 reload 一次。
+  //   不 reload 的话上一次留在页面上的卡片还在，断言会假绿：
+  //   「网格下进页面拉不到数据」这个 bug 当初就是这么漏过去的。
+  await p.reload({ waitUntil: "domcontentloaded" });
   await p.waitForSelector(".terminal-page", { timeout: 25000 });
   await p.waitForTimeout(2000);
 };
@@ -206,6 +212,31 @@ ok((await p.locator(".term-card").count()) > 0, "重新进页面，仍然是网�
 await toList();
 await openTerminals();
 ok((await p.locator(".terminal-page .el-table").count()) > 0, "切回列表再进，仍然是列表");
+
+// ── ⑧ 记着网格再重新进这一页：列表接口要真的发出去 ──
+//
+// 这一条盯的是现场那句「全部终端有 19 个，但右边网格中显示暂无数据」。
+// 根因在 ProTable：onMounted 里 dragSort() 排在首次取数前面，它去找
+// `#uuid tbody`，而网格模式走的是 #body 插槽、根本不渲染 el-table，
+// 于是 Sortable.create(null) 抛在 onMounted 里，后面的 getTableList()
+// 一次都执行不到 —— 请求压根没发出去，界面上就是「暂无数据」。
+//
+// 所以这里不光看卡片，还要盯住**列表请求真的发出去了**：
+// 只断言卡片数量的话，将来若换成别的兜底渲染，仍然会假绿。
+console.log("⑧ 记着网格再重新进这一页，列表接口要真的发出去（网格下取不到数的那个 bug）");
+await toGrid();
+const listCalls = [];
+const onReq = r => {
+  if (/\/api\/terminals\?/.test(r.url())) listCalls.push(r.url());
+};
+p.on("request", onReq);
+await openTerminals();
+p.off("request", onReq);
+ok((await p.locator(".term-card").count()) > 0, `重新进页面就是网格，卡片直接长出来了（${await p.locator(".term-card").count()} 张）`);
+ok(listCalls.length > 0, `列表接口发出去了（${listCalls.length} 次）—— 原来一次都不发`);
+ok((await p.locator(".grid-wrap .table-empty").count()) === 0, "没有停在「暂无数据」上");
+
+await toList();
 
 await b.close();
 console.log(fails ? `\n✗ ${fails} 条没过` : "\n✓ 全过");
