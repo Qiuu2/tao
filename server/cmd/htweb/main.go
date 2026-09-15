@@ -802,6 +802,11 @@ func (a *app) routes() http.Handler {
 	mux.HandleFunc("GET /api/cloud/terminals", req(a.handleCloudTerminals))
 	mux.HandleFunc("GET /api/cloud/terminals/{id}/inventory", req(a.handleCloudInventory))
 	mux.HandleFunc("POST /api/cloud/bulk", req(a.handleCloudBulk))
+	// 任务传送左边那棵树的两个叶子：服务器任务 / 云广播任务（旧版 set_offline.php?id=1|2）
+	mux.HandleFunc("GET /api/transfer/server-tasks", req(a.handleServerTaskList))
+	mux.HandleFunc("GET /api/transfer/server-tasks/{id}", req(a.handleServerTaskTerminals))
+	mux.HandleFunc("GET /api/transfer/server-tasks/{id}/media", req(a.handleServerTaskMedia))
+	mux.HandleFunc("POST /api/transfer/server-bulk", req(a.handleServerTransfer))
 	mux.HandleFunc("GET /api/transfer/tasks", req(a.handleTransferList))
 	mux.HandleFunc("GET /api/transfer/tasks/{id}", req(a.handleTransferDetail))
 	mux.HandleFunc("GET /api/transfer/tasks/{id}/media", req(a.handleTransferMedia))

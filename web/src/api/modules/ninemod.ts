@@ -519,6 +519,8 @@ export interface TransferTask {
   stateText: string;
   terminalCount: number;
   doneCount: number;
+  /** 这条任务带了几个媒体。只有「服务器任务」页签填它 */
+  mediaCount: number;
   /** 原任务已被删除，只剩离线副本 */
   sourceMissing: boolean;
 }
@@ -533,6 +535,8 @@ export interface TransferTerminal {
   stateText: string;
   area: string;
   deleted: boolean;
+  /** 只有「服务器任务」页签填：这台终端有没有存储容量，没有就存不下离线文件 */
+  capable?: boolean;
 }
 
 export const getCloudTerminalsApi = (params: any) =>
@@ -548,6 +552,8 @@ export interface CloudBulkResult {
   mediaRows: number;
   taskRows: number;
   stateText: string;
+  /** 只有「删除离线音乐」用：那个动作是真的删行，不是改状态 */
+  deletedRows?: number;
 }
 
 /** action: idle | immediate | stop | clearAll | clearIdleMedia */
@@ -572,6 +578,43 @@ export interface TransferMediaItem {
 export const getTransferMediaApi = (id: number) =>
   http.get<TransferMediaItem[]>(PORT1 + `/api/transfer/tasks/${id}/media`, {}, { loading: false });
 
-/** action: idle | immediate | stop */
+/**
+ * 任务传送 ·「云广播任务」页签那 8 个按钮。
+ *
+ * action: idle | immediate | deleteIdle | deleteNow | stop |
+ *         offlinePlay | offlinePlayStop | deleteOfflineMusic
+ *
+ * 与旧版 do.php?act=set_offline_tasks 的 flag 14/15/4/5/11/16/17/18 一一对应。
+ */
 export const transferBulkApi = (ids: number[], action: string) =>
   http.post<CloudBulkResult>(PORT1 + `/api/transfer/bulk`, { ids, action });
+
+/**
+ * 任务传送 ·「服务器任务」页签（旧版 set_offline.php?id=1）。
+ *
+ * 列的是**还没下发过**的任务（task.offlinestate = 0）。下发一次之后它就换到
+ * 「云广播任务」页签里去了 —— 两个页签合起来才是全集，互不重叠。
+ */
+export const getServerTaskListApi = (params: any) =>
+  http.get<ResPage<TransferTask>>(PORT1 + `/api/transfer/server-tasks`, params);
+
+/**
+ * 「服务器任务」页签的空闲离线 / 立即离线（旧版 do.php?act=do_offline_task&flag=1|2）。
+ *
+ * ⚠ 只传任务，不传终端 —— 终端是后端从任务自己的清单（terminaloftask）里取的，
+ *   而且只取**有存储容量**的那些。这是它和「音乐传输」页那个下发按钮的根本区别，
+ *   后者要人再挑一遍终端。
+ *
+ * action: idle | immediate
+ */
+export const serverTransferApi = (ids: number[], action: string) =>
+  http.post<CloudBulkResult>(PORT1 + `/api/transfer/server-bulk`, { ids, action });
+
+/**
+ * 「服务器任务」行内那两个链接。读的是**源表**（terminaloftask / mediaoftask）——
+ * 这条任务还没下发过，离线表里一行都没有，拿 transfer/tasks/{id} 去问只会得到空清单。
+ */
+export const getServerTaskTerminalsApi = (id: number) =>
+  http.get<TransferTerminal[]>(PORT1 + `/api/transfer/server-tasks/${id}`, {}, { loading: false });
+export const getServerTaskMediaApi = (id: number) =>
+  http.get<TransferMediaItem[]>(PORT1 + `/api/transfer/server-tasks/${id}/media`, {}, { loading: false });

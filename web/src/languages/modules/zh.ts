@@ -1008,6 +1008,8 @@ export default {
     pickTerminalFirst: "请选择终端",
     idleDelete: "空闲删除",
     nowDelete: "立即删除",
+    idleOffline: "空闲离线",
+    nowOffline: "立即离线",
     tip: "提示"
   },
   user: {
@@ -1249,7 +1251,7 @@ export default {
     goSignIn: "去登录"
   },
   log: {
-    pendingCutoffTip: "点确定即清掉 {date} 之前的",
+    pendingCutoffTip: "自动清掉 {date} 之前的",
     statsLine: "共 {n} 条 · {from} ~ {to}",
     cleanLog: "清理日志",
     cleanOpLog: "清理操作日志",
@@ -1319,7 +1321,25 @@ export default {
     syncDone: "时间同步指令已下发 {n} 台",
     syncSkipped: "，跳过 {n} 台",
     pickTerminalFirst: "请先勾选终端",
-    nothingToDo: "选中的终端上没有媒体也没有任务，{action} 没有可做的"
+    nothingToDo: "选中的终端上没有媒体也没有任务，{action} 没有可做的",
+    taskTree: "任务管理",
+    serverTasks: "服务器任务",
+    cloudTasks: "云广播任务",
+    isSourceTask: "这里是还没下发过的任务",
+    offlineStop: "停止离线",
+    offlinePlay: "离线播放",
+    offlinePlayStop: "停止离线播放",
+    delOfflineMusic: "删除离线音乐",
+    canStore: "能否存储",
+    willSkip: "无容量，跳过",
+    noTerminalsForTask: "这条任务还没有绑定任何终端。",
+    noMediaInTask: "这条任务里没有媒体。",
+    confirmDeleting: "将对选中的 {n} 条任务执行「{action}」，终端上的离线内容会被删除，不可恢复。",
+    confirmClearMusic:
+      "将删除选中的 {n} 条任务的全部离线记录，并通知终端删掉本地文件。这一步当场生效、不可恢复，任务会回到「服务器任务」。确定继续？",
+    deleteMusicDone: "删除离线音乐：已删掉 {n} 条离线记录，已通知 {terms} 条任务的终端删除本地文件",
+    commandSent: "{action}：指令已发给 {n} 条任务的终端",
+    serverTransferDone: "{action}：{n} 条任务已下发到 {terms} 条任务的终端，状态置为「{state}」"
   },
   rights: {
     groupResource: "资源管理",
@@ -1464,6 +1484,7 @@ export default {
     pickTerminals: "选择终端",
     pickDevices: "选择设备",
     pickProbe: "选择探头",
+    deviceRequired: "请选择一个探头设备（每个分区只能选一个）",
     emptyZone: "这个分区里还没有终端",
     terminalsOf: "{name} 的终端",
     editZoneTitle: "修改声场分区：{name}",

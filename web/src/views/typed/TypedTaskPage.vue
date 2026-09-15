@@ -1368,9 +1368,19 @@ const submit = async () => {
     err.enddate = t("bell.pickEndDate");
     bad = true;
   }
-  // 播放时长不能为 0 —— 与旧版一致（采播那张表单的 collect_task_add['not_zero']）。
-  // 功放的时长是拿来算 endtime 的，填 0 等于一条到点就结束、什么也不做的任务。
-  if ((props.kind === "amplifier" || props.kind === "collect") && !(form.durationSec > 0)) {
+  /*
+   * 播放时长不能为 0 —— 与旧版一致（采播那张表单的 collect_task_add['not_zero']）。
+   * 功放的时长是拿来算 endtime 的，填 0 等于一条到点就结束、什么也不做的任务。
+   *
+   * 声场任务（2026-09-15 现场加的）同理：它按时长把这一组终端的音量顶到
+   * 探头量出来的那一档，时长 0 等于顶上去的同一瞬间就撤回来。
+   * ⚠ 只在**普通模式**下管 —— 间隔模式那一栏根本没有「播放时长」这个控件
+   *   （见上面 `v-if="!hasIntervalMode || form.intervalMode === 0"` 那个分支），
+   *   一律拦会让间隔模式的声场任务永远存不下去。
+   */
+  const durationShown =
+    props.kind === "amplifier" || props.kind === "collect" || (props.kind === "sound" && form.intervalMode === 0);
+  if (durationShown && !(form.durationSec > 0)) {
     err.duration = t("task.durationNotZero");
     bad = true;
   }

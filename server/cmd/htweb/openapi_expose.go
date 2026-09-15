@@ -380,6 +380,10 @@ var exposedGroups = []exposedGroup{
 			{"GET /api/transfer/tasks/{id}", "任务传送详情", "登录即可", false},
 			{"GET /api/transfer/tasks/{id}/media", "该任务要传的媒体", "登录即可", false},
 			{"POST /api/transfer/bulk", "批量传送任务", "登录即可", true},
+			{"GET /api/transfer/server-tasks", "服务器任务列表（还没下发过的）", "登录即可", false},
+			{"GET /api/transfer/server-tasks/{id}", "服务器任务的终端清单", "登录即可", false},
+			{"GET /api/transfer/server-tasks/{id}/media", "服务器任务的媒体清单", "登录即可", false},
+			{"POST /api/transfer/server-bulk", "把服务器任务下发到它自己的终端", "登录即可", true},
 		},
 	},
 	{

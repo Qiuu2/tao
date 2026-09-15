@@ -37,17 +37,21 @@
 
               <!--
                 保留期：默认 1 个月，可选 3 个月 / 半年 / 1 年。
-                选完点「确定」：设置存下来，超期的当场滚掉，不用等到明天。
-                服务里另有一个每天跑一次的定时滚动，不靠这一页开着。
+
+                ⚠ 没有「确定」按钮 —— 换一档就当场生效（现场 2026-09-15 要求）：
+                设置存下来、超期的立刻滚掉。默认那一档本来就是 1 个月，
+                所以「超过一个月的日志自动清掉」是开箱即用的，不用人来点一下。
+
+                真正兜底的是服务里那个每天跑一次的定时滚动
+                （logs.RetentionService.StartDaily：起来一分钟后先补一次，
+                之后每 24 小时一次），它不依赖有没有人打开这一页。
+                这里这一下只是「不想等到明天」。
               -->
               <el-divider direction="vertical" />
               <span class="keep-label">{{ $t("log.retention") }}</span>
-              <el-select v-model="keepOption" style="width: 120px">
+              <el-select v-model="keepOption" :disabled="!keep || keepSaving" style="width: 120px" @change="onKeepChange">
                 <el-option v-for="c in keep?.choices ?? []" :key="c.value" :label="c.label" :value="c.value" />
               </el-select>
-              <el-button type="primary" :loading="keepSaving" :disabled="!keep" @click="onKeepConfirm">{{
-                $t("common.confirm")
-              }}</el-button>
             </div>
             <div class="header-right">
               <el-tag v-if="pendingCutoff" type="warning" size="small" effect="plain">
@@ -219,18 +223,21 @@ const confirmClear = async () => {
 
 /* ---------------- 日志保留期 ----------------
 
-  默认 1 个月，可选 3 个月 / 半年 / 1 年。选完点「确定」：设置存下来，
-  超期的当场滚掉。服务里另有一个每天跑一次的定时滚动，不依赖这一页开着。
+  默认 1 个月，可选 3 个月 / 半年 / 1 年。**换一档就当场生效**，没有确定按钮
+  （现场 2026-09-15 要求）：设置存下来，超期的立刻滚掉。
 
-  「确定」这一下是会删数据的，所以点之前把边界日期摆在旁边
-  （pendingCutoff 跟着下拉走，不是跟着已保存的设置走）——
-  人在按下去之前就看得到自己要删掉哪一天之前的东西。
+  超期日志本来就会自己清 —— 服务里那个每天跑一次的定时滚动
+  （logs.RetentionService.StartDaily）不依赖这一页开着。这里这一下只是
+  「不想等到明天」。
+
+  ⚠ 这是个会删数据的下拉，所以旁边那个 pendingCutoff 标签留着：
+  它显示当前这一档对应的边界日期，人换完档立刻看得到刚才滚掉的是哪一天之前的。
 */
 const keep = ref<RetentionSettings | null>(null);
 const keepOption = ref<RetentionOption>("1m");
 const keepSaving = ref(false);
 
-/** 下拉里当前选中那一档对应的保留边界。切换下拉就跟着变，让人先看到再点确定 */
+/** 下拉里当前选中那一档对应的保留边界。切换下拉就跟着变 */
 const pendingCutoff = computed(() => {
   if (!keep.value) return "";
   if (keepOption.value === keep.value.option) return keep.value.cutoffDate;
@@ -251,7 +258,13 @@ const loadKeep = async () => {
   }
 };
 
-const onKeepConfirm = async () => {
+/*
+ * 换档即生效。
+ *
+ * 失败时把下拉退回原值 —— 否则界面上显示的是一档没存下去的设置，
+ * 下一个人会以为日志已经按新的保留期在滚了。
+ */
+const onKeepChange = async () => {
   if (!keep.value) return;
   keepSaving.value = true;
   try {

@@ -1013,6 +1013,8 @@ export default {
     pickTerminalFirst: "Choose terminals",
     idleDelete: "Delete when idle",
     nowDelete: "Delete now",
+    idleOffline: "Transfer when idle",
+    nowOffline: "Transfer now",
     tip: "Notice"
   },
   user: {
@@ -1257,7 +1259,7 @@ export default {
     goSignIn: "Go to sign-in"
   },
   log: {
-    pendingCutoffTip: "Confirm to clear everything before {date}",
+    pendingCutoffTip: "Everything before {date} is cleared automatically",
     statsLine: "{n} rows · {from} – {to}",
     cleanLog: "Clean up",
     cleanOpLog: "Clean up the operation log",
@@ -1330,7 +1332,27 @@ export default {
     syncDone: "Time-sync command sent to {n} terminals",
     syncSkipped: ", {n} skipped",
     pickTerminalFirst: "Select at least one terminal first",
-    nothingToDo: "The chosen terminals hold no media and no tasks — nothing for {action} to do"
+    nothingToDo: "The chosen terminals hold no media and no tasks — nothing for {action} to do",
+    taskTree: "Tasks",
+    serverTasks: "Server tasks",
+    cloudTasks: "Cloud tasks",
+    isSourceTask: "These tasks have not been pushed yet",
+    offlineStop: "Stop transfer",
+    offlinePlay: "Play offline copy",
+    offlinePlayStop: "Stop offline playback",
+    delOfflineMusic: "Delete offline files",
+    canStore: "Can store",
+    willSkip: "No storage — skipped",
+    noTerminalsForTask: "This task has no terminals assigned.",
+    noMediaInTask: "This task has no media.",
+    confirmDeleting:
+      "“{action}” will run on the {n} selected tasks. The offline content on the terminals will be deleted and cannot be recovered.",
+    confirmClearMusic:
+      "This deletes every offline record for the {n} selected tasks and tells the terminals to remove the local files. It takes effect immediately, cannot be undone, and the tasks return to “Server tasks”. Continue?",
+    deleteMusicDone:
+      "Delete offline files: {n} offline records removed; terminals for {terms} tasks told to delete their local copies",
+    commandSent: "{action}: command sent to the terminals of {n} tasks",
+    serverTransferDone: "{action}: {n} tasks pushed to the terminals of {terms} tasks, state set to “{state}”"
   },
   rights: {
     groupResource: "Resources",
@@ -1478,7 +1500,8 @@ export default {
     zoneNameRequired: "Enter a zone name",
     pickTerminals: "Pick terminals",
     pickDevices: "Pick devices",
-    pickProbe: "Choose probes",
+    pickProbe: "Choose a probe",
+    deviceRequired: "Choose one probe device (each zone takes exactly one)",
     emptyZone: "No terminals in this zone yet",
     terminalsOf: "Terminals in {name}",
     editZoneTitle: "Edit sound-field zone: {name}",

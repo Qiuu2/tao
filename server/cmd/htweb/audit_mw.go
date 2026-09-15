@@ -211,8 +211,9 @@ var auditLabels = map[string]string{
 	"PUT /api/time/clock": "设置服务器时钟",
 
 	// 云广播那两个批量动作会往终端上发传输 / 清除指令，属于「改」
-	"POST /api/cloud/bulk":    "云广播终端批量操作",
-	"POST /api/transfer/bulk": "任务传送批量操作",
+	"POST /api/cloud/bulk":           "云广播终端批量操作",
+	"POST /api/transfer/bulk":        "任务传送批量操作",
+	"POST /api/transfer/server-bulk": "服务器任务下发到云广播终端",
 
 	"POST /api/backups":   "创建备份",
 	"DELETE /api/backups": "删除备份包",

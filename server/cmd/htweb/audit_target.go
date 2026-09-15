@@ -212,8 +212,9 @@ var auditTargets = map[string]auditTarget{
 	// —— 云广播 / 离线传输 ——
 	// 这几条都是「对一批东西做同一件事」，日志要答的是「对哪一批」。
 	// 云广播那一排按钮选的是终端，任务传送选的是任务，各记各的。
-	"POST /api/cloud/bulk":    {Noun: "终端", Table: "terminal", IDCol: "id", NameCol: "terminalname"},
-	"POST /api/transfer/bulk": {Noun: "任务", Table: "task", IDCol: "taskid", NameCol: "taskname"},
+	"POST /api/cloud/bulk":           {Noun: "终端", Table: "terminal", IDCol: "id", NameCol: "terminalname"},
+	"POST /api/transfer/bulk":        {Noun: "任务", Table: "task", IDCol: "taskid", NameCol: "taskname"},
+	"POST /api/transfer/server-bulk": {Noun: "任务", Table: "task", IDCol: "taskid", NameCol: "taskname"},
 	// 下发类记的是**发的是什么**（媒体 / 任务），发到哪些终端条数太多，列不下
 	"POST /api/offline/media": {Noun: "媒体", Table: "media", IDCol: "id", NameCol: "name", BodyIDs: []string{"mediaIds"}},
 	"POST /api/offline/tasks": {Noun: "任务", Table: "task", IDCol: "taskid", NameCol: "taskname", BodyIDs: []string{"taskIds"}},

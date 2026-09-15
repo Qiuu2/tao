@@ -7,6 +7,7 @@ import (
 	"htweb/internal/auth"
 	"htweb/internal/enable"
 	"htweb/internal/httpx"
+	"htweb/internal/notify"
 	"htweb/internal/offline"
 	"htweb/internal/sound"
 	"htweb/internal/store"
@@ -884,7 +885,72 @@ func (a *app) handleTransferMedia(w http.ResponseWriter, r *http.Request) {
 	httpx.OK(w, list)
 }
 
-// handleTransferBulk 是任务传送页的「空闲传输 / 立即传输 / 停止传输」。
+// handleServerTaskList 是任务传送页「服务器任务」页签（旧版 set_offline.php?id=1）。
+func (a *app) handleServerTaskList(w http.ResponseWriter, r *http.Request) {
+	q := r.URL.Query()
+	pager := store.NewPager(atoiDefault(q.Get("pageNum"), 1), atoiDefault(q.Get("pageSize"), 18))
+	res, err := a.offline.ListServerTasks(r.Context(), auth.From(r.Context()), offline.ServerTaskQuery{
+		Keyword: strings.TrimSpace(q.Get("keyword")),
+		Kind:    strings.TrimSpace(q.Get("kind")),
+		Pager:   pager,
+	})
+	if err != nil {
+		failOffline(w, "查询服务器任务", err)
+		return
+	}
+	httpx.OKPage(w, res.Items, pager.PageNum, pager.PageSize, res.Total)
+}
+
+// handleServerTransfer 是「服务器任务」页签的空闲离线 / 立即离线。
+//
+// 只收任务，不收终端 —— 终端是从任务自己的清单里取的（旧版 do_offline_task 就是这样）。
+func (a *app) handleServerTransfer(w http.ResponseWriter, r *http.Request) {
+	var in struct {
+		IDs    []int64 `json:"ids"`
+		Action string  `json:"action"`
+	}
+	if !httpx.DecodeJSON(w, r, &in) {
+		return
+	}
+	res, err := a.offline.ServerTransfer(r.Context(), auth.From(r.Context()),
+		in.IDs, offline.CloudAction(in.Action))
+	if err != nil {
+		failOffline(w, "服务器任务下发", err)
+		return
+	}
+	a.sendTransferNotices(r, res)
+	httpx.OK(w, res)
+}
+
+// handleServerTaskTerminals / handleServerTaskMedia 是「服务器任务」行内那两个链接。
+// 云广播任务那边读离线表，这边读源表 —— 任务还没下发过，离线表里一行都没有。
+func (a *app) handleServerTaskTerminals(w http.ResponseWriter, r *http.Request) {
+	id, ok := idFromPath(w, r)
+	if !ok {
+		return
+	}
+	list, err := a.offline.ServerTaskTerminals(r.Context(), auth.From(r.Context()), id)
+	if err != nil {
+		failOffline(w, "查询任务终端清单", err)
+		return
+	}
+	httpx.OK(w, list)
+}
+
+func (a *app) handleServerTaskMedia(w http.ResponseWriter, r *http.Request) {
+	id, ok := idFromPath(w, r)
+	if !ok {
+		return
+	}
+	list, err := a.offline.ServerTaskMedia(r.Context(), auth.From(r.Context()), id)
+	if err != nil {
+		failOffline(w, "查询任务媒体清单", err)
+		return
+	}
+	httpx.OK(w, list)
+}
+
+// handleTransferBulk 是任务传送页「云广播任务」页签那 8 个按钮。
 func (a *app) handleTransferBulk(w http.ResponseWriter, r *http.Request) {
 	var in struct {
 		IDs    []int64 `json:"ids"`
@@ -899,5 +965,25 @@ func (a *app) handleTransferBulk(w http.ResponseWriter, r *http.Request) {
 		failOffline(w, "任务传送批量操作", err)
 		return
 	}
+	a.sendTransferNotices(r, res)
 	httpx.OK(w, res)
+}
+
+// sendTransferNotices 把服务层攒下的报文发出去。
+//
+// 走到这里说明库已经改完并提交了 —— offline 包只管库，Notifier 在这一层，
+// 全站都是这个分工。报文发不出去不影响已经落库的改动（notify 走 UDP，本来就不保证送达）。
+func (a *app) sendTransferNotices(r *http.Request, res *offline.CloudBulkResult) {
+	ctx := r.Context()
+	for _, n := range res.Notices {
+		switch n.Kind {
+		case "terminal":
+			a.notifier.TerminalTaskBraced(ctx, notify.State(n.State), n.TaskID, n.TerminalIDs)
+		default:
+			a.notifier.TaskGeneral(ctx, notify.State(n.State), []int64{n.TaskID})
+		}
+	}
+	if res.OfflineChanged {
+		a.notifier.OfflineChanged(ctx)
+	}
 }

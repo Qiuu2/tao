@@ -542,8 +542,18 @@ func (s *Service) validateGroup(ctx context.Context, u *auth.User, in *GroupInpu
 	if len(in.TerminalIDs) > maxMember {
 		return fmt.Errorf(i18n.TC(ctx, "声场分区终端最多 %d 台"), maxMember)
 	}
-	if len(in.DeviceIDs) > maxMember {
-		return fmt.Errorf(i18n.TC(ctx, "声场分区噪声设备最多 %d 台"), maxMember)
+	/*
+	 * 一个分区**必须且只能**挂一个探头（现场 2026-09-15 定的规矩）。
+	 *
+	 * 旧版 streamadd.html 的 checkform() 只拦了「一个都没选」
+	 * （devicenonull 那句 alert），没拦多选。但一个分区的用法就是
+	 * 「这个探头量到多吵，就把这组终端的音量调到多大」—— 挂两个探头，
+	 * 后台按哪一个算是没有定义的，所以这里收紧成正好一个。
+	 *
+	 * ⚠ 校验放在服务端而不只是界面上：界面拦得住人，拦不住直接打接口的。
+	 */
+	if len(in.DeviceIDs) != 1 {
+		return fmt.Errorf("每个声场分区必须选择一个探头设备，且只能选一个")
 	}
 
 	if len(in.TerminalIDs) > 0 {

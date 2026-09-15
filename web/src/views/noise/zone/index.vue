@@ -46,23 +46,21 @@
     <el-dialog v-model="dlg.visible" :title="dlg.title" width="760px" top="6vh">
       <!-- 表单项照 :80 的「添加分区」弹窗：分区名称 / 选择终端 / 选择设备 -->
       <el-form :model="form" label-width="110px">
-        <el-form-item :label='$t("noise.zoneName")' required>
-          <el-input v-model="form.name" maxlength="21" show-word-limit :placeholder='$t("noise.zoneNameRequired")' />
+        <el-form-item :label="$t('noise.zoneName')" required>
+          <el-input v-model="form.name" maxlength="21" show-word-limit :placeholder="$t('noise.zoneNameRequired')" />
         </el-form-item>
-        <el-form-item :label='$t("noise.pickTerminals")'>
+        <el-form-item :label="$t('noise.pickTerminals')">
           <!-- 按终端分区分组的树。⚠ 这个接口的主键叫 terminalId 不是 id，组件里已适配 -->
           <TerminalTree v-model="selectedTerminals" :terminals="terminals" :loading="terminalLoading" @search="searchTerminals" />
         </el-form-item>
-        <el-form-item :label='$t("noise.pickDevices")'>
-          <el-select
-            v-model="selectedDevices"
-            multiple
-            filterable
-            collapse-tags
-            collapse-tags-tooltip
-            :placeholder='$t("noise.pickProbe")'
-            class="fill"
-          >
+        <!--
+          ⚠ 探头**必选、且只能选一个**（现场 2026-09-15 定的）。
+          一个分区的用法就是「这个探头量到多吵，就把这组终端的音量调到多大」，
+          挂两个探头后台按哪个算是没有定义的。所以这里是单选，不是多选。
+          服务端 validateGroup 里有同一条校验 —— 界面拦得住人，拦不住直接打接口的。
+        -->
+        <el-form-item :label="$t('noise.pickDevices')" required>
+          <el-select v-model="selectedDevice" filterable clearable :placeholder="$t('noise.pickProbe')" class="fill">
             <el-option v-for="d in devices" :key="d.id" :label="`${d.name}（${d.ip}）`" :value="d.id">
               <span>{{ d.name }}</span>
               <span class="opt-sub">{{ d.ip }} · 地址 {{ d.devaddr }}</span>
@@ -82,17 +80,17 @@
 
     <!-- 浏览终端：旧版 zhaoshengdisplayterminal.php 那张表 -->
     <el-dialog v-model="termDlg.visible" :title="termDlg.title" width="760px" top="8vh">
-      <el-table :data="termDlg.list" size="small" max-height="400" :empty-text='$t("noise.emptyZone")'>
-        <el-table-column prop="terminalname" :label='$t("terminalCommon.terminalName")' min-width="180" show-overflow-tooltip />
-        <el-table-column prop="typeName" :label='$t("terminalCommon.terminalType")' width="150" show-overflow-tooltip />
-        <el-table-column :label='$t("terminalCommon.netState")' width="110">
+      <el-table :data="termDlg.list" size="small" max-height="400" :empty-text="$t('noise.emptyZone')">
+        <el-table-column prop="terminalname" :label="$t('terminalCommon.terminalName')" min-width="180" show-overflow-tooltip />
+        <el-table-column prop="typeName" :label="$t('terminalCommon.terminalType')" width="150" show-overflow-tooltip />
+        <el-table-column :label="$t('terminalCommon.netState')" width="110">
           <template #default="{ row }">
             <el-tag :type="row.netstate === 1 ? 'success' : 'info'" size="small">
               {{ row.netstate === 1 ? $t("common.online") : $t("common.offline") }}
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="ip" :label='$t("terminalCommon.terminalIp")' width="160" />
+        <el-table-column prop="ip" :label="$t('terminalCommon.terminalIp')" width="160" />
       </el-table>
       <template #footer>
         <el-button @click="termDlg.visible = false">{{ $t("common.close") }}</el-button>
@@ -152,7 +150,8 @@ const terminals = ref<SoundGroupTerminal[]>([]);
 const terminalLoading = ref(false);
 const selectedTerminals = ref<number[]>([]);
 const devices = ref<SoundDevice[]>([]);
-const selectedDevices = ref<number[]>([]);
+/** 单选：一个分区正好一个探头。空串表示还没选 */
+const selectedDevice = ref<number | "">("");
 
 const searchTerminals = async (kw: string) => {
   terminalLoading.value = true;
@@ -175,7 +174,7 @@ const dlg = reactive({ visible: false, saving: false, isEdit: false, title: "", 
 const openCreate = async () => {
   form.name = "";
   selectedTerminals.value = [];
-  selectedDevices.value = [];
+  selectedDevice.value = "";
   Object.assign(dlg, { visible: true, saving: false, isEdit: false, title: t("noise.addZone"), id: 0 });
   await Promise.all([searchTerminals(""), loadDevices()]);
 };
@@ -185,9 +184,17 @@ const openEdit = async (row: SoundGroup) => {
   form.name = data.name;
   // 已删除的终端不回填，否则保存时会被服务端的存在性校验挡下来
   selectedTerminals.value = data.terminals.filter(t => !t.deleted).map(t => t.terminalId);
-  selectedDevices.value = data.devices.map(d => d.id);
+  // 历史数据里可能挂着不止一个探头（这条规矩是后加的）——回填第一个，
+  // 保存时那条「只能一个」的校验自然会把它收敛成一个。
+  selectedDevice.value = data.devices.length ? data.devices[0].id : "";
   const dropped = data.terminals.filter(t => t.deleted).length;
-  Object.assign(dlg, { visible: true, saving: false, isEdit: true, title: t("noise.editZoneTitle", { name: data.name }), id: data.id });
+  Object.assign(dlg, {
+    visible: true,
+    saving: false,
+    isEdit: true,
+    title: t("noise.editZoneTitle", { name: data.name }),
+    id: data.id
+  });
   await Promise.all([searchTerminals(""), loadDevices()]);
   if (dropped) ElMessage.warning(t("noise.droppedTerminals", { n: dropped }));
 };
@@ -212,10 +219,12 @@ const openTerminals = async (row: SoundGroup) => {
 
 const submit = async () => {
   if (!form.name.trim()) return ElMessage.warning(t("noise.zoneNameRequired"));
+  if (!selectedDevice.value) return ElMessage.warning(t("noise.deviceRequired"));
   const body = {
     name: form.name.trim(),
     terminalIds: selectedTerminals.value,
-    deviceIds: selectedDevices.value
+    // 接口那头收的仍然是数组（别的调用方还在用），这里就是长度恒为 1 的那种
+    deviceIds: [Number(selectedDevice.value)]
   };
   dlg.saving = true;
   try {
@@ -232,11 +241,10 @@ const submit = async () => {
 const doDelete = async (raw: (string | number)[]) => {
   const ids = toIds(raw);
   if (!ids.length) return ElMessage.warning(t("noise.pickZoneFirst"));
-  await ElMessageBox.confirm(
-    t("noise.confirmDeleteZones", { n: ids.length }),
-    t("noise.deleteZoneTitle"),
-    { type: "warning", confirmButtonText: t("common.confirmDelete") }
-  );
+  await ElMessageBox.confirm(t("noise.confirmDeleteZones", { n: ids.length }), t("noise.deleteZoneTitle"), {
+    type: "warning",
+    confirmButtonText: t("common.confirmDelete")
+  });
   const { data } = await deleteSoundGroupsApi(ids);
   ElNotification({
     title: t("common.deleteDone"),

@@ -278,6 +278,20 @@ const (
 	CloudClearTermMedia CloudAction = "clearTerminalMedia"
 	// CloudClearIdle 对应「清除空闲媒体」：taskid = 0 且这台终端上**没有任务在用**它的那些。
 	CloudClearIdle CloudAction = "clearIdleMedia"
+
+	// ── 下面三个只出现在「任务传送 · 云广播任务」页签上（旧版 flag 16/17/18）──
+
+	// CloudOfflinePlay 离线播放（旧版 flag=16）。**一行库都不写**，只发一条
+	// task?state=16&id=<taskid> —— 让终端拿本地已经存好的那份放起来。
+	CloudOfflinePlay CloudAction = "offlinePlay"
+	// CloudOfflinePlayStop 停止离线播放（旧版 flag=17）。同样只发报文，不写库。
+	CloudOfflinePlayStop CloudAction = "offlinePlayStop"
+	// CloudDeleteMusic 删除离线音乐（旧版 flag=18）。
+	//
+	// ⚠ 这一页唯一真正 DELETE 的动作：offlinetask / offlinetaskofterminal /
+	//   offlinemediaofterminal 三张表里这条任务的行全删，再把 task.offlinestate 归 0
+	//   （任务回到「服务器任务」页签）。别的清除类动作都只是改状态、由后台去删。
+	CloudDeleteMusic CloudAction = "deleteOfflineMusic"
 )
 
 // CloudBulkResult 逐项回报改了多少行，界面照实说，不做「成功」二字了事。
@@ -288,6 +302,27 @@ type CloudBulkResult struct {
 	MediaRows     int64  `json:"mediaRows"`
 	TaskRows      int64  `json:"taskRows"`
 	StateText     string `json:"stateText"`
+	// DeletedRows 只有「删除离线音乐」用：那个动作是真的 DELETE，不是改状态。
+	DeletedRows int64 `json:"deletedRows,omitempty"`
+
+	// ── 下面两个是给 handler 的通知清单，不进 JSON ──────────────────
+	//
+	// 这个包只管库，Notifier 在 handler 那一层（跟全站其它模块一个规矩）。
+	// 所以「该给 audioserver 发什么」原样交回去，由 handler 在**事务提交之后**发。
+	//
+	// ⚠ 旧版 flag=18 是先发指令再删库；这里反过来，理由写在 transfer.go 顶上。
+	Notices        []TransferNotice `json:"-"`
+	OfflineChanged bool             `json:"-"`
+}
+
+// TransferNotice 是一条要发给 audioserver 的报文的原料。
+type TransferNotice struct {
+	// Kind = "task"     → task?state=<State>&id=<TaskID>
+	//        "terminal" → terminal?state=<State>&id={终端串}&taskid=<TaskID>
+	Kind        string
+	State       int
+	TaskID      int64
+	TerminalIDs []int64
 }
 
 var cloudActionText = map[CloudAction]string{
@@ -295,6 +330,28 @@ var cloudActionText = map[CloudAction]string{
 	CloudDeleteIdle: "空闲删除", CloudDeleteNow: "立即删除",
 	CloudStop: "停止传输", CloudClearAll: "全部清除",
 	CloudClearTermMedia: "清除终端媒体", CloudClearIdle: "清除空闲媒体",
+	CloudOfflinePlay: "离线播放", CloudOfflinePlayStop: "停止离线播放",
+	CloudDeleteMusic: "删除离线音乐",
+}
+
+// cloudPageActions 是**云广播终端页**认的那 8 个动作。
+//
+// cloudActionText 现在还兼着任务传送页的三个（16/17/18），不能再拿它当准入判据了：
+// 那三个在「按终端」的视角下没有对应语义，漏进来会走到下面 switch 的 default，
+// 把 offlinestate 写成 0（非离线）—— 等于悄悄把这台终端上的东西全标成没下发过。
+var cloudPageActions = map[CloudAction]bool{
+	CloudIdle: true, CloudImmediate: true, CloudDeleteIdle: true, CloudDeleteNow: true,
+	CloudStop: true, CloudClearAll: true, CloudClearTermMedia: true, CloudClearIdle: true,
+}
+
+// transferPageActions 是**任务传送 · 云广播任务**页签认的那 8 个动作，
+// 与旧版 offlinetask_form.html 上那排链接一一对应。
+//
+// 「全部清除 / 清除终端媒体 / 清除空闲媒体」不在里面：那三个是按**终端**圈范围的，
+// 在「按任务」的视角下没有对应语义，放进来会在这一页悄悄动到别的任务的东西。
+var transferPageActions = map[CloudAction]bool{
+	CloudIdle: true, CloudImmediate: true, CloudDeleteIdle: true, CloudDeleteNow: true,
+	CloudStop: true, CloudOfflinePlay: true, CloudOfflinePlayStop: true, CloudDeleteMusic: true,
 }
 
 // CloudBulk 对选中终端上**已有的**离线条目整批改状态。
@@ -309,7 +366,7 @@ func (s *Service) CloudBulk(ctx context.Context, u *auth.User,
 		return nil, fmt.Errorf("单次最多 3000 台终端")
 	}
 	text, ok := cloudActionText[action]
-	if !ok {
+	if !ok || !cloudPageActions[action] {
 		return nil, fmt.Errorf(i18n.TC(ctx, "不认识的动作：%s"), action)
 	}
 	if err := s.assertTerminals(ctx, u, termIDs); err != nil {
@@ -428,9 +485,13 @@ type TransferTask struct {
 	State        int    `json:"offlinestate"`
 	StateText    string `json:"stateText"`
 	// TerminalCount 是这条副本发给了多少台终端。
+	// 「服务器任务」页签下它是**还没发**的预估：这条任务自己的终端里有存储容量的台数。
 	TerminalCount int `json:"terminalCount"`
-	// DoneCount 是其中已完成的台数。
+	// DoneCount 是其中已完成的台数（服务器任务页签恒为 0，它还没发过）。
 	DoneCount int `json:"doneCount"`
+	// MediaCount 是这条任务带了几个媒体。只有「服务器任务」页签填它 ——
+	// 一条没有媒体的任务发下去终端上是空的，发之前就该看得见。
+	MediaCount int `json:"mediaCount"`
 	// SourceMissing 表示原任务（task 表）已经被删了，只剩离线副本。
 	SourceMissing bool `json:"sourceMissing"`
 }
@@ -592,7 +653,12 @@ func (s *Service) ListTransferTasks(ctx context.Context, u *auth.User, q Transfe
 		}
 		items = append(items, t)
 	}
-	return &TransferResult{Items: items, Total: total}, rs.Err()
+	if err := rs.Err(); err != nil {
+		return nil, err
+	}
+	// 旧版每渲染一行就补一次「所有媒体都完成了 → 副本置 3」。照做，但只对这一页。
+	s.healFinishedCopies(ctx, items)
+	return &TransferResult{Items: items, Total: total}, nil
 }
 
 // TransferMediaItem 是某条离线任务副本里带的一个媒体。
@@ -649,11 +715,36 @@ func (s *Service) TransferMedia(ctx context.Context, u *auth.User, taskID int64)
 	return out, rs.Err()
 }
 
-// TransferBulk 是任务传送页的「空闲传输 / 立即传输」两个按钮。
+// TransferBulk 是「任务传送 · 云广播任务」页签那排按钮。
 //
-// 与云广播终端页那组按钮同一个思路：只改 offlinetaskofterminal 的状态，
-// 真正的传输由后台广播服务执行。这里按**任务副本**圈定范围，
-// 那边按**终端**圈定范围。
+// 旧版 do.php?act=set_offline_tasks 的 8 个 flag，一个不少：
+//
+//	flag 14 空闲离线       → idle                媒体/关系/副本 都写 1
+//	flag 15 立即离线       → immediate           媒体/关系/副本 都写 2
+//	flag  4 空闲删除       → deleteIdle          三张表写 4，task.offlinestate 归 0
+//	flag  5 立即删除       → deleteNow           三张表写 5，task.offlinestate 归 0
+//	flag 11 停止离线       → stop                媒体写 11，关系与副本写 **12**
+//	flag 16 离线播放       → offlinePlay         不写库，只发 task?state=16
+//	flag 17 停止离线播放   → offlinePlayStop     不写库，只发 task?state=17
+//	flag 18 删除离线音乐   → deleteOfflineMusic  三张表 DELETE + task.offlinestate 归 0
+//
+// ⚠ 14/15 的落库值是 **flag-13**（旧版那句 `$flag = $flag - 13`），
+//
+//	也就是 1 和 2 —— 和服务器任务页签写的是同一对值。按钮号只是页面上的编号，
+//	不是状态值，照着按钮号写进库会得到两个根本不存在的状态。
+//
+// ⚠ 11 写的是**两个不同的值**：媒体行 11、任务行与副本 12
+//
+//	（旧版 `$flags = $flag + 1`）。早前这里三张表一律写 11，
+//	而 12 在状态字典里是「传输已停止」——后台据此判断「已经停下来了」，
+//	写成 11 它会一直当成「还在停的路上」。
+//
+// # 14/15/11 只作用在「任务现在还挂着的终端」上
+//
+// 旧版这三个 flag 的循环是 `SELECT … FROM terminaloftask WHERE taskid=…`
+// 再逐台去 offlinetaskofterminal 里找有没有，找到才改。也就是说：
+// 任务后来把某台终端移出去了，那台终端上的离线副本**不跟着动** ——
+// 它归「删除」类动作管（4/5/18）。这个分工照搬，不要图省事一把梭。
 func (s *Service) TransferBulk(ctx context.Context, u *auth.User,
 	taskIDs []int64, action CloudAction) (*CloudBulkResult, error) {
 
@@ -664,40 +755,223 @@ func (s *Service) TransferBulk(ctx context.Context, u *auth.User,
 	if len(ids) > 1000 {
 		return nil, fmt.Errorf("单次最多 1000 条任务")
 	}
-	// 这一页只放开传输相关的动作，清除类动作留在云广播终端页，
-	// 免得在「按任务」的视角下误删别的终端上的东西。
-	if action != CloudIdle && action != CloudImmediate && action != CloudStop {
-		return nil, fmt.Errorf("任务传送页只支持空闲传输 / 立即传输 / 停止传输")
+	text, ok := cloudActionText[action]
+	if !ok || !transferPageActions[action] {
+		return nil, fmt.Errorf(i18n.TC(ctx, "不认识的动作：%s"), action)
 	}
-	var state State
-	switch action {
-	case CloudIdle:
-		state = StateIdle
-	case CloudImmediate:
-		state = StateImmediate
-	default:
-		state = StateStop
+	if err := s.assertOfflineTasks(ctx, u, ids); err != nil {
+		return nil, err
 	}
 
-	cond := &store.Cond{}
-	cond.AddIn("k.taskid", ids)
-	if !u.IsAdmin {
-		cond.Add(`k.terminalid IN (SELECT terminalid FROM userterminal WHERE userid = ?)`, u.ID)
+	out := &CloudBulkResult{
+		Action: string(action), ActionText: i18n.TC(ctx, text),
+		Notices: []TransferNotice{},
 	}
-	res, err := s.db.ExecContext(ctx,
-		`UPDATE offlinetaskofterminal k SET k.offlinestate = ?`+cond.Where(),
-		append([]interface{}{int(state)}, cond.Args()...)...)
+	tph, targs := placeholders(ids)
+
+	switch action {
+
+	// ── 16 / 17：一行库都不写 ─────────────────────────────────────
+	//
+	// 这两个是「让终端把本地存好的那份放起来 / 停下来」，跟传输进度无关，
+	// 所以旧版在这里既不改状态也不发 task?state=15。照搬。
+	case CloudOfflinePlay, CloudOfflinePlayStop:
+		state := 16
+		if action == CloudOfflinePlayStop {
+			state = 17
+		}
+		for _, id := range ids {
+			out.Notices = append(out.Notices, TransferNotice{Kind: "task", State: state, TaskID: id})
+		}
+		out.StateText = i18n.TC(ctx, text)
+		return out, nil
+
+	// ── 18：真删 ────────────────────────────────────────────────
+	case CloudDeleteMusic:
+		return s.deleteOfflineMusic(ctx, out, ids, tph, targs)
+	}
+
+	// ── 1 / 2 / 4 / 5 / 11：改状态 ─────────────────────────────────
+	//
+	// mediaState 与 taskState 分开，就是为了 11 那一对（11 / 12）。
+	var mediaState, taskState State
+	scoped := false // 是否只作用在「任务现在还挂着的终端」上
+	clearSource := false
+	switch action {
+	case CloudIdle:
+		mediaState, taskState, scoped = StateIdle, StateIdle, true
+	case CloudImmediate:
+		mediaState, taskState, scoped = StateImmediate, StateImmediate, true
+	case CloudDeleteIdle:
+		mediaState, taskState, clearSource = StateDeleteIdle, StateDeleteIdle, true
+	case CloudDeleteNow:
+		mediaState, taskState, clearSource = StateDeleteNow, StateDeleteNow, true
+	case CloudStop:
+		mediaState, taskState, scoped = StateStop, StateStopped, true
+	}
+
+	// 「还挂着」的判据：(taskid, terminalid) 在 terminaloftask 里还找得到。
+	stillOn := ""
+	if scoped {
+		stillOn = ` AND EXISTS (SELECT 1 FROM terminaloftask o
+		             WHERE o.taskid = k.taskid AND o.terminalid = k.terminalid)`
+	}
+
+	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
-		return nil, fmt.Errorf("%s: %w", cloudActionText[action], err)
+		return nil, fmt.Errorf("开启事务: %w", err)
 	}
-	n, _ := res.RowsAffected()
-	if n == 0 {
-		return nil, fmt.Errorf(i18n.TC(ctx, "选中的任务还没有下发到任何终端，%s 无事可做"), i18n.TC(ctx, cloudActionText[action]))
+	defer func() { _ = tx.Rollback() }()
+
+	/*
+	 * ⚠ 回执里的条数用 **SELECT COUNT** 数，不用 UPDATE 的 RowsAffected。
+	 *
+	 * 连接串里没开 clientFoundRows（见 config.Database.DSN），所以
+	 * RowsAffected 数的是「值真的变了的行」，不是「命中的行」。
+	 * 连点两次「空闲离线」，第二次一行都没变 → 0 → 下面那句兜底会报
+	 * 「选中的任务还没有下发到任何终端」，而这是句假话：下发关系好好的，
+	 * 只是已经是这个状态了。
+	 *
+	 * 数出来的是命中数，所以「0」就真的等于「一条下发关系都没有」。
+	 */
+	countMatched := func(table string) (int64, error) {
+		var n int64
+		err := tx.QueryRowContext(ctx,
+			`SELECT COUNT(*) FROM `+table+` k WHERE k.taskid IN (`+tph+`)`+stillOn, targs...).Scan(&n)
+		return n, err
 	}
-	return &CloudBulkResult{
-		Action: string(action), ActionText: i18n.TC(ctx, cloudActionText[action]),
-		TerminalCount: 0, TaskRows: n, StateText: TextCtx(ctx, int(state)),
-	}, nil
+	if out.MediaRows, err = countMatched("offlinemediaofterminal"); err != nil {
+		return nil, fmt.Errorf("%s（媒体计数）: %w", text, err)
+	}
+	if out.TaskRows, err = countMatched("offlinetaskofterminal"); err != nil {
+		return nil, fmt.Errorf("%s（任务计数）: %w", text, err)
+	}
+
+	if _, err := tx.ExecContext(ctx,
+		`UPDATE offlinemediaofterminal k SET k.offlinestate = ?
+		  WHERE k.taskid IN (`+tph+`)`+stillOn,
+		append([]interface{}{int(mediaState)}, targs...)...); err != nil {
+		return nil, fmt.Errorf("%s（媒体）: %w", text, err)
+	}
+	if _, err := tx.ExecContext(ctx,
+		`UPDATE offlinetaskofterminal k SET k.offlinestate = ?
+		  WHERE k.taskid IN (`+tph+`)`+stillOn,
+		append([]interface{}{int(taskState)}, targs...)...); err != nil {
+		return nil, fmt.Errorf("%s（任务）: %w", text, err)
+	}
+
+	// 副本自己的状态 —— 只给「确实改动过关系行」的那些任务写，
+	// 否则一条终端都没挂的任务会被写出一个与下面各行对不上的状态。
+	copyScope := ""
+	if scoped {
+		copyScope = ` AND EXISTS (SELECT 1 FROM offlinetaskofterminal k
+		               JOIN terminaloftask o ON o.taskid = k.taskid AND o.terminalid = k.terminalid
+		              WHERE k.taskid = ot.taskid)`
+	}
+	if _, err := tx.ExecContext(ctx,
+		`UPDATE offlinetask ot SET ot.offlinestate = ? WHERE ot.taskid IN (`+tph+`)`+copyScope,
+		append([]interface{}{int(taskState)}, targs...)...); err != nil {
+		return nil, fmt.Errorf("%s（副本）: %w", text, err)
+	}
+
+	// 删除类动作把源任务放回「服务器任务」页签
+	if clearSource {
+		if _, err := tx.ExecContext(ctx,
+			`UPDATE task SET offlinestate = 0 WHERE taskid IN (`+tph+`)`, targs...); err != nil {
+			return nil, fmt.Errorf("%s（源任务）: %w", text, err)
+		}
+	}
+
+	if out.MediaRows == 0 && out.TaskRows == 0 {
+		return nil, fmt.Errorf(i18n.TC(ctx, "选中的任务还没有下发到任何终端，%s 无事可做"), i18n.TC(ctx, text))
+	}
+	if err := tx.Commit(); err != nil {
+		return nil, fmt.Errorf("提交事务: %w", err)
+	}
+	out.StateText = TextCtx(ctx, int(taskState))
+	// 旧版只在 flag=5 / 2 / 11 之后发 task?state=15&id=0（D-152），
+	// 1 和 4 不发 —— 后台就不知道有新的空闲任务排进来了。五个都发。
+	out.OfflineChanged = true
+	return out, nil
+}
+
+// deleteOfflineMusic 是「删除离线音乐」（旧版 flag=18）。
+//
+// ⚠ 这是任务传送页唯一会真删行的动作：
+//
+//	terminal?state=18&id={这条任务的终端串}&taskid=<taskid>   ← 让终端删本地文件
+//	DELETE FROM offlinetask            WHERE taskid = …
+//	DELETE FROM offlinetaskofterminal  WHERE taskid = …
+//	DELETE FROM offlinemediaofterminal WHERE taskid = …
+//	UPDATE task SET offlinestate = 0   WHERE taskid = …        ← 回到服务器任务页签
+//
+// 终端串必须**在删之前**取好 —— 删完就不知道发给谁了。
+// 但报文由 handler 在提交之后才发（顺序与旧版相反，理由见 transfer.go 顶上）。
+//
+// offlinemedia 里的媒体副本不删：它按 mediaid 存、跨任务共用，
+// 删了会把别的任务的副本一起带走。旧版也没删。
+func (s *Service) deleteOfflineMusic(ctx context.Context, out *CloudBulkResult,
+	ids []int64, tph string, targs []interface{}) (*CloudBulkResult, error) {
+
+	rs, err := s.db.QueryContext(ctx,
+		`SELECT taskid, terminalid FROM offlinetaskofterminal
+		  WHERE taskid IN (`+tph+`) ORDER BY taskid, terminalid`, targs...)
+	if err != nil {
+		return nil, fmt.Errorf("查询离线任务的终端: %w", err)
+	}
+	perTask := map[int64][]int64{}
+	for rs.Next() {
+		var task, term int64
+		if err := rs.Scan(&task, &term); err != nil {
+			rs.Close()
+			return nil, err
+		}
+		perTask[task] = append(perTask[task], term)
+	}
+	rs.Close()
+	if err := rs.Err(); err != nil {
+		return nil, err
+	}
+
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, fmt.Errorf("开启事务: %w", err)
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	var deleted int64
+	for _, q := range []string{
+		`DELETE FROM offlinemediaofterminal WHERE taskid IN (` + tph + `)`,
+		`DELETE FROM offlinetaskofterminal  WHERE taskid IN (` + tph + `)`,
+		`DELETE FROM offlinetask            WHERE taskid IN (` + tph + `)`,
+	} {
+		res, err := tx.ExecContext(ctx, q, targs...)
+		if err != nil {
+			return nil, fmt.Errorf("删除离线音乐: %w", err)
+		}
+		n, _ := res.RowsAffected()
+		deleted += n
+	}
+	if _, err := tx.ExecContext(ctx,
+		`UPDATE task SET offlinestate = 0 WHERE taskid IN (`+tph+`)`, targs...); err != nil {
+		return nil, fmt.Errorf("删除离线音乐（源任务）: %w", err)
+	}
+	if err := tx.Commit(); err != nil {
+		return nil, fmt.Errorf("提交事务: %w", err)
+	}
+
+	out.DeletedRows = deleted
+	out.TerminalCount = len(perTask)
+	out.StateText = TextCtx(ctx, int(StateNone))
+	for _, id := range ids {
+		if terms := perTask[id]; len(terms) > 0 {
+			out.Notices = append(out.Notices, TransferNotice{
+				Kind: "terminal", State: 18, TaskID: id, TerminalIDs: terms,
+			})
+		}
+	}
+	out.OfflineChanged = true
+	return out, nil
 }
 
 // TransferTerminal 是某条离线任务副本发给了哪台终端、进度如何。
@@ -711,6 +985,9 @@ type TransferTerminal struct {
 	StateText    string `json:"stateText"`
 	Area         string `json:"area"`
 	Deleted      bool   `json:"deleted"`
+	// Capable 只有「服务器任务」页签填：这台终端有没有存储容量。
+	// 没容量的存不下离线文件，下发时会被跳过。
+	Capable bool `json:"capable"`
 }
 
 // TransferDetail 列出一条离线任务副本的下发对象。

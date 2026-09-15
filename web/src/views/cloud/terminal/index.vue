@@ -196,7 +196,7 @@ const stateType = (s: number) => {
   return "info";
 };
 
-const inv = reactive({ visible: false, title: "", tab: "media" });
+const inv = reactive({ visible: false, title: "", tab: "media", terminalId: 0 });
 const items = ref<CloudItem[]>([]);
 const mediaItems = computed(() => items.value.filter(i => i.kind === "media"));
 const taskItems = computed(() => items.value.filter(i => i.kind === "task"));
@@ -252,7 +252,34 @@ const bulk = async (action: string, raw: (string | number)[], rows?: Record<stri
       state: data.stateText
     })
   );
+  await refreshAfterBulk(ids);
+};
+
+/*
+ * 动作发完之后把这一页重新拉一遍。
+ *
+ * 现场反馈的原话是「点了按钮删除，清除后要刷新页面」—— 按了清除，界面上看不出
+ * 任何变化，得自己按 F5。原因有两层，两层都在这里治：
+ *
+ *   ① 勾选没清。ProTable 的 selection 列开着 reserve-selection（翻页要保住勾选），
+ *      刷新列表并不会把勾去掉，于是按钮仍然亮着、仍然显示勾了几台，
+ *      看上去就像「什么都没发生」。
+ *   ② 开着的「离线内容」弹窗不会自己更新。清除真正改的就是弹窗里那一列状态
+ *      （媒体/任务各自的 offlinestate），列表那几列反倒基本不动 ——
+ *      清除类动作只是把状态改成「立即删除」，由后台广播服务去真删，
+ *      行数、容量在后台干完之前都还是原样。所以**弹窗才是看得见变化的地方**，
+ *      它不刷，人就只能去按 F5。
+ *
+ * 顺带：动作可能只作用在选中终端的一部分上，所以弹窗只在它显示的那台
+ * 确实在这次动作范围内时才重拉，避免无谓的请求。
+ */
+const refreshAfterBulk = async (ids: number[]) => {
+  proTableRef.value?.clearSelection();
   proTableRef.value?.getTableList();
+  if (inv.visible && inv.terminalId && ids.includes(inv.terminalId)) {
+    const { data } = await getCloudInventoryApi(inv.terminalId);
+    items.value = data ?? [];
+  }
 };
 
 const syncTime = async (raw: (string | number)[]) => {
@@ -266,6 +293,7 @@ const syncTime = async (raw: (string | number)[]) => {
 const openInventory = async (row: CloudTerminal) => {
   const { data } = await getCloudInventoryApi(row.id);
   items.value = data ?? [];
+  inv.terminalId = row.id;
   inv.title = t("cloud.inventoryTitle", { name: row.terminalname || t("common.terminalNo", { id: row.id }) });
   inv.tab = mediaItems.value.length || !taskItems.value.length ? "media" : "task";
   inv.visible = true;

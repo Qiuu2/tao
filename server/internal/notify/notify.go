@@ -207,6 +207,46 @@ func (n *Notifier) TaskStarted(ctx context.Context, taskIDs []int64) {
 	}
 }
 
+// 任务传送页「云广播任务」那两个播放按钮的 state。
+//
+// 旧版 set_offline_tasks 的 flag 16/17 走的是 send_socket_generate_general，
+// 也就是**不带 type 的老式报文**，和启动（state=3）同一个形态：
+//
+//	task?state=16&id=<taskid>   离线播放
+//	task?state=17&id=<taskid>   停止离线播放
+//
+// 它们让终端播放**自己本地存着的那份**（离线副本），与服务器上的播放无关，
+// 所以旧版发完这两条既不改库、也不发 task?state=15。
+const (
+	TaskOfflinePlay     State = 16
+	TaskOfflinePlayStop State = 17
+)
+
+// TaskGeneral 发送不带 type 的老式任务报文：task?state=X&id=Y，逐个一条。
+// 离线播放 / 停止离线播放走这条。
+func (n *Notifier) TaskGeneral(ctx context.Context, state State, taskIDs []int64) {
+	for _, id := range taskIDs {
+		n.send(ctx, fmt.Sprintf("task?state=%d&id=%d", state, id))
+	}
+}
+
+// TermDelOfflineMusic 是「删除离线音乐」（旧版 flag=18）给终端的 state。
+const TermDelOfflineMusic State = 18
+
+// TerminalTaskBraced 发送 terminal?state=X&id={1,2,3}&taskid=N。
+//
+// 旧版的 send_socket_taskterminal，目前只有「删除离线音乐」用它：
+// 告诉这些终端，把**这条任务**的离线文件从本地删掉。
+//
+// ⚠ 报文里同时有终端串和 taskid，两者缺一不可 —— 只给 taskid 终端不知道是谁该删，
+// 只给终端串它会把整台机器上的离线内容都清了。
+func (n *Notifier) TerminalTaskBraced(ctx context.Context, state State, taskID int64, termIDs []int64) {
+	if len(termIDs) == 0 {
+		return
+	}
+	n.send(ctx, fmt.Sprintf("terminal?state=%d&id={%s}&taskid=%d", state, joinIDs(termIDs), taskID))
+}
+
 // TaskSaved 发送 task?state=<4|5>&id=Y&volume=V，用于新增与修改。
 func (n *Notifier) TaskSaved(ctx context.Context, state State, taskID int64, volume int) {
 	n.send(ctx, fmt.Sprintf("task?state=%d&id=%d&volume=%d", state, taskID, volume))
