@@ -65,7 +65,17 @@
       </template>
     </ProTable>
 
-    <el-dialog v-model="dlg.visible" :title="dlg.title" width="900px" top="6vh">
+    <!--
+      ⚠ 宽度要装得下里面那张任务表，否则就得横向拖着看。
+        固定列加起来 920px（选项 70 + 类型 120 + 开始日期 110 + 播放时间 100 +
+        播放时长 110 + 结束日期 110 + 操作 190 + 计入本次 110），
+        任务名称那一列最少 220 —— 一共 1140，再加弹窗自己的左右内边距。
+        加了那四列排期之后 900px 已经装不下了。
+
+        写成 min(1280px, 96vw)：宽屏上给任务名称留出余量，
+        窄屏（笔记本 1366、外接副屏）上退成视口的 96%，不会把弹窗撑出屏幕。
+    -->
+    <el-dialog v-model="dlg.visible" :title="dlg.title" width="min(1280px, 96vw)" top="6vh">
       <el-form :model="form" label-width="110px">
         <el-row :gutter="18">
           <el-col :span="12">
