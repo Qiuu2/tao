@@ -104,6 +104,12 @@ const (
 	RunStateRunning = 1 // 执行中
 	RunStateStopped = 2 // 已停止
 	RunStateNow     = 3 // 立即执行
+	// RunStateFault 是**播放故障**：后台服务把这条任务发下去了，但没播成。
+	//
+	// 最常见的两个原因是任务的终端和媒体不对 —— 终端不在线 / 已被删掉 /
+	// 不归这个任务管，或者媒体文件在服务器上找不到。所以界面上不能只写
+	// 「未知(5)」了事，得直接告诉人去核对这两样东西。
+	RunStateFault = 5
 )
 
 type Service struct {
@@ -384,6 +390,8 @@ func decorate(ctx context.Context, it *Item) {
 		it.StateText = i18n.T(l, "执行中")
 	case RunStateStopped:
 		it.StateText = i18n.T(l, "已停止")
+	case RunStateFault:
+		it.StateText = i18n.T(l, "播放故障")
 	case RunStateNow:
 		it.StateText = i18n.T(l, "立即执行")
 	default:

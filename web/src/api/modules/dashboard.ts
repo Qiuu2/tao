@@ -96,11 +96,12 @@ export interface BrowseItem {
    *   running  正在执行   state = 1
    *   paused   暂停       state = 2
    *   playnow  立即执行   state = 3
+   *   fault    播放故障   state = 5 —— 发下去了没播成，多半是终端或媒体不对
    *
    * 只有 state = 0 才去比时间；也只有看今天时 state 才算数，
    * 切到别的星期一律按日期判（拿实时 state 说「上周二那条正在执行」是假的）。
    */
-  runStatus: "done" | "ready" | "running" | "paused" | "playnow";
+  runStatus: "done" | "ready" | "running" | "paused" | "playnow" | "fault";
   /** 这条任务归谁（task.task_user_id）。0 表示库里就没写 */
   ownerUserId: number;
   /** 归属账号名。账号被删掉时回空串 —— 界面画「—」，不让整行消失 */

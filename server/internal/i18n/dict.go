@@ -28,6 +28,7 @@ var codeDict = map[string]string{
 	"在线空闲":       "Online, idle",
 	"已启动":        "Running",
 	"已停止":        "Stopped",
+	"播放故障":       "Playback failed",
 	"准备":         "Ready",
 	"执行中":        "Running",
 	"立即执行":       "Run now",

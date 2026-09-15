@@ -261,6 +261,20 @@
         <span v-if="viewDate" class="muted">{{ $t("dash.dayActsOn", { d: viewDate }) }}</span>
       </div>
 
+      <!--
+        播放故障要**不用把鼠标悬上去就看得见**。
+
+        状态列那个红标签只是一格，一屏二十行扫过去很容易漏掉；而这一条的下一步
+        动作又是固定的（去核对终端和媒体），所以这一屏只要有故障就在表格上方
+        明说一句，并把是哪几条任务列出来。
+      -->
+      <el-alert v-if="faultRows.length" type="error" :closable="false" show-icon class="mb10">
+        <template #title>{{ $t("dash.faultBanner", { n: faultRows.length }) }}</template>
+        <div class="fault-names">
+          <el-tag v-for="r in faultRows" :key="r.taskId" size="small" type="danger" effect="plain">{{ r.taskName }}</el-tag>
+        </div>
+      </el-alert>
+
       <el-table
         ref="taskTableRef"
         :data="tasks"
@@ -310,7 +324,13 @@
         -->
         <el-table-column :label="$t('common.status')" width="110">
           <template #default="{ row }">
-            <el-tag :type="STATUS_TAG[row.runStatus] || 'info'" size="small" effect="plain" :title="statusTip(row)">
+            <!-- 故障用实心（dark），在一片描边红里能一眼挑出来 -->
+            <el-tag
+              :type="STATUS_TAG[row.runStatus] || 'info'"
+              size="small"
+              :effect="row.runStatus === 'fault' ? 'dark' : 'plain'"
+              :title="statusTip(row)"
+            >
               {{ $t(STATUS_KEY[row.runStatus] || "dash.done") }}
             </el-tag>
           </template>
@@ -604,8 +624,13 @@ const setDay = async (disable: boolean) => {
  * 暂停标橙（既不在响也不是排着等），已执行不着色。红与绿是需求方定的；
  * 旧版正好反过来 —— 它把「准备●」刷成红色、执行中刷绿色
  * （Browse_active_task_form.html:129 / 111），不照抄。
+ *
+ * ⚠ 「播放故障」也是红的，但用 **effect="dark"**（实心）—— 它和「正在执行」
+ * 是两回事：一个是正常在响，一个是根本没响出来。同样刷成描边红的话，
+ * 满屏红标签里最需要人去处理的那一条反而看不出来。
  */
 const STATUS_TAG: Record<string, "danger" | "success" | "warning" | "info"> = {
+  fault: "danger",
   running: "danger",
   playnow: "danger",
   paused: "warning",
@@ -613,15 +638,21 @@ const STATUS_TAG: Record<string, "danger" | "success" | "warning" | "info"> = {
   done: "info"
 };
 const STATUS_KEY: Record<string, string> = {
+  fault: "dash.fault",
   running: "dash.running",
   playnow: "dash.playNow",
   paused: "dash.paused",
   ready: "dash.readyRun",
   done: "dash.done"
 };
+/** 这一屏里播放故障的那几条 —— 表格上方那条横幅用它 */
+const faultRows = computed(() => tasks.value.filter(r => r.runStatus === "fault"));
+
 /** 鼠标悬停时说清楚这个状态是怎么判出来的 —— 光三个字看不出依据 */
 const statusTip = (row: BrowseItem) => {
-  // state 非 0 的那三种直接由后台的实时状态决定，跟钟点无关
+  // 故障要说清楚下一步去查什么，不能只报一个状态码
+  if (row.runStatus === "fault") return t("dash.faultTip");
+  // 其余 state 非 0 的几种直接由后台的实时状态决定，跟钟点无关
   if (row.runStatus !== "done" && row.runStatus !== "ready") return t("dash.runningTip", { s: row.state });
   return t(row.runStatus === "done" ? "dash.doneTip" : "dash.readyRunTip", { d: viewDate.value, t: row.playtime });
 };
@@ -1210,6 +1241,16 @@ onUnmounted(() => {
   margin-top: 10px;
 }
 
+.mb10 {
+  margin-bottom: 10px;
+}
+/* 故障横幅里那一串任务名：一行排不下就折行，别把横幅撑成一条长线 */
+.fault-names {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
 .muted {
   color: var(--el-text-color-placeholder);
 }

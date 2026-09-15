@@ -181,6 +181,11 @@ export default {
     running: "Running",
     paused: "Paused",
     playNow: "Play now",
+    fault: "Playback failed",
+    faultBanner:
+      "{n} task(s) failed to play — check that their terminals are online and still assigned, and that their media files are still there:",
+    faultTip:
+      "The task was dispatched but did not play. Check two things first: are its terminals online and still assigned to it, and does its media file still exist and play? (task.state = 5)",
     readyRun: "Ready",
     doneTip: "{t} on {d} has passed",
     readyRunTip: "{t} on {d} has not arrived yet",

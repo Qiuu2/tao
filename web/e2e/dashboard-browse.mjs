@@ -15,8 +15,9 @@
  *   ③ **停用的任务（projectstate=1）一条都不出现**
  *   ④ 「单独停用日」列显示 task.disableday
  *   ⑤ 换一个星期，「看的是哪一天」跟着变，列表跟着那一天走
- *   ⑥ 状态列五个取值（已执行 / 准备执行 / 正在执行 / 暂停 / 立即执行），
- *     只有 state = 0 才拿钟点去分前两个
+ *   ⑥ 状态列六个取值（已执行 / 准备执行 / 正在执行 / 暂停 / 立即执行 / 播放故障），
+ *     只有 state = 0 才拿钟点去分前两个；state = 5 是播放故障，要把「去查终端和媒体」
+ *     这句话摆出来
  *   ⑦ 单独停用日**原样**显示库里那一列（0000-00-00 也照显）
  *   ⑧ 所属分类：只有作息方案带括号（里面是**方案名**），
  *     不是 parentid 指的那个默认目录
@@ -232,7 +233,7 @@ console.log("⑤ 星期改选「周日」，看的日期要跟着变");
   );
 }
 // ⑥ 状态列五个取值
-console.log("⑥ 状态列：已执行 / 准备执行 / 正在执行 / 暂停 / 立即执行");
+console.log("⑥ 状态列：已执行 / 准备执行 / 正在执行 / 暂停 / 立即执行 / 播放故障");
 {
   await p.reload({ waitUntil: "domcontentloaded" });
   await p.waitForTimeout(4000);
@@ -241,10 +242,10 @@ console.log("⑥ 状态列：已执行 / 准备执行 / 正在执行 / 暂停 / 
   const tm = await colTexts(COL.playtime);
   const names = await colTexts(COL.name);
   console.log("   状态取值:", JSON.stringify([...new Set(st)]), " 服务器现在:", nowClock);
-  const ALL = ["已执行", "准备执行", "正在执行", "暂停", "立即执行"];
+  const ALL = ["已执行", "准备执行", "正在执行", "暂停", "立即执行", "播放故障"];
   ok(
     st.every(v => ALL.includes(v)),
-    `只有这五种取值：${ALL.join(" / ")}`
+    `只有这几种取值：${ALL.join(" / ")}`
   );
   // 每一行该显示什么，直接拿库里的 state 和服务器时钟算一遍对答案。
   // 判据：只有 state = 0 才比时间；1/2/3 各是各的。
@@ -254,6 +255,7 @@ console.log("⑥ 状态列：已执行 / 准备执行 / 正在执行 / 暂停 / 
     if (s0 === 1) return "正在执行";
     if (s0 === 2) return "暂停";
     if (s0 === 3) return "立即执行";
+    if (s0 === 5) return "播放故障";
     return playtime <= nowClock ? "已执行" : "准备执行";
   };
   const bad = st.filter((v, i) => {
@@ -277,7 +279,8 @@ console.log("⑥ 状态列：已执行 / 准备执行 / 正在执行 / 暂停 / 
   for (const [stv, text, cls] of [
     [1, "正在执行", "el-tag--danger"],
     [2, "暂停", "el-tag--warning"],
-    [3, "立即执行", "el-tag--danger"]
+    [3, "立即执行", "el-tag--danger"],
+    [5, "播放故障", "el-tag--danger"]
   ]) {
     execSync(SQL(`UPDATE task SET state=${stv} WHERE taskname='${victim}' AND sec_task_id=0`), { stdio: "pipe" });
     await p.reload({ waitUntil: "domcontentloaded" });
@@ -290,9 +293,33 @@ console.log("⑥ 状态列：已执行 / 准备执行 / 正在执行 / 暂停 / 
     ok(shown === text, `state=${stv} 的那条显示成「${text}」`);
     ok(cl.includes(cls), `「${text}」用的是 ${cls}`);
   }
+  // state = 5 还要多验两件事：标签是**实心**的（在一片描边红里挑得出来），
+  // 以及表格上方那条横幅把「去查终端和媒体」直接摆出来 ——
+  // 光靠鼠标悬停的 title，一屏二十行扫过去根本不会去悬。
+  execSync(SQL(`UPDATE task SET state=5 WHERE taskname='${victim}' AND sec_task_id=0`), { stdio: "pipe" });
+  await p.reload({ waitUntil: "domcontentloaded" });
+  await p.waitForTimeout(4000);
+  {
+    const faultCls = await tagClass("播放故障");
+    console.log("   「播放故障」的 tag class:", faultCls);
+    ok(faultCls.includes("el-tag--dark"), "「播放故障」用实心（el-tag--dark），与描边红的「正在执行」分得开");
+    const banner = p.locator(".panel .el-alert--error").first();
+    ok((await banner.count()) > 0, "表格上方出现了故障横幅");
+    const bt = (await banner.innerText()).replace(/\s+/g, " ");
+    console.log("   横幅:", bt.slice(0, 120));
+    ok(bt.includes("终端") && bt.includes("媒体"), "横幅里明说了去查终端和媒体");
+    ok(bt.includes(victim), `横幅里列出了是哪条任务（${victim}）`);
+    const tip = await p
+      .locator(".panel .el-table__body .el-table__row .el-tag", { hasText: "播放故障" })
+      .first()
+      .getAttribute("title");
+    console.log("   悬停提示:", (tip || "").slice(0, 80));
+    ok((tip || "").includes("终端") && (tip || "").includes("媒体"), "标签的悬停提示也说了查终端和媒体");
+  }
   execSync(SQL(`UPDATE task SET state=${oldState} WHERE taskname='${victim}' AND sec_task_id=0`), { stdio: "pipe" });
   await p.reload({ waitUntil: "domcontentloaded" });
   await p.waitForTimeout(4000);
+  ok((await p.locator(".panel .el-alert--error").count()) === 0, "没有故障时那条横幅不出现");
 }
 
 // ⑦ 单独停用日原样显示库里的值

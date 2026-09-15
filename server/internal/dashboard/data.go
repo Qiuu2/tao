@@ -355,6 +355,7 @@ type BrowseItem struct {
 	//	running  正在执行   state = 1
 	//	paused   暂停       state = 2
 	//	playnow  立即执行   state = 3
+	//	fault    播放故障   state = 5 —— 发下去了没播成，多半是终端或媒体不对
 	//
 	// 判据是需求方定的：**先看这一天排不排得上（列表本身已经筛过），
 	// 再看 state；只有 state = 0 才拿钟点去分「已执行 / 准备执行」**。
@@ -649,13 +650,15 @@ const (
 	StatusRunning = "running" // 正在执行
 	StatusPaused  = "paused"  // 暂停
 	StatusPlayNow = "playnow" // 立即执行
+	StatusFault   = "fault"   // 播放故障
 )
 
 // runStatusOf 算看板状态列显示哪一个。
 //
 // 判据与旧版 Browse_active_task_form.html 同构 —— **只有 state = 0 才比时间**：
 //
-//	state = 1 → 正在执行     state = 2 → 暂停     state = 3 → 立即执行
+//	state = 1 → 正在执行   state = 2 → 暂停
+//	state = 3 → 立即执行   state = 5 → 播放故障
 //	state = 0 → 过了点「已执行」，没到点「准备执行」
 //
 // ⚠ state 是**此时此刻**的值，只有在看今天时才算数。星期选择器切到别的日子时，
@@ -666,12 +669,16 @@ const (
 func runStatusOf(state int, viewDate, today, nowClock, playTime string) string {
 	if viewDate == today {
 		switch state {
-		case 1:
+		case task.RunStateRunning:
 			return StatusRunning
-		case 2:
+		case task.RunStateStopped:
 			return StatusPaused
-		case 3:
+		case task.RunStateNow:
 			return StatusPlayNow
+		case task.RunStateFault:
+			// 后台服务把任务发下去了但没播成。最常见的两个原因是终端和媒体不对，
+			// 界面上要直接把这句话说出来，见前端的 dash.faultTip。
+			return StatusFault
 		}
 	}
 	if executedOn(viewDate, today, nowClock, playTime) {

@@ -102,7 +102,7 @@ func TestCategoryTextOnlyBellCarriesGroup(t *testing.T) {
 	}
 }
 
-// 状态列：已执行 / 准备执行 / 正在执行 / 暂停 / 立即执行。
+// 状态列：已执行 / 准备执行 / 正在执行 / 暂停 / 立即执行 / 播放故障。
 //
 // 需求方定的判据：先看这一天排不排得上（列表本身已经筛过），再看 state；
 // **只有 state = 0 才拿钟点去分「已执行 / 准备执行」**。
@@ -129,11 +129,14 @@ func TestRunStatusOf(t *testing.T) {
 		{"state=1 就算还没到点也是正在执行（人手工点的）", 1, today, "18:00:00", StatusRunning},
 		{"state=2 → 暂停", 2, today, "08:00:00", StatusPaused},
 		{"state=3 → 立即执行", 3, today, "18:00:00", StatusPlayNow},
+		{"state=5 → 播放故障（发下去了没播成）", 5, today, "08:00:00", StatusFault},
+		{"state=5 就算还没到点也是故障", 5, today, "18:00:00", StatusFault},
 		{"不认识的 state 当 0 处理，不编新状态", 9, today, "08:00:00", StatusDone},
 		{"看过去的某天：那天早过完了", 0, "2026-09-13", "23:59:59", StatusDone},
 		{"看将来的某天：还没到", 0, "2026-09-16", "00:00:01", StatusReady},
 		{"⚠ 看别的日子时 state 不算数：昨天那条不能说成正在执行", 1, "2026-09-13", "08:00:00", StatusDone},
 		{"⚠ 看将来某天同理", 3, "2026-09-16", "08:00:00", StatusReady},
+		{"⚠ 故障也一样：昨天那条不能说成现在有故障", 5, "2026-09-13", "08:00:00", StatusDone},
 	}
 	for _, c := range cases {
 		if got := runStatusOf(c.state, c.viewDate, today, now, c.playTime); got != c.want {

@@ -190,6 +190,10 @@ export default {
     running: "正在执行",
     paused: "暂停",
     playNow: "立即执行",
+    fault: "播放故障",
+    faultBanner: "有 {n} 条任务播放故障 —— 请检查它们的终端是不是都在线、还归这个任务管，以及媒体文件在不在：",
+    faultTip:
+      "这条任务发下去了但没播成。先看两样东西：终端是不是都在线、还归这个任务管；媒体文件在不在、还能不能播。（task.state = 5）",
     readyRun: "准备执行",
     doneTip: "{d} 的 {t} 已经过了",
     readyRunTip: "{d} 的 {t} 还没到",
