@@ -56,6 +56,7 @@ import (
 
 	"htweb/internal/i18n"
 	"htweb/internal/store"
+	"htweb/internal/task"
 )
 
 type Service struct {
@@ -448,6 +449,30 @@ func (s *Service) validate(ctx context.Context, in *Input) error {
 	return nil
 }
 
+// lengthText 把「时长 / 循环次数」写成人话，与 typedtask、task 两处同一判据。
+//
+// ⚠ `== 2 ? 次数 : 秒数`，不能写成 `== 1 ? 秒数 : 次数` ——
+// 库里躺着一批 timelengthtype = 0 的存量行，它等同于 1（按秒数）。
+// 调用方先过一道 task.NormLengthType。
+func lengthText(ctx context.Context, t, v int) string {
+	l := i18n.From(ctx)
+	if v <= 0 {
+		return "—"
+	}
+	if t == 2 {
+		return fmt.Sprintf(i18n.T(l, "循环 %d 次"), v)
+	}
+	h, m, sec := v/3600, (v%3600)/60, v%60
+	switch {
+	case h > 0:
+		return fmt.Sprintf(i18n.T(l, "%d小时%d分%d秒"), h, m, sec)
+	case m > 0:
+		return fmt.Sprintf(i18n.T(l, "%d分%d秒"), m, sec)
+	default:
+		return fmt.Sprintf(i18n.T(l, "%d秒"), sec)
+	}
+}
+
 // nullIfEmpty 让空串落库成 NULL 而不是 '0000-00-00' / '00:00:00'。
 //
 // enddate / endtime 是允许不填的（老数据全是 NULL）。写空串进 date 列，
@@ -531,6 +556,15 @@ type PickTask struct {
 	// 旧版 addmanager.html 用它给每一行的单选按钮设初值。
 	State     int    `json:"projectstate"`
 	StateText string `json:"stateText"`
+	// 下面四项是任务本身的排期，给弹窗里那张表当参考列用 ——
+	// 「这条任务什么时候放、放多久、有效期到哪天」，不看这些没法判断
+	// 到点启用它到底有没有意义。都直接取 task 表的列。
+	StartDate string `json:"startdate"`
+	EndDate   string `json:"enddate"`
+	PlayTime  string `json:"playtime"`
+	// LengthText 是「播放 N 秒」/「循环 N 次」那句人话，判据 == 2 ? 次数 : 秒数
+	// （timelengthtype = 0 是存量数据，等同于 1）。
+	LengthText string `json:"timelengthText"`
 }
 
 // typeText 把 tasktype 翻成人话。取值依据是 task 表 tasktype 列的注释
@@ -578,7 +612,10 @@ func (s *Service) PickTasks(ctx context.Context, isAdmin bool, userID int64, key
 	}
 	rs, err := s.db.QueryContext(ctx, `
 		SELECT taskid, COALESCE(taskname,''), COALESCE(tasktype,0),
-		       COALESCE(info,''), COALESCE(projectstate,0)
+		       COALESCE(info,''), COALESCE(projectstate,0),
+		       COALESCE(CAST(startdate AS CHAR),''), COALESCE(CAST(enddate AS CHAR),''),
+		       COALESCE(CAST(playtime AS CHAR),''),
+		       COALESCE(timelengthtype,1), COALESCE(timelength,0)
 		FROM task`+cond.Where()+` ORDER BY tasktype, taskid LIMIT 500`, cond.Args()...)
 	if err != nil {
 		return nil, fmt.Errorf("查询可选任务: %w", err)
@@ -587,10 +624,13 @@ func (s *Service) PickTasks(ctx context.Context, isAdmin bool, userID int64, key
 	out := []PickTask{}
 	for rs.Next() {
 		var p PickTask
-		if err := rs.Scan(&p.TaskID, &p.TaskName, &p.TaskType, &p.Info, &p.State); err != nil {
+		var lenTy, lenVal int
+		if err := rs.Scan(&p.TaskID, &p.TaskName, &p.TaskType, &p.Info, &p.State,
+			&p.StartDate, &p.EndDate, &p.PlayTime, &lenTy, &lenVal); err != nil {
 			return nil, err
 		}
 		p.TypeText = typeText(ctx, p.TaskType)
+		p.LengthText = lengthText(ctx, task.NormLengthType(lenTy), lenVal)
 		// task.projectstate：0 = 启用、1 = 停用
 		if p.State == 0 {
 			p.StateText = i18n.TC(ctx, "启用")

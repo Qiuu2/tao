@@ -56,8 +56,12 @@
       </template>
 
       <template #operation="s">
-        <el-button type="primary" link :icon="EditPen" :disabled="!canEdit" @click="openEdit(s.row)">{{ $t("common.modify") }}</el-button>
-        <el-button type="danger" link :icon="Delete" :disabled="!canEdit" @click="doDelete([s.row.id])">{{ $t("common.delete") }}</el-button>
+        <el-button type="primary" link :icon="EditPen" :disabled="!canEdit" @click="openEdit(s.row)">{{
+          $t("common.modify")
+        }}</el-button>
+        <el-button type="danger" link :icon="Delete" :disabled="!canEdit" @click="doDelete([s.row.id])">{{
+          $t("common.delete")
+        }}</el-button>
       </template>
     </ProTable>
 
@@ -65,12 +69,12 @@
       <el-form :model="form" label-width="110px">
         <el-row :gutter="18">
           <el-col :span="12">
-            <el-form-item :label='$t("common.startDate")' required>
+            <el-form-item :label="$t('common.startDate')" required>
               <el-date-picker
                 v-model="form.startdate"
                 type="date"
                 value-format="YYYY-MM-DD"
-                :placeholder='$t("enable.startDateRequired")'
+                :placeholder="$t('enable.startDateRequired')"
                 :clearable="false"
                 class="fill"
               />
@@ -78,11 +82,11 @@
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item :label='$t("common.startTime")' required>
+            <el-form-item :label="$t('common.startTime')" required>
               <el-time-picker
                 v-model="form.starttime"
                 value-format="HH:mm:ss"
-                :placeholder='$t("enable.pickStartTime")'
+                :placeholder="$t('enable.pickStartTime')"
                 :clearable="false"
                 class="fill"
               />
@@ -120,28 +124,51 @@
           </el-col>
         </el-row>
 
-        <!-- ⚠ 表格必须包一层 width:100% 的块，否则会被 el-form-item 的 flex 压扁 -->
-        <el-form-item :label='$t("taskCommon.taskName")' required>
+        <!--
+          ⚠ 表格必须包一层 width:100% 的块，否则会被 el-form-item 的 flex 压扁。
+            label-width="0"：外面这个「任务名称」标签去掉了 —— 表里第二列
+            本来就写着任务名称，外面再挂一个是重复的，还白占一段左边距。
+        -->
+        <el-form-item label-width="0" required>
           <div class="pick-wrap">
             <div class="pick-bar">
               <el-input
                 v-model="pickKeyword"
-                :placeholder='$t("term.searchTaskName")'
+                :placeholder="$t('term.searchTaskName')"
                 clearable
                 size="small"
                 style="width: 240px"
                 @input="() => loadTasks()"
               />
               <div class="grow"></div>
-              <el-button size="small" type="primary" :disabled="!rows.length" @click="setAll(0)">{{ $t("enable.enableAll") }}</el-button>
-              <el-button size="small" type="warning" :disabled="!rows.length" @click="setAll(1)">{{ $t("enable.disableAll") }}</el-button>
+              <el-button size="small" type="primary" :disabled="!rows.length" @click="setAll(0)">{{
+                $t("enable.enableAll")
+              }}</el-button>
+              <el-button size="small" type="warning" :disabled="!rows.length" @click="setAll(1)">{{
+                $t("enable.disableAll")
+              }}</el-button>
             </div>
 
-            <el-table :data="rows" size="small" max-height="360" class="mt8" v-loading="taskLoading" :empty-text='$t("enable.noSelectableTask")'>
-              <el-table-column type="index" :label='$t("enable.options")' width="70" />
-              <el-table-column prop="taskName" :label='$t("taskCommon.taskName")' min-width="220" show-overflow-tooltip />
-              <el-table-column prop="typeText" :label='$t("typed.taskType")' width="130" />
-              <el-table-column :label='$t("common.operation")' width="190">
+            <el-table
+              :data="rows"
+              size="small"
+              max-height="360"
+              class="mt8"
+              v-loading="taskLoading"
+              :empty-text="$t('enable.noSelectableTask')"
+            >
+              <el-table-column type="index" :label="$t('enable.options')" width="70" />
+              <el-table-column prop="taskName" :label="$t('taskCommon.taskName')" min-width="220" show-overflow-tooltip />
+              <el-table-column prop="typeText" :label="$t('typed.taskType')" width="120" />
+              <!--
+                这四列是任务本身的排期，只读，给人判断「到点启用这条任务有没有意义」用：
+                没有这些，一屏几十条任务只看名字根本分不出该挑哪条。
+              -->
+              <el-table-column prop="startdate" :label="$t('common.startDate')" width="110" />
+              <el-table-column prop="playtime" :label="$t('taskCommon.playTime')" width="100" />
+              <el-table-column prop="timelengthText" :label="$t('taskCommon.playLength')" width="110" />
+              <el-table-column prop="enddate" :label="$t('common.endDate')" width="110" />
+              <el-table-column :label="$t('common.operation')" width="190">
                 <template #default="{ row }">
                   <el-radio-group v-model="row.action" size="small">
                     <el-radio-button :value="0">{{ $t("common.enable") }}</el-radio-button>
@@ -149,7 +176,22 @@
                   </el-radio-group>
                 </template>
               </el-table-column>
-              <el-table-column :label='$t("enable.includeThisTime")' width="100">
+              <!--
+                「计入本次」：勾上的才会写进这条计划。
+                表头那个复选框是全选/全不选 —— 一屏几十条任务，一条条点太费事。
+                半选状态（只勾了一部分）用 indeterminate 画出来。
+              -->
+              <el-table-column width="110">
+                <template #header>
+                  <el-checkbox
+                    :model-value="allPicked"
+                    :indeterminate="somePicked"
+                    :disabled="!rows.length"
+                    @change="(v: any) => pickAll(!!v)"
+                  >
+                    {{ $t("enable.includeThisTime") }}
+                  </el-checkbox>
+                </template>
                 <template #default="{ row }">
                   <el-checkbox v-model="row.picked" />
                 </template>
@@ -245,6 +287,11 @@ const loadTasks = async (chosen?: Map<number, number>) => {
       taskId: t.taskId,
       taskName: t.taskName,
       typeText: t.typeText,
+      // 任务本身的排期，表上只读显示
+      startdate: t.startdate,
+      enddate: t.enddate,
+      playtime: t.playtime,
+      timelengthText: t.timelengthText,
       // 单选初值取这条任务当前的 projectstate（旧版 addmanager.html 就是这么设的）
       action: chosen?.has(t.taskId) ? (chosen.get(t.taskId) as number) : t.projectstate,
       picked: chosen?.has(t.taskId) ?? false
@@ -259,6 +306,11 @@ const setAll = (v: number) =>
     r.action = v;
     r.picked = true;
   });
+
+/** 表头那个全选复选框：全勾上了才算选中，勾了一部分显示成半选 */
+const allPicked = computed(() => rows.value.length > 0 && rows.value.every(r => r.picked));
+const somePicked = computed(() => rows.value.some(r => r.picked) && !allPicked.value);
+const pickAll = (v: boolean) => rows.value.forEach(r => (r.picked = v));
 
 const openCreate = async () => {
   clearErr();

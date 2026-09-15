@@ -361,6 +361,12 @@ export interface EnablePickTask {
   /** ⚠ task.projectstate：0 = 启用、1 = 停用。弹窗用它给单选按钮设初值 */
   projectstate: number;
   stateText: string;
+  /** 下面四项是任务本身的排期，弹窗里那张表当参考列用（只读） */
+  startdate: string;
+  enddate: string;
+  playtime: string;
+  /** 「播放 N 秒」/「循环 N 次」，服务端算好的人话 */
+  timelengthText: string;
 }
 
 export interface EnableSaveForm {
