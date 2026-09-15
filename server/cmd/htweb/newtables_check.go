@@ -54,6 +54,8 @@ var newTables = []newTable{
 	{"assistant_undo", "db/assistant_tables.sql", "AI 助手"},
 	{"assistant_task_override", "db/assistant_tables.sql", "AI 助手"},
 	{"assistant_runtime_play", "db/assistant_tables.sql", "AI 助手"},
+
+	{"enable_run", "db/enable_tables.sql", "启用计划（到结束时间恢复状态）"},
 }
 
 // checkNewTables 查一遍并把缺的按脚本归拢着报出来。

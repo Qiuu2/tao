@@ -71,6 +71,11 @@ var clearTables = []string{
 	// api_play 与上面那两张助手登记表同理：它记着立即播放临时任务的 taskid，
 	// task 表清空后这些记录全指向空气。
 	"api_key", "api_play",
+
+	// ⚠ enable_run（db/enable_tables.sql）：启用计划「应用前是什么状态」的登记表。
+	// 恢复出厂会把 task 与 enabletask 一起清掉，这些记录跟着全指向空气；
+	// 留着的话，执行器下次启动会拿着一批不存在的 taskid 去恢复状态。
+	"enable_run",
 }
 
 // keepTables 是按条件保留的表：清掉不满足条件的行（BR-261）。

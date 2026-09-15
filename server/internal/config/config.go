@@ -29,7 +29,29 @@ type Config struct {
 	Register  Register  `yaml:"register"`
 	Assistant Assistant `yaml:"assistant"`
 	Changes   Changes   `yaml:"changes"`
+	Enable    Enable    `yaml:"enable"`
 	Legacy    Legacy    `yaml:"legacy"`
+}
+
+// Enable 是「启用计划执行器」的配置（见 internal/enable/scheduler.go）。
+type Enable struct {
+	// Scheduler 是否在本进程里跑那个执行器。默认开。
+	//
+	// ⚠ 关掉它意味着「到结束时间恢复原状态」这件事没人做 ——
+	// audioserver 不认识 enddate / endtime 那两列（是后加的）。
+	// 只有在确认由别处接管之后才关。
+	Scheduler bool `yaml:"scheduler"`
+	// Lead 提前量：开始时刻前这么久就把状态置好。留空取 10 秒。
+	Lead time.Duration `yaml:"lead"`
+	// CatchUp 补跑窗口：只处理开始时刻落在最近这么久之内的计划。
+	//
+	// 留空 = 不限制，这是默认：`enabletask.flag` 就是「已执行」的标记
+	// （默认 0，执行完置 1，置 1 之后不再判断），flag = 0 的计划就是还没执行过的，
+	// 开始时刻过去很久也照样补执行 —— 那是「该执行还没执行」。
+	//
+	// 只有当现场库里躺着一批 flag = 0 的陈年计划、又不希望它们在重启时被翻出来跑，
+	// 才需要配一个时长（比如 10m）。
+	CatchUp time.Duration `yaml:"catch_up"`
 }
 
 // Legacy 指向旧系统仍在使用的配置文件。**全部只读**。
@@ -264,6 +286,7 @@ func Default() *Config {
 		SDK:     SDK{Host: "127.0.0.1", Port: 8885, Enabled: true},
 		Auth:    Auth{TTL: 8 * time.Hour, CaptchaEnabled: true, CaptchaMode: CaptchaModeSlider},
 		Changes: Changes{Interval: 1500 * time.Millisecond},
+		Enable:  Enable{Scheduler: true},
 		Assistant: Assistant{
 			Enabled:      false,
 			NLUURL:       "http://127.0.0.1:5013",

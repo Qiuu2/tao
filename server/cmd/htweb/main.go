@@ -201,6 +201,22 @@ func main() {
 		a.assist.StartHousekeeping(purgeCtx)
 	}
 
+	// 启用计划执行器：到点把任务的启停状态置好、发指令，到结束时间再恢复。
+	// 见 internal/enable/scheduler.go —— 特别是与 audioserver 共存那一段。
+	if cfg.Enable.Scheduler {
+		opts := []enable.SchedulerOption{}
+		if cfg.Enable.Lead > 0 {
+			opts = append(opts, enable.WithLead(cfg.Enable.Lead))
+		}
+		if cfg.Enable.CatchUp > 0 {
+			opts = append(opts, enable.WithCatchUp(cfg.Enable.CatchUp))
+		}
+		enable.NewScheduler(st.DB(), a.notifier, opts...).Start(purgeCtx)
+		log.Printf("启用计划执行器已启动（提前 %s 置状态，只看 flag = 0 的计划）", enable.DefaultLead)
+	} else {
+		log.Printf("启用计划执行器已关闭（enable.scheduler = false）—— 到结束时间不会恢复状态")
+	}
+
 	// 新表自检：缺了就在日志里点名说缺哪张、跑哪个脚本。
 	// 不拒绝启动 —— 广播/任务/终端一张新表都不依赖。见 newtables_check.go。
 	checkNewTables(context.Background(), st.DB())

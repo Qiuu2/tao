@@ -319,15 +319,15 @@ type BrowseItem struct {
 	// 而这一列问的是「属于哪个功能模块」，分组名另有 folderName 一列管。
 	Category string `json:"category"`
 	// Weekdays 是播放周期，7 位掩码转成 [1..7]（1 = 周日）
-	Weekdays  []int  `json:"weekdays"`
-	CycleText string `json:"cycleText"`
-	PlayTime  string `json:"playtime"`
-	State     int    `json:"state"`
-	StateText string `json:"stateText"`
-	StartDate string `json:"startdate"`
-	EndDate   string `json:"enddate"`
-	Terminals int    `json:"terminals"`
-	ProjectState int  `json:"projectstate"`
+	Weekdays     []int  `json:"weekdays"`
+	CycleText    string `json:"cycleText"`
+	PlayTime     string `json:"playtime"`
+	State        int    `json:"state"`
+	StateText    string `json:"stateText"`
+	StartDate    string `json:"startdate"`
+	EndDate      string `json:"enddate"`
+	Terminals    int    `json:"terminals"`
+	ProjectState int    `json:"projectstate"`
 	// OwnerUserID / OwnerName 是这条任务归谁（task.task_user_id → book_admin.username）。
 	//
 	// 旧版这一页也带着它（Browse_active_task.php:544 `"taskuserid"=>...`），
