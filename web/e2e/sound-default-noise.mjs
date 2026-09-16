@@ -142,7 +142,8 @@ const openDialog = async () => {
   await p.waitForTimeout(1600);
 };
 
-const readBoxes = async () => (await boxes().allInputValues()).map(v => v.trim());
+// ⚠ 这个版本的 playwright 没有 locator.allInputValues()，自己从 DOM 上取
+const readBoxes = async () => (await boxes().evaluateAll(els => els.map(e => e.value))).map(v => v.trim());
 
 const lastOf = m => [...calls].reverse().find(c => c.method === m);
 
