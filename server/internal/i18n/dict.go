@@ -89,10 +89,12 @@ var codeDict = map[string]string{
 	"组播":         "Multicast",
 
 	// ——— 通用提示 ———
-	"保存成功":        "Saved",
-	"删除成功":        "Deleted",
-	"操作成功":        "Done",
-	"服务器内部错误":     "Internal server error",
+	"保存成功":    "Saved",
+	"删除成功":    "Deleted",
+	"操作成功":    "Done",
+	"服务器内部错误": "Internal server error",
+	"数据库里缺少这个功能要用的表 —— 多半是升级脚本还没执行。请管理员用有 DDL 权限的账号跑一遍 db/ 目录下对应的 .sql，再看服务器日志里那一行 [500] 确认表名。":  "A table this feature needs is missing from the database — most likely the upgrade script has not been run. Ask an administrator to run the matching .sql under db/ with a DDL-capable account, then check the [500] line in the server log for the table name.",
+	"数据库里缺少这个功能要用的字段 —— 多半是升级脚本还没执行。请管理员用有 DDL 权限的账号跑一遍 db/ 目录下对应的 .sql，再看服务器日志里那一行 [500] 确认列名。": "A column this feature needs is missing from the database — most likely the upgrade script has not been run. Ask an administrator to run the matching .sql under db/ with a DDL-capable account, then check the [500] line in the server log for the column name.",
 	"登录已过期，请重新登录": "Your session has expired. Please sign in again.",
 	"没有权限":        "You do not have permission to do this",
 	"权限不足":        "You do not have permission to do this",

@@ -14,6 +14,7 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"strings"
 )
 
 // 业务错误码。与手册 §4.1.3 保持一致。
@@ -128,9 +129,56 @@ func FailData(w http.ResponseWriter, code int, msg string, data interface{}) {
 }
 
 // Internal 记录真实错误到日志，但只向客户端返回笼统信息，避免泄漏内部细节。
+//
+// ⚠ 有一类例外：**库里少表 / 少列**。见 schemaGapMessage。
 func Internal(w http.ResponseWriter, where string, err error) {
 	log.Printf("[500] %s: %v", where, err)
+	if msg := schemaGapMessage(err); msg != "" {
+		Fail(w, CodeInternal, msg)
+		return
+	}
 	Fail(w, CodeInternal, "服务器内部错误")
+}
+
+/*
+ * schemaGapMessage 把「库里少一张表 / 少一列」这一类错误翻成人话。
+ *
+ * # 为什么单独拎出来
+ *
+ * 笼统的「服务器内部错误」对**程序 bug** 是对的（别把内部细节漏给客户端），
+ * 但对「升级脚本没跑」这件事是纯粹的浪费：
+ *
+ *   现场看到  服务器内部错误
+ *   实际是    Error 1146: Table 'audioserver.xxx' doesn't exist
+ *
+ * 中间隔着一趟「能不能把服务器日志发我看看」。而这一类错误里没有任何敏感信息 ——
+ * 表名列名本来就写在我们自己发出去的建表脚本里。
+ *
+ * 认两个 MySQL 错误码：
+ *
+ *   1146 ER_NO_SUCH_TABLE      少表 —— 新功能的建表脚本没执行
+ *   1054 ER_BAD_FIELD_ERROR    少列 —— 加列的升级脚本没执行
+ *
+ * ⚠ 用错误码（"Error 1146"）而不是英文错误文本匹配：MariaDB / MySQL 的措辞
+ *   在不同版本里改过，错误码没改过。
+ *
+ * ⚠ 只认这两个。别把「语法错误」「死锁」之类也顺手翻出来 ——
+ *   那些是程序 bug，原文里可能带着拼好的 SQL 和参数值。
+ */
+func schemaGapMessage(err error) string {
+	if err == nil {
+		return ""
+	}
+	e := err.Error()
+	switch {
+	case strings.Contains(e, "Error 1146"):
+		return "数据库里缺少这个功能要用的表 —— 多半是升级脚本还没执行。" +
+			"请管理员用有 DDL 权限的账号跑一遍 db/ 目录下对应的 .sql，再看服务器日志里那一行 [500] 确认表名。"
+	case strings.Contains(e, "Error 1054"):
+		return "数据库里缺少这个功能要用的字段 —— 多半是升级脚本还没执行。" +
+			"请管理员用有 DDL 权限的账号跑一遍 db/ 目录下对应的 .sql，再看服务器日志里那一行 [500] 确认列名。"
+	}
+	return ""
 }
 
 // DecodeJSON 解析请求体，限制大小防止内存滥用。

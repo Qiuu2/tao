@@ -379,20 +379,36 @@ func (s *Service) SetDBTemplate(ctx context.Context, values []float64) error {
 		return err
 	}
 	defer tx.Rollback()
+
+	/*
+	 * ⚠ 整段删掉再写回，**不要**「先 UPDATE、没改到再 INSERT」。
+	 *
+	 * 原来就是后者，而它每存一次都会多出几行重复的：
+	 * 连接串没开 clientFoundRows（见 config.Database.DSN），`RowsAffected()` 数的是
+	 * 「值真的变了的行」而不是「命中的行」。某一档的值和库里一样时 UPDATE 返回 0，
+	 * 于是被当成「这一行不存在」，再 INSERT 一条 —— 那一档就变成两行。
+	 *
+	 * soundtask 没有主键也没有唯一索引（建表语句里一个键都没有），所以数据库
+	 * 不会拦这种重复。实测：点一次「设置默认噪声」保存，taskid=0 这六行
+	 * 就从 6 行涨到 12 行、18 行……一直涨下去。
+	 *
+	 * 读那一侧（DBTemplate）按 volume 往格子里填，重复行只是互相覆盖，
+	 * 界面上看不出异常 —— 这也是它能一直涨而没人发现的原因。
+	 *
+	 * 现在改成：taskid = 0 这一组整体重写。顺带**把已经攒下的重复行清干净**，
+	 * 存一次就修好了。taskid = 0 是模板专用的（soundTemplateTaskID），
+	 * 真实任务的 taskid 都 > 0，删这一组不会碰到别人的数据。
+	 */
+	if _, err := tx.ExecContext(ctx,
+		`DELETE FROM soundtask WHERE taskid = ?`, soundTemplateTaskID); err != nil {
+		return fmt.Errorf("清理默认噪声值: %w", err)
+	}
 	for i, v := range SoundVolumeSteps {
-		res, err := tx.ExecContext(ctx,
-			`UPDATE soundtask SET dbvalue = ? WHERE taskid = ? AND volume = ?`,
-			values[i], soundTemplateTaskID, v)
-		if err != nil {
+		// devid 跟着模板行的既有写法填 0
+		if _, err := tx.ExecContext(ctx,
+			`INSERT INTO soundtask (taskid, devid, volume, dbvalue) VALUES (?,0,?,?)`,
+			soundTemplateTaskID, v, values[i]); err != nil {
 			return fmt.Errorf("保存默认噪声值: %w", err)
-		}
-		if n, _ := res.RowsAffected(); n == 0 {
-			// devid 跟着模板行的既有写法填 0
-			if _, err := tx.ExecContext(ctx,
-				`INSERT INTO soundtask (taskid, devid, volume, dbvalue) VALUES (?,0,?,?)`,
-				soundTemplateTaskID, v, values[i]); err != nil {
-				return fmt.Errorf("补写默认噪声值: %w", err)
-			}
 		}
 	}
 	return tx.Commit()

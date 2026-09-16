@@ -29,7 +29,7 @@ DIR="$(cd "$(dirname "$0")" && pwd)"
 
 TESTS=("$@")
 if [ ${#TESTS[@]} -eq 0 ]; then
-  TESTS=(login-slider terminal-grid terminal-selection terminal-shortcut-targets terminal-shortcut-column media-upload alarm-mapping-channels remote-edit map audit-detail bell-one-tone bell-plan-ops bell-item-terminals file-task-ops dashboard-browse transfer-tree usergroup-rights terminal-type-filter)
+  TESTS=(login-slider terminal-grid terminal-selection terminal-shortcut-targets terminal-shortcut-column media-upload alarm-mapping-channels remote-edit map audit-detail bell-one-tone bell-plan-ops bell-item-terminals file-task-ops dashboard-browse transfer-tree usergroup-rights terminal-type-filter sound-default-noise)
 fi
 
 echo "== 备份基线到 $DUMP =="
