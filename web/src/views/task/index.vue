@@ -1117,6 +1117,22 @@ const openEdit = async (row: TaskRow) => {
   selectedMediaIds.value = data.media.map(m => m.mediaId);
   selectedTerminalIds.value = data.terminals.map(t => t.terminalId);
   await Promise.all([searchMedia(""), searchTerminals("")]);
+  dropOffTreeTerminals();
+};
+
+/*
+ * 树上只有**型号能放广播**的终端（旧版 taskadd.php / taskmodify.php 一进页面就先调
+ * get_terminal_type(3) 把不出声的型号筛掉）。
+ *
+ * 库里绑着、树上却没有的，勾不上也就保存不回去 —— **不能悄悄丢**，摘掉并说一句。
+ * 会碰到这种情况的是老任务：当初没有这道筛选，或者是绕过界面塞进去的。
+ */
+const dropOffTreeTerminals = () => {
+  const onTree = new Set((terminalOptions.value ?? []).map(x => x.id));
+  const off = selectedTerminalIds.value.filter(id => !onTree.has(id));
+  if (!off.length) return;
+  selectedTerminalIds.value = selectedTerminalIds.value.filter(id => onTree.has(id));
+  ElMessage.warning(t("typed.offTreeTerminals", { n: off.length }));
 };
 
 const submit = async () => {

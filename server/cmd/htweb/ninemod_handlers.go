@@ -78,9 +78,16 @@ func (a *app) handleTypedGet(w http.ResponseWriter, r *http.Request) {
 	httpx.OK(w, d)
 }
 
+// handleTypedTerminals 是四类任务的终端树。
+//
+// ⚠ 要带 ?kind= —— 文字语音的型号判据和另外三类不一样（旧版 flag 16 vs 3，
+//
+//	多排掉一个型号 18）。kind 缺省或不认识时按 flag 3 走：少筛一点比多筛一点安全，
+//	多筛会让终端凭空消失，少筛只是多列几台。
 func (a *app) handleTypedTerminals(w http.ResponseWriter, r *http.Request) {
+	q := r.URL.Query()
 	list, err := a.typed.TerminalOptions(r.Context(), auth.From(r.Context()),
-		r.URL.Query().Get("keyword"))
+		typedtask.Kind(strings.TrimSpace(q.Get("kind"))), q.Get("keyword"))
 	if err != nil {
 		a.failTyped(w, "查询终端", err)
 		return

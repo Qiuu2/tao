@@ -28,6 +28,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"htweb/internal/termtype"
 	"strconv"
 	"strings"
 
@@ -326,25 +327,13 @@ func (s *Service) soundGroups(ctx context.Context) ([]SoundTreeGroup, error) {
 	return out, rows.Err()
 }
 
-// broadcastTypeCond 是「这台终端的型号能不能放广播」，
-// 一字不差照抄旧版 inc/config.inc.php 里 get_terminal_type(3, …, 0, 0) 的那句：
+// broadcastTypeCond 是「这台终端的型号能不能放广播」。
 //
-//	SELECT id FROM terminaltype
-//	WHERE isdecode = '1'
-//	  AND id NOT IN (0,26,2,7,8,9,10,12,15,16,17,21,22,25,28,29,30,31,32,36,37,40,41,42)
-//
-// isdecode = 1 是「能解码音频」，也就是能出声；后面那串黑名单是旧版一个个排掉的
-// （服务器、报警主机、编码器、LED 设备、应急终端之类 —— 它们要么不出声，
-// 要么不该出现在声场任务里）。名单本身没有规律可循，是现场攒出来的，照抄。
-//
-// ⚠ 写成子查询而不是把型号号码展开成常量：黑名单是「排除」而不是「列举」，
-// 现场装了新型号时，只要它 isdecode=1 且不在黑名单里就该自动出现在树上。
-// 展开成常量的话，新型号会静默消失，而没有人会想到来看这里。
-const broadcastTypeCond = `t.typeid IN (
-	SELECT id FROM terminaltype
-	 WHERE COALESCE(isdecode,0) = 1
-	   AND id NOT IN (0,2,7,8,9,10,12,15,16,17,21,22,25,26,28,29,30,31,32,36,37,40,41,42)
-)`
+// 判据搬到了 internal/termtype（旧版 get_terminal_type(3,…) 那一句），
+// 因为同一条判据现在有五六个地方要用：作息方案、文件广播、四类分类任务、
+// 声场分区、音乐传输。各处各抄一份的话，下次现场加一个型号只会改到其中一两处，
+// 而「某一页看得见、另一页看不见」这种不一致是最难被发现的。
+var broadcastTypeCond = termtype.Cond("t", termtype.KindBroadcast)
 
 // ---------- 默认噪声值（soundtask 里 taskid = 0 那六行）----------
 

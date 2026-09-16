@@ -1202,6 +1202,7 @@ const showItemScope = async (idx: number) => {
     // 已删除的终端不回填，否则保存时会被存在性校验挡下
     terminalAreas.value = Object.fromEntries(list.filter(t => !t.deleted && t.area).map(t => [t.terminalId, t.area]));
     selectedTerminalIds.value = list.filter(t => !t.deleted).map(t => t.terminalId);
+    dropOffTreeTerminals();
     row.terminalCount = list.length;
   } catch {
     // 读不到就别把树清空 —— 那样一点「修改」就会把这节课的终端全删了
@@ -1687,11 +1688,31 @@ const openEdit = async (row: BellPlan, mode: "edit" | "batch" = "edit") => {
   terminalAreas.value = Object.fromEntries(data.terminals.filter(t => !t.deleted && t.area).map(t => [t.terminalId, t.area]));
   // 已删除的终端不回填，否则保存时会被存在性校验挡下
   selectedTerminalIds.value = data.terminals.filter(t => !t.deleted).map(t => t.terminalId);
+  /*
+   * ⚠ 顺序要紧：**先把树拉回来、摘掉树上没有的，再快照**。
+   *
+   * 树上只有型号能放广播的终端（旧版 belladd.php / bellmodify.php 先调
+   * get_terminal_type(3) 筛过）。库里绑着、树上没有的要先摘掉，
+   * 否则快照里留着它们，切到某个课时再切回方案级又会把它们带回来。
+   */
+  await searchTerminals("");
+  dropOffTreeTerminals();
   // 选中某个课时会把树换成那一课时自己的清单，取消选中要能换回来
   snapshotPlanScope();
   markHeaderClean();
   await resetPlanErrors();
-  await searchTerminals("");
+};
+
+/**
+ * 把「库里绑着、但树上没有」的终端摘掉并说一句 —— 不能悄悄丢。
+ * 会碰到这种情况的是老数据：当初没有这道型号筛选，或者是绕过界面塞进去的。
+ */
+const dropOffTreeTerminals = () => {
+  const onTree = new Set((terminals.value ?? []).map(x => x.id));
+  const off = selectedTerminalIds.value.filter(id => !onTree.has(id));
+  if (!off.length) return;
+  selectedTerminalIds.value = selectedTerminalIds.value.filter(id => onTree.has(id));
+  ElMessage.warning(t("typed.offTreeTerminals", { n: off.length }));
 };
 
 /** 批量修改：和修改方案同一个对话框，只是多了「统一设置」那一栏（旧版 bellmodifyall.php） */

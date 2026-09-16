@@ -46,6 +46,7 @@ import (
 	"htweb/internal/auth"
 	"htweb/internal/i18n"
 	"htweb/internal/store"
+	"htweb/internal/termtype"
 )
 
 type Service struct {
@@ -957,6 +958,11 @@ func (s *Service) DeviceOptions(ctx context.Context, keyword string) ([]Device, 
 // TerminalOptions 列出可加入声场分区的终端，带当前声场归属。
 func (s *Service) TerminalOptions(ctx context.Context, u *auth.User, keyword string) ([]GroupTerminal, error) {
 	cond := &store.Cond{}
+	// 只列能放广播的终端 —— 旧版 zhaoshengstreamadd.php / zhaoshengedit.php
+	// 一进页面就先调 get_terminal_type(3) 把不出声的型号筛掉了。
+	// 声场分区的用法是「探头量到多吵，就把这组终端的音量调到多大」，
+	// 一台不出声的设备放进来，调它的音量没有任何意义。
+	cond.Add(termtype.Cond("t", termtype.KindBroadcast))
 	if !u.IsAdmin {
 		cond.Add(`t.id IN (SELECT terminalid FROM userterminal WHERE userid = ?)`, u.ID)
 	}

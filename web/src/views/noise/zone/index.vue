@@ -196,6 +196,18 @@ const openEdit = async (row: SoundGroup) => {
     id: data.id
   });
   await Promise.all([searchTerminals(""), loadDevices()]);
+  /*
+   * 树上只有型号能放广播的终端（旧版 zhaoshengedit.php 先调 get_terminal_type(3) 筛过）。
+   * 声场分区的用法是「探头量到多吵，就把这组终端的音量调到多大」——
+   * 一台不出声的设备放进来，调它的音量没有任何意义。
+   * 库里绑着、树上没有的勾不上也就存不回去，**摘掉并说一句**，不能悄悄丢。
+   */
+  const onTree = new Set((terminals.value ?? []).map(x => x.terminalId));
+  const off = selectedTerminals.value.filter(id => !onTree.has(id));
+  if (off.length) {
+    selectedTerminals.value = selectedTerminals.value.filter(id => onTree.has(id));
+    ElMessage.warning(t("noise.offTreeTerminals", { n: off.length }));
+  }
   if (dropped) ElMessage.warning(t("noise.droppedTerminals", { n: dropped }));
 };
 

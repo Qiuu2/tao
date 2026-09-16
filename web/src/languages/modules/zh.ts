@@ -950,7 +950,8 @@ export default {
     confirmDeleteFolder: "确认删除目录「{name}」？目录里的 {n} 条任务会一起被删除，不可恢复。",
     confirmDeleteScreens: "确认删除选中的 {n} 块 LED 屏？会连带清掉它们在任务里的绑定。",
     confirmDeleteTasks: "确认删除选中的 {n} 条{what}任务？会连带清掉终端绑定、遥控绑定与离线副本，不可恢复。",
-    droppedTerminals: "该任务里有 {n} 台终端已被删除，已自动移除"
+    droppedTerminals: "该任务里有 {n} 台终端已被删除，已自动移除",
+    offTreeTerminals: "有 {n} 台已绑定的终端不在可广播的型号里，树上没有它们，保存后会从这条任务上移除"
   },
   offline: {
     summaryLine:
@@ -1491,6 +1492,7 @@ export default {
     deletedSummary: "分区 {areas} 个、映射 {mappings} 条，{terminals} 台终端已移出分区",
     confirmCascade: "这次删除会连带删掉 <b>{n}</b> 条报警映射，对应通道触发时将不再播放任何内容。确认继续？",
     droppedTerminals: "该分区里有 {n} 台终端已被删除，已自动从成员列表中移除",
+    offTreeTerminals: "有 {n} 台已绑定的终端不在可广播的型号里，树上没有它们，保存后会从这个分区移除",
     pickAreaFirst: "请先勾选报警分区",
     terminalInArea: "{name}（已属于 {area}）"
   },

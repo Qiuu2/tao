@@ -955,7 +955,9 @@ export default {
     confirmDeleteScreens: "Delete the {n} selected LED screens? Their bindings in tasks are cleared too.",
     confirmDeleteTasks:
       "Delete the {n} selected {what} tasks? Terminal bindings, remote bindings and offline copies are cleared too, and this cannot be undone.",
-    droppedTerminals: "{n} terminals in this task had been deleted and were removed automatically"
+    droppedTerminals: "{n} terminals in this task had been deleted and were removed automatically",
+    offTreeTerminals:
+      "{n} bound terminal(s) are not of a broadcast-capable type, so they are not on the tree and will be removed on save"
   },
   offline: {
     summaryLine:
@@ -1510,6 +1512,8 @@ export default {
     confirmCascade:
       "This will also delete <b>{n}</b> alarm mappings — those channels will then play nothing when triggered. Continue?",
     droppedTerminals: "{n} terminals in this zone no longer exist and were dropped from the member list",
+    offTreeTerminals:
+      "{n} bound terminal(s) are not of a broadcast-capable type, so they are not on the tree and will be removed from this zone on save",
     pickAreaFirst: "Select at least one alarm zone first",
     terminalInArea: "{name} (already in {area})"
   },

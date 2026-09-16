@@ -9,6 +9,7 @@ import (
 	"htweb/internal/i18n"
 	"htweb/internal/store"
 	"htweb/internal/termswitch"
+	"htweb/internal/termtype"
 )
 
 // 媒体与终端选择器（修 D-102）。
@@ -96,8 +97,20 @@ type TerminalOption struct {
 // 终端串和分区串两条平行的逗号串按下标对齐，长度不一致就静默写 0（D-107）。
 func (s *Service) TerminalOptions(ctx context.Context, u *auth.User, keyword string, groupID int64) ([]TerminalOption, error) {
 	cond := &store.Cond{}
-	// 与终端模块一致：恒排除「服务器」类型
-	cond.Add("t.typeid <> 0")
+	/*
+	 * 按**型号**筛：只列能放广播的终端（旧版 get_terminal_type(3,…)）。
+	 *
+	 * 这一条原来只排除了「服务器」（typeid <> 0），于是报警主机、TTS主机、
+	 * 网络话筒这些根本不出声的设备也会出现在任务的终端树上，勾上了也没用 ——
+	 * 旧版 taskadd.php / belladd.php 一进页面就先调 get_terminal_type(3) 把它们筛掉了。
+	 *
+	 * 现场 2026-09-16：「任务管理中所有添加修改任务的终端列表都需要按 ok112 的
+	 * 任务中的终端类型来过滤，云广播管理和噪声检测中也是一样。」
+	 *
+	 * ⚠ 这一句同时管着三个页面的终端树：作息方案、文件广播、音乐传输（下发目标）。
+	 *   旧版那三页调的都是 flag 3，口径一致。
+	 */
+	cond.Add(termtype.Cond("t", termtype.KindBroadcast))
 	if keyword != "" {
 		cond.Add(`t.terminalname LIKE ? ESCAPE '\\'`, store.EscapeLike(keyword))
 	}

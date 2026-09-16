@@ -14,6 +14,7 @@ import (
 	"htweb/internal/notify"
 	"htweb/internal/store"
 	"htweb/internal/termswitch"
+	"htweb/internal/termtype"
 )
 
 // 新建 / 修改。四种类别共用同一套 task 行的写入，差异在：
@@ -894,8 +895,20 @@ type TerminalOption struct {
 // 不按终端型号过滤 —— 旧版这四个页面的终端选择器都是全量列表
 // （`terminalfunctionplayadd.php` 甚至是按分区列的）。哪些型号真的支持
 // 功放控制/采播/LED 由现场设备决定，库里没有可靠的标志位可以筛。
-func (s *Service) TerminalOptions(ctx context.Context, u *auth.User, keyword string) ([]TerminalOption, error) {
+// TerminalOptions 是四类任务（功放 / 采播 / 文字语音 / LED）终端树的数据源。
+//
+// ⚠ kind 决定按哪一套型号筛。旧版这五个页面调的 flag 不是同一个：
+//
+//	terminalfunctionplayadd.php  终端功放    get_terminal_type(3)
+//	addadmtask.php               采播管理    get_terminal_type(3)
+//	ledtaskadd.php               led播放     get_terminal_type(3)
+//	taskttsadd.php               文字语音    get_terminal_type(16)   ← 多排掉一个 18
+//
+// 原来这里一台都不筛，报警主机、TTS主机这些不出声的设备也列在树上，
+// 勾上了也没用（现场 2026-09-16 提的就是这件事）。
+func (s *Service) TerminalOptions(ctx context.Context, u *auth.User, kind Kind, keyword string) ([]TerminalOption, error) {
 	cond := &store.Cond{}
+	cond.Add(termtype.Cond("t", termtype.KindOfTaskKind(string(kind))))
 	if !u.IsAdmin {
 		cond.Add(`t.id IN (SELECT terminalid FROM userterminal WHERE userid = ?)`, u.ID)
 	}

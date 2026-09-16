@@ -290,7 +290,7 @@ var exposedGroups = []exposedGroup{
 			{"GET /api/typed-tasks/{kind}", "分类任务列表", "登录即可", false},
 			{"GET /api/typed-tasks/{kind}/{id}", "分类任务详情", "登录即可", false},
 			{"GET /api/typed-tasks/{kind}/sources", "建这类任务时的可选音源", "登录即可", false},
-			{"GET /api/typed-tasks/terminals", "可选终端", "登录即可", false},
+			{"GET /api/typed-tasks/terminals", "可选终端（按 ?kind= 的型号判据筛）", "登录即可", false},
 			{"GET /api/typed-tasks/prompts", "文字语音的提示音清单", "登录即可", false},
 			{"GET /api/sound-tasks/tree", "声场分区树（终端 + 噪声设备）", "登录即可", false},
 			{"GET /api/sound-tasks/db-template", "默认噪声值", "登录即可", false},

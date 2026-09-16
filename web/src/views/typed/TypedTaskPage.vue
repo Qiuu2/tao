@@ -843,14 +843,32 @@ const terminalAreas = ref<Record<number, string>>({});
 const sourceTerminals = ref<TypedTerminalOption[]>([]);
 const promptList = ref<PromptMedia[]>([]);
 
+/*
+ * 终端树的数据源。
+ *
+ * ⚠ 树上只有**型号能放广播**的终端（旧版 get_terminal_type(3)，文字语音那一页是 16）。
+ *   筛选在后端做，这里把 kind 带过去就行。
+ */
 const searchTerminals = async (kw: string) => {
   terminalLoading.value = true;
   try {
-    const { data } = await getTypedTerminalsApi(kw ?? "");
+    const { data } = await getTypedTerminalsApi(props.kind as any, kw ?? "");
     terminals.value = data ?? [];
   } finally {
     terminalLoading.value = false;
   }
+};
+
+/**
+ * 回填之后对一次账：库里绑着、但树上没有的终端（型号被筛掉了），勾不上也就存不回去。
+ * **不能悄悄丢**，摘掉并说一句 —— 与 sound 分支里那段同一个做法。
+ */
+const dropOffTreeTerminals = () => {
+  const onTree = new Set((terminals.value ?? []).map(x => x.id));
+  const off = selectedTerminals.value.filter(id => !onTree.has(id));
+  if (!off.length) return;
+  selectedTerminals.value = selectedTerminals.value.filter(id => onTree.has(id));
+  ElMessage.warning(t("typed.offTreeTerminals", { n: off.length }));
 };
 
 // 采播终端 / tts终端 是按 terminal.typeid 筛出来的一小批，与终端树不是一回事
@@ -1283,6 +1301,7 @@ const openEdit = async (row: TypedTask) => {
     if (goneDev) ElMessage.warning(t("sound.droppedDevices", { n: goneDev }));
   } else {
     await searchTerminals("");
+    dropOffTreeTerminals();
   }
   if (dropped) ElMessage.warning(t("typed.droppedTerminals", { n: dropped }));
 };

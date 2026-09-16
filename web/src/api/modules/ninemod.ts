@@ -246,8 +246,14 @@ export const getTypedListApi = (kind: TypedKind, params: any) =>
   http.get<ResPage<TypedTask> & { scopeNote: string }>(PORT1 + `/api/typed-tasks/${kind}`, params);
 export const getTypedApi = (kind: TypedKind, id: number) =>
   http.get<TypedDetail>(PORT1 + `/api/typed-tasks/${kind}/${id}`, {}, { loading: false });
-export const getTypedTerminalsApi = (keyword = "") =>
-  http.get<TypedTerminalOption[]>(PORT1 + `/api/typed-tasks/terminals`, { keyword }, { loading: false });
+/**
+ * 四类任务的终端树。
+ *
+ * ⚠ 必须带 kind —— 后端按它选型号判据：文字语音是 ok112 的 get_terminal_type(16)，
+ *   另外三类是 get_terminal_type(3)，两者差一个型号。不带的话一律按 flag 3 走。
+ */
+export const getTypedTerminalsApi = (kind: TypedKind, keyword = "") =>
+  http.get<TypedTerminalOption[]>(PORT1 + `/api/typed-tasks/terminals`, { kind, keyword }, { loading: false });
 export const createTypedApi = (kind: TypedKind, data: TypedSaveBody) =>
   http.post<{ taskId: number }>(PORT1 + `/api/typed-tasks/${kind}`, data);
 export const updateTypedApi = (kind: TypedKind, id: number, data: TypedSaveBody) =>
