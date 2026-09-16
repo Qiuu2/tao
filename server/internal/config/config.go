@@ -75,12 +75,67 @@ type Legacy struct {
 type Register struct {
 	// Command 注册用的外部命令，默认 registerserver。
 	// 取标准输出第一行判定 success / failed / expired。
+	//
+	// 不带路径时按 RegisterCommandDir() → PATH 的顺序找，见那个方法上的说明。
 	Command string `yaml:"command"`
-	// SerialFile 记录试用起算日的文件。留空则「注册服务」页算不出剩余天数，
-	// 页面会如实说明，而不是猜一个日期。
+	// SerialFile 记录试用起算日的文件。留空则取 RegisterSerialFile() 的默认值。
 	SerialFile string `yaml:"serial_file"`
-	// TrialFile 领过试用后留下的标记文件。留空则不允许领取试用。
+	// TrialFile 领过试用后留下的标记文件。留空则取 RegisterTrialFile() 的默认值。
 	TrialFile string `yaml:"trial_file"`
+}
+
+/*
+ * RegisterCommandDir 是「命令名不带路径时，除 PATH 之外还要找的那个目录」。
+ *
+ * # 为什么需要它
+ *
+ * registerserver 是厂家的二进制，装在 <media.root>/bin/ 下
+ * （现网 /opt/apps/a9000/bin/registerserver，跟 media.ffmpeg 同一个目录）。
+ * 而 systemd 给 htweb 的 PATH 只有：
+ *
+ *     /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+ *
+ * 那个目录不在里面。于是只要 config.yaml 里没写 register.command，
+ * 程序就拿默认的命令名去 PATH 里找，注册页报：
+ *
+ *     exec: "registerserver": executable file not found in $PATH
+ *
+ * 2026-09-16 现场 192.168.2.159 就是这么挂的 —— 配置文件里整个 register: 段都没有。
+ *
+ * 装机路径是已知的，没有理由让每台机器都去配一遍。所以这里按 media.root 推出来，
+ * 优先在这个目录下找；显式配了绝对路径仍然以配置为准。
+ */
+func (c *Config) RegisterCommandDir() string {
+	if c.Media.Root == "" {
+		return ""
+	}
+	return c.Media.Root + "/bin"
+}
+
+// RegisterSerialFile 返回试用起算日文件，没配就按 media.root 推。
+//
+// ⚠ 这个文件属于旧版 ok112，新版**只读不写**。试用剩余天数是从它算的，
+// 不是从库里的 trystartdate —— 旧版页面里读 trystartdate 的那段被整段注释掉了。
+func (c *Config) RegisterSerialFile() string {
+	if f := c.Register.SerialFile; f != "" {
+		return f
+	}
+	if c.Media.Root == "" {
+		return ""
+	}
+	return c.Media.Root + "/html/ok112/serial"
+}
+
+// RegisterTrialFile 返回试用标记文件，没配就按 media.root 推。
+// 存在即不允许再领试用；领取时新版会创建它。
+func (c *Config) RegisterTrialFile() string {
+	if f := c.Register.TrialFile; f != "" {
+		return f
+	}
+	if c.Media.Root == "" {
+		return ""
+	}
+	return c.Media.Root + "/html/ok112/serialtwo"
 }
 
 // Dashboard 是看板首页的配置。

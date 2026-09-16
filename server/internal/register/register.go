@@ -100,6 +100,9 @@ type Options struct {
 	// Command 注册用的外部命令。旧版是 `registerserver <注册码>`，
 	// 取标准输出第一行判定 success / failed / expired。
 	Command string
+	// CommandDir 是 Command 不带路径时，**除 PATH 之外**还要找的目录
+	// （现网 <media.root>/bin）。为什么需要它见 resolveCommand。
+	CommandDir string
 	// SerialFile 记录试用起算日的文件（旧版 /var/www/html/ok112/serial）。
 	SerialFile string
 	// TrialFile 领过试用之后留下的标记文件（旧版 .../serialtwo）。
@@ -113,9 +116,98 @@ type Service struct {
 
 func New(db *sql.DB, opt Options) *Service {
 	if opt.Command == "" {
-		opt.Command = "registerserver"
+		opt.Command = DefaultCommand
 	}
 	return &Service{db: db, opt: opt}
+}
+
+// DefaultCommand 是没配 register.command 时用的命令名。旧版写死的就是它。
+const DefaultCommand = "registerserver"
+
+/*
+ * resolveCommand 把 opt.Command 变成一条真能执行的路径。
+ *
+ * # 为什么不直接交给 exec.Command 去 PATH 里找
+ *
+ * 因为它找不到。registerserver 是厂家的二进制，装在 <media.root>/bin/ 下
+ * （现网 /opt/apps/a9000/bin/registerserver，跟 ffmpeg 同一个目录），
+ * 而 systemd 给 htweb 的 PATH 只有：
+ *
+ *     /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+ *
+ * 那个目录不在里面。于是 config.yaml 里只要没写 register.command，
+ * 注册页上点「注 册」就报：
+ *
+ *     exec: "registerserver": executable file not found in $PATH
+ *
+ * 2026-09-16 现场 192.168.2.159 就是这么挂的 —— 配置里整个 register: 段都没有。
+ *
+ * # 找的顺序
+ *
+ *  1. Command 带路径（含 /）→ 就用它，找不到直接报错。
+ *     配了路径还去别处找，等于**偷偷执行另一个二进制**，那比报错危险得多。
+ *  2. 不带路径 → 先看 CommandDir（装机目录），再看 PATH。
+ *     装机目录更具体、更可能是对的那一个，所以排在前面。
+ *
+ * # 报错要能照着做
+ *
+ * 「executable file not found in $PATH」这句话对现场没有用 —— 它不说该装哪儿、
+ * 也不说该改哪个配置。所以这里把找过的地方一条条列出来，并直接给出改法。
+ */
+func (s *Service) resolveCommand() (string, error) {
+	cmd := s.opt.Command
+	if strings.ContainsRune(cmd, os.PathSeparator) {
+		if err := executableAt(cmd); err != nil {
+			return "", fmt.Errorf("%w：%s（%v）。这条路径来自 config.yaml 的 register.command，改完记得 systemctl restart htweb",
+				ErrCommand, cmd, err)
+		}
+		return cmd, nil
+	}
+
+	tried := make([]string, 0, 2)
+	if s.opt.CommandDir != "" {
+		p := filepath.Join(s.opt.CommandDir, cmd)
+		if executableAt(p) == nil {
+			return p, nil
+		}
+		tried = append(tried, p)
+	}
+	if p, err := exec.LookPath(cmd); err == nil {
+		return p, nil
+	}
+	tried = append(tried, "PATH（"+os.Getenv("PATH")+"）里没有 "+cmd)
+
+	return "", fmt.Errorf("%w：找过 %s。registerserver 是厂家的程序，不随本项目发布；"+
+		"确认它装在哪台机器的哪个目录下，然后在 config.yaml 里写\n\n  register:\n    command: \"/绝对/路径/registerserver\"\n\n再 systemctl restart htweb",
+		ErrCommand, strings.Join(tried, "；"))
+}
+
+/*
+ * CheckCommand 是启动自检：注册程序现在能不能找到。
+ *
+ * 不拒绝启动 —— 一台已经注册好的服务器根本不会再执行这个命令，
+ * 为它把整个服务拦在门外没有道理。但**必须在日志里说**：
+ * 否则这件事要等到有人在注册页上点「注 册」的那一刻才暴露，
+ * 而那通常是装机现场、客户在旁边看着的时候。
+ */
+func (s *Service) CheckCommand() (string, error) { return s.resolveCommand() }
+
+// executableAt 检查这个路径上确实有一个能执行的普通文件。
+//
+// 单独拎出来是因为「不存在」和「在那儿但没有执行位」要给不同的话 ——
+// 后者 chmod +x 就好，前者得先把文件弄过去。os.Stat 的错误本身已经分得清。
+func executableAt(path string) error {
+	fi, err := os.Stat(path)
+	if err != nil {
+		return err
+	}
+	if fi.IsDir() {
+		return fmt.Errorf("是个目录，不是可执行文件")
+	}
+	if fi.Mode().Perm()&0o111 == 0 {
+		return fmt.Errorf("没有执行权限（chmod +x %s）", path)
+	}
+	return nil
 }
 
 // Status 是这一页的全部只读信息。
@@ -289,9 +381,14 @@ func (s *Service) Register(ctx context.Context, licenseKey string) (*RegisterRes
 		return nil, fmt.Errorf("%w：%d 字符，上限 128", ErrKeyTooLong, len(licenseKey))
 	}
 
+	bin, err := s.resolveCommand()
+	if err != nil {
+		return nil, err
+	}
+
 	// ⚠ 用 exec.Command 传参，不经过 shell —— 旧版是字符串拼接，
 	//   注册码里带 `;` 就能执行任意命令。
-	cmd := exec.CommandContext(ctx, s.opt.Command, licenseKey)
+	cmd := exec.CommandContext(ctx, bin, licenseKey)
 	raw, err := cmd.Output()
 	if err != nil {
 		var ee *exec.ExitError
@@ -300,7 +397,7 @@ func (s *Service) Register(ctx context.Context, licenseKey string) (*RegisterRes
 			raw = ee.Stderr
 		} else {
 			// 没跑起来（ENOENT / EACCES 之类），与「跑起来了但说 failed」是两回事
-			return nil, fmt.Errorf("%w：%s（%v）", ErrCommand, s.opt.Command, err)
+			return nil, fmt.Errorf("%w：%s（%v）", ErrCommand, bin, err)
 		}
 	}
 	outcome := firstLine(string(raw))

@@ -154,9 +154,12 @@ func main() {
 		typed:    typedtask.New(st.DB()),
 		enables:  enable.New(st.DB()),
 		registers: register.New(st.DB(), register.Options{
-			Command:    cfg.Register.Command,
-			SerialFile: cfg.Register.SerialFile,
-			TrialFile:  cfg.Register.TrialFile,
+			Command: cfg.Register.Command,
+			// 装机目录按 media.root 推，配置里没写 register: 段也能找到
+			// 厂家那个 registerserver（见 config.RegisterCommandDir）
+			CommandDir: cfg.RegisterCommandDir(),
+			SerialFile: cfg.RegisterSerialFile(),
+			TrialFile:  cfg.RegisterTrialFile(),
 		}),
 		sounds: sound.New(st.DB()),
 	}
@@ -225,6 +228,13 @@ func main() {
 		log.Printf("htweb 启动，监听 %s", cfg.Server.Listen)
 		log.Printf("静态目录 %s", cfg.Server.StaticDir)
 		log.Printf("媒体根目录 %s", cfg.Media.Root)
+		// 注册程序自检。找不到不拦启动（已注册的机器根本不会再执行它），
+		// 但要在这里说清楚 —— 否则要等到装机现场有人点「注 册」才暴露。
+		if bin, err := a.registers.CheckCommand(); err != nil {
+			log.Printf("⚠ %v", err)
+		} else {
+			log.Printf("注册程序 %s", bin)
+		}
 		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			log.Fatalf("监听失败: %v", err)
 		}
